@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+# needed to allow julia-actions/cache to delete old caches that it has created
+permissions:
+  actions: write
+  contents: read
+
+# Cancel existing tests on the same PR if a new commit is added to a pull request
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+jobs:
+  test:
+    runs-on: ${{ matrix.runner.os }}
+    strategy:
+      fail-fast: false
+
+      matrix:
+        runner:
+          # Ubuntu
+          - version: '1'
+            os: ubuntu-latest
+          # Windows
+          - version: '1'
+            os: windows-latest
+          # macOS
+          - version: '1'
+            os: macos-latest
+          # Minimum supported version
+          - version: 'min'
+            os: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.runner.version }}
+
+      - uses: julia-actions/cache@v2
+
+      - uses: julia-actions/julia-buildpkg@v1
+
+      - uses: julia-actions/julia-runtest@v1
+        env:
+          # Only run Aqua tests on latest version
+          AQUA: ${{ matrix.runner.version == '1' && 'true' || 'false' }}
