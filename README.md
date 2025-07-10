@@ -20,7 +20,7 @@ This is intended as a drop-in replacement of MCMCChains.jl.
 It's nowhere near there yet, so don't get your hopes up.
 I have to implement the data structures but probably also a DynamicPPL extension so that it plays well with existing functionality.
 
-If this does ever reach feature parity, then one day you can do:
+If this does ever reach feature parity, then one day you will be able to do:
 
 ```julia
 import FlexiChains: FlexiChain
