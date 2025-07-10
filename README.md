@@ -44,4 +44,5 @@ However, right now, I think the most likely scenario is that I will maintain thi
 I consider performance to be a secondary concern for this package, because the main bottleneck in Bayesian inference is the sampling, not how fast one can construct or index into a chain.
 Thus, for example, MCMCChains.jl uses AxisArrays.jl under the hood so that you can very quickly index into a chain with `chain[:my_param]`.
 However, this is precisely the reason why only `Symbol` indices are allowed.
-I don't care about making indexing fast; thus, FlexiChains doesn't use AxisArrays.
+
+I don't care about making indexing fast (and honestly, nor should you); thus, FlexiChains doesn't use AxisArrays.
