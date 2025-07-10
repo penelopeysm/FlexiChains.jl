@@ -1,0 +1,7 @@
+## FlexiChains
+
+Yada.
+
+```@docs
+greet
+```
