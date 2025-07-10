@@ -1,0 +1,5 @@
+Manifest.toml
+Manifest-*.toml
+.swp
+.DS_Store
+docs/build
