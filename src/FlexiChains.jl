@@ -1,12 +1,5 @@
 module FlexiChains
 
-export greet
-
-"""
-    greet()
-
-Prints a greeting message to the console.
-"""
-greet() = print("Hello World!")
+include("core.jl")
 
 end # module FlexiChains
