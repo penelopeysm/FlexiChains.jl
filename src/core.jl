@@ -3,6 +3,7 @@
 
 using AbstractMCMC: AbstractMCMC
 using StaticArrays: SMatrix
+using SumTypes: @sum_type
 
 export FlexiChain
 
@@ -23,6 +24,45 @@ function to_smatrix_with_size_check(
     return SMatrix{niter,nchains}(mat)
 end
 
+@sum_type FlexiChainKey{T} begin
+    Parameter{T}(::T)
+    OtherSectionKey(::Symbol, ::Any)
+end
+
+"""
+    coerce_key_type(key::FlexiChainKey, ::Type{T})::FlexiChainKey{T}
+
+Instantiating `Parameter{T}` immediately makes it obvious what `T` is in the abstract
+type `FlexiChainKey{T}`. However, because `OtherSectionKey` does not carry the type
+parameter `T`, it is not obvious what the type of `T` in `FlexiChainKey{T}` should be.
+
+Indeed, instantiating an `OtherSectionKey` will generally lead to a
+`FlexiChainKey{SumTypes.Uninit}`.
+
+This function is used to coerce the type parameter `T` to a known type.
+"""
+function coerce_key_type(key::FlexiChainKey, ::Type{T})::FlexiChainKey{T} where {T}
+    return key
+end
+
+"""
+    determine_key_type(keys::AbstractVector{<:FlexiChainKey})
+
+Determine the (most concrete possible) type of the parameters in a vector of
+`FlexiChainKey`s.
+"""
+function determine_key_type(keys::AbstractVector{<:FlexiChainKey})
+    # Extract only the parameters, since these are the ones that carry type
+    # information.
+    param_keys = filter(k -> k isa FlexiChainKey.Parameter, keys)
+    return if isempty(param_keys)
+        Any
+    else
+        get_parameter_type(::Parameter{T}) where {T} = T
+        mapreduce(get_parameter_type, ((t1, t2) -> Union{t1,t2}), param_keys)
+    end
+end
+
 """
     FlexiChain{TKey,NIter,NChains,Sections}
 
@@ -35,7 +75,7 @@ guarantees that the sizes of the arrays are constant across all parameters
 """
 struct FlexiChain{TKey,NIter,NChains,Sections} <: AbstractMCMC.AbstractChains
     # all parameters must share a common type; their values must be real numbers
-    parameters::Dict{TKey,SMatrix{NIter,NChains,<:Real}}
+    parameters::Dict{TKey,SMatrix{NIter,NChains,Any}}
     # section names are always Symbol; but the underlying keys (and values) can
     # be anything
     other_sections::NTOf{Dict{<:Any,<:SMatrix{NIter,NChains}}}
