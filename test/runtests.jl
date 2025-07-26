@@ -1,39 +1,42 @@
-using FlexiChains: FlexiChains, FlexiChain
+using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey
 using Test
 
 @testset "FlexiChains.jl" begin
     @testset "core.jl" begin
-        @testset "Correct" begin
-            params_data = Dict{Symbol,Matrix{Float64}}(
-                :param1 => rand(100, 3), :param2 => rand(100, 3)
-            )
-            other_data = (;
-                section1=Dict{Symbol,Matrix{Float64}}(
-                    :other1 => rand(100, 3), :other2 => rand(100, 3)
-                )
-            )
-            chain = FlexiChain{Symbol}(params_data, other_data)
-            @test chain isa FlexiChain
+        @testset "from array-of-dicts" begin
+            # Vector of dict
+            N_iters = 10
+            dicts = fill(Dict(Parameter(:a) => 1, Parameter(:b) => 2, OtherKey(:section, "hello") => 3.0), N_iters)
+            chain = FlexiChain{Symbol}(dicts)
+            @test size(chain) == (N_iters, 3, 1)
+
+            # Matrix of dict
+            N_iters, N_chains = 10, 2
+            dicts = fill(Dict(Parameter(:a) => 1, Parameter(:b) => 2, OtherKey(:section, "hello") => 3.0), N_iters, N_chains)
+            chain = FlexiChain{Symbol}(dicts)
+            @test size(chain) == (N_iters, 3, N_chains)
         end
 
-        @testset "Inconsistent size" begin
-            params_data = Dict{Symbol,Matrix{Float64}}(
-                :param1 => rand(100, 2), :param2 => rand(100, 3)
+        @testset "from dict-of-arrays" begin
+            # Dict of arrays
+            N_iters = 10
+            arrays = Dict(
+                Parameter(:a) => rand(N_iters),
+                Parameter(:b) => rand(N_iters),
+                OtherKey(:section, "hello") => rand(N_iters)
             )
-            @test_throws ArgumentError FlexiChain{Symbol}(params_data, NamedTuple())
-        end
+            chain = FlexiChain{Symbol}(arrays)
+            @test size(chain) == (N_iters, 3, 1)
 
-        @testset "getters" begin
-            x_data = rand(100, 3)
-            y_data = rand(100, 3)
-            some_other_stuff = fill("hello", 100, 3)
-            params_data = Dict{Symbol,Matrix{Float64}}(:x => x_data, :y => y_data)
-            other_data = (; section1=Dict{Symbol,Matrix}(:somestuff => some_other_stuff))
-            chain = FlexiChain{Symbol}(params_data, other_data)
-
-            @test FlexiChains.get_parameter(chain, :x) == x_data
-            @test FlexiChains.get_parameter(chain, :y) == y_data
-            @test FlexiChains.get_other(chain, :section1, :somestuff) == some_other_stuff
+            # Dict of matrices
+            N_iters, N_chains = 10, 2
+            arrays = Dict(
+                Parameter(:a) => rand(N_iters, N_chains),
+                Parameter(:b) => rand(N_iters, N_chains),
+                OtherKey(:section, "hello") => rand(N_iters, N_chains)
+            )
+            chain = FlexiChain{Symbol}(arrays)
+            @test size(chain) == (N_iters, 3, N_chains)
         end
     end
 end
