@@ -1,8 +1,4 @@
-# Overview
-
-FlexiChains.jl provides an information-rich data structure for Markov chains.
-
-## Core data structure
+# Core data structure
 
 Fundamentally, a `FlexiChain{T}` is a mapping of keys to values.
 

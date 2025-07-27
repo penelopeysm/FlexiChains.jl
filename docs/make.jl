@@ -5,7 +5,8 @@ makedocs(;
     sitename="FlexiChains.jl",
     modules=[FlexiChains],
     pages=[
-         "overview.md",
+         "index.md",
+         "data_structure.md",
          "mcmcchains.md",
     ],
     checkdocs=:exports,
