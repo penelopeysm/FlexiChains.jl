@@ -4,17 +4,7 @@ FlexiChains.jl has been designed from the ground up to address existing limitati
 
 This page describes some key differences from MCMCChains.jl and how you can migrate your code to use FlexiChains.jl.
 
-To make this clearer, let's sample from a typical Turing model and store the results in both `MCMCChains.Chains` and `FlexiChains.FlexiChain`.
-
-```julia
-# using Turing, MCMCChains, FlexiChains
-# 
-# @model function f()
-#     x ~ MvNormal(zeros(2), I)
-# end
-```
-
-## Chain key types
+## The fundamental difference
 
 Under the hood, MCMCChains.jl uses [`AxisArrays.AxisArray`](https://github.com/JuliaArrays/AxisArrays.jl/) as its data structure.
 Specifically, this allows it to store data in a compact 3-dimensional matrix, and index into the matrix using `Symbol`s.
@@ -22,7 +12,40 @@ Specifically, this allows it to store data in a compact 3-dimensional matrix, an
 The downside of this is that it enforces a key type of `Symbol` and a value type of `Tval<:Real`.
 This means that, for example, if you have a model with vector-valued parameters (like `x` above), the vectors will be split up into their individual elements before being stored in the chain.
 
-(To be continued...)
+This is _the_ core of how MCMCChains and FlexiChains differ, and all of the behaviour shown below stems from this.
+
+To illustrate this, let's sample from a typical Turing model and store the results in both `MCMCChains.Chains` and `FlexiChains.FlexiChain`.
+
+```julia
+# using Turing, MCMCChains, FlexiChains, Random
+# 
+# @model function f(x)
+#     chol ~ LKJCholesky(3, 1.0)
+#     corr := PDMats.PDMat(chol)
+#     mu ~ MvNormal(zeros(3), I)
+#     x ~ MvNormal(mu, corr)
+# end
+#
+# model = f(randn(Xoshiro(468), 3))
+# mcmc = sample(Xoshiro(468), model, NUTS(), 100; chain_type=MCMCChains.Chains)
+# flexi = sample(Xoshiro(468), model, NUTS(), 100; chain_type=FlexiChains.FlexiChain)
+```
+
+## Accessing vector-valued parameters
+
+Blah
+
+## Accessing individual elements
+
+Blah
+
+## Accessing 'generated quantities' (using `:=`)
+
+Blah
+
+## For DynamicPPL developers
+
+Blah
 
 ## Design goals
 
