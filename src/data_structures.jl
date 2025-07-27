@@ -1,6 +1,6 @@
 using AbstractMCMC: AbstractMCMC
 
-export FlexiChain, Parameter, OtherKey
+export FlexiChain, Parameter, OtherKey, FlexiChainKey
 
 """
     SizedMatrix{NIter,NChains,T}
@@ -17,6 +17,8 @@ The underlying data in a SizedMatrix can be accessed using
 `collect(::SizedMatrix)`. If the matrix has only one chain, it will be
 returned as a vector. If it has multiple chains, it will be returned as a
 matrix.
+
+## Fields
 
 $(TYPEDFIELDS)
 """
@@ -87,14 +89,22 @@ const FlexiChainKey{T} = Union{Parameter{<:T},OtherKey{<:Any}}
     FlexiChain{TKey,NIter,NChains,Sections}
 
 TODO: Document further.
+
+## Fields
+
+$(TYPEDFIELDS)
 """
 struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
-    data::Dict{<:FlexiChainKey{TKey},<:SizedMatrix{NIter,NChains,<:Any}}
-
     """
+    Internal data. Do not access this directly unless you know what you are doing!
+    You should use the interface methods defined instead.
+    """
+    _data::Dict{<:FlexiChainKey{TKey},<:SizedMatrix{NIter,NChains,<:Any}}
+
+    @doc """
         FlexiChain{TKey}(
-            array_of_dicts::AbstractArray{<:AbstractDict}
-        ) where {TKey}
+            array_of_dicts::AbstractArray{<:AbstractDict,N}
+        ) where {TKey,N}
 
     Construct a `FlexiChain` from a vector or matrix of dictionaries. Each
     dictionary corresponds to one iteration.
@@ -103,9 +113,20 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
     either a `Parameter{TKey}` or an `OtherKey`) to its value at that
     iteration.
 
-    If `dicts` is a vector, then `niter` is the length of the vector and
-    `nchains` is 1. If `dicts` is a matrix, then `(niter, nchains) =
-    size(dicts)`.
+    If `array_of_dicts` is a vector (i.e., `N = 1`), then `niter` is the length
+    of the vector and `nchains` is 1. If `array_of_dicts` is a matrix (i.e., `N
+    = 2`), then `(niter, nchains) = size(dicts)`.
+
+    Other values of `N` will error.
+
+    ## Example usage
+
+    ```julia
+    d = fill(
+        Dict(Parameter(:x) => rand(), OtherKey(:section, "y") => rand()), 200, 3
+    )
+    chn = FlexiChain{Symbol}(d)
+    ```
     """
     function FlexiChain{TKey}(
         array_of_dicts::AbstractArray{<:AbstractDict,N}
@@ -145,10 +166,32 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
         return new{TKey,niter,nchains}(data)
     end
 
-    """
+    @doc """
         FlexiChain{TKey}(
             dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}}
         ) where {TKey,N}
+
+    Construct a `FlexiChain` from a dictionary of arrays.
+
+    Each key in the dictionary must subtype `FlexiChainKey{TKey}` (i.e., it is
+    either a `Parameter{TKey}` or an `OtherKey`). The values of the dictionary
+    must all be of the same size.
+
+    If the values are vectors (i.e., `N = 1`), then `niters` will be the length
+    of the vector, and `nchains` will be 1. If the values are matrices (i.e.,
+    `N = 2`), then `(niter, nchains) = size(array)`.
+
+    Other values of `N` will error.
+
+    ## Example usage
+
+    ```julia
+    d = Dict(
+        Parameter(:x) => rand(200, 3),
+        OtherKey(:section, "y") => rand(200, 3),
+    )
+    chn = FlexiChain{Symbol}(d)
+    ```
     """
     function FlexiChain{TKey}(
         dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}}

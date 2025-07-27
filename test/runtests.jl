@@ -87,7 +87,3 @@ using Test
         end
     end
 end
-
-                N_iters = 10
-dicts = fill(Dict(Parameter(:a) => 1, Parameter(:b) => 2, OtherKey(:section, "hello") => 3.0, OtherKey(:another, "world") => 4.0), N_iters)
-                chain = FlexiChain{Symbol}(dicts)
