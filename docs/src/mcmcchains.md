@@ -43,6 +43,26 @@ Blah
 
 Blah
 
+## No need to avoid reserved names
+
+When sampling from a Turing model with MCMCChains as the output format, some metadata (non-parameter keys) such as `lp` are added to the chain.
+If your model contains a variable called `lp`, sampling will still work but [odd things will happen](https://github.com/TuringLang/MCMCChains.jl/issues/469).
+HMC samplers further include extra metadata such as `hamiltonian_energy`, and in general **any sampler** can include any kind of extra metadata it wants.
+As a user, you have no way of knowing what these names are, and you have to avoid using them in your model, which is quite unfair.
+
+(demo)
+
+FlexiChains circumvents this entirely since it stores these separately as `Parameter(@varname(lp))` and `OtherKey(:stats, :lp)`.
+Again, you will run into ambiguities if you simply attempt to index the chain with `[:lp]`:
+
+(demo)
+
+but you can still access the value using the original `Parameter`:
+
+(demo)
+
+and this difference is also respected when pretty-printing the chain (MCMCChains simply hides the `lp` parameter from you because it thinks that it's an internal name).
+
 ## For DynamicPPL developers
 
 Blah
