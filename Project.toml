@@ -6,10 +6,15 @@ version = "0.1.0"
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[extensions]
+FlexiChainsTuringExt = ["Turing"]
+
+[weakdeps]
+Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [compat]
 AbstractMCMC = "5.6.3"
 DocStringExtensions = "0.9.5"
-StaticArrays = "1.9.13"
+Turing = "0.39"
 julia = "1.10"
