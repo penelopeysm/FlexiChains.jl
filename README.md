@@ -37,12 +37,3 @@ So, it's just faster for me to iterate on design choices when I don't also have 
 Furthermore, at the design stage I don't want to have to wait for people to review my PRs.
 
 Depending on where this goes, it is possible that we may either make it the default chains type in Turing.jl; or we may make a new major release of MCMCChains.jl that uses this instead.
-However, right now, I think the most likely scenario is that I will maintain this myself.
-
-### No premature optimisations
-
-I consider performance to be a secondary concern for this package, because the main bottleneck in Bayesian inference is the sampling, not how fast one can construct or index into a chain.
-
-For example, MCMCChains.jl uses AxisArrays.jl under the hood so that you can very quickly index into a chain with `chain[:my_param]`.
-However, this is precisely the reason why only `Symbol` indices are allowed.
-I don't care about making indexing fast (and honestly, nor should you); thus, FlexiChains doesn't use AxisArrays.
