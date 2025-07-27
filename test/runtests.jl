@@ -2,7 +2,7 @@ using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey
 using Test
 
 @testset "FlexiChains.jl" begin
-    @testset "core.jl" begin
+    @testset "data_structures.jl" begin
         @testset "constructors" begin
 
             @testset "from array-of-dicts" begin
@@ -45,6 +45,10 @@ using Test
                 # TODO
             end
         end
+    end
+
+    @testset "interface.jl" begin
+        # TODO test the other methods
 
         @testset "getindex" begin
             @testset "unambiguous getindex" begin
@@ -80,7 +84,10 @@ using Test
                 # ... with the correct error message
                 @test_throws "multiple keys" chain[:a]
             end
-
         end
     end
 end
+
+                N_iters = 10
+dicts = fill(Dict(Parameter(:a) => 1, Parameter(:b) => 2, OtherKey(:section, "hello") => 3.0, OtherKey(:another, "world") => 4.0), N_iters)
+                chain = FlexiChain{Symbol}(dicts)
