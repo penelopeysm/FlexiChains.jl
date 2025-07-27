@@ -17,17 +17,25 @@ It also means that a good amount of code that _should_ be the responsibility of 
 ### What's the intended interface?
 
 This is intended as a drop-in replacement of MCMCChains.jl.
-It's nowhere near there yet, so don't get your hopes up.
-I have to implement the data structures but probably also a DynamicPPL extension so that it plays well with existing functionality.
 
-If this does ever reach feature parity, then one day you will be able to do:
+You can already do this now:
 
 ```julia
-import FlexiChains: FlexiChain
-sample(model, sampler, N; chain_type=FlexiChain)
+using Turing, FlexiChains
+using Turing.DynamicPPL: VarName
+
+@model f() = lp ~ Normal()
+chain = sample(f(), NUTS(), 1000; chain_type=FlexiChain{VarName})
 ```
 
-and everything else will behave exactly the same as it currently does with MCMCChains.jl.
+Notice that (unlike MCMCChains, as shown [in this issue](https://github.com/TuringLang/MCMCChains.jl/issues/469)) FlexiChains allows you to distinguish between the `lp` variable and the `lp` metadata that represents the log probability density:
+
+```julia
+julia> chain[:stats, :lp] == logpdf.(Normal(), chain[@varname(lp)])
+true
+```
+
+Do bear in mind that FlexiChains has not reached feature parity with MCMCChains (and may not for a while).
 
 ### Why from scratch?
 

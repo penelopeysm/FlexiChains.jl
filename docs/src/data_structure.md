@@ -30,18 +30,24 @@ Note that, although the dictionaries themselves may have loose types, the key ty
 
 ## Accessing values
 
-Indexing into a `FlexiChain` can be done in two ways:
+Indexing into a `FlexiChain` can be done in several ways.
 
-- using `Symbol`, which is a lossy operation but more convenient;
-- directly using `Parameter` or `OtherKey`, which is most faithful to the underlying data structure;
+The most correct way is to directly use `Parameter`s or `OtherKey`s:
 
 ```@docs
-Base.getindex(::FlexiChain, key::Symbol)
 Base.getindex(::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
 ```
 
-For convenience when accessing non-parameter keys, you can also use:
+This can be slightly verbose, so the following two methods are provided as a 'quick' way of accessing parameters and other keys respectively:
 
 ```@docs
+Base.getindex(::FlexiChain{TKey}, parameter_name::TKey) where {TKey}
 Base.getindex(::FlexiChain{TKey}, section_name::Symbol, key_name::Any) where {TKey}
+```
+
+Finally, to preserve some semblance of backwards compatibility with MCMCChains.jl, FlexiChains can also be indexed by `Symbol`s.
+It does so by looking for a unique `Parameter` or `OtherKey` which can be converted to that `Symbol`.
+
+```@docs
+Base.getindex(::FlexiChain, key::Symbol)
 ```

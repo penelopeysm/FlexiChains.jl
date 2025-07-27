@@ -72,7 +72,7 @@ function Base.getindex(chain::FlexiChain{TKey}, sym_key::Symbol) where {TKey}
     # Convert all keys to symbols and see if there is a unique match
     potential_keys = FlexiChainKey{TKey}[]
     for k in keys(chain._data)
-        sym = if k isa Parameter{TKey}
+        sym = if k isa Parameter{<:TKey}
             # TODO: What happens if Symbol(...) fails on some weird type?
             Symbol(k.name)
         elseif k isa OtherKey
@@ -84,17 +84,27 @@ function Base.getindex(chain::FlexiChain{TKey}, sym_key::Symbol) where {TKey}
         end
     end
     if length(potential_keys) == 0
-        throw(KeyError("no key corresponding to symbol $sym_key"))
+        throw(ArgumentError("no key corresponding to symbol $sym_key"))
     elseif length(potential_keys) > 1
-        throw(KeyError("multiple keys correspond to symbol $sym_key: $(potential_keys)"))
+        s = "multiple keys correspond to symbol :$sym_key.\n"
+        s *= "Possible options are: \n"
+        for k in potential_keys
+            if k isa Parameter{<:TKey}
+                s *= "  - Parameter($(k.name))\n"
+            elseif k isa OtherKey
+                s *= "  - OtherKey(:$(k.section_name), $(k.key_name))\n"
+            end
+        end
+        throw(ArgumentError(s))
     else
         return collect(chain._data[only(potential_keys)])
     end
 end
 """
-    Base.getindex(chain::FlexiChain{TKey}, section_name::Symbol, key_name::Symbol) where {TKey}
+    Base.getindex(chain::FlexiChain{TKey}, section_name::Symbol, key_name::Any) where {TKey}
 
-Convenience method for `chain[OtherKey(section_name, key_name)]`.
+Convenience method for retrieving non-parameter keys. Equal to
+`chain[OtherKey(section_name, key_name)]`.
 """
 function Base.getindex(
     chain::FlexiChain{TKey}, section_name::Symbol, key_name::Any
@@ -102,6 +112,15 @@ function Base.getindex(
     # This is a convenience method to access data in a section
     # using the section name and key name.
     return chain[OtherKey(section_name, key_name)]
+end
+"""
+    Base.getindex(chain::FlexiChain{TKey}, parameter_name::TKey) where {TKey}
+
+Convenience method for retrieving parameters. Equal to
+`chain[Parameter(parameter_name)]`.
+"""
+function Base.getindex(chain::FlexiChain{TKey}, parameter_name::TKey) where {TKey}
+    return chain[Parameter(parameter_name)]
 end
 
 """
@@ -112,7 +131,7 @@ Returns a vector of parameter names in the `FlexiChain`.
 function get_parameter_names(chain::FlexiChain{TKey}) where {TKey}
     parameter_names = TKey[]
     for k in keys(chain._data)
-        if k isa Parameter{TKey}
+        if k isa Parameter{<:TKey}
             push!(parameter_names, k.name)
         end
     end
