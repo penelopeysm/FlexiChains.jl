@@ -6,6 +6,8 @@ using Random: Xoshiro
 using PDMats: PDMats
 using DynamicPPL: VarName
 
+Turing.setprogress!(false)
+
 @model function f(x)
     sigma ~ truncated(Normal(0, 1); lower = 0)
     chol ~ LKJCholesky(3, 1.0)
@@ -19,8 +21,8 @@ model = f(randn(Xoshiro(468), 3))</code></pre><pre class="documenter-example-out
 Iterations        = 51:1:150
 Number of chains  = 1
 Samples per chain = 100
-Wall duration     = 12.54 seconds
-Compute duration  = 12.54 seconds
+Wall duration     = 9.93 seconds
+Compute duration  = 9.93 seconds
 parameters        = sigma, chol.L[1, 1], chol.L[2, 1], chol.L[3, 1], chol.L[2, 2], chol.L[3, 2], chol.L[3, 3], corr[1, 1], corr[2, 1], corr[3, 1], corr[1, 2], corr[2, 2], corr[3, 2], corr[1, 3], corr[2, 3], corr[3, 3], mu[1], mu[2], mu[3]
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -136,167 +138,15 @@ And data, a 100×1 Matrix{Float64}:
 end
 
 chain = sample(Xoshiro(468), lp_model(), NUTS(), 100; chain_type=MCMCChains.Chains)
-describe(chain)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Sampling   0%|                                          |  ETA: N/A
-┌ Info: Found initial step size
+describe(chain)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Info: Found initial step size
 └   ϵ = 3.2
-Sampling   1%|▎                                         |  ETA: 0:05:37
-Sampling   1%|▌                                         |  ETA: 0:02:52
-Sampling   2%|▉                                         |  ETA: 0:01:54
-Sampling   3%|█▏                                        |  ETA: 0:01:25
-Sampling   3%|█▍                                        |  ETA: 0:01:07
-Sampling   4%|█▋                                        |  ETA: 0:00:56
-Sampling   5%|██                                        |  ETA: 0:00:47
-Sampling   5%|██▎                                       |  ETA: 0:00:41
-Sampling   6%|██▌                                       |  ETA: 0:00:36
-Sampling   7%|██▊                                       |  ETA: 0:00:33
-Sampling   7%|███▏                                      |  ETA: 0:00:29
-Sampling   8%|███▍                                      |  ETA: 0:00:27
-Sampling   9%|███▋                                      |  ETA: 0:00:24
-Sampling   9%|███▉                                      |  ETA: 0:00:23
-Sampling  10%|████▎                                     |  ETA: 0:00:21
-Sampling  11%|████▌                                     |  ETA: 0:00:19
-Sampling  11%|████▊                                     |  ETA: 0:00:18
-Sampling  12%|█████                                     |  ETA: 0:00:17
-Sampling  13%|█████▍                                    |  ETA: 0:00:16
-Sampling  13%|█████▋                                    |  ETA: 0:00:15
-Sampling  14%|█████▉                                    |  ETA: 0:00:14
-Sampling  15%|██████▏                                   |  ETA: 0:00:14
-Sampling  15%|██████▌                                   |  ETA: 0:00:13
-Sampling  16%|██████▊                                   |  ETA: 0:00:12
-Sampling  17%|███████                                   |  ETA: 0:00:12
-Sampling  17%|███████▎                                  |  ETA: 0:00:11
-Sampling  18%|███████▌                                  |  ETA: 0:00:11
-Sampling  19%|███████▉                                  |  ETA: 0:00:10
-Sampling  19%|████████▏                                 |  ETA: 0:00:10
-Sampling  20%|████████▍                                 |  ETA: 0:00:09
-Sampling  21%|████████▋                                 |  ETA: 0:00:09
-Sampling  21%|█████████                                 |  ETA: 0:00:09
-Sampling  22%|█████████▎                                |  ETA: 0:00:08
-Sampling  23%|█████████▌                                |  ETA: 0:00:08
-Sampling  23%|█████████▊                                |  ETA: 0:00:08
-Sampling  24%|██████████▏                               |  ETA: 0:00:07
-Sampling  25%|██████████▍                               |  ETA: 0:00:07
-Sampling  25%|██████████▋                               |  ETA: 0:00:07
-Sampling  26%|██████████▉                               |  ETA: 0:00:07
-Sampling  27%|███████████▎                              |  ETA: 0:00:06
-Sampling  27%|███████████▌                              |  ETA: 0:00:06
-Sampling  28%|███████████▊                              |  ETA: 0:00:06
-Sampling  29%|████████████                              |  ETA: 0:00:06
-Sampling  29%|████████████▍                             |  ETA: 0:00:06
-Sampling  30%|████████████▋                             |  ETA: 0:00:05
-Sampling  31%|████████████▉                             |  ETA: 0:00:05
-Sampling  31%|█████████████▏                            |  ETA: 0:00:05
-Sampling  32%|█████████████▌                            |  ETA: 0:00:05
-Sampling  33%|█████████████▊                            |  ETA: 0:00:05
-Sampling  33%|██████████████                            |  ETA: 0:00:05
-Sampling  34%|██████████████▎                           |  ETA: 0:00:05
-Sampling  35%|██████████████▌                           |  ETA: 0:00:04
-Sampling  35%|██████████████▉                           |  ETA: 0:00:04
-Sampling  36%|███████████████▏                          |  ETA: 0:00:04
-Sampling  37%|███████████████▍                          |  ETA: 0:00:04
-Sampling  37%|███████████████▋                          |  ETA: 0:00:04
-Sampling  38%|████████████████                          |  ETA: 0:00:04
-Sampling  39%|████████████████▎                         |  ETA: 0:00:04
-Sampling  39%|████████████████▌                         |  ETA: 0:00:04
-Sampling  40%|████████████████▊                         |  ETA: 0:00:04
-Sampling  41%|█████████████████▏                        |  ETA: 0:00:03
-Sampling  41%|█████████████████▍                        |  ETA: 0:00:03
-Sampling  42%|█████████████████▋                        |  ETA: 0:00:03
-Sampling  43%|█████████████████▉                        |  ETA: 0:00:03
-Sampling  43%|██████████████████▎                       |  ETA: 0:00:03
-Sampling  44%|██████████████████▌                       |  ETA: 0:00:03
-Sampling  45%|██████████████████▊                       |  ETA: 0:00:03
-Sampling  45%|███████████████████                       |  ETA: 0:00:03
-Sampling  46%|███████████████████▍                      |  ETA: 0:00:03
-Sampling  47%|███████████████████▋                      |  ETA: 0:00:03
-Sampling  47%|███████████████████▉                      |  ETA: 0:00:03
-Sampling  48%|████████████████████▏                     |  ETA: 0:00:03
-Sampling  49%|████████████████████▌                     |  ETA: 0:00:02
-Sampling  49%|████████████████████▊                     |  ETA: 0:00:02
-Sampling  50%|█████████████████████                     |  ETA: 0:00:02
-Sampling  51%|█████████████████████▎                    |  ETA: 0:00:02
-Sampling  51%|█████████████████████▌                    |  ETA: 0:00:02
-Sampling  52%|█████████████████████▉                    |  ETA: 0:00:02
-Sampling  53%|██████████████████████▏                   |  ETA: 0:00:02
-Sampling  53%|██████████████████████▍                   |  ETA: 0:00:02
-Sampling  54%|██████████████████████▋                   |  ETA: 0:00:02
-Sampling  55%|███████████████████████                   |  ETA: 0:00:02
-Sampling  55%|███████████████████████▎                  |  ETA: 0:00:02
-Sampling  56%|███████████████████████▌                  |  ETA: 0:00:02
-Sampling  57%|███████████████████████▊                  |  ETA: 0:00:02
-Sampling  57%|████████████████████████▏                 |  ETA: 0:00:02
-Sampling  58%|████████████████████████▍                 |  ETA: 0:00:02
-Sampling  59%|████████████████████████▋                 |  ETA: 0:00:02
-Sampling  59%|████████████████████████▉                 |  ETA: 0:00:02
-Sampling  60%|█████████████████████████▎                |  ETA: 0:00:02
-Sampling  61%|█████████████████████████▌                |  ETA: 0:00:02
-Sampling  61%|█████████████████████████▊                |  ETA: 0:00:01
-Sampling  62%|██████████████████████████                |  ETA: 0:00:01
-Sampling  63%|██████████████████████████▍               |  ETA: 0:00:01
-Sampling  63%|██████████████████████████▋               |  ETA: 0:00:01
-Sampling  64%|██████████████████████████▉               |  ETA: 0:00:01
-Sampling  65%|███████████████████████████▏              |  ETA: 0:00:01
-Sampling  65%|███████████████████████████▌              |  ETA: 0:00:01
-Sampling  66%|███████████████████████████▊              |  ETA: 0:00:01
-Sampling  67%|████████████████████████████              |  ETA: 0:00:01
-Sampling  67%|████████████████████████████▎             |  ETA: 0:00:01
-Sampling  68%|████████████████████████████▌             |  ETA: 0:00:01
-Sampling  69%|████████████████████████████▉             |  ETA: 0:00:01
-Sampling  69%|█████████████████████████████▏            |  ETA: 0:00:01
-Sampling  70%|█████████████████████████████▍            |  ETA: 0:00:01
-Sampling  71%|█████████████████████████████▋            |  ETA: 0:00:01
-Sampling  71%|██████████████████████████████            |  ETA: 0:00:01
-Sampling  72%|██████████████████████████████▎           |  ETA: 0:00:01
-Sampling  73%|██████████████████████████████▌           |  ETA: 0:00:01
-Sampling  73%|██████████████████████████████▊           |  ETA: 0:00:01
-Sampling  74%|███████████████████████████████▏          |  ETA: 0:00:01
-Sampling  75%|███████████████████████████████▍          |  ETA: 0:00:01
-Sampling  75%|███████████████████████████████▋          |  ETA: 0:00:01
-Sampling  76%|███████████████████████████████▉          |  ETA: 0:00:01
-Sampling  77%|████████████████████████████████▎         |  ETA: 0:00:01
-Sampling  77%|████████████████████████████████▌         |  ETA: 0:00:01
-Sampling  78%|████████████████████████████████▊         |  ETA: 0:00:01
-Sampling  79%|█████████████████████████████████         |  ETA: 0:00:01
-Sampling  79%|█████████████████████████████████▍        |  ETA: 0:00:01
-Sampling  80%|█████████████████████████████████▋        |  ETA: 0:00:01
-Sampling  81%|█████████████████████████████████▉        |  ETA: 0:00:01
-Sampling  81%|██████████████████████████████████▏       |  ETA: 0:00:01
-Sampling  82%|██████████████████████████████████▌       |  ETA: 0:00:01
-Sampling  83%|██████████████████████████████████▊       |  ETA: 0:00:00
-Sampling  83%|███████████████████████████████████       |  ETA: 0:00:00
-Sampling  84%|███████████████████████████████████▎      |  ETA: 0:00:00
-Sampling  85%|███████████████████████████████████▌      |  ETA: 0:00:00
-Sampling  85%|███████████████████████████████████▉      |  ETA: 0:00:00
-Sampling  86%|████████████████████████████████████▏     |  ETA: 0:00:00
-Sampling  87%|████████████████████████████████████▍     |  ETA: 0:00:00
-Sampling  87%|████████████████████████████████████▋     |  ETA: 0:00:00
-Sampling  88%|█████████████████████████████████████     |  ETA: 0:00:00
-Sampling  89%|█████████████████████████████████████▎    |  ETA: 0:00:00
-Sampling  89%|█████████████████████████████████████▌    |  ETA: 0:00:00
-Sampling  90%|█████████████████████████████████████▊    |  ETA: 0:00:00
-Sampling  91%|██████████████████████████████████████▏   |  ETA: 0:00:00
-Sampling  91%|██████████████████████████████████████▍   |  ETA: 0:00:00
-Sampling  92%|██████████████████████████████████████▋   |  ETA: 0:00:00
-Sampling  93%|██████████████████████████████████████▉   |  ETA: 0:00:00
-Sampling  93%|███████████████████████████████████████▎  |  ETA: 0:00:00
-Sampling  94%|███████████████████████████████████████▌  |  ETA: 0:00:00
-Sampling  95%|███████████████████████████████████████▊  |  ETA: 0:00:00
-Sampling  95%|████████████████████████████████████████  |  ETA: 0:00:00
-Sampling  96%|████████████████████████████████████████▍ |  ETA: 0:00:00
-Sampling  97%|████████████████████████████████████████▋ |  ETA: 0:00:00
-Sampling  97%|████████████████████████████████████████▉ |  ETA: 0:00:00
-Sampling  98%|█████████████████████████████████████████▏|  ETA: 0:00:00
-Sampling  99%|█████████████████████████████████████████▌|  ETA: 0:00:00
-Sampling  99%|█████████████████████████████████████████▊|  ETA: 0:00:00
-Sampling 100%|██████████████████████████████████████████| Time: 0:00:02
-Sampling 100%|██████████████████████████████████████████| Time: 0:00:03
 Chains MCMC chain (100×13×1 Array{Float64, 3}):
 
 Iterations        = 51:1:150
 Number of chains  = 1
 Samples per chain = 100
-Wall duration     = 2.42 seconds
-Compute duration  = 2.42 seconds
+Wall duration     = 2.23 seconds
+Compute duration  = 2.23 seconds
 parameters        =
 internals         = lp, n_steps, is_accept, acceptance_rate, log_density, hamiltonian_energy, hamiltonian_energy_error, max_hamiltonian_energy_error, tree_depth, numerical_error, step_size, nom_step_size
 
@@ -307,7 +157,7 @@ Summary Statistics
 
 Quantiles
   parameters   2.5%   25.0%   50.0%   75.0%   97.5%
-      Symbol    Any     Any     Any     Any     Any</code></pre><p>When you index <code>chain[:lp]</code>, how do you know whether it refers to the <code>lp</code> variable in your model or the <code>lp</code> metadata key?</p><pre><code class="language-julia hljs">any(chain[:lp] .&gt; 0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Well, since there are some positive values, it has to be the parameter, because the metadata <code>lp = logpdf(Normal(), value_of_logp)</code> is always negative. But you didn&#39;t know that when you tried to index into it, you had to reverse engineer it.</p><p>HMC samplers further include extra metadata such as <code>hamiltonian_energy</code>, and in general <strong>any sampler</strong> can include any kind of extra metadata it wants. As a user, you have no way of knowing what these names are, and you have to avoid using them in your model, which is quite unfair.</p><p>FlexiChains circumvents this entirely since it stores these separately as <code>Parameter(@varname(lp))</code> and <code>OtherKey(:stats, :lp)</code>.</p><pre><code class="language-julia hljs">chain = sample(Xoshiro(468), lp_model(), NUTS(), 100; chain_type=FlexiChains.FlexiChain{VarName})</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr1">FlexiChain (100 iterations, 1 chain)</span>
+      Symbol    Any     Any     Any     Any     Any</code></pre><p>When you index <code>chain[:lp]</code>, how do you know whether it refers to the <code>lp</code> variable in your model or the <code>lp</code> metadata key?</p><pre><code class="language-julia hljs">any(chain[:lp] .&gt; 0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Well, since there are some positive values, it has to be the parameter, because the metadata <code>lp = logpdf(Normal(), value_of_lp_parameter)</code> is always negative. But you didn&#39;t know that when you tried to index into it, you had to reverse engineer it.</p><p>HMC samplers further include extra metadata such as <code>hamiltonian_energy</code>, and in general <strong>any sampler</strong> can include any kind of extra metadata it wants. As a user, you have no way of knowing what these names are, and you have to avoid using them in your model, which is quite unfair.</p><p>FlexiChains circumvents this entirely since it stores these separately as <code>Parameter(@varname(lp))</code> and <code>OtherKey(:stats, :lp)</code>.</p><pre><code class="language-julia hljs">chain = sample(Xoshiro(468), lp_model(), NUTS(), 100; chain_type=FlexiChains.FlexiChain{VarName})</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr1">FlexiChain (100 iterations, 1 chain)</span>
 
 <span class="sgr1">Parameter type   </span>AbstractPPL.VarName
 <span class="sgr1">Parameters       </span>lp
@@ -333,4 +183,4 @@ Quantiles
  -0.7563880621931498
  -1.0076379768444197
  -1.0076379768444197
- -0.3139843357632176</code></pre><p>TODO pretty-printing / summary stats</p><h2 id="For-DynamicPPL-developers"><a class="docs-heading-anchor" href="#For-DynamicPPL-developers">For DynamicPPL developers</a><a id="For-DynamicPPL-developers-1"></a><a class="docs-heading-anchor-permalink" href="#For-DynamicPPL-developers" title="Permalink"></a></h2><p>Blah</p><h2 id="Design-goals"><a class="docs-heading-anchor" href="#Design-goals">Design goals</a><a id="Design-goals-1"></a><a class="docs-heading-anchor-permalink" href="#Design-goals" title="Permalink"></a></h2><p>My main design goals for FlexiChains.jl were twofold:</p><ol><li><p>To provide a rich data structure that can more faithfully represent the outputs from sampling with Turing.jl.</p><p>The restriction of MCMCChains.jl to <code>Symbol</code> keys and <code>Real</code> values means that round-trip conversion is a lossy operation. Consider, e.g., the <code>predict(::Model, ::MCMCChains.Chains)</code> function, which is used to sample from the posterior predictive distribution. This requires one to extract the values from the chain and insert them back into the model (or technically the <code>VarInfo</code>).</p><p>However, in general one cannot reconstruct a vector <code>x</code> from its constituent elements <code>x[1]</code>, <code>x[2]</code>, ... as we do not know the appropriate length of the vector! The current implementation of this function in DynamicPPL.jl thus has to, essentially, insert all the elements it can find and hope for the best.</p><p>Essentially, MCMCChains&#39; data structure forces packages like Turing.jl and DynamicPPL.jl to include workarounds to deal with the limitations of the chains package.</p></li><li><p>To create a robust and readable codebase.</p><p>Much Julia code is written with the intention of efficiency or versatility, often sacrificing clarity in the process. This is usually acceptable when creating simple scripts. However, I believe that library code should be held to a (much) higher standard.</p><p>In particular, I consider the overuse of multiple dispatch to be a major source of confusion in Julia code. Types cannot be fully inferred at compile time (and even when they can, it requires packages such as JET.jl, which do not (yet) have convenient language server integrations). This means that when reading code, one cannot easily determine which method is being called.</p><p>A prime example is the <code>Chains</code> constructor in MCMCChains.jl. <code>methods(Chains)</code> returns 11 methods, and each time you see a call to <code>Chains(...)</code> you need to figure out which of these 11 it is. In writing FlexiChains I have made a conscious choice to create only two inner constructors for <code>FlexiChain</code>.</p></li></ol><p>In particular, notice that <em>performance</em> is not one of my considerations. In my opinion, performance is only a minor concern for FlexiChains.jl, because the main bottleneck in Bayesian inference is the sampling, not how fast one can construct or index into a chain. I have not performed any benchmarks but I would expect that most operations on <code>MCMCChains.Chains</code> will be faster than on <code>FlexiChains.FlexiChain</code>.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../data_structure/">« Core data structure</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Wednesday 30 July 2025 14:11">Wednesday 30 July 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ -0.3139843357632176</code></pre><p>TODO pretty-printing / summary stats</p><h2 id="For-DynamicPPL-developers"><a class="docs-heading-anchor" href="#For-DynamicPPL-developers">For DynamicPPL developers</a><a id="For-DynamicPPL-developers-1"></a><a class="docs-heading-anchor-permalink" href="#For-DynamicPPL-developers" title="Permalink"></a></h2><p>Blah</p><h2 id="Design-goals"><a class="docs-heading-anchor" href="#Design-goals">Design goals</a><a id="Design-goals-1"></a><a class="docs-heading-anchor-permalink" href="#Design-goals" title="Permalink"></a></h2><p>My main design goals for FlexiChains.jl were twofold:</p><ol><li><p>To provide a rich data structure that can more faithfully represent the outputs from sampling with Turing.jl.</p><p>The restriction of MCMCChains.jl to <code>Symbol</code> keys and <code>Real</code> values means that round-trip conversion is a lossy operation. Consider, e.g., the <code>predict(::Model, ::MCMCChains.Chains)</code> function, which is used to sample from the posterior predictive distribution. This requires one to extract the values from the chain and insert them back into the model (or technically the <code>VarInfo</code>).</p><p>However, in general one cannot reconstruct a vector <code>x</code> from its constituent elements <code>x[1]</code>, <code>x[2]</code>, ... as we do not know the appropriate length of the vector! The current implementation of this function in DynamicPPL.jl thus has to, essentially, insert all the elements it can find and hope for the best.</p><p>Essentially, MCMCChains&#39; data structure forces packages like Turing.jl and DynamicPPL.jl to include workarounds to deal with the limitations of the chains package.</p></li><li><p>To create a robust and readable codebase.</p><p>Much Julia code is written with the intention of efficiency or versatility, often sacrificing clarity in the process. This is usually acceptable when creating simple scripts. However, I believe that library code should be held to a (much) higher standard.</p><p>In particular, I consider the overuse of multiple dispatch to be a major source of confusion in Julia code. Types cannot be fully inferred at compile time (and even when they can, it requires packages such as JET.jl, which do not (yet) have convenient language server integrations). This means that when reading code, one cannot easily determine which method is being called.</p><p>A prime example is the <code>Chains</code> constructor in MCMCChains.jl. <code>methods(Chains)</code> returns 11 methods, and each time you see a call to <code>Chains(...)</code> you need to figure out which of these 11 it is. In writing FlexiChains I have made a conscious choice to create only two inner constructors for <code>FlexiChain</code>.</p></li></ol><p>In particular, notice that <em>performance</em> is not one of my considerations. In my opinion, performance is only a minor concern for FlexiChains.jl, because the main bottleneck in Bayesian inference is the sampling, not how fast one can construct or index into a chain. I have not performed any benchmarks but I would expect that most operations on <code>MCMCChains.Chains</code> will be faster than on <code>FlexiChains.FlexiChain</code>.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../data_structure/">« Core data structure</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Wednesday 30 July 2025 14:13">Wednesday 30 July 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
