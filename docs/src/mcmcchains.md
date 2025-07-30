@@ -184,6 +184,10 @@ any(chain[:lp] .> 0)
 Well, since there are some positive values, it has to be the parameter, because the metadata `lp = logpdf(Normal(), value_of_lp_parameter)` is always negative.
 But you didn't know that when you tried to index into it, you had to reverse engineer it.
 
+Besides, if you actually want the log-density, it's now gone.
+Tough luck.
+(You can get it back with `logjoint(lp_model(), chain)` if you want.)
+
 HMC samplers further include extra metadata such as `hamiltonian_energy`, and in general **any sampler** can include any kind of extra metadata it wants.
 As a user, you have no way of knowing what these names are, and you have to avoid using them in your model, which is quite unfair.
 
@@ -205,6 +209,18 @@ but you can still access the value using the original value of the `Parameter`:
 
 ```@example 1
 chain[@varname(lp)]
+```
+
+and the corresponding metadata:
+
+```@example 1
+chain[:stats, :lp]
+```
+
+and indeed we can check that these do align:
+
+```@example 1
+logpdf.(Normal(), chain[@varname(lp)]) ≈ chain[:stats, :lp]
 ```
 
 TODO pretty-printing / summary stats
