@@ -8,10 +8,8 @@ using Turing.DynamicPPL: VarName
 function transition_to_dict(
     transition::Turing.Inference.Transition
 )::Dict{FlexiChainKey{VarName},Any}
-    # up until 0.39.7, Turing.Inference.Transition contains a vector of 
-    # (varname, value) pairs
     d = Dict{FlexiChainKey{VarName},Any}()
-    for (varname, value) in transition.θ
+    for (varname, value) in pairs(transition.θ)
         d[Parameter(varname)] = value
     end
     # add in other bits
@@ -33,8 +31,6 @@ function AbstractMCMC.bundle_samples(
     chain_type::Type{<:FlexiChain{<:VarName}};
     _kwargs...,
 )
-    # up until 0.39.7, Turing.Inference.Transition contains a vector of 
-    # (varname, value) pairs
     dicts = map(transition_to_dict, transitions)
     return FlexiChain{VarName}(dicts)
 end
