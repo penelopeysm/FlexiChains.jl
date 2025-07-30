@@ -24,6 +24,8 @@ using Random: Xoshiro
 using PDMats: PDMats
 using DynamicPPL: VarName
 
+Turing.setprogress!(false)
+
 @model function f(x)
     sigma ~ truncated(Normal(0, 1); lower = 0)
     chol ~ LKJCholesky(3, 1.0)
