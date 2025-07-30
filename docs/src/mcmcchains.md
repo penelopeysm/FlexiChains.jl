@@ -181,7 +181,7 @@ When you index `chain[:lp]`, how do you know whether it refers to the `lp` varia
 any(chain[:lp] .> 0)
 ```
 
-Well, since there are some positive values, it has to be the parameter, because the metadata `lp = logpdf(Normal(), value_of_logp)` is always negative.
+Well, since there are some positive values, it has to be the parameter, because the metadata `lp = logpdf(Normal(), value_of_lp_parameter)` is always negative.
 But you didn't know that when you tried to index into it, you had to reverse engineer it.
 
 HMC samplers further include extra metadata such as `hamiltonian_energy`, and in general **any sampler** can include any kind of extra metadata it wants.
