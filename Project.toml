@@ -8,13 +8,15 @@ AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 
 [extensions]
-FlexiChainsTuringExt = ["Turing"]
+FlexiChainsTuringExt = ["Turing", "DynamicPPL"]
 
 [weakdeps]
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
+DynamicPPL = "366bfd00-2699-11ea-058f-f148b4cae6d8"
 
 [compat]
 AbstractMCMC = "5.6.3"
 DocStringExtensions = "0.9.5"
-Turing = "0.39.8"
+Turing = "0.40"
+DynamicPPL = "0.37"
 julia = "1.10"

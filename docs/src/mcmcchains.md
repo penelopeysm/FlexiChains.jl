@@ -152,6 +152,48 @@ mcmc["mu[2]"]
 Note, though, that MCMCChains requires you to pass a _string_ `"2"` to get the second variable.
 Of course, if you have an integer `2` this is quite easily done with interpolation, but I would argue from a readability perspective it's much clearer to index with an integer `2` rather than a string.
 
+<!--
+## Other types of data
+
+Let's say we define a weird new discrete distribution which samples from the alphabet `["A", "B"]`.
+
+(Why would you want to do this?
+Well, why _shouldn't_ you be able to do it?
+Turing's docs [tell you how to define your own distributions](https://turinglang.org/docs/usage/custom-distribution/), but it doesn't say that you have to use numbers.
+The point is that FlexiChains doesn't _force_ you to stick only to distributions over numbers.)
+
+```@example 1
+using Distributions, Random
+
+struct AlphabetDist <: Distributions.DiscreteUnivariateDistribution end
+Distributions.rand(rng::Random.AbstractRNG, ::AlphabetDist) = rand(rng) < 0.3 ? 'A' : 'B'
+function Distributions.logpdf(::AlphabetDist, x)
+    if x == 'A'
+        log(0.3)
+    elseif x == 'B'
+        log(0.7)
+    else
+        -Inf
+    end
+end
+
+@model function f()
+    x ~ AlphabetDist()
+end
+
+# A bit more boilerplate is needed here to actually make it work with Turing.
+using Bijectors, DynamicPPL
+DynamicPPL.tovec(c::Char) = [c]
+Bijectors.logabsdetjac(::typeof(identity), ::Char) = 0.0
+
+mcmc = sample(f(), MH(), 100; chain_type=MCMCChains.Chains)
+```
+
+Great, that worked! (Surprisingly.)
+
+Note that in DynamicPPL there is a conversion to Real so this isn't MCMCChains's fault
+-->
+
 ## Accessing 'generated quantities' (using `:=`)
 
 TODO
@@ -227,7 +269,9 @@ TODO pretty-printing / summary stats
 
 ## For DynamicPPL developers
 
-Blah
+Hey, that's me!
+
+TODO Write about how this makes life a lot easier for things like `predict`.
 
 ## Design goals
 
