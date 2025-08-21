@@ -5,18 +5,20 @@ version = "0.1.0"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
+AbstractPPL = "7a57a42e-76ec-4ea3-a279-07e840d6d9cf"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+
+[weakdeps]
+DynamicPPL = "366bfd00-2699-11ea-058f-f148b4cae6d8"
+Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [extensions]
 FlexiChainsTuringExt = ["Turing", "DynamicPPL"]
 
-[weakdeps]
-Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
-DynamicPPL = "366bfd00-2699-11ea-058f-f148b4cae6d8"
-
 [compat]
 AbstractMCMC = "5.6.3"
+AbstractPPL = "0.13.0"
 DocStringExtensions = "0.9.5"
-Turing = "0.40"
 DynamicPPL = "0.37"
+Turing = "0.40"
 julia = "1.10"
