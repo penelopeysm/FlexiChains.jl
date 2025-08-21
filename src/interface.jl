@@ -10,6 +10,20 @@ function Base.size(chain::FlexiChain{TKey,NIter,NChains}) where {TKey,NIter,NCha
     return (NIter, num_objects, NChains)
 end
 
+function Base.:(==)(
+    c1::FlexiChain{TKey1,NIter1,NChain1}, c2::FlexiChain{TKey2,NIter2,NChain2}
+) where {TKey1,TKey2,NIter1,NChain1,NIter2,NChain2}
+    # Check if the type parameters are the same
+    if TKey1 != TKey2 || NIter1 != NIter2 || NChain1 != NChain2
+        return false
+    end
+    # Check if the data dictionaries are the same
+    # Note: Because FlexiChains uses `Dict` for the underlying storage,
+    # and Dicts do not check for ordering of keys, the ordering of keys is 
+    # also immaterial for FlexiChain equality.
+    return c1._data == c2._data
+end
+
 """
     keys(chain::FlexiChain{TKey}) where {TKey}
 
@@ -39,6 +53,49 @@ function Base.pairs(chain::FlexiChain{TKey}) where {TKey}
 end
 
 """
+    Base.merge(
+        c1::FlexiChain{TKey1,NIter,NChain},
+        c2::FlexiChain{TKey2,NIter,NChain}
+    ) where {TKey1,TKey2,NIter,NChain}
+
+Merge the contents of two `FlexiChain`s. If there are keys that are present in
+both chains, the values from `c2` will overwrite those from `c1`.
+
+If the key types are different, the resulting `FlexiChain` will have a promoted
+key type, and a warning will be issued.
+"""
+function Base.merge(
+    c1::FlexiChain{TKey1,NIter,NChain}, c2::FlexiChain{TKey2,NIter,NChain}
+) where {TKey1,TKey2,NIter,NChain}
+    # Promote key type if necessary and warn
+    TKeyNew = if TKey1 != TKey2
+        new = Base.promote_type(TKey1, TKey2)
+        @warn "Merging FlexiChains with different key types: $(TKey1) and $(TKey2). The resulting chain will have $(new) as the key type."
+        new
+    else
+        TKey1
+    end
+    # Figure out value type
+    # TODO: This function has to access internal data, urk
+    TValNew = Base.promote_type(eltype(valtype(c1._data)), eltype(valtype(c2._data)))
+    # Merge the data dictionaries
+    d1 = Dict{FlexiChainKey{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c1._data)
+    d2 = Dict{FlexiChainKey{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c2._data)
+    merged_data = merge(d1, d2)
+    return FlexiChain{TKeyNew}(merged_data)
+end
+function Base.merge(
+    ::FlexiChain{TKey1,NIter1,NChain1}, ::FlexiChain{TKey2,NIter2,NChain2}
+) where {TKey1,TKey2,NIter1,NChain1,NIter2,NChain2}
+    # Fallback if niter and nchains are different
+    throw(
+        DimensionMismatch(
+            "cannot merge FlexiChains with different sizes $(NIter1)×$(NChain1) and $(NIter2)×$(NChain2).",
+        ),
+    )
+end
+
+"""
     Base.getindex(chain::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
 
 Unambiguously access the data corresponding to the given `key` in the `chain`.
@@ -47,7 +104,7 @@ You will need to use this method if you have multiple keys that convert to the
 same `Symbol`, such as a `Parameter(:x)` and an `OtherKey(:some_section, :x)`.
 """
 function Base.getindex(chain::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
-    return collect(chain._data[key])  # errors if key not found
+    return data(chain._data[key])  # errors if key not found
 end
 """
     Base.getindex(chain::FlexiChain{TKey}, sym_key::Symbol) where {TKey}
@@ -97,7 +154,7 @@ function Base.getindex(chain::FlexiChain{TKey}, sym_key::Symbol) where {TKey}
         end
         throw(ArgumentError(s))
     else
-        return collect(chain._data[only(potential_keys)])
+        return data(chain._data[only(potential_keys)])
     end
 end
 """
@@ -145,6 +202,7 @@ Returns a NamedTuple of `OtherKey` names, grouped by their section.
 """
 function get_other_key_names(chain::FlexiChain{TKey}) where {TKey}
     other_keys = Dict{Symbol,Any}()
+    # Build up the dictionary of section name => key name
     for k in keys(chain._data)
         if k isa OtherKey
             section = k.section_name
@@ -155,6 +213,7 @@ function get_other_key_names(chain::FlexiChain{TKey}) where {TKey}
             push!(other_keys[section], key_name)
         end
     end
+    # Concretise (where possible)
     for (section, keys) in other_keys
         other_keys[section] = map(identity, keys)
     end

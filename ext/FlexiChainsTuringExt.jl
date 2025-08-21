@@ -6,40 +6,13 @@ using Turing: AbstractMCMC
 using DynamicPPL: DynamicPPL, Model, VarName
 
 ### Chain construction
-
-function transition_to_dict(
-    transition::Turing.Inference.Transition
-)::Dict{FlexiChainKey{VarName},Any}
-    d = Dict{FlexiChainKey{VarName},Any}()
-    for (varname, value) in pairs(transition.θ)
-        d[Parameter(varname)] = value
-    end
-    # add in the log probs
-    d[OtherKey(:logprobs, :logprior)] = transition.logprior
-    d[OtherKey(:logprobs, :loglikelihood)] = transition.loglikelihood
-    d[OtherKey(:logprobs, :lp)] = transition.logprior + transition.loglikelihood
-    # add in the transition stats (if available)
-    for (key, value) in pairs(transition.stat)
-        d[OtherKey(:stats, key)] = value
-    end
-    return d
-end
-
-function AbstractMCMC.bundle_samples(
-    transitions::AbstractVector{<:Turing.Inference.Transition},
-    ::AbstractMCMC.AbstractModel,
-    ::AbstractMCMC.AbstractSampler,
-    state::Any,
-    chain_type::Type{<:FlexiChain{<:VarName}};
-    _kwargs...,
-)::FlexiChain{VarName}
-    dicts = map(transition_to_dict, transitions)
-    return FlexiChain{VarName}(dicts)
-end
+include("FlexiChainsTuringExt/bundle_samples.jl")
 
 ### Chain deconstruction
-
-function get_parameters_and_values(
+"""
+Extract a dictionary of (parameter varname => value) from one MCMC iteration.
+"""
+function get_dict_from_iter(
     chain::FlexiChain{Tvn}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing;
 )::Dict{Tvn,Any} where {Tvn<:VarName}
     d = Dict{Tvn,Any}()
@@ -53,58 +26,7 @@ function get_parameters_and_values(
     return d
 end
 
-### DELETE THIS WHEN POSSIBLE
-struct InitContext{D<:AbstractDict} <: DynamicPPL.AbstractContext
-    values::D
-end
-DynamicPPL.NodeTrait(::InitContext) = DynamicPPL.IsLeaf()
-function DynamicPPL.tilde_assume(
-    ctx::InitContext,
-    dist::Turing.Distribution,
-    vn::DynamicPPL.VarName,
-    vi::DynamicPPL.AbstractVarInfo,
-)
-    in_varinfo = haskey(vi, vn)
-    x = ctx.values[vn]
-    insert_transformed_value =
-        in_varinfo ? DynamicPPL.istrans(vi, vn) : DynamicPPL.istrans(vi)
-    f = if insert_transformed_value
-        DynamicPPL.link_transform(dist)
-    else
-        identity
-    end
-    y, logjac = DynamicPPL.with_logabsdet_jacobian(f, x)
-    if in_varinfo
-        vi = DynamicPPL.setindex!!(vi, y, vn)
-    else
-        vi = DynamicPPL.push!!(vi, vn, y, dist)
-    end
-    insert_transformed_value && DynamicPPL.settrans!!(vi, true, vn)
-    vi = DynamicPPL.accumulate_assume!!(vi, x, logjac, vn, dist)
-    return x, vi
-end
-### END DELETE WHEN POSSIBLE
-
-function DynamicPPL.returned(model::Model, chain::FlexiChain{<:VarName})::Array
-    niters, _, nchains = size(chain)
-    vi = DynamicPPL.VarInfo(model)
-    # TODO: Maybe we do want to unify the single- and multiple-chain case.
-    if nchains == 1
-        return map(1:niters) do i
-            vals = get_parameters_and_values(chain, i, nothing)
-            new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(vals))
-            new_model = DynamicPPL.contextualize(model, new_ctx)
-            first(DynamicPPL.evaluate!!(new_model, vi))
-        end
-    else
-        tuples = Iterators.product(1:niters, 1:nchains)
-        return map(tuples) do (i, j)
-            vals = get_parameters_and_values(chain, i, j)
-            new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(vals))
-            new_model = DynamicPPL.contextualize(model, new_ctx)
-            first(DynamicPPL.evaluate!!(new_model, vi))
-        end
-    end
-end
+# Replacements for DynamicPPLMCMCChains
+include("FlexiChainsTuringExt/dynamicppl.jl")
 
 end # module FlexiChainsTuringExt
