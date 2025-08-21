@@ -22,16 +22,15 @@ You can already do this now:
 
 ```julia
 using Turing, FlexiChains
-using Turing.DynamicPPL: VarName
 
 @model f() = lp ~ Normal()
-chain = sample(f(), NUTS(), 1000; chain_type=FlexiChain{VarName})
+chain = sample(f(), NUTS(), 1000; chain_type=VNFlexiChain)
 ```
 
 Notice that (unlike MCMCChains, as shown [in this issue](https://github.com/TuringLang/MCMCChains.jl/issues/469)) FlexiChains allows you to distinguish between the `lp` variable and the `lp` metadata that represents the log probability density:
 
 ```julia
-julia> chain[:stats, :lp] == logpdf.(Normal(), chain[@varname(lp)])
+julia> chain[:logprobs, :lp] == logpdf.(Normal(), chain[@varname(lp)])
 true
 ```
 
