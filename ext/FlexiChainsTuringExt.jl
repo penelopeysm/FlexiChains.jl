@@ -14,15 +14,12 @@ function transition_to_dict(
     for (varname, value) in pairs(transition.θ)
         d[Parameter(varname)] = value
     end
-    # add in other bits
-    d[OtherKey(:stats, :logprior)] = transition.logprior
-    d[OtherKey(:stats, :loglikelihood)] = transition.loglikelihood
-    d[OtherKey(:stats, :logjoint)] = transition.logprior + transition.loglikelihood
-    # add in the stats (if available)
-    if transition.stat isa NamedTuple
-        for (key, value) in pairs(transition.stat)
-            d[OtherKey(:stats, key)] = value
-        end
+    # add in the transition stats (if available)
+    # TODO: This uses a really, really, internal function. It is prone to
+    # breaking if a new Turing patch version happens. That's why Turing is
+    # pinned to a specific patch version in the Project.toml.
+    for (key, value) in pairs(Turing.Inference.getstats_with_lp(transition))
+        d[OtherKey(:stats, key)] = value
     end
     return d
 end

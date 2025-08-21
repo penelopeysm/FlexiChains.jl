@@ -67,8 +67,8 @@ using Test
                 @test chain[:a] == fill(1, N_iters)
                 @test chain[:b] == fill(2, N_iters)
                 @test chain[:hello] == fill(3.0, N_iters)
-                @test_throws KeyError chain[:c]
-                @test_throws KeyError chain[:world]
+                @test_throws ArgumentError chain[:c]
+                @test_throws ArgumentError chain[:world]
             end
 
             @testset "ambiguous symbol" begin
@@ -80,7 +80,7 @@ using Test
                 @test chain[Parameter(:a)] == fill(1, N_iters)
                 @test chain[OtherKey(:section, "a")] == fill(3.0, N_iters)
                 # but getindex with the symbol should fail
-                @test_throws KeyError chain[:a]
+                @test_throws ArgumentError chain[:a]
                 # ... with the correct error message
                 @test_throws "multiple keys" chain[:a]
             end
