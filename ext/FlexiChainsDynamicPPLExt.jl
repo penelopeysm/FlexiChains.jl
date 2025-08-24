@@ -29,7 +29,7 @@ end
 DynamicPPL.NodeTrait(::InitContext) = DynamicPPL.IsLeaf()
 function DynamicPPL.tilde_assume(
     ctx::InitContext,
-    dist::Turing.Distribution,
+    dist::DynamicPPL.Distribution,
     vn::DynamicPPL.VarName,
     vi::DynamicPPL.AbstractVarInfo,
 )

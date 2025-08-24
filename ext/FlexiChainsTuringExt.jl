@@ -1,12 +1,11 @@
 module FlexiChainsTuringExt
 
-using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey, FlexiChainKey
+using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey, FlexiChainKey, VarName
 using Turing
 using Turing: AbstractMCMC
-using DynamicPPL: DynamicPPL, Model, VarName
 
 ### Chain construction
-function transition_to_dict(
+function FlexiChains.to_varname_dict(
     transition::Turing.Inference.Transition
 )::Dict{FlexiChainKey{VarName},Any}
     d = Dict{FlexiChainKey{VarName},Any}()
@@ -25,15 +24,15 @@ function transition_to_dict(
 end
 
 function AbstractMCMC.bundle_samples(
-    transitions::AbstractVector{<:Turing.Inference.Transition},
+    transitions::AbstractVector,
     ::AbstractMCMC.AbstractModel,
     ::AbstractMCMC.AbstractSampler,
     state::Any,
-    chain_type::Type{<:FlexiChain{<:VarName}};
+    chain_type::Type{T};
     _kwargs...,
-)::FlexiChain{VarName}
-    dicts = map(transition_to_dict, transitions)
-    return FlexiChain{VarName}(dicts)
+)::T where {T<:FlexiChain{<:VarName}}
+    dicts = map(FlexiChains.to_varname_dict, transitions)
+    return T(dicts)
 end
 
 end # module FlexiChainsTuringExt

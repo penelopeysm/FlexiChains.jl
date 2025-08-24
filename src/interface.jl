@@ -34,6 +34,19 @@ function Base.keys(chain::FlexiChain{TKey}) where {TKey}
 end
 
 """
+    haskey(chain::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
+    haskey(chain::FlexiChain{TKey}, key::TKey) where {TKey}
+
+Returns `true` if the chain contains the given key.
+"""
+function Base.haskey(chain::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
+    return haskey(chain._data, key)
+end
+function Base.haskey(chain::FlexiChain{TKey}, key::TKey) where {TKey}
+    return haskey(chain._data, Parameter(key))
+end
+
+"""
     values(chain::FlexiChain{TKey}) where {TKey}
 
 Returns the values of the `FlexiChain` as an iterable collection.
@@ -98,7 +111,11 @@ end
 function Base.show(
     io::IO, ::MIME"text/plain", chain::FlexiChain{TKey,niters,nchains}
 ) where {TKey,niters,nchains}
-    printstyled(io, "FlexiChain ($niters iterations, $nchains chain$(nchains > 1 ? "s" : ""))\n\n"; bold=true)
+    printstyled(
+        io,
+        "FlexiChain ($niters iterations, $nchains chain$(nchains > 1 ? "s" : ""))\n\n";
+        bold=true,
+    )
 
     # Print parameter names
     parameter_names = get_parameter_names(chain)
@@ -252,4 +269,39 @@ function get_other_key_names(chain::FlexiChain{TKey}) where {TKey}
         other_keys[section] = map(identity, keys)
     end
     return NamedTuple(other_keys)
+end
+
+# Overloaded in TuringExt.
+"""
+    to_varname_dict(t)::Dict{VarName,Any}
+
+Convert the _first output_ (i.e. the 'transition') of an AbstractMCMC sampler into
+a dictionary mapping `VarName`s to their corresponding values.
+"""
+function to_varname_dict end
+
+"""
+    AbstractMCMC.chainscat(c1, c2)
+
+Concatenate two `FlexiChain`s along the chain dimension. Both `c1` and
+`c2` must have the same number of iterations and the same key type.
+"""
+function AbstractMCMC.chainscat(
+    c1::FlexiChain{TKey,NIter,NChains1}, c2::FlexiChain{TKey,NIter,NChains2}
+)::FlexiChain{TKey,NIter,NChains1 + NChains2} where {TKey,NIter,NChains1,NChains2}
+    d = Dict{FlexiChainKey{TKey},SizedMatrix{NIter,NChains1 + NChains2}}()
+    for k in union(keys(c1), keys(c2))
+        c1_data = if haskey(c1, k)
+            c1[k]
+        else
+            SizedMatrix{NIter,NChains1}(fill(missing, NIter, NChains1))
+        end
+        c2_data = if haskey(c2, k)
+            c2[k]
+        else
+            SizedMatrix{NIter,NChains2}(fill(missing, NIter, NChains2))
+        end
+        d[k] = SizedMatrix{NIter,NChains1+NChains2}(hcat(c1_data, c2_data))
+    end
+    return FlexiChain{TKey}(d)
 end

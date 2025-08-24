@@ -127,6 +127,9 @@ const FlexiChainKey{T} = Union{Parameter{<:T},OtherKey{<:Any}}
 """
     FlexiChain{TKey,NIter,NChains,Sections}
 
+Note that the ordering of keys within a `FlexiChain` is an
+implementation detail and is not guaranteed.
+
 TODO: Document further.
 
 ## Fields
