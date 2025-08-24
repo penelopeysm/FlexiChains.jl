@@ -6,27 +6,34 @@ using Turing: AbstractMCMC
 using DynamicPPL: DynamicPPL, Model, VarName
 
 ### Chain construction
-include("FlexiChainsTuringExt/bundle_samples.jl")
-
-### Chain deconstruction
-"""
-Extract a dictionary of (parameter varname => value) from one MCMC iteration.
-"""
-function get_dict_from_iter(
-    chain::FlexiChain{Tvn}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing;
-)::Dict{Tvn,Any} where {Tvn<:VarName}
-    d = Dict{Tvn,Any}()
-    for param_name in FlexiChains.get_parameter_names(chain)
-        if chain_number === nothing
-            d[param_name] = chain[Parameter(param_name)][iteration_number]
-        else
-            d[param_name] = chain[Parameter(param_name)][iteration_number, chain_number]
-        end
+function transition_to_dict(
+    transition::Turing.Inference.Transition
+)::Dict{FlexiChainKey{VarName},Any}
+    d = Dict{FlexiChainKey{VarName},Any}()
+    for (varname, value) in pairs(transition.θ)
+        d[Parameter(varname)] = value
+    end
+    # add in the log probs
+    d[OtherKey(:logprobs, :logprior)] = transition.logprior
+    d[OtherKey(:logprobs, :loglikelihood)] = transition.loglikelihood
+    d[OtherKey(:logprobs, :lp)] = transition.logprior + transition.loglikelihood
+    # add in the transition stats (if available)
+    for (key, value) in pairs(transition.stat)
+        d[OtherKey(:stats, key)] = value
     end
     return d
 end
 
-# Replacements for DynamicPPLMCMCChains
-include("FlexiChainsTuringExt/dynamicppl.jl")
+function AbstractMCMC.bundle_samples(
+    transitions::AbstractVector{<:Turing.Inference.Transition},
+    ::AbstractMCMC.AbstractModel,
+    ::AbstractMCMC.AbstractSampler,
+    state::Any,
+    chain_type::Type{<:FlexiChain{<:VarName}};
+    _kwargs...,
+)::FlexiChain{VarName}
+    dicts = map(transition_to_dict, transitions)
+    return FlexiChain{VarName}(dicts)
+end
 
 end # module FlexiChainsTuringExt

@@ -13,12 +13,13 @@ DynamicPPL = "366bfd00-2699-11ea-058f-f148b4cae6d8"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [extensions]
-FlexiChainsTuringExt = ["Turing", "DynamicPPL"]
+FlexiChainsTuringExt = ["Turing"]
+FlexiChainsDynamicPPLExt = ["DynamicPPL"]
 
 [compat]
 AbstractMCMC = "5.6.3"
 AbstractPPL = "0.13.0"
 DocStringExtensions = "0.9.5"
 DynamicPPL = "0.37"
-Turing = "=0.40.1"
+Turing = "0.40.1"
 julia = "1.10"

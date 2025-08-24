@@ -1,3 +1,27 @@
+module FlexiChainsDynamicPPLExt
+
+using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey, FlexiChainKey
+using DynamicPPL: DynamicPPL, Model, VarName
+
+### Chain deconstruction
+# TODO: Move to main package
+"""
+Extract a dictionary of (parameter varname => value) from one MCMC iteration.
+"""
+function get_dict_from_iter(
+    chain::FlexiChain{Tvn}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing;
+)::Dict{Tvn,Any} where {Tvn<:VarName}
+    d = Dict{Tvn,Any}()
+    for param_name in FlexiChains.get_parameter_names(chain)
+        if chain_number === nothing
+            d[param_name] = chain[Parameter(param_name)][iteration_number]
+        else
+            d[param_name] = chain[Parameter(param_name)][iteration_number, chain_number]
+        end
+    end
+    return d
+end
+
 ### DELETE THIS WHEN POSSIBLE
 struct InitContext{D<:AbstractDict} <: DynamicPPL.AbstractContext
     values::D
@@ -70,3 +94,5 @@ function DynamicPPL.predict(model::Model, chain::FlexiChain{<:VarName})::Array
     # TODO: add stats back from the old chain
     return chain
 end
+
+end # module
