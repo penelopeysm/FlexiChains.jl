@@ -33,7 +33,7 @@ The main data type for Markov chains is [`MCMCChains.Chains`](https://turinglang
 
 This entire package essentially came about because I think `MCMCChains.Chains` is a bad data structure.
 The problem is that it is very restrictive in terms of its key and value types: fundamentally it is a mapping of `Symbol`s to arrays of `Real`s.
-However, Turing.jl uses `VarName`s as keys in its models.
+However, Turing.jl uses `VarName`s as keys in its models, and the values can be anything that is sampled from a distribution.
 
 This leads to several problems:
 
