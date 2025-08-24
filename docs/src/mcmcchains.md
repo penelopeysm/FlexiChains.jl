@@ -14,15 +14,14 @@ This means that, for example, if you have a model with vector-valued parameters 
 
 This is _the_ core of how MCMCChains and FlexiChains differ, and all of the behaviour shown below stems from this.
 
-To illustrate this, let's sample from a Turing model and store the results in both `MCMCChains.Chains` and `FlexiChains.FlexiChain`.
+To illustrate this, let's sample from a Turing model and store the results in both `MCMCChains.Chains` and `FlexiChains.VNChain`.
 
 ```@example 1
 using Turing
 using MCMCChains: MCMCChains
-using FlexiChains: FlexiChains
+using FlexiChains: VNChain, VarName, @varname
 using Random: Xoshiro
 using PDMats: PDMats
-using DynamicPPL: VarName
 
 Turing.setprogress!(false)
 
@@ -43,11 +42,12 @@ The default chain type for Turing's `sample` is still `MCMCChains.Chains`; we ju
 mcmc = sample(Xoshiro(468), model, NUTS(), 100; chain_type=MCMCChains.Chains)
 ```
 
-When using FlexiChains, you have to specify the key type of the chain.
-In this case, it is `VarName`.
+FlexiChains technically requires you to specify the key type of the chain.
+In this case, you could use `FlexiChains.FlexiChain{DynamicPPL.VarName}`.
+Since this is the main use case, we provide a convenient alias for this, `FlexiChains.VNChain`.
 
 ```@example 1
-flexi = sample(Xoshiro(468), model, NUTS(), 100; chain_type=FlexiChains.FlexiChain{VarName})
+flexi = sample(Xoshiro(468), model, NUTS(), 100; chain_type=FlexiChains.VNChain)
 ```
 
 Here, we expect the following parameters to be present in the chain:
