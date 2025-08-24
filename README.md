@@ -22,7 +22,7 @@ Whenever you attempt to use a function from Turing.jl or DynamicPPL.jl that take
 Other functions, such as `returned`, `predict`, and `logjoint` should work out of the box with exactly the same behaviour as before.
 If you find a function that does not work, please let me know by opening an issue!
 
-> [!INFO]
+> [!NOTE]
 > While I promise to always satisfy the interface to Turing.jl, this is not necessarily true for functions that are defined directly in MCMCChains.jl, such as data analysis or plotting. Of course I would like to make this package as feature-rich as possible (and issues are therefore *still* very much welcome), but such features may either be deprioritised or omitted due to design decisions.
 >
 > In the meantime, if you need a feature that is only present in MCMCChains, there is a conversion function to transform a `FlexiChains.VNChain` into `MCMCChains.Chains`.
