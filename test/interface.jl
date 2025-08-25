@@ -1,9 +1,41 @@
 module FCInterfaceTests
 
 using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey
+using AbstractMCMC: AbstractMCMC
 using Test
 
 @testset verbose = true "interface.jl" begin
+    @info "Testing interface.jl"
+
+    @testset "equality" begin
+        d = Dict(
+            Parameter(:a) => 1,
+            OtherKey(:section, "hello") => 3.0,
+        )
+        chain1 = FlexiChain{Symbol}(fill(d, 10))
+        chain2 = FlexiChain{Symbol}(fill(d, 10))
+        @test chain1 == chain2
+    end
+
+    @testset "dictionary interface" begin
+        N_iters, N_chains = 10, 2
+        d = Dict(
+            Parameter(:a) => 1,
+            Parameter(:b) => 2,
+            OtherKey(:section, "hello") => 3.0,
+        )
+        dicts = fill(d, N_iters, N_chains)
+        chain = FlexiChain{Symbol}(dicts)
+        # size
+        @test chain isa FlexiChain{Symbol,N_iters,N_chains}
+        @test size(chain) == (N_iters, length(d), N_chains)
+        # keys
+        @test Set(keys(chain)) == Set(keys(d))
+        for k in keys(d)
+            @test haskey(chain, k)
+        end
+    end
+
     @testset "getindex" begin
         @testset "unambiguous getindex" begin
             N_iters = 10
@@ -49,7 +81,7 @@ using Test
         end
     end
 
-    @testset "merge" begin
+    @testset "dim-2 merge: `merge`" begin
         @testset "basic merge" begin
             struct Foo end
             N_iters = 10
@@ -119,6 +151,47 @@ using Test
             @test ch[Parameter(:a)] == fill(1, 10)
             @test ch[Parameter("b")] isa Vector{String}
             @test ch[Parameter("b")] == fill("Hi", 10)
+        end
+    end
+
+    @testset "dim-3 merge: `AbstractMCMC.chainscat`" begin
+        @testset "basic application" begin
+            N_iters = 10
+            d1 = Dict(
+                Parameter(:a) => 1,
+                OtherKey(:b, "c") => 3.0,
+            )
+            chain1 = FlexiChain{Symbol}(fill(d1, N_iters))
+            d2 = Dict(
+                Parameter(:a) => 2,
+                OtherKey(:b, "c") => "foo"
+            )
+            chain2 = FlexiChain{Symbol}(fill(d2, N_iters))
+            chain3 = AbstractMCMC.chainscat(chain1, chain2)
+            @test chain3 isa FlexiChain{Symbol,N_iters,2}
+            @test size(chain3) == (N_iters, 2, 2)
+            @test chain3[Parameter(:a)] == repeat([1 2], N_iters)
+            @test chain3[OtherKey(:b, "c")] == repeat([3.0 "foo"], N_iters)
+        end
+
+        @testset "stacking different numbers of chains" begin
+            chain1 = FlexiChain{Symbol}(fill(Dict(Parameter(:a) => 1), 10))
+            chain2 = FlexiChain{Symbol}(fill(Dict(Parameter(:a) => 3), 10, 2))
+            chain3 = AbstractMCMC.chainscat(chain1, chain2)
+            @test chain3 isa FlexiChain{Symbol,10,3}
+            @test size(chain3) == (10, 1, 3)
+            @test chain3[Parameter(:a)] == repeat([1 3 3], 10)
+        end
+
+        @testset "different parameters in chains" begin
+            chain1 = FlexiChain{Symbol}(fill(Dict(Parameter(:a) => 1), 10))
+            chain2 = FlexiChain{Symbol}(fill(Dict(Parameter(:b) => 2), 10))
+            chain3 = AbstractMCMC.chainscat(chain1, chain2)
+            @test chain3 isa FlexiChain{Symbol,10,2}
+            @test size(chain3) == (10, 2, 2)
+            # need isequal() rather than `==` to handle the `missing` values
+            @test isequal(chain3[Parameter(:a)], repeat([1 missing], 10))
+            @test isequal(chain3[Parameter(:b)], repeat([missing 2], 10))
         end
     end
 end

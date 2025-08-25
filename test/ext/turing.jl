@@ -12,6 +12,8 @@ using Turing: MCMCChains, AbstractMCMC
 Turing.setprogress!(false)
 
 @testset verbose = true "FlexiChainTuringExt" begin
+    @info "Testing ext/turing.jl"
+
     @testset "basic sampling" begin
         @model function gdemo(x, y)
             s2 ~ InverseGamma(2, 3)
@@ -22,14 +24,14 @@ Turing.setprogress!(false)
         model = gdemo(1.5, 2)
 
         @testset "single-chain sampling" begin
-            chn = sample(model, NUTS(), 100; chain_type=VNChain)
+            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
             @test chn isa VNChain
             niters, _, nchains = size(chn)
             @test (niters, nchains) == (100, 1)
         end
 
         @testset "multi-chain sampling" begin
-            chn = sample(model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain)
+            chn = sample(model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain, verbose=false)
             @test chn isa VNChain
             niters, _, nchains = size(chn)
             @test (niters, nchains) == (100, 3)
@@ -37,25 +39,25 @@ Turing.setprogress!(false)
 
         @testset "rng is respected" begin
             @testset "single-chain" begin
-                chn1 = sample(Xoshiro(468), model, NUTS(), 100; chain_type=VNChain)
-                chn2 = sample(Xoshiro(468), model, NUTS(), 100; chain_type=VNChain)
+                chn1 = sample(Xoshiro(468), model, NUTS(), 100; chain_type=VNChain, verbose=false)
+                chn2 = sample(Xoshiro(468), model, NUTS(), 100; chain_type=VNChain, verbose=false)
                 @test chn1 == chn2
-                chn3 = sample(Xoshiro(469), model, NUTS(), 100; chain_type=VNChain)
+                chn3 = sample(Xoshiro(469), model, NUTS(), 100; chain_type=VNChain, verbose=false)
                 @test chn1 != chn3
             end
 
             @testset "multi-chain" begin
-                chn1 = sample(Xoshiro(468), model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain)
-                chn2 = sample(Xoshiro(468), model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain)
+                chn1 = sample(Xoshiro(468), model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain, verbose=false)
+                chn2 = sample(Xoshiro(468), model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain, verbose=false)
                 @test chn1 == chn2
-                chn3 = sample(Xoshiro(469), model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain)
+                chn3 = sample(Xoshiro(469), model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain, verbose=false)
                 @test chn1 != chn3
             end
         end
 
         @testset "underlying data is same as MCMCChains" begin
-            chn_flexi = sample(Xoshiro(468), model, NUTS(), 100; chain_type=VNChain)
-            chn_mcmc = sample(Xoshiro(468), model, NUTS(), 100; chain_type=MCMCChains.Chains)
+            chn_flexi = sample(Xoshiro(468), model, NUTS(), 100; chain_type=VNChain, verbose=false)
+            chn_mcmc = sample(Xoshiro(468), model, NUTS(), 100; chain_type=MCMCChains.Chains, verbose=false)
             @test vec(chn_flexi[@varname(s2)]) == vec(chn_mcmc[:s2])
             @test vec(chn_flexi[@varname(m)]) == vec(chn_mcmc[:m])
             for lp_type in [:lp, :logprior, :loglikelihood]

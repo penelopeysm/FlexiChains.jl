@@ -47,25 +47,6 @@ function Base.haskey(chain::FlexiChain{TKey}, key::TKey) where {TKey}
 end
 
 """
-    values(chain::FlexiChain{TKey}) where {TKey}
-
-Returns the values of the `FlexiChain` as an iterable collection.
-"""
-function Base.values(chain::FlexiChain{TKey}) where {TKey}
-    return values(chain._data)
-end
-
-"""
-    pairs(chain::FlexiChain{TKey}) where {TKey}
-
-Returns the pairs of the `FlexiChain` as an iterable collection of
-(key, value) pairs.
-"""
-function Base.pairs(chain::FlexiChain{TKey}) where {TKey}
-    return pairs(chain._data)
-end
-
-"""
     Base.merge(
         c1::FlexiChain{TKey1,NIter,NChain},
         c2::FlexiChain{TKey2,NIter,NChain}

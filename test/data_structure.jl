@@ -3,7 +3,9 @@ module FCDataStructureTests
 using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey
 using Test
 
-@testset verbose = true "data_structures.jl" begin
+@testset verbose = true "data_structure.jl" begin
+    @info "Testing data_structure.jl"
+
     @testset "constructors" begin
         @testset "from array-of-dicts" begin
             # Vector of dict
