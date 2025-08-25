@@ -18,7 +18,7 @@ To illustrate this, let's sample from a Turing model and store the results in bo
 
 ```@example 1
 using Turing
-using MCMCChains: MCMCChains
+using MCMCChains: Chains
 using FlexiChains: VNChain, VarName, @varname
 using Random: Xoshiro
 using PDMats: PDMats
@@ -39,15 +39,15 @@ model = f(randn(Xoshiro(468), 3))
 The default chain type for Turing's `sample` is still `MCMCChains.Chains`; we just specify it here for clarity.
 
 ```@example 1
-mcmc = sample(Xoshiro(468), model, NUTS(), 100; chain_type=MCMCChains.Chains)
+mcmc = sample(Xoshiro(468), model, NUTS(), 100; chain_type=Chains)
 ```
 
-FlexiChains technically requires you to specify the key type of the chain.
-In this case, you could use `FlexiChains.FlexiChain{DynamicPPL.VarName}`.
-Since this is the main use case, we provide a convenient alias for this, `FlexiChains.VNChain`.
+Because FlexiChains does not enforce a key type, you are technically required to specify the key type of the chain as a type parameter.
+You could, for example, write `FlexiChains.FlexiChain{DynamicPPL.VarName}`.
+But since this is really the main use case of FlexiChains, we provide a convenient alias for this, `FlexiChains.VNChain`.
 
 ```@example 1
-flexi = sample(Xoshiro(468), model, NUTS(), 100; chain_type=FlexiChains.VNChain)
+flexi = sample(Xoshiro(468), model, NUTS(), 100; chain_type=VNChain)
 ```
 
 Here, we expect the following parameters to be present in the chain:
@@ -186,7 +186,7 @@ using Bijectors, DynamicPPL
 DynamicPPL.tovec(c::Char) = [c]
 Bijectors.logabsdetjac(::typeof(identity), ::Char) = 0.0
 
-mcmc = sample(f(), MH(), 100; chain_type=MCMCChains.Chains)
+mcmc = sample(f(), MH(), 100; chain_type=Chains)
 ```
 
 Great, that worked! (Surprisingly.)
@@ -213,14 +213,14 @@ For example, it will look as if your chain does not actually have any variables:
     lp ~ Normal()
 end
 
-chain = sample(Xoshiro(468), lp_model(), NUTS(), 100; chain_type=MCMCChains.Chains)
-describe(chain)
+mchain = sample(Xoshiro(468), lp_model(), NUTS(), 100; chain_type=Chains)
+describe(mchain)
 ```
 
-When you index `chain[:lp]`, how do you know whether it refers to the `lp` variable in your model or the `lp` metadata key?
+When you index into `mchain[:lp]`, how do you know whether it refers to the `lp` variable in your model or the `lp` metadata key?
 
 ```@example 1
-any(chain[:lp] .> 0)
+any(mchain[:lp] .> 0)
 ```
 
 Well, since there are some positive values, it has to be the parameter, because the metadata `lp = logpdf(Normal(), value_of_lp_parameter)` is always negative.
@@ -228,7 +228,7 @@ But you didn't know that when you tried to index into it, you had to reverse eng
 
 Besides, if you actually want the log-density, it's now gone.
 Tough luck.
-(You can get it back with `logjoint(lp_model(), chain)` if you want.)
+(You can get it back with `logjoint(lp_model(), mchain)` if you want.)
 
 HMC samplers further include extra metadata such as `hamiltonian_energy`, and in general **any sampler** can include any kind of extra metadata it wants.
 As a user, you have no way of knowing what these names are, and you have to avoid using them in your model, which is quite unfair.
@@ -236,13 +236,13 @@ As a user, you have no way of knowing what these names are, and you have to avoi
 FlexiChains circumvents this entirely since it stores these separately as `Parameter(@varname(lp))` and `OtherKey(:logprobs, :lp)`.
 
 ```@example 1
-chain = sample(Xoshiro(468), lp_model(), NUTS(), 100; chain_type=FlexiChains.FlexiChain{VarName})
+fchain = sample(Xoshiro(468), lp_model(), NUTS(), 100; chain_type=VNChain)
 ```
 
 You will of course run into ambiguities if you simply attempt to index the chain with `[:lp]`, because both the `Parameter(@varname(lp))` and the `OtherKey(:logprobs, :lp)` exist.
 
 ```julia
-chain[:lp]
+fchain[:lp]
 # This code block isn't run because it would throw the following error:
 # ArgumentError: multiple keys correspond to symbol :lp.
 ```
@@ -250,19 +250,19 @@ chain[:lp]
 but you can still access the value using the original value of the `Parameter`:
 
 ```@example 1
-chain[@varname(lp)]
+fchain[@varname(lp)]
 ```
 
 and the corresponding metadata:
 
 ```@example 1
-chain[:logprobs, :lp]
+fchain[:logprobs, :lp]
 ```
 
 and indeed we can check that these do align:
 
 ```@example 1
-logpdf.(Normal(), chain[@varname(lp)]) ≈ chain[:logprobs, :lp]
+logpdf.(Normal(), fchain[@varname(lp)]) ≈ fchain[:logprobs, :lp]
 ```
 
 TODO pretty-printing / summary stats
