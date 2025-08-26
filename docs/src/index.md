@@ -5,12 +5,24 @@ It is intended as a drop-in (but better) replacement for MCMCChains.jl.
 
 ## Basic usage
 
-```julia
+To obtain a `FlexiChain` from Turing.jl, you will need to pass the `chain_type` keyword argument to `sample`.
+
+```@example 1
 using Turing
 using FlexiChains: VNChain
 
 @model f() = x ~ Normal()
 chain = sample(f(), NUTS(), 1000; chain_type=VNChain)
+```
+
+Right now FlexiChains only provides a data structure.
+It does not yet provide any functionality for calculating statistics or plotting.
+
+If you want that, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using the `MCMCChains.Chains` constructor.
+
+```@example 1
+using MCMCChains
+mcmc = MCMCChains.Chains(chain)
 ```
 
 ## What is exported?
