@@ -81,6 +81,31 @@ using Test
         end
     end
 
+    @testset "extract dicts for single iter" begin
+        N = 10
+        c = FlexiChain{Symbol}(Dict(
+            Parameter(:a) => rand(N),
+            OtherKey(:b, "c") => rand(N),
+        ))
+
+        @testset "get_dict_from_iter" begin
+            for i in 1:N
+                d = FlexiChains.get_dict_from_iter(c, i)
+                @test length(d) == 2
+                @test d[Parameter(:a)] == c[Parameter(:a)][i]
+                @test d[OtherKey(:b, "c")] == c[OtherKey(:b, "c")][i]
+            end
+        end
+
+        @testset "get_parameter_dict_from_iter" begin
+            for i in 1:N
+                d = FlexiChains.get_parameter_dict_from_iter(c, i)
+                @test length(d) == 1
+                @test d[:a] == c[Parameter(:a)][i]
+            end
+        end
+    end
+
     @testset "dim-2 merge: `merge`" begin
         @testset "basic merge" begin
             struct Foo end

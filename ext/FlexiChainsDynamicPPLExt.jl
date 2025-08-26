@@ -3,25 +3,6 @@ module FlexiChainsDynamicPPLExt
 using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey, FlexiChainKey
 using DynamicPPL: DynamicPPL, Model, VarName
 
-### Chain deconstruction
-# TODO: Move to main package
-"""
-Extract a dictionary of (parameter varname => value) from one MCMC iteration.
-"""
-function get_dict_from_iter(
-    chain::FlexiChain{Tvn}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing;
-)::Dict{Tvn,Any} where {Tvn<:VarName}
-    d = Dict{Tvn,Any}()
-    for param_name in FlexiChains.get_parameter_names(chain)
-        if chain_number === nothing
-            d[param_name] = chain[Parameter(param_name)][iteration_number]
-        else
-            d[param_name] = chain[Parameter(param_name)][iteration_number, chain_number]
-        end
-    end
-    return d
-end
-
 ### DELETE THIS WHEN POSSIBLE
 struct InitContext{D<:AbstractDict} <: DynamicPPL.AbstractContext
     values::D
@@ -66,7 +47,7 @@ function reevaluate_with_chain(
     # TODO: Maybe we do want to unify the single- and multiple-chain case.
     if nchains == 1
         return map(1:niters) do i
-            vals = get_dict_from_iter(chain, i, nothing)
+            vals = FlexiChains.get_parameter_dict_from_iter(chain, i, nothing)
             # TODO: use InitFromParams when DPPL 0.38 is out
             new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(vals))
             new_model = DynamicPPL.contextualize(model, new_ctx)
@@ -75,7 +56,7 @@ function reevaluate_with_chain(
     else
         tuples = Iterators.product(1:niters, 1:nchains)
         return map(tuples) do (i, j)
-            vals = get_dict_from_iter(chain, i, j)
+            vals = FlexiChains.get_parameter_dict_from_iter(chain, i, j)
             # TODO: use InitFromParams when DPPL 0.38 is out
             new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(vals))
             new_model = DynamicPPL.contextualize(model, new_ctx)

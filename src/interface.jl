@@ -217,7 +217,7 @@ end
 
 Returns a vector of parameter names in the `FlexiChain`.
 """
-function get_parameter_names(chain::FlexiChain{TKey}) where {TKey}
+function get_parameter_names(chain::FlexiChain{TKey})::Vector{TKey} where {TKey}
     parameter_names = TKey[]
     for k in keys(chain._data)
         if k isa Parameter{<:TKey}
@@ -232,7 +232,7 @@ end
 
 Returns a NamedTuple of `OtherKey` names, grouped by their section.
 """
-function get_other_key_names(chain::FlexiChain{TKey}) where {TKey}
+function get_other_key_names(chain::FlexiChain{TKey})::NamedTuple where {TKey}
     other_keys = Dict{Symbol,Any}()
     # Build up the dictionary of section name => key name
     for k in keys(chain._data)
@@ -245,19 +245,20 @@ function get_other_key_names(chain::FlexiChain{TKey}) where {TKey}
             push!(other_keys[section], key_name)
         end
     end
-    # Concretise (where possible)
-    for (section, keys) in other_keys
-        other_keys[section] = map(identity, keys)
-    end
     return NamedTuple(other_keys)
 end
 
 # Overloaded in TuringExt.
 """
-    to_varname_dict(t)::Dict{VarName,Any}
+    to_varname_dict(transition)::Dict{VarName,Any}
 
-Convert the _first output_ (i.e. the 'transition') of an AbstractMCMC sampler into
-a dictionary mapping `VarName`s to their corresponding values.
+Convert the _first output_ (i.e. the 'transition') of an AbstractMCMC sampler
+into a dictionary mapping `VarName`s to their corresponding values.
+
+If you are writing a custom sampler for Turing.jl and your sampler's
+implementation of `AbstractMCMC.step` returns anything _but_ a
+`Turing.Inference.Transition` as its first return value, then to use FlexiChains
+with your sampler, you will have to overload this function.
 """
 function to_varname_dict end
 
@@ -282,7 +283,65 @@ function AbstractMCMC.chainscat(
         else
             SizedMatrix{NIter,NChains2}(fill(missing, NIter, NChains2))
         end
-        d[k] = SizedMatrix{NIter,NChains1+NChains2}(hcat(c1_data, c2_data))
+        d[k] = SizedMatrix{NIter,NChains1 + NChains2}(hcat(c1_data, c2_data))
     end
     return FlexiChain{TKey}(d)
+end
+
+"""
+    get_dict_from_iter(
+        chain::FlexiChain{TKey},
+        iteration_number::Int,
+        chain_number::Union{Int,Nothing}=nothing
+    )::Dict{FlexiChainKey{TKey},Any}
+
+Extract the dictionary corresponding to a single MCMC iteration.
+
+If `chain` only contains a single chain, then `chain_number` does not need to be
+specified.
+
+The order of keys in the returned dictionary is not guaranteed.
+
+To get only the parameter keys, use `get_parameter_dict_from_iter`.
+"""
+function get_dict_from_iter(
+    chain::FlexiChain{TKey}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing
+)::Dict{FlexiChainKey{TKey},Any} where {TKey}
+    d = Dict{FlexiChainKey{TKey},Any}()
+    for k in keys(chain)
+        if chain_number === nothing
+            d[k] = chain[k][iteration_number]
+        else
+            d[k] = chain[k][iteration_number, chain_number]
+        end
+    end
+    return d
+end
+
+"""
+    get_parameter_dict_from_iter(
+        chain::FlexiChain{TKey},
+        iteration_number::Int,
+        chain_number::Union{Int,Nothing}=nothing
+    )::Dict{TKey,Any} where {TKey}
+
+Extract the dictionary corresponding to a single MCMC iteration, but with only
+the parameters.
+
+To get all other non-parameter keys as well, use `get_dict_from_iter`.
+
+The order of keys in the returned dictionary is not guaranteed.
+"""
+function get_parameter_dict_from_iter(
+    chain::FlexiChain{TKey}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing
+)::Dict{TKey,Any} where {TKey}
+    d = Dict{TKey,Any}()
+    for k in get_parameter_names(chain)
+        if chain_number === nothing
+            d[k] = chain[k][iteration_number]
+        else
+            d[k] = chain[k][iteration_number, chain_number]
+        end
+    end
+    return d
 end
