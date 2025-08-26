@@ -6,7 +6,6 @@ makedocs(;
     modules=[FlexiChains],
     pages=[
          "index.md",
-         "data_structure.md",
          "mcmcchains.md",
     ],
     checkdocs=:exports,
