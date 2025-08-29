@@ -174,7 +174,7 @@ function Base.show(
     end
 
     # Print other keys
-    other_key_names = get_other_key_names(chain)
+    other_key_names = get_other_key_names_grouped(chain)
     printstyled(io, "Other keys       "; bold=true)
     if isempty(other_key_names)
         println(io, "(none)")
@@ -345,11 +345,26 @@ function get_parameter_names(chain::FlexiChain{TKey})::Vector{TKey} where {TKey}
 end
 
 """
-    get_other_key_names(chain::FlexiChain{TKey}) where {TKey}
+    get_other_key_names(chain::FlexiChain)
+
+Returns a vector of non-parameter names in the `FlexiChain`.
+"""
+function get_other_key_names(chain::FlexiChain)::Vector{OtherKey}
+    other_key_names = OtherKey[]
+    for k in keys(chain._data)
+        if k isa OtherKey
+            push!(other_key_names, k)
+        end
+    end
+    return other_key_names
+end
+
+"""
+    get_other_key_names_grouped(chain::FlexiChain)
 
 Returns a NamedTuple of `OtherKey` names, grouped by their section.
 """
-function get_other_key_names(chain::FlexiChain{TKey})::NamedTuple where {TKey}
+function get_other_key_names_grouped(chain::FlexiChain)::NamedTuple
     other_keys = Dict{Symbol,Any}()
     # Build up the dictionary of section name => key name
     for k in keys(chain._data)
@@ -357,10 +372,14 @@ function get_other_key_names(chain::FlexiChain{TKey})::NamedTuple where {TKey}
             section = k.section_name
             key_name = k.key_name
             if !haskey(other_keys, section)
-                other_keys[section] = Vector{Any}()
+                other_keys[section] = Any[]
             end
             push!(other_keys[section], key_name)
         end
+    end
+    # concretise
+    for (section, keys) in pairs(other_keys)
+        other_keys[section] = Set(map(identity, keys))
     end
     return NamedTuple(other_keys)
 end

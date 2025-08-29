@@ -221,10 +221,30 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName,NIter,NChain}) where {N
     ]
     varname_symbols = map(Symbol, varnames)
 
-    # TODO: handle non-parameter keys
+    # Handle non-parameter keys
+    internal_keys = Symbol[]
+    internal_values = Array{Real,3}(undef, NIter, 0, NChain)
+    name_map = Dict{Symbol,Vector{Symbol}}()
+    for k in FlexiChains.get_other_key_names(vnchain)
+        v = map(identity, vnchain[k])
+        if eltype(v) <: Real
+            push!(internal_keys, Symbol(k.key_name))
+            if haskey(name_map, k.section_name)
+                push!(name_map[k.section_name], Symbol(k.key_name))
+            else
+                name_map[k.section_name] = [Symbol(k.key_name)]
+            end
+            internal_values = hcat(internal_values, reshape(v, NIter, 1, NChain))
+        else
+            @warn "key $k skipped in MCMCChains conversion as it is not Real-valued"
+        end
+    end
+
+    all_symbols = vcat(varname_symbols, internal_keys)
+    all_values = hcat(values, internal_values)
 
     info = (varname_to_symbol=OrderedDict(zip(varnames, varname_symbols)),)
-    return MCMCChains.Chains(values, varname_symbols, (;); info=info)
+    return MCMCChains.Chains(all_values, all_symbols, NamedTuple(name_map); info=info)
 end
 
 end # module FlexiChainsTuringExt

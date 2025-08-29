@@ -8,10 +8,7 @@ using Test
     @info "Testing interface.jl"
 
     @testset "equality" begin
-        d = Dict(
-            Parameter(:a) => 1,
-            OtherKey(:section, "hello") => 3.0,
-        )
+        d = Dict(Parameter(:a) => 1, OtherKey(:section, "hello") => 3.0)
         chain1 = FlexiChain{Symbol}(fill(d, 10))
         chain2 = FlexiChain{Symbol}(fill(d, 10))
         @test chain1 == chain2
@@ -19,11 +16,7 @@ using Test
 
     @testset "dictionary interface" begin
         N_iters, N_chains = 10, 2
-        d = Dict(
-            Parameter(:a) => 1,
-            Parameter(:b) => 2,
-            OtherKey(:section, "hello") => 3.0,
-        )
+        d = Dict(Parameter(:a) => 1, Parameter(:b) => 2, OtherKey(:section, "hello") => 3.0)
         dicts = fill(d, N_iters, N_chains)
         chain = FlexiChain{Symbol}(dicts)
         # size
@@ -33,6 +26,36 @@ using Test
         @test Set(keys(chain)) == Set(keys(d))
         for k in keys(d)
             @test haskey(chain, k)
+        end
+    end
+
+    @testset "get key names" begin
+        N_iters = 10
+        d = Dict(
+            Parameter(:a) => 1,
+            Parameter(:b) => 2,
+            OtherKey(:section, "hello") => 3.0,
+            OtherKey(:section, "world") => 4.0,
+            OtherKey(:other, "key") => 5.0,
+        )
+        chain = FlexiChain{Symbol}(fill(d, N_iters))
+
+        @testset "get_parameter_names" begin
+            @test Set(FlexiChains.get_parameter_names(chain)) == Set([:a, :b])
+        end
+        @testset "get_other_key_names" begin
+            @test Set(FlexiChains.get_other_key_names(chain)) == Set([
+                OtherKey(:section, "hello"),
+                OtherKey(:section, "world"),
+                OtherKey(:other, "key"),
+            ])
+        end
+        @testset "get_other_key_names_grouped" begin
+            actual = FlexiChains.get_other_key_names_grouped(chain)
+            expected = (section=Set(["hello", "world"]), other=Set(["key"]))
+            # we test by converting to Dict because we don't really care about which 
+            # order the groups are presented in
+            @test Dict(pairs(actual)...) == Dict(pairs(expected)...)
         end
     end
 
@@ -66,9 +89,7 @@ using Test
 
         @testset "ambiguous symbol" begin
             N_iters = 10
-            dicts = fill(
-                Dict(Parameter(:a) => 1, OtherKey(:section, "a") => 3.0), N_iters
-            )
+            dicts = fill(Dict(Parameter(:a) => 1, OtherKey(:section, "a") => 3.0), N_iters)
             chain = FlexiChain{Symbol}(dicts)
 
             # getindex with the full key should be fine
@@ -85,12 +106,12 @@ using Test
             d = Dict(
                 Parameter(@varname(a)) => 1.0,
                 Parameter(@varname(b)) => [2.0, 3.0],
-                Parameter(@varname(c)) => (x = 4.0, y = 5.0),
+                Parameter(@varname(c)) => (x=4.0, y=5.0),
             )
             chain = FlexiChain{VarName}(fill(d, N_iters))
             @test chain[@varname(a)] == fill(1.0, N_iters)
             @test chain[@varname(b)] == fill([2.0, 3.0], N_iters)
-            @test chain[@varname(c)] == fill((x = 4.0, y = 5.0), N_iters)
+            @test chain[@varname(c)] == fill((x=4.0, y=5.0), N_iters)
             @test_throws KeyError chain[@varname(d)]
             @test chain[@varname(b[1])] == fill(2.0, N_iters)
             @test chain[@varname(b[2])] == fill(3.0, N_iters)
@@ -103,10 +124,7 @@ using Test
 
     @testset "extract dicts for single iter" begin
         N = 10
-        c = FlexiChain{Symbol}(Dict(
-            Parameter(:a) => rand(N),
-            OtherKey(:b, "c") => rand(N),
-        ))
+        c = FlexiChain{Symbol}(Dict(Parameter(:a) => rand(N), OtherKey(:b, "c") => rand(N)))
 
         @testset "get_dict_from_iter" begin
             for i in 1:N
@@ -131,9 +149,7 @@ using Test
             struct Foo end
             N_iters = 10
             dict1 = Dict(
-                Parameter(:a) => 1,
-                Parameter(:b) => "no",
-                OtherKey(:hello, "foo") => 3.0,
+                Parameter(:a) => 1, Parameter(:b) => "no", OtherKey(:hello, "foo") => 3.0
             )
             chain1 = FlexiChain{Symbol}(fill(dict1, N_iters))
 
@@ -202,10 +218,7 @@ using Test
     @testset "dim-2 subset: `subset`" begin
         @testset "basic application" begin
             N_iters = 10
-            d = Dict(
-                Parameter(:a) => 1,
-                OtherKey(:b, "c") => 3.0,
-            )
+            d = Dict(Parameter(:a) => 1, OtherKey(:b, "c") => 3.0)
             chain = FlexiChain{Symbol}(fill(d, N_iters))
 
             subsetted1 = FlexiChains.subset(chain, [Parameter(:a)])
@@ -223,38 +236,28 @@ using Test
 
         @testset "key not present" begin
             N_iters = 10
-            d = Dict(
-                Parameter(:a) => 1,
-                OtherKey(:b, "c") => 3.0,
-            )
+            d = Dict(Parameter(:a) => 1, OtherKey(:b, "c") => 3.0)
             chain = FlexiChain{Symbol}(fill(d, N_iters))
             @test_throws KeyError FlexiChains.subset(chain, [Parameter(:x)])
         end
 
         @testset "subset parameters and other keys" begin
             N_iters = 10
-            d = Dict(
-                Parameter(:a) => 1,
-                OtherKey(:b, "c") => 3.0,
-            )
+            d = Dict(Parameter(:a) => 1, OtherKey(:b, "c") => 3.0)
             chain = FlexiChain{Symbol}(fill(d, N_iters))
-            @test FlexiChains.subset_parameters(chain) == FlexiChains.subset(chain, [Parameter(:a)])
-            @test FlexiChains.subset_other_keys(chain) == FlexiChains.subset(chain, [OtherKey(:b, "c")])
+            @test FlexiChains.subset_parameters(chain) ==
+                FlexiChains.subset(chain, [Parameter(:a)])
+            @test FlexiChains.subset_other_keys(chain) ==
+                FlexiChains.subset(chain, [OtherKey(:b, "c")])
         end
     end
 
     @testset "dim-3 merge: `AbstractMCMC.chainscat`" begin
         @testset "basic application" begin
             N_iters = 10
-            d1 = Dict(
-                Parameter(:a) => 1,
-                OtherKey(:b, "c") => 3.0,
-            )
+            d1 = Dict(Parameter(:a) => 1, OtherKey(:b, "c") => 3.0)
             chain1 = FlexiChain{Symbol}(fill(d1, N_iters))
-            d2 = Dict(
-                Parameter(:a) => 2,
-                OtherKey(:b, "c") => "foo"
-            )
+            d2 = Dict(Parameter(:a) => 2, OtherKey(:b, "c") => "foo")
             chain2 = FlexiChain{Symbol}(fill(d2, N_iters))
             chain3 = AbstractMCMC.chainscat(chain1, chain2)
             @test chain3 isa FlexiChain{Symbol,N_iters,2}

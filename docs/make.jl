@@ -7,8 +7,8 @@ makedocs(;
     pages=[
          "index.md",
          "turing.md",
-         "mcmcchains.md",
          "manual.md",
+         "whynew.md",
     ],
     checkdocs=:exports,
     doctest=false,

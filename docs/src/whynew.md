@@ -1,8 +1,6 @@
-# Migrating from MCMCChains.jl
+# Why a new package?
 
 FlexiChains.jl has been designed from the ground up to address existing limitations of [MCMCChains.jl](https://github.com/TuringLang/MCMCChains.jl).
-
-This page describes some key differences from MCMCChains.jl and how you can migrate your code to use FlexiChains.jl.
 
 ## The fundamental difference
 
@@ -152,10 +150,9 @@ mcmc["mu[2]"]
 Note, though, that MCMCChains requires you to pass a _string_ `"2"` to get the second variable.
 Of course, if you have an integer `2` this is quite easily done with interpolation, but I would argue from a readability perspective it's much clearer to index with an integer `2` rather than a string.
 
-<!--
 ## Other types of data
 
-Let's say we define a weird new discrete distribution which samples from the alphabet `["A", "B"]`.
+Let's say we define a weird new discrete distribution which samples from the two structs `Duck()` and `Goose()`.
 
 (Why would you want to do this?
 Well, why _shouldn't_ you be able to do it?
@@ -165,42 +162,32 @@ The point is that FlexiChains doesn't _force_ you to stick only to distributions
 ```@example 1
 using Distributions, Random
 
-struct AlphabetDist <: Distributions.DiscreteUnivariateDistribution end
-Distributions.rand(rng::Random.AbstractRNG, ::AlphabetDist) = rand(rng) < 0.3 ? 'A' : 'B'
-function Distributions.logpdf(::AlphabetDist, x)
-    if x == 'A'
-        log(0.3)
-    elseif x == 'B'
-        log(0.7)
-    else
-        -Inf
-    end
-end
+abstract type Bird end
+struct Duck <: Bird end
+struct Goose <: Bird end
+
+struct BirdDist <: Distributions.DiscreteUnivariateDistribution end
+Distributions.rand(rng::Random.AbstractRNG, ::BirdDist) = rand(rng) < 0.3 ? Duck() : Goose()
+Distributions.logpdf(::BirdDist, x::Duck) = log(0.3)
+Distributions.logpdf(::BirdDist, x::Goose) = log(0.7)
 
 @model function f()
-    x ~ AlphabetDist()
+    x ~ BirdDist()
 end
 
 # A bit more boilerplate is needed here to actually make it work with Turing.
 using Bijectors, DynamicPPL
-DynamicPPL.tovec(c::Char) = [c]
-Bijectors.logabsdetjac(::typeof(identity), ::Char) = 0.0
+DynamicPPL.tovec(b::Bird) = [b]
+Bijectors.logabsdetjac(::typeof(identity), ::Bird) = 0.0
 
-mcmc = sample(f(), MH(), 100; chain_type=Chains)
+mcmc = sample(f(), MH(), 100; chain_type=VNChain)
 ```
 
-Great, that worked! (Surprisingly.)
+Well, that worked quite nicely with FlexiChains.
 
-Note that in DynamicPPL there is a conversion to Real so this isn't MCMCChains's fault
--->
-
-## Accessing 'generated quantities' (using `:=`)
-
-TODO
-
-## Convergence checks
-
-'Ah,' you say, 'but when I plot my chains I want to see the individual elements of `mu` as separate lines!'
+MCMCChains on the other hand would completely error here because it requires all its values to be `Real`.
+(To be precise, it requires all its values to be _convertable_ to `Real`.
+So a distribution over `Char` works, even though `Char <: Real` is false, because `Char`s can be converted to `Real`.)
 
 ## No need to avoid reserved names
 
@@ -269,8 +256,6 @@ TODO pretty-printing / summary stats
 
 ## For DynamicPPL developers
 
-Hey, that's me!
-
 TODO Write about how this makes life a lot easier for things like `predict`.
 
 ## Design goals
@@ -304,4 +289,3 @@ My main design goals for FlexiChains.jl were twofold:
 
 In particular, notice that *performance* is not one of my considerations.
 In my opinion, performance is only a minor concern for FlexiChains.jl, because the main bottleneck in Bayesian inference is the sampling, not how fast one can construct or index into a chain.
-I have not performed any benchmarks but I would expect that most operations on `MCMCChains.Chains` will be faster than on `FlexiChains.FlexiChain`.
