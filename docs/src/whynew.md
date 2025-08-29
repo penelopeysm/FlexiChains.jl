@@ -180,8 +180,10 @@ using Bijectors, DynamicPPL
 DynamicPPL.tovec(b::Bird) = [b]
 Bijectors.logabsdetjac(::typeof(identity), ::Bird) = 0.0
 
-mcmc = sample(f(), MH(), 100; chain_type=VNChain)
+# mcmc = sample(f(), MH(), 100; chain_type=VNChain)
 ```
+
+TODO: Fix the example above, it fails with typed VarInfo because typed VarInfo expects Real things to put into Metadata. SimpleVarInfo would work. See https://github.com/TuringLang/DynamicPPL.jl/pull/1003
 
 Well, that worked quite nicely with FlexiChains.
 
