@@ -179,6 +179,50 @@ using Test
         end
     end
 
+    @testset "dim-2 subset: `subset`" begin
+        @testset "basic application" begin
+            N_iters = 10
+            d = Dict(
+                Parameter(:a) => 1,
+                OtherKey(:b, "c") => 3.0,
+            )
+            chain = FlexiChain{Symbol}(fill(d, N_iters))
+
+            subsetted1 = FlexiChains.subset(chain, [Parameter(:a)])
+            @test typeof(subsetted1) == typeof(chain)
+            @test size(subsetted1) == (N_iters, 1, 1)
+            @test Set(keys(subsetted1)) == Set([Parameter(:a)])
+            @test subsetted1[:a] == chain[:a]
+
+            subsetted2 = FlexiChains.subset(chain, [OtherKey(:b, "c")])
+            @test typeof(subsetted2) == typeof(chain)
+            @test size(subsetted2) == (N_iters, 1, 1)
+            @test Set(keys(subsetted2)) == Set([OtherKey(:b, "c")])
+            @test subsetted2[:b, "c"] == chain[:b, "c"]
+        end
+
+        @testset "key not present" begin
+            N_iters = 10
+            d = Dict(
+                Parameter(:a) => 1,
+                OtherKey(:b, "c") => 3.0,
+            )
+            chain = FlexiChain{Symbol}(fill(d, N_iters))
+            @test_throws KeyError FlexiChains.subset(chain, [Parameter(:x)])
+        end
+
+        @testset "subset parameters and other keys" begin
+            N_iters = 10
+            d = Dict(
+                Parameter(:a) => 1,
+                OtherKey(:b, "c") => 3.0,
+            )
+            chain = FlexiChain{Symbol}(fill(d, N_iters))
+            @test FlexiChains.subset_parameters(chain) == FlexiChains.subset(chain, [Parameter(:a)])
+            @test FlexiChains.subset_other_keys(chain) == FlexiChains.subset(chain, [OtherKey(:b, "c")])
+        end
+    end
+
     @testset "dim-3 merge: `AbstractMCMC.chainscat`" begin
         @testset "basic application" begin
             N_iters = 10

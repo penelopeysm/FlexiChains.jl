@@ -8,13 +8,12 @@ using Test
 using Turing
 using Turing: MCMCChains, AbstractMCMC
 
-
 Turing.setprogress!(false)
 
 @testset verbose = true "FlexiChainTuringExt" begin
     @info "Testing ext/turing.jl"
 
-    @testset "basic sampling" begin
+    @testset "sampling" begin
         @model function gdemo(x, y)
             s2 ~ InverseGamma(2, 3)
             m ~ Normal(0, sqrt(s2))
@@ -91,6 +90,88 @@ Turing.setprogress!(false)
             @test (niters, nchains) == (20, 1)
             @test all(x -> x == 1, vec(chn[@varname(x)]))
             @test all(x -> x == "hi", vec(chn[:a, :b]))
+        end
+    end
+
+    @testset "logp(model, chain)" begin
+        @model function f()
+            x ~ Normal()
+            y ~ Normal(x)
+        end
+        model = f() | (; y=1.0)
+        chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+        xs = chn[@varname(x)]
+        expected_logprior = logpdf.(Normal(), xs)
+        expected_loglike = logpdf.(Normal.(xs), 1.0)
+
+        @testset "logprior" begin
+            lprior = logprior(model, chn)
+            @test isapprox(lprior, expected_logprior)
+        end
+        @testset "loglikelihood" begin
+            llike = loglikelihood(model, chn)
+            @test isapprox(llike, expected_loglike)
+        end
+        @testset "logjoint" begin
+            ljoint = logjoint(model, chn)
+            @test isapprox(ljoint, expected_logprior .+ expected_loglike)
+        end
+    end
+
+    @testset "returned" begin
+        @model function f()
+            x ~ Normal()
+            return x + 1
+        end
+        model = f()
+        chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+        expected_rtnd = chn[:x] .+ 1
+        rtnd = returned(model, chn)
+        @test isapprox(rtnd, expected_rtnd)
+    end
+
+    @testset "predict" begin
+        @model function f()
+            x ~ Normal()
+            y ~ Normal(x)
+        end
+        model = f() | (; y=4.0)
+        # We sample larger numbers so that we have some confidence that
+        # the results weren't obtained by sheer luck.
+        # TODO: Use StableRNG. I couldn't download the package because
+        # train WiFi.
+        chn = sample(Xoshiro(468), model, NUTS(), 1000; chain_type=VNChain, discard_initial=1000, verbose=false)
+        # Sanity check
+        @test isapprox(mean(chn[@varname(x)]), 2.0; atol=0.1)
+
+        @testset "chain values are actually used" begin
+            # TODO: Use StableRNG. I couldn't download the package because
+            # train WiFi.
+            pdns = predict(Xoshiro(468), f(), chn)
+            # Sanity check.
+            @test pdns[@varname(x)] == chn[@varname(x)]
+            # Since the model was conditioned with y = 4.0, we should
+            # expect that the chain's mean of x is approx 2.0.
+            # So the posterior predictions for y should be centred on
+            # 1.0 (ish).
+            @test isapprox(mean(pdns[@varname(y)]), 2.0; atol=0.1)
+        end
+
+        @testset "non-parameter keys are preserved" begin
+            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+            pdns = predict(f(), chn)
+            # Check that the only new thing added was the prediction for y.
+            @test only(setdiff(Set(keys(pdns)), Set(keys(chn)))) == Parameter(@varname(y))
+            # Check that no other keys originally in `chn` were removed.
+            @test isempty(setdiff(Set(keys(chn)), Set(keys(pdns))))
+        end
+
+        @testset "rng is respected" begin
+            pdns1 = predict(Xoshiro(468), f(), chn)
+            pdns2 = predict(Xoshiro(468), f(), chn)
+            @test pdns1 == pdns2
+            pdns3 = predict(Xoshiro(469), f(), chn)
+            @test pdns1 != pdns3
         end
     end
 end

@@ -57,6 +57,10 @@ both chains, the values from `c2` will overwrite those from `c1`.
 
 If the key types are different, the resulting `FlexiChain` will have a promoted
 key type, and a warning will be issued.
+
+The two `FlexiChain`s being merged must have the same dimensions.
+
+Note that this function does not perform a deepcopy of the underlying data.
 """
 function Base.merge(
     c1::FlexiChain{TKey1,NIter,NChain}, c2::FlexiChain{TKey2,NIter,NChain}
@@ -87,6 +91,66 @@ function Base.merge(
             "cannot merge FlexiChains with different sizes $(NIter1)×$(NChain1) and $(NIter2)×$(NChain2).",
         ),
     )
+end
+
+"""
+    hcat(::FlexiChain, ::FlexiChain)
+
+Alias for `merge`.
+"""
+Base.hcat(c1::FlexiChain, c2::FlexiChain) = merge(c1, c2)
+
+"""
+    subset(
+        chain::FlexiChain{TKey,NIter,NChain},
+        keys::AbstractVector{<:FlexiChainKey{<:TKey}}
+    )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
+
+Create a new `FlexiChain` containing only the specified keys and the data corresponding to
+them.
+
+Note that this function does not perform a deepcopy of the underlying data.
+"""
+function subset(
+    chain::FlexiChain{TKey,NIter,NChain}, keys::AbstractVector{<:FlexiChainKey{<:TKey}}
+)::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
+    d = empty(chain._data)
+    for k in keys
+        if haskey(chain._data, k)
+            d[k] = chain._data[k]
+        else
+            throw(KeyError(k))
+        end
+    end
+    return FlexiChain{TKey}(d)
+end
+
+"""
+    subset_parameters(chain::FlexiChain{TKey,NIter,NChain})
+
+Subset a chain, retaining only the `Parameter` keys.
+"""
+function subset_parameters(
+    chain::FlexiChain{TKey,NIter,NChain}
+)::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
+    return subset(chain, Parameter.(get_parameter_names(chain)))
+end
+
+"""
+    subset_parameters(chain::FlexiChain{TKey,NIter,NChain})
+
+Subset a chain, retaining only the keys that are _not_ `Parameter`s.
+"""
+function subset_other_keys(
+    chain::FlexiChain{TKey,NIter,NChain}
+)::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
+    v = FlexiChainKey{TKey}[]
+    for k in keys(chain)
+        if !(k isa Parameter)
+            push!(v, k)
+        end
+    end
+    return subset(chain, v)
 end
 
 function Base.show(
