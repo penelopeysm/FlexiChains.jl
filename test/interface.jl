@@ -1,6 +1,6 @@
 module FCInterfaceTests
 
-using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey
+using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey, @varname, VarName
 using AbstractMCMC: AbstractMCMC
 using Test
 
@@ -78,6 +78,26 @@ using Test
             @test_throws ArgumentError chain[:a]
             # ... with the correct error message
             @test_throws "multiple keys" chain[:a]
+        end
+
+        @testset "VarName" begin
+            N_iters = 10
+            d = Dict(
+                Parameter(@varname(a)) => 1.0,
+                Parameter(@varname(b)) => [2.0, 3.0],
+                Parameter(@varname(c)) => (x = 4.0, y = 5.0),
+            )
+            chain = FlexiChain{VarName}(fill(d, N_iters))
+            @test chain[@varname(a)] == fill(1.0, N_iters)
+            @test chain[@varname(b)] == fill([2.0, 3.0], N_iters)
+            @test chain[@varname(c)] == fill((x = 4.0, y = 5.0), N_iters)
+            @test_throws KeyError chain[@varname(d)]
+            @test chain[@varname(b[1])] == fill(2.0, N_iters)
+            @test chain[@varname(b[2])] == fill(3.0, N_iters)
+            @test_throws BoundsError chain[@varname(b[3])]
+            @test chain[@varname(c.x)] == fill(4.0, N_iters)
+            @test chain[@varname(c.y)] == fill(5.0, N_iters)
+            @test_throws "has no field" chain[@varname(c.z)]
         end
     end
 

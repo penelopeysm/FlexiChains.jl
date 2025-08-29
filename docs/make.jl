@@ -6,7 +6,9 @@ makedocs(;
     modules=[FlexiChains],
     pages=[
          "index.md",
+         "turing.md",
          "mcmcchains.md",
+         "manual.md",
     ],
     checkdocs=:exports,
     doctest=false,

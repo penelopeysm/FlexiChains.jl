@@ -277,6 +277,59 @@ function Base.getindex(chain::FlexiChain{TKey}, parameter_name::TKey) where {TKe
 end
 
 """
+Helper function for `getindex` with `VarName`. Accesses the VarName `vn` in the chain (if it
+is a parameter) and applies the `optic` function to the data before returning it.
+
+`orig_vn` is the VarName that the user attempted to access. It is used only for error
+reporting.
+"""
+function _getindex_vn_with_map(
+    chain::FlexiChain{<:VarName}, vn::VarName{sym}, optic::Function, orig_vn::VarName{sym}
+) where {sym}
+    if haskey(chain, vn)
+        # Found
+        if optic === identity
+            return data(chain._data[Parameter(vn)])
+        else
+            # TODO: Nicer error if the optic is incompatible with the data shape?
+            # Or do we just let it error naturally?
+            return map(optic, data(chain._data[Parameter(vn)]))
+        end
+    else
+        # Not found -- attempt to reduce.
+        # TODO: This depends on AbstractPPL internals and is prone to breaking.
+        # These should be exported from AbstractPPL.
+        o = AbstractPPL.getoptic(vn)
+        i, l = AbstractPPL._init(o), AbstractPPL._last(o)
+        if l === identity
+            # Cannot reduce further
+            throw(KeyError(orig_vn))
+        else
+            new_vn = VarName{sym}(i)
+            new_optic = optic ∘ l
+            return _getindex_vn_with_map(chain, new_vn, new_optic, orig_vn)
+        end
+    end
+end
+"""
+    Base.getindex(chain::FlexiChain{<:VarName}, vn::VarName)
+
+An additional specialisation for `VarName`, meant for convenience when working with
+Turing.jl models.
+
+`chn[vn]` first checks if the VarName `vn` itself is stored in the chain. If not, it will
+attempt to check if the 'parent' of `vn` is in the chain, and so on, until all possibilities
+have been exhausted.
+
+For example, the parent of `@varname(x[1])` is `@varname(x)`. If `@varname(x[1])` itself is
+in the chain, then that will be returned. If not, then `@varname(x)` will be checked next,
+and if that is a vector-valued parameter then all of its first entries will be returned.
+"""
+function Base.getindex(chain::FlexiChain{<:VarName}, vn::VarName)
+    return _getindex_vn_with_map(chain, vn, identity, vn)
+end
+
+"""
     get_parameter_names(chain::FlexiChain{TKey}) where {TKey}
 
 Returns a vector of parameter names in the `FlexiChain`.

@@ -1,12 +1,12 @@
 module FlexiChains
 
+using AbstractPPL: AbstractPPL, VarName, @varname
 using DocStringExtensions: TYPEDFIELDS
 
 include("data_structures.jl")
 include("interface.jl")
 
 # For maximum ease of use with Turing...
-using AbstractPPL: VarName, @varname
 const VNChain = FlexiChain{VarName}
 export VarName, @varname, VNChain
 
