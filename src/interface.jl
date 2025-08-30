@@ -144,7 +144,7 @@ Subset a chain, retaining only the keys that are _not_ `Parameter`s.
 function subset_other_keys(
     chain::FlexiChain{TKey,NIter,NChain}
 )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
-    v = FlexiChainKey{TKey}[]
+    v = OtherKey[]
     for k in keys(chain)
         if !(k isa Parameter)
             push!(v, k)

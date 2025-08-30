@@ -122,7 +122,7 @@ Either a `Parameter{T}`, or an `OtherKey`.
 
 All keys in a `FlexiChain{T}` must be a `FlexiChainKey{T}`.
 """
-const FlexiChainKey{T} = Union{Parameter{<:T},OtherKey{<:Any}}
+const FlexiChainKey{T} = Union{Parameter{<:T},OtherKey}
 
 """
     FlexiChain{TKey,NIter,NChains,Sections}
