@@ -12,19 +12,29 @@ To obtain a `FlexiChain` via MCMC sampling in Turing.jl, pass the `chain_type` a
 using Turing
 using FlexiChains: VNChain
 
-@model f() = x ~ Normal()
+@model f()
+    x ~ Normal()
+    y ~ MvNormal(zeros(2), I)
+end
 chain = sample(f(), NUTS(), 1000; chain_type=VNChain)
+```
+
+You can index into a FlexiChain using VarNames.
+
+```julia
+chain[@varname(x)]    # -> Vector{Float64}
+chain[@varname(y)]    # -> Vector{Vector{Float64}}
+chain[@varname(y[1])] # -> Vector{Float64}
 ```
 
 Functions in Turing.jl which take chains as input, such as `returned`, `predict`, and `logjoint` should work out of the box with exactly the same behaviour as before.
 If you find a function that does not work, please let me know by opening an issue.
 
-> [!NOTE]
-> While I promise to always satisfy the interface to Turing.jl, this is not necessarily true for functions that are defined directly in MCMCChains.jl, such as data analysis or plotting. Of course I would like to make this package as feature-rich as possible (and issues are therefore *still* very much welcome), but such features may either be deprioritised or omitted due to design decisions.
->
-> In the meantime, if you need a feature that is only present in MCMCChains, you can convert to the old `MCMCChains.Chains` type using `MCMCChains.Chains(chain)`.
+Because FlexiChains is in early development, it does not have feature parity with MCMCChains.
+In particular, statistical analysis and plotting are not yet implemented.
+If you need these features, you can convert a `VNChain` to `MCMCChains.Chains` using `MCMCChains.Chains(chain)`.
 
-### How is this better?
+### How is FlexiChains better?
 
 Turing's default data type for Markov chains is [`MCMCChains.Chains`](https://turinglang.org/MCMCChains.jl/stable/).
 
