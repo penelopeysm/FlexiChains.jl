@@ -20,7 +20,7 @@ The keys must be one of two types:
 ```@docs
 Parameter
 Extra
-FlexiChainKey
+ParameterOrExtra
 ```
 
 The values must be matrices or vectors that all have the same size.
@@ -46,7 +46,7 @@ Note that, although the dictionaries themselves may have loose types, the key ty
 The most unambiguous way to index into a `FlexiChain` is to use either `Parameter` or `Extra`.
 
 ```@docs
-Base.getindex(::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
+Base.getindex(::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
 ```
 
 This can be slightly verbose, so the following two methods are provided as a 'quick' way of accessing parameters and other keys respectively:

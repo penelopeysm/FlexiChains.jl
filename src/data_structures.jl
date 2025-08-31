@@ -1,6 +1,6 @@
 using AbstractMCMC: AbstractMCMC
 
-export FlexiChain, Parameter, Extra, FlexiChainKey
+export FlexiChain, Parameter, Extra, ParameterOrExtra
 
 """
     SizedMatrix{NIter,NChains,T}
@@ -116,13 +116,13 @@ struct Extra{T}
 end
 
 """
-    FlexiChainKey{T}
+    ParameterOrExtra{T}
 
 Either a `Parameter{T}`, or an `Extra`.
 
-All keys in a `FlexiChain{T}` must be a `FlexiChainKey{T}`.
+All keys in a `FlexiChain{T}` must be a `ParameterOrExtra{T}`.
 """
-const FlexiChainKey{T} = Union{Parameter{<:T},Extra}
+const ParameterOrExtra{T} = Union{Parameter{<:T},Extra}
 
 """
     FlexiChain{TKey,NIter,NChains,Sections}
@@ -141,7 +141,7 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
     Internal data. Do not access this directly unless you know what you are doing!
     You should use the interface methods defined instead.
     """
-    _data::Dict{<:FlexiChainKey{TKey},<:SizedMatrix{NIter,NChains,<:Any}}
+    _data::Dict{<:ParameterOrExtra{TKey},<:SizedMatrix{NIter,NChains,<:Any}}
 
     @doc """
         FlexiChain{TKey}(
@@ -151,7 +151,7 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
     Construct a `FlexiChain` from a vector or matrix of dictionaries. Each
     dictionary corresponds to one iteration.
 
-    Each dictionary must be a mapping from a `FlexiChainKey{TKey}` (i.e.,
+    Each dictionary must be a mapping from a `ParameterOrExtra{TKey}` (i.e.,
     either a `Parameter{TKey}` or an `Extra`) to its value at that
     iteration.
 
@@ -183,10 +183,10 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
         end
 
         # Extract all unique keys from the dictionaries
-        keys_set = Set{FlexiChainKey{TKey}}()
+        keys_set = Set{ParameterOrExtra{TKey}}()
         for d in array_of_dicts
             for k in keys(d)
-                if !(k isa FlexiChainKey{TKey})
+                if !(k isa ParameterOrExtra{TKey})
                     msg = "all keys should either be `Parameter{<:$TKey}` or `Extra`; got `$(typeof(k))`."
                     throw(ArgumentError(msg))
                 end
@@ -195,7 +195,7 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
         end
 
         # We have data as matrices-of-dict; we want to convert to dict-of-matrices.
-        data = Dict{FlexiChainKey{TKey},SizedMatrix{niter,nchains}}()
+        data = Dict{ParameterOrExtra{TKey},SizedMatrix{niter,nchains}}()
         for key in keys_set
             # Extract the values for this key from all dictionaries
             values = map(d -> get(d, key, missing), array_of_dicts)
@@ -215,7 +215,7 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
 
     Construct a `FlexiChain` from a dictionary of arrays.
 
-    Each key in the dictionary must subtype `FlexiChainKey{TKey}` (i.e., it is
+    Each key in the dictionary must subtype `ParameterOrExtra{TKey}` (i.e., it is
     either a `Parameter{TKey}` or an `Extra`). The values of the dictionary
     must all be of the same size.
 
@@ -240,7 +240,7 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
     ) where {TKey,N}
         # If no data, assume 0 iters and 0 chains.
         if isempty(dict_of_arrays)
-            return FlexiChain{TKey,0,0}(Dict{FlexiChainKey{TKey},SizedMatrix{0,0}}())
+            return FlexiChain{TKey,0,0}(Dict{ParameterOrExtra{TKey},SizedMatrix{0,0}}())
         end
 
         # dict_of_arrays is already in the correct form, but we need to do some
@@ -254,10 +254,10 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
             throw(DimensionMismatch("expected vector or matrix, got $(N)-dimensional array."))
         end
 
-        data = Dict{FlexiChainKey{TKey},SizedMatrix{niter,nchains}}()
+        data = Dict{ParameterOrExtra{TKey},SizedMatrix{niter,nchains}}()
         for (key, array) in pairs(dict_of_arrays)
             # Check key type
-            if !(key isa FlexiChainKey{TKey})
+            if !(key isa ParameterOrExtra{TKey})
                 msg = "all keys should either be `Parameter{<:$TKey}` or `Extra`; got `$(typeof(key))`."
                 throw(ArgumentError(msg))
             end

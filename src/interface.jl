@@ -34,12 +34,12 @@ function Base.keys(chain::FlexiChain{TKey}) where {TKey}
 end
 
 """
-    haskey(chain::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
+    haskey(chain::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
     haskey(chain::FlexiChain{TKey}, key::TKey) where {TKey}
 
 Returns `true` if the chain contains the given key.
 """
-function Base.haskey(chain::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
+function Base.haskey(chain::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
     return haskey(chain._data, key)
 end
 function Base.haskey(chain::FlexiChain{TKey}, key::TKey) where {TKey}
@@ -77,8 +77,8 @@ function Base.merge(
     # TODO: This function has to access internal data, urk
     TValNew = Base.promote_type(eltype(valtype(c1._data)), eltype(valtype(c2._data)))
     # Merge the data dictionaries
-    d1 = Dict{FlexiChainKey{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c1._data)
-    d2 = Dict{FlexiChainKey{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c2._data)
+    d1 = Dict{ParameterOrExtra{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c1._data)
+    d2 = Dict{ParameterOrExtra{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c2._data)
     merged_data = merge(d1, d2)
     return FlexiChain{TKeyNew}(merged_data)
 end
@@ -103,7 +103,7 @@ Base.hcat(c1::FlexiChain, c2::FlexiChain) = merge(c1, c2)
 """
     subset(
         chain::FlexiChain{TKey,NIter,NChain},
-        keys::AbstractVector{<:FlexiChainKey{<:TKey}}
+        keys::AbstractVector{<:ParameterOrExtra{<:TKey}}
     )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
 
 Create a new `FlexiChain` containing only the specified keys and the data corresponding to
@@ -112,7 +112,7 @@ them.
 Note that this function does not perform a deepcopy of the underlying data.
 """
 function subset(
-    chain::FlexiChain{TKey,NIter,NChain}, keys::AbstractVector{<:FlexiChainKey{<:TKey}}
+    chain::FlexiChain{TKey,NIter,NChain}, keys::AbstractVector{<:ParameterOrExtra{<:TKey}}
 )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
     d = empty(chain._data)
     for k in keys
@@ -192,14 +192,14 @@ function Base.show(
 end
 
 """
-    Base.getindex(chain::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
+    Base.getindex(chain::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
 
 Unambiguously access the data corresponding to the given `key` in the `chain`.
 
 You will need to use this method if you have multiple keys that convert to the
 same `Symbol`, such as a `Parameter(:x)` and an `Extra(:some_section, :x)`.
 """
-function Base.getindex(chain::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
+function Base.getindex(chain::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
     return data(chain._data[key])  # errors if key not found
 end
 """
@@ -223,7 +223,7 @@ actual key.
 """
 function Base.getindex(chain::FlexiChain{TKey}, sym_key::Symbol) where {TKey}
     # Convert all keys to symbols and see if there is a unique match
-    potential_keys = FlexiChainKey{TKey}[]
+    potential_keys = ParameterOrExtra{TKey}[]
     for k in keys(chain._data)
         sym = if k isa Parameter{<:TKey}
             # TODO: What happens if Symbol(...) fails on some weird type?
@@ -407,7 +407,7 @@ Concatenate two `FlexiChain`s along the chain dimension. Both `c1` and
 function AbstractMCMC.chainscat(
     c1::FlexiChain{TKey,NIter,NChains1}, c2::FlexiChain{TKey,NIter,NChains2}
 )::FlexiChain{TKey,NIter,NChains1 + NChains2} where {TKey,NIter,NChains1,NChains2}
-    d = Dict{FlexiChainKey{TKey},SizedMatrix{NIter,NChains1 + NChains2}}()
+    d = Dict{ParameterOrExtra{TKey},SizedMatrix{NIter,NChains1 + NChains2}}()
     for k in union(keys(c1), keys(c2))
         c1_data = if haskey(c1, k)
             c1[k]
@@ -429,7 +429,7 @@ end
         chain::FlexiChain{TKey},
         iteration_number::Int,
         chain_number::Union{Int,Nothing}=nothing
-    )::Dict{FlexiChainKey{TKey},Any}
+    )::Dict{ParameterOrExtra{TKey},Any}
 
 Extract the dictionary corresponding to a single MCMC iteration.
 
@@ -442,8 +442,8 @@ To get only the parameter keys, use `get_parameter_dict_from_iter`.
 """
 function get_dict_from_iter(
     chain::FlexiChain{TKey}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing
-)::Dict{FlexiChainKey{TKey},Any} where {TKey}
-    d = Dict{FlexiChainKey{TKey},Any}()
+)::Dict{ParameterOrExtra{TKey},Any} where {TKey}
+    d = Dict{ParameterOrExtra{TKey},Any}()
     for k in keys(chain)
         if chain_number === nothing
             d[k] = chain[k][iteration_number]

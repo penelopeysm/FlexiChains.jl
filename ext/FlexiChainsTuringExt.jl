@@ -1,6 +1,6 @@
 module FlexiChainsTuringExt
 
-using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, FlexiChainKey, VarName
+using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, ParameterOrExtra, VarName
 using Turing: Turing, AbstractMCMC
 
 ######################
@@ -9,8 +9,8 @@ using Turing: Turing, AbstractMCMC
 
 function FlexiChains.to_varname_dict(
     transition::Turing.Inference.Transition
-)::Dict{FlexiChainKey{VarName},Any}
-    d = Dict{FlexiChainKey{VarName},Any}()
+)::Dict{ParameterOrExtra{VarName},Any}
+    d = Dict{ParameterOrExtra{VarName},Any}()
     for (varname, value) in pairs(transition.θ)
         d[Parameter(varname)] = value
     end
