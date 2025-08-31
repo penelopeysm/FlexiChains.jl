@@ -4,9 +4,6 @@ Flexible Markov chains.
 
 [**Documentation**](http://pysm.dev/FlexiChains.jl/)
 
-> [!NOTE]
-> This package is in early development and its interface is subject to change. Suggestions and contributions from early adopters are very welcome!
-
 ### Usage
 
 To obtain a `FlexiChain` via MCMC sampling in Turing.jl, pass the `chain_type` argument to the `sample` function.
