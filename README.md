@@ -2,7 +2,9 @@
 
 Flexible Markov chains.
 
-> [!WARNING]
+[**Documentation**](http://pysm.dev/FlexiChains.jl/)
+
+> [!NOTE]
 > This package is in early development and its interface is subject to change. Suggestions and contributions from early adopters are very welcome!
 
 ### Usage
