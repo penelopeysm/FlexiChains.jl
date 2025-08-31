@@ -31,10 +31,14 @@ function AbstractMCMC.bundle_samples(
     ::AbstractMCMC.AbstractSampler,
     state::Any,
     chain_type::Type{T};
+    # discard_initial::Int=0,
+    # thinning::Int=1,
     _kwargs...,
 )::T where {T<:FlexiChain{<:VarName}}
     dicts = map(FlexiChains.to_varname_dict, transitions)
     return T(dicts)
+    # TODO: add extra information like iteration number, time,
+    # chain save state, etc.
 end
 
 end # module FlexiChainsTuringExt
