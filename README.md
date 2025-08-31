@@ -34,7 +34,9 @@ Turing's default data type for Markov chains is [`MCMCChains.Chains`](https://tu
 This entire package essentially came about because I think `MCMCChains.Chains` is a bad data structure.
 Specifically, it represents data as a mapping of `Symbol`s to arrays of `Float64`s.
 
+<div align="center">
 <img width="450" alt="flexichains" src="https://github.com/user-attachments/assets/4101f2e9-d61d-4e02-bb57-e0bf5ec11e31" />
+</div>
 
 However, Turing.jl uses `VarName`s as keys in its models, and the values can be anything that is sampled from a distribution.
 
