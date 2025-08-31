@@ -22,7 +22,7 @@ If you find a function that does not work, please let me know by opening an issu
 > [!NOTE]
 > While I promise to always satisfy the interface to Turing.jl, this is not necessarily true for functions that are defined directly in MCMCChains.jl, such as data analysis or plotting. Of course I would like to make this package as feature-rich as possible (and issues are therefore *still* very much welcome), but such features may either be deprioritised or omitted due to design decisions.
 >
-> In the meantime, if you need a feature that is only present in MCMCChains, you can convert to the old `MCMCChains.Chains` type using `MCMCChains.Chains(flexichain)`.
+> In the meantime, if you need a feature that is only present in MCMCChains, you can convert to the old `MCMCChains.Chains` type using `MCMCChains.Chains(chain)`.
 
 ### How is this better?
 
