@@ -15,11 +15,11 @@ FlexiChain
 The keys must be one of two types:
 
   - `Parameter(::T)`: a parameter of the Markov chain itself
-  - `OtherKey(::Symbol, ::Any)`: a key that is not a parameter, such as metadata. The `Symbol` argument identifies a _section_ which the key belongs to, thus allowing for multiple keys to be grouped together in meaningful ways.
+  - `Extra(::Symbol, ::Any)`: a key that is not a parameter, such as metadata. The `Symbol` argument identifies a _section_ which the key belongs to, thus allowing for multiple keys to be grouped together in meaningful ways.
 
 ```@docs
 Parameter
-OtherKey
+Extra
 FlexiChainKey
 ```
 
@@ -43,7 +43,7 @@ Note that, although the dictionaries themselves may have loose types, the key ty
 
 ## Accessing data
 
-The most unambiguous way to index into a `FlexiChain` is to use either `Parameter` or `OtherKey`.
+The most unambiguous way to index into a `FlexiChain` is to use either `Parameter` or `Extra`.
 
 ```@docs
 Base.getindex(::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
@@ -57,7 +57,7 @@ Base.getindex(::FlexiChain{TKey}, section_name::Symbol, key_name::Any) where {TK
 ```
 
 Finally, to preserve some semblance of backwards compatibility with MCMCChains.jl, FlexiChains can also be indexed by `Symbol`s.
-It does so by looking for a unique `Parameter` or `OtherKey` which can be converted to that `Symbol`.
+It does so by looking for a unique `Parameter` or `Extra` which can be converted to that `Symbol`.
 
 ```@docs
 Base.getindex(::FlexiChain, key::Symbol)

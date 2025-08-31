@@ -222,13 +222,13 @@ Tough luck.
 HMC samplers further include extra metadata such as `hamiltonian_energy`, and in general **any sampler** can include any kind of extra metadata it wants.
 As a user, you have no way of knowing what these names are, and you have to avoid using them in your model, which is quite unfair.
 
-FlexiChains circumvents this entirely since it stores these separately as `Parameter(@varname(lp))` and `OtherKey(:logprobs, :lp)`.
+FlexiChains circumvents this entirely since it stores these separately as `Parameter(@varname(lp))` and `Extra(:logprobs, :lp)`.
 
 ```@example 1
 fchain = sample(Xoshiro(468), lp_model(), NUTS(), 100; chain_type=VNChain)
 ```
 
-You will of course run into ambiguities if you simply attempt to index the chain with `[:lp]`, because both the `Parameter(@varname(lp))` and the `OtherKey(:logprobs, :lp)` exist.
+You will of course run into ambiguities if you simply attempt to index the chain with `[:lp]`, because both the `Parameter(@varname(lp))` and the `Extra(:logprobs, :lp)` exist.
 
 ```julia
 fchain[:lp]

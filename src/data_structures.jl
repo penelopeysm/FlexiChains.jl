@@ -1,6 +1,6 @@
 using AbstractMCMC: AbstractMCMC
 
-export FlexiChain, Parameter, OtherKey, FlexiChainKey
+export FlexiChain, Parameter, Extra, FlexiChainKey
 
 """
     SizedMatrix{NIter,NChains,T}
@@ -103,14 +103,14 @@ struct Parameter{T}
 end
 
 """
-    OtherKey(section_name::Symbol, key_name::Any)
+    Extra(section_name::Symbol, key_name::Any)
 
 A key in a `FlexiChain` that is not a parameter. FlexiChain allows for
 such informations to be grouped into _sections_, which are identified by
 `Symbol`s. The name of the key itself can be of any type and is not
 constrained by the type of the `FlexiChain`.
 """
-struct OtherKey{T}
+struct Extra{T}
     section_name::Symbol
     key_name::T
 end
@@ -118,11 +118,11 @@ end
 """
     FlexiChainKey{T}
 
-Either a `Parameter{T}`, or an `OtherKey`.
+Either a `Parameter{T}`, or an `Extra`.
 
 All keys in a `FlexiChain{T}` must be a `FlexiChainKey{T}`.
 """
-const FlexiChainKey{T} = Union{Parameter{<:T},OtherKey}
+const FlexiChainKey{T} = Union{Parameter{<:T},Extra}
 
 """
     FlexiChain{TKey,NIter,NChains,Sections}
@@ -152,7 +152,7 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
     dictionary corresponds to one iteration.
 
     Each dictionary must be a mapping from a `FlexiChainKey{TKey}` (i.e.,
-    either a `Parameter{TKey}` or an `OtherKey`) to its value at that
+    either a `Parameter{TKey}` or an `Extra`) to its value at that
     iteration.
 
     If `array_of_dicts` is a vector (i.e., `N = 1`), then `niter` is the length
@@ -165,7 +165,7 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
 
     ```julia
     d = fill(
-        Dict(Parameter(:x) => rand(), OtherKey(:section, "y") => rand()), 200, 3
+        Dict(Parameter(:x) => rand(), Extra(:section, "y") => rand()), 200, 3
     )
     chn = FlexiChain{Symbol}(d)
     ```
@@ -187,7 +187,7 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
         for d in array_of_dicts
             for k in keys(d)
                 if !(k isa FlexiChainKey{TKey})
-                    msg = "all keys should either be `Parameter{<:$TKey}` or `OtherKey`; got `$(typeof(k))`."
+                    msg = "all keys should either be `Parameter{<:$TKey}` or `Extra`; got `$(typeof(k))`."
                     throw(ArgumentError(msg))
                 end
                 push!(keys_set, k)
@@ -216,7 +216,7 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
     Construct a `FlexiChain` from a dictionary of arrays.
 
     Each key in the dictionary must subtype `FlexiChainKey{TKey}` (i.e., it is
-    either a `Parameter{TKey}` or an `OtherKey`). The values of the dictionary
+    either a `Parameter{TKey}` or an `Extra`). The values of the dictionary
     must all be of the same size.
 
     If the values are vectors (i.e., `N = 1`), then `niters` will be the length
@@ -230,7 +230,7 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
     ```julia
     d = Dict(
         Parameter(:x) => rand(200, 3),
-        OtherKey(:section, "y") => rand(200, 3),
+        Extra(:section, "y") => rand(200, 3),
     )
     chn = FlexiChain{Symbol}(d)
     ```
@@ -258,7 +258,7 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
         for (key, array) in pairs(dict_of_arrays)
             # Check key type
             if !(key isa FlexiChainKey{TKey})
-                msg = "all keys should either be `Parameter{<:$TKey}` or `OtherKey`; got `$(typeof(key))`."
+                msg = "all keys should either be `Parameter{<:$TKey}` or `Extra`; got `$(typeof(key))`."
                 throw(ArgumentError(msg))
             end
             # Check size

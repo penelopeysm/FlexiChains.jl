@@ -1,6 +1,6 @@
 module FlexiChainsTuringExt
 
-using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey, FlexiChainKey, VarName
+using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, FlexiChainKey, VarName
 using Turing: Turing, AbstractMCMC
 
 ######################
@@ -15,12 +15,12 @@ function FlexiChains.to_varname_dict(
         d[Parameter(varname)] = value
     end
     # add in the log probs
-    d[OtherKey(:logprobs, :logprior)] = transition.logprior
-    d[OtherKey(:logprobs, :loglikelihood)] = transition.loglikelihood
-    d[OtherKey(:logprobs, :lp)] = transition.logprior + transition.loglikelihood
+    d[Extra(:logprobs, :logprior)] = transition.logprior
+    d[Extra(:logprobs, :loglikelihood)] = transition.loglikelihood
+    d[Extra(:logprobs, :lp)] = transition.logprior + transition.loglikelihood
     # add in the transition stats (if available)
     for (key, value) in pairs(transition.stat)
-        d[OtherKey(:sampler_stats, key)] = value
+        d[Extra(:sampler_stats, key)] = value
     end
     return d
 end

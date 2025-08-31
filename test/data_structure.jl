@@ -1,6 +1,6 @@
 module FCDataStructureTests
 
-using FlexiChains: FlexiChains, FlexiChain, Parameter, OtherKey
+using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra
 using Test
 
 @testset verbose = true "data_structure.jl" begin
@@ -12,9 +12,7 @@ using Test
             N_iters = 10
             dicts = fill(
                 Dict(
-                    Parameter(:a) => 1,
-                    Parameter(:b) => 2,
-                    OtherKey(:section, "hello") => 3.0,
+                    Parameter(:a) => 1, Parameter(:b) => 2, Extra(:section, "hello") => 3.0
                 ),
                 N_iters,
             )
@@ -25,9 +23,7 @@ using Test
             N_iters, N_chains = 10, 2
             dicts = fill(
                 Dict(
-                    Parameter(:a) => 1,
-                    Parameter(:b) => 2,
-                    OtherKey(:section, "hello") => 3.0,
+                    Parameter(:a) => 1, Parameter(:b) => 2, Extra(:section, "hello") => 3.0
                 ),
                 N_iters,
                 N_chains,
@@ -42,7 +38,7 @@ using Test
             arrays = Dict(
                 Parameter(:a) => rand(N_iters),
                 Parameter(:b) => rand(N_iters),
-                OtherKey(:section, "hello") => rand(N_iters),
+                Extra(:section, "hello") => rand(N_iters),
             )
             chain = FlexiChain{Symbol}(arrays)
             @test size(chain) == (N_iters, 3, 1)
@@ -52,7 +48,7 @@ using Test
             arrays = Dict(
                 Parameter(:a) => rand(N_iters, N_chains),
                 Parameter(:b) => rand(N_iters, N_chains),
-                OtherKey(:section, "hello") => rand(N_iters, N_chains),
+                Extra(:section, "hello") => rand(N_iters, N_chains),
             )
             chain = FlexiChain{Symbol}(arrays)
             @test size(chain) == (N_iters, 3, N_chains)

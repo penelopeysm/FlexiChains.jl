@@ -3,7 +3,7 @@
 
 Returns the size of the `FlexiChain` as a tuple `(NIter, num_objects, NChains)`,
 where `num_objects` is the number of unique keys in the chain (both `Parameter`s
-and `OtherKey`s).
+and `Extra`s).
 """
 function Base.size(chain::FlexiChain{TKey,NIter,NChains}) where {TKey,NIter,NChains}
     num_objects = length(chain._data)
@@ -144,7 +144,7 @@ Subset a chain, retaining only the keys that are _not_ `Parameter`s.
 function subset_other_keys(
     chain::FlexiChain{TKey,NIter,NChain}
 )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
-    v = OtherKey[]
+    v = Extra[]
     for k in keys(chain)
         if !(k isa Parameter)
             push!(v, k)
@@ -197,7 +197,7 @@ end
 Unambiguously access the data corresponding to the given `key` in the `chain`.
 
 You will need to use this method if you have multiple keys that convert to the
-same `Symbol`, such as a `Parameter(:x)` and an `OtherKey(:some_section, :x)`.
+same `Symbol`, such as a `Parameter(:x)` and an `Extra(:some_section, :x)`.
 """
 function Base.getindex(chain::FlexiChain{TKey}, key::FlexiChainKey{TKey}) where {TKey}
     return data(chain._data[key])  # errors if key not found
@@ -208,7 +208,7 @@ end
 The most convenient method to index into a `FlexiChain` is using `Symbol`.
 
 However, recall that the keys in a `FlexiChain{TKey}` are not stored as
-`Symbol`s but rather as either `Parameter{TKey}` or `OtherKey`. Thus, to
+`Symbol`s but rather as either `Parameter{TKey}` or `Extra`. Thus, to
 access the data corresponding to a `Symbol`, we first convert all key names
 (both parameters and other keys) to `Symbol`s, and then check if there is a
 unique match.
@@ -217,7 +217,7 @@ If there is, then we can return that data. If there are no valid matches,
 then we throw a `KeyError`.
 
 If there are multiple matches: for example, if you have a `Parameter(:x)`
-and also an `OtherKey(:some_section, :x)`, then this method will also
+and also an `Extra(:some_section, :x)`, then this method will also
 throw a `KeyError`. You will then have to index into it using the
 actual key.
 """
@@ -228,7 +228,7 @@ function Base.getindex(chain::FlexiChain{TKey}, sym_key::Symbol) where {TKey}
         sym = if k isa Parameter{<:TKey}
             # TODO: What happens if Symbol(...) fails on some weird type?
             Symbol(k.name)
-        elseif k isa OtherKey
+        elseif k isa Extra
             # TODO: What happens if Symbol(...) fails on some weird type?
             Symbol(k.key_name)
         end
@@ -244,8 +244,8 @@ function Base.getindex(chain::FlexiChain{TKey}, sym_key::Symbol) where {TKey}
         for k in potential_keys
             if k isa Parameter{<:TKey}
                 s *= "  - Parameter($(k.name))\n"
-            elseif k isa OtherKey
-                s *= "  - OtherKey(:$(k.section_name), $(k.key_name))\n"
+            elseif k isa Extra
+                s *= "  - Extra(:$(k.section_name), $(k.key_name))\n"
             end
         end
         throw(ArgumentError(s))
@@ -257,14 +257,14 @@ end
     Base.getindex(chain::FlexiChain{TKey}, section_name::Symbol, key_name::Any) where {TKey}
 
 Convenience method for retrieving non-parameter keys. Equal to
-`chain[OtherKey(section_name, key_name)]`.
+`chain[Extra(section_name, key_name)]`.
 """
 function Base.getindex(
     chain::FlexiChain{TKey}, section_name::Symbol, key_name::Any
 ) where {TKey}
     # This is a convenience method to access data in a section
     # using the section name and key name.
-    return chain[OtherKey(section_name, key_name)]
+    return chain[Extra(section_name, key_name)]
 end
 """
     Base.getindex(chain::FlexiChain{TKey}, parameter_name::TKey) where {TKey}
@@ -349,10 +349,10 @@ end
 
 Returns a vector of non-parameter names in the `FlexiChain`.
 """
-function get_other_key_names(chain::FlexiChain)::Vector{OtherKey}
-    other_key_names = OtherKey[]
+function get_other_key_names(chain::FlexiChain)::Vector{Extra}
+    other_key_names = Extra[]
     for k in keys(chain._data)
-        if k isa OtherKey
+        if k isa Extra
             push!(other_key_names, k)
         end
     end
@@ -362,13 +362,13 @@ end
 """
     get_other_key_names_grouped(chain::FlexiChain)
 
-Returns a NamedTuple of `OtherKey` names, grouped by their section.
+Returns a NamedTuple of `Extra` names, grouped by their section.
 """
 function get_other_key_names_grouped(chain::FlexiChain)::NamedTuple
     other_keys = Dict{Symbol,Any}()
     # Build up the dictionary of section name => key name
     for k in keys(chain._data)
-        if k isa OtherKey
+        if k isa Extra
             section = k.section_name
             key_name = k.key_name
             if !haskey(other_keys, section)

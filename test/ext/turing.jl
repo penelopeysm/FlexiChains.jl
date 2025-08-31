@@ -1,6 +1,6 @@
 module FCTuringExtTests
 
-using FlexiChains: FlexiChains, VNChain, Parameter, OtherKey
+using FlexiChains: FlexiChains, VNChain, Parameter, Extra
 using FlexiChains: FlexiChains
 using Random: Xoshiro
 using SliceSampling: RandPermGibbs, SliceSteppingOut
@@ -127,7 +127,7 @@ Turing.setprogress!(false)
             AbstractMCMC.step(rng, model, ::S, state=nothing; kwargs...) = (Tn(), nothing)
             # Get it to work with FlexiChains
             FlexiChains.to_varname_dict(::Tn) =
-                Dict(Parameter(@varname(x)) => 1, OtherKey(:a, :b) => "hi")
+                Dict(Parameter(@varname(x)) => 1, Extra(:a, :b) => "hi")
             # Then we should be able to sample
             chn = sample(model, S(), 20; chain_type=VNChain)
             @test chn isa VNChain
