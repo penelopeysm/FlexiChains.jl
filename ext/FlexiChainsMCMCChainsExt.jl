@@ -43,16 +43,13 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName,NIter,NChain}) where {N
     # Handle non-parameter keys
     internal_keys = Symbol[]
     internal_values = Array{Real,3}(undef, NIter, 0, NChain)
-    name_map = Dict{Symbol,Vector{Symbol}}()
+    # Note that Turing.jl stores all other keys in the 'internals' section, which is a bit
+    # coarse (we could use our own section keys...) but we reproduce it here to make sure
+    # that downstream usage of the resulting MCMCChains.Chains object works as expected.
     for k in FlexiChains.get_other_key_names(vnchain)
         v = map(identity, vnchain[k])
         if eltype(v) <: Real
             push!(internal_keys, Symbol(k.key_name))
-            if haskey(name_map, k.section_name)
-                push!(name_map[k.section_name], Symbol(k.key_name))
-            else
-                name_map[k.section_name] = [Symbol(k.key_name)]
-            end
             internal_values = hcat(internal_values, reshape(v, NIter, 1, NChain))
         else
             @warn "key $k skipped in MCMCChains conversion as it is not Real-valued"
@@ -61,9 +58,16 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName,NIter,NChain}) where {N
 
     all_symbols = vcat(varname_symbols, internal_keys)
     all_values = hcat(values, internal_values)
+    # The following 'concretisation' (in reality, casting everything to Float64) is overly
+    # aggressive. It's only included to match what Turing.jl does. See
+    # https://github.com/TuringLang/Turing.jl/issues/2666 for details.
+    all_values = MCMCChains.concretize(all_values)
 
     info = (varname_to_symbol=OrderedDict(zip(varnames, varname_symbols)),)
-    return MCMCChains.Chains(all_values, all_symbols, NamedTuple(name_map); info=info)
+    # See comment above for the use of 'internals' as the only section.
+    return MCMCChains.Chains(
+        all_values, all_symbols, (; internals=internal_keys); info=info
+    )
 end
 
 end # module

@@ -174,6 +174,33 @@ Turing.setprogress!(false)
             @test pdns1 != pdns3
         end
     end
+
+    @testset "MCMCChains conversion" begin
+        @model function f()
+            x ~ Normal()
+            y ~ MvNormal(zeros(3), I)
+            z ~ LKJCholesky(3, 2.0)
+        end
+        mcmcc = sample(Xoshiro(468), f(), NUTS(), 20; chain_type=MCMCChains.Chains, verbose=false)
+        flexic = sample(Xoshiro(468), f(), NUTS(), 20; chain_type=VNChain, verbose=false)
+        new_mcmcc = MCMCChains.Chains(flexic)
+
+        # In general because the ordering of parameters in FlexiChains is not guaranteed
+        # we cannot directly compare the two chains.
+        @testset "the data itself" begin
+            @test Set(keys(new_mcmcc)) == Set(keys(mcmcc))
+            for k in keys(new_mcmcc)
+                @test new_mcmcc[k] == mcmcc[k]
+            end
+        end
+        @testset "grouping of data into sections" begin
+            @test Set(keys(new_mcmcc.name_map)) == Set(keys(mcmcc.name_map))
+            for k in keys(new_mcmcc.name_map)
+                # each of these is a vector which may be in a different order
+                @test Set(new_mcmcc.name_map[k]) == Set(mcmcc.name_map[k])
+            end
+        end
+    end
 end
 
 end # module
