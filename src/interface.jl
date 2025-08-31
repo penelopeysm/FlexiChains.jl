@@ -1,3 +1,8 @@
+@public subset, subset_parameters, subset_extras
+@public parameters, extras, extras_grouped
+@public get_dict_from_iter, get_parameter_dict_from_iter
+@public to_varname_dict
+
 """
     size(chain::FlexiChain{TKey,NIter,NChains}) where {TKey,NIter,NChains}
 
@@ -94,13 +99,6 @@ function Base.merge(
 end
 
 """
-    hcat(::FlexiChain, ::FlexiChain)
-
-Alias for `merge`.
-"""
-Base.hcat(c1::FlexiChain, c2::FlexiChain) = merge(c1, c2)
-
-"""
     subset(
         chain::FlexiChain{TKey,NIter,NChain},
         keys::AbstractVector{<:ParameterOrExtra{<:TKey}}
@@ -133,15 +131,15 @@ Subset a chain, retaining only the `Parameter` keys.
 function subset_parameters(
     chain::FlexiChain{TKey,NIter,NChain}
 )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
-    return subset(chain, Parameter.(get_parameter_names(chain)))
+    return subset(chain, Parameter.(parameters(chain)))
 end
 
 """
     subset_parameters(chain::FlexiChain{TKey,NIter,NChain})
 
-Subset a chain, retaining only the keys that are _not_ `Parameter`s.
+Subset a chain, retaining only the keys that are `Extra`s (i.e. not parameters).
 """
-function subset_other_keys(
+function subset_extras(
     chain::FlexiChain{TKey,NIter,NChain}
 )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
     v = Extra[]
@@ -163,7 +161,7 @@ function Base.show(
     )
 
     # Print parameter names
-    parameter_names = get_parameter_names(chain)
+    parameter_names = parameters(chain)
     printstyled(io, "Parameter type   "; bold=true)
     println(io, "$TKey")
     printstyled(io, "Parameters       "; bold=true)
@@ -173,14 +171,14 @@ function Base.show(
         println(io, join(parameter_names, ", "))
     end
 
-    # Print other keys
-    other_key_names = get_other_key_names_grouped(chain)
+    # Print extras
+    extras = extras_grouped(chain)
     printstyled(io, "Other keys       "; bold=true)
-    if isempty(other_key_names)
+    if isempty(extras)
         println(io, "(none)")
     else
         print_space = false
-        for (section, keys) in pairs(other_key_names)
+        for (section, keys) in pairs(extras)
             print_space && print(io, "\n                 ")
             print(io, "{:$section} ", join(keys, ", "))
             print_space = true
@@ -330,11 +328,11 @@ function Base.getindex(chain::FlexiChain{<:VarName}, vn::VarName)
 end
 
 """
-    get_parameter_names(chain::FlexiChain{TKey}) where {TKey}
+    parameters(chain::FlexiChain{TKey}) where {TKey}
 
 Returns a vector of parameter names in the `FlexiChain`.
 """
-function get_parameter_names(chain::FlexiChain{TKey})::Vector{TKey} where {TKey}
+function parameters(chain::FlexiChain{TKey})::Vector{TKey} where {TKey}
     parameter_names = TKey[]
     for k in keys(chain._data)
         if k isa Parameter{<:TKey}
@@ -345,11 +343,11 @@ function get_parameter_names(chain::FlexiChain{TKey})::Vector{TKey} where {TKey}
 end
 
 """
-    get_other_key_names(chain::FlexiChain)
+    extras(chain::FlexiChain)
 
 Returns a vector of non-parameter names in the `FlexiChain`.
 """
-function get_other_key_names(chain::FlexiChain)::Vector{Extra}
+function extras(chain::FlexiChain)::Vector{Extra}
     other_key_names = Extra[]
     for k in keys(chain._data)
         if k isa Extra
@@ -360,11 +358,11 @@ function get_other_key_names(chain::FlexiChain)::Vector{Extra}
 end
 
 """
-    get_other_key_names_grouped(chain::FlexiChain)
+    extras_grouped(chain::FlexiChain)
 
 Returns a NamedTuple of `Extra` names, grouped by their section.
 """
-function get_other_key_names_grouped(chain::FlexiChain)::NamedTuple
+function extras_grouped(chain::FlexiChain)::NamedTuple
     other_keys = Dict{Symbol,Any}()
     # Build up the dictionary of section name => key name
     for k in keys(chain._data)
@@ -472,7 +470,7 @@ function get_parameter_dict_from_iter(
     chain::FlexiChain{TKey}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing
 )::Dict{TKey,Any} where {TKey}
     d = Dict{TKey,Any}()
-    for k in get_parameter_names(chain)
+    for k in parameters(chain)
         if chain_number === nothing
             d[k] = chain[k][iteration_number]
         else

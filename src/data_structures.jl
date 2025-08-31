@@ -1,6 +1,7 @@
 using AbstractMCMC: AbstractMCMC
 
-export FlexiChain, Parameter, Extra, ParameterOrExtra
+@public SizedMatrix, data
+@public FlexiChain, Parameter, Extra, ParameterOrExtra
 
 """
     SizedMatrix{NIter,NChains,T}

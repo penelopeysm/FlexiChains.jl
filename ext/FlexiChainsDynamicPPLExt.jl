@@ -138,7 +138,7 @@ function DynamicPPL.predict(
         Dict(Parameter(vn) => val for (vn, val) in vn_dict)
     end
     chain_params_only = VNChain(param_dicts)
-    chain_nonparams_only = FlexiChains.subset_other_keys(chain)
+    chain_nonparams_only = FlexiChains.subset_extras(chain)
     return merge(chain_params_only, chain_nonparams_only)
 end
 function DynamicPPL.predict(

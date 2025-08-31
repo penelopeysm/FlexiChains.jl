@@ -40,16 +40,16 @@ using Test
         )
         chain = FlexiChain{Symbol}(fill(d, N_iters))
 
-        @testset "get_parameter_names" begin
-            @test Set(FlexiChains.get_parameter_names(chain)) == Set([:a, :b])
+        @testset "parameters" begin
+            @test Set(FlexiChains.parameters(chain)) == Set([:a, :b])
         end
-        @testset "get_other_key_names" begin
-            @test Set(FlexiChains.get_other_key_names(chain)) == Set([
+        @testset "extras" begin
+            @test Set(FlexiChains.extras(chain)) == Set([
                 Extra(:section, "hello"), Extra(:section, "world"), Extra(:other, "key")
             ])
         end
-        @testset "get_other_key_names_grouped" begin
-            actual = FlexiChains.get_other_key_names_grouped(chain)
+        @testset "extras_grouped" begin
+            actual = FlexiChains.extras_grouped(chain)
             expected = (section=Set(["hello", "world"]), other=Set(["key"]))
             # we test by converting to Dict because we don't really care about which 
             # order the groups are presented in
@@ -237,13 +237,13 @@ using Test
             @test_throws KeyError FlexiChains.subset(chain, [Parameter(:x)])
         end
 
-        @testset "subset parameters and other keys" begin
+        @testset "subset parameters and extras" begin
             N_iters = 10
             d = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
             chain = FlexiChain{Symbol}(fill(d, N_iters))
             @test FlexiChains.subset_parameters(chain) ==
                 FlexiChains.subset(chain, [Parameter(:a)])
-            @test FlexiChains.subset_other_keys(chain) ==
+            @test FlexiChains.subset_extras(chain) ==
                 FlexiChains.subset(chain, [Extra(:b, "c")])
         end
     end
