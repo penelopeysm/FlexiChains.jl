@@ -20,7 +20,7 @@ function FlexiChains.to_varname_dict(
     d[OtherKey(:logprobs, :lp)] = transition.logprior + transition.loglikelihood
     # add in the transition stats (if available)
     for (key, value) in pairs(transition.stat)
-        d[OtherKey(:stats, key)] = value
+        d[OtherKey(:sampler_stats, key)] = value
     end
     return d
 end
