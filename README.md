@@ -46,3 +46,7 @@ This leads to several problems:
 1. **Inability to store generic information from MCMC sampling.** For example, a model containing a line such as `x := s::String` (see [here](https://turinglang.org/docs/usage/tracking-extra-quantities/) for the meaning of `:=`) will error.
 
 1. **Overly aggressive casting to avoid abstract types.** If you have an integer-valued parameter, it will be cast to `Float64` when sampling using MCMCChains. See [this issue](https://github.com/TuringLang/Turing.jl/issues/2666) for details.
+
+FlexiChains solves all of these by making the mapping of parameters to values much more flexible (hence the name).
+Both keys and values can, in general, be of any type.
+This makes for a less compact representation of the data, but means that information about the chain is preserved much more faithfully.
