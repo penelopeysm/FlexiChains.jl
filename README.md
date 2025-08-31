@@ -42,7 +42,7 @@ This entire package essentially came about because I think `MCMCChains.Chains` i
 Specifically, it represents data as a mapping of `Symbol`s to arrays of `Float64`s.
 
 <div align="center">
-<img width="450" alt="flexichains" src="https://github.com/user-attachments/assets/4101f2e9-d61d-4e02-bb57-e0bf5ec11e31" />
+<img width="450" alt="MCMCChains vs FlexiChains data structure comparison" src="https://github.com/user-attachments/assets/4fbbc925-d4c3-41c7-9d6a-e83503fdb349" />
 </div>
 
 However, Turing.jl uses `VarName`s as keys in its models, and the values can be anything that is sampled from a distribution.
