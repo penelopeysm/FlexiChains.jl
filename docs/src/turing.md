@@ -32,6 +32,7 @@ chain = sample(model, NUTS(), 5; chain_type=VNChain)
 ```
 
 !!! note
+    
     We only run 5 MCMC iterations here to keep the output in the following sections small.
 
 ## Accessing data
@@ -51,6 +52,7 @@ chain[@varname(mu)]
 ```
 
 !!! note "Multiple chains"
+    
     If you sample multiple chains, e.g. with `sample(model, NUTS(), MCMCThreads(), 1000, 3; chain_type=VNChain)`, then indexing into the `FlexiChain` will give you a matrix of floats instead.
 
 For vector-valued parameters like `theta`, this works in exactly the same way, except that you get a vector of vectors (note: not a matrix).
@@ -99,6 +101,7 @@ chain[:mu] # parameter
 ```
 
 !!! note "What does unambiguous mean?"
+    
     In this case, because the only parameter `p` for which `Symbol(p) == :mu` is `@varname(mu)`, we can safely identify `@varname(mu)` as the parameter that we want.
 
 Likewise, we can omit the section symbol for the `:lp` data.

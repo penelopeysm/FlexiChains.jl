@@ -12,9 +12,9 @@ To obtain a `FlexiChain` via MCMC sampling in Turing.jl, pass the `chain_type` a
 using Turing
 using FlexiChains: VNChain
 
-@model f()
+@model function f()
     x ~ Normal()
-    y ~ MvNormal(zeros(2), I)
+    return y ~ MvNormal(zeros(2), I)
 end
 chain = sample(f(), NUTS(), 1000; chain_type=VNChain)
 ```
@@ -44,18 +44,15 @@ Specifically, it represents data as a mapping of `Symbol`s to arrays of `Float64
 <div align="center">
 <img width="450" alt="flexichains" src="https://github.com/user-attachments/assets/4101f2e9-d61d-4e02-bb57-e0bf5ec11e31" />
 </div>
-
 However, Turing.jl uses `VarName`s as keys in its models, and the values can be anything that is sampled from a distribution.
 
 This leads to several problems:
 
-1. **The conversion from `VarName` to `Symbol` is lossy.** See [here](https://github.com/TuringLang/MCMCChains.jl/issues/469) and [here](https://github.com/TuringLang/MCMCChains.jl/issues/470) for examples of how this can bite users. It also forces Turing.jl to store extra information in the chain which specifies how to retrieve the original `VarName`s.
+ 1. **The conversion from `VarName` to `Symbol` is lossy.** See [here](https://github.com/TuringLang/MCMCChains.jl/issues/469) and [here](https://github.com/TuringLang/MCMCChains.jl/issues/470) for examples of how this can bite users. It also forces Turing.jl to store extra information in the chain which specifies how to retrieve the original `VarName`s.
 
-1. **Array-valued parameters must be broken up in a chain.** This makes it very annoying to reconstruct the full arrays. It also causes [massive slowdowns for some operations](https://github.com/TuringLang/DynamicPPL.jl/issues/1019), and is also responsible for [some hacky code in AbstractPPL and DynamicPPL](https://github.com/TuringLang/AbstractPPL.jl/pull/125) that has no reason to exist beyond the limitations of MCMCChains.
-
-1. **Inability to store generic information from MCMC sampling.** For example, a model containing a line such as `x := s::String` (see [here](https://turinglang.org/docs/usage/tracking-extra-quantities/) for the meaning of `:=`) will error.
-
-1. **Overly aggressive casting to avoid abstract types.** If you have an integer-valued parameter, it will be cast to `Float64` when sampling using MCMCChains. See [this issue](https://github.com/TuringLang/Turing.jl/issues/2666) for details.
+ 2. **Array-valued parameters must be broken up in a chain.** This makes it very annoying to reconstruct the full arrays. It also causes [massive slowdowns for some operations](https://github.com/TuringLang/DynamicPPL.jl/issues/1019), and is also responsible for [some hacky code in AbstractPPL and DynamicPPL](https://github.com/TuringLang/AbstractPPL.jl/pull/125) that has no reason to exist beyond the limitations of MCMCChains.
+ 3. **Inability to store generic information from MCMC sampling.** For example, a model containing a line such as `x := s::String` (see [here](https://turinglang.org/docs/usage/tracking-extra-quantities/) for the meaning of `:=`) will error.
+ 4. **Overly aggressive casting to avoid abstract types.** If you have an integer-valued parameter, it will be cast to `Float64` when sampling using MCMCChains. See [this issue](https://github.com/TuringLang/Turing.jl/issues/2666) for details.
 
 FlexiChains solves all of these by making the mapping of parameters to values much more flexible (hence the name).
 Both keys and values can, in general, be of any type.

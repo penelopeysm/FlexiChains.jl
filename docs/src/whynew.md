@@ -24,11 +24,11 @@ using PDMats: PDMats
 Turing.setprogress!(false)
 
 @model function f(x)
-    sigma ~ truncated(Normal(0, 1); lower = 0)
+    sigma ~ truncated(Normal(0, 1); lower=0)
     chol ~ LKJCholesky(3, 1.0)
     corr := PDMats.PDMat(chol)
     mu ~ MvNormal(zeros(3), sigma^2 * I)
-    x ~ MvNormal(mu, corr)
+    return x ~ MvNormal(mu, corr)
 end
 
 model = f(randn(Xoshiro(468), 3))
@@ -50,10 +50,10 @@ flexi = sample(Xoshiro(468), model, NUTS(), 100; chain_type=VNChain)
 
 Here, we expect the following parameters to be present in the chain:
 
-- `sigma` is a scalar;
-- `chol` is a Cholesky factor which contains a 3×3 lower triangular matrix;
-- `corr` is a 3×3 correlation matrix, which is a positive-definite matrix;
-- `mu` is a length-3 vector.
+  - `sigma` is a scalar;
+  - `chol` is a Cholesky factor which contains a 3×3 lower triangular matrix;
+  - `corr` is a 3×3 correlation matrix, which is a positive-definite matrix;
+  - `mu` is a length-3 vector.
 
 Let's test first that both chains contain the same values for `sigma`.
 (Some fiddling is required because `mcmc[:sigma]` returns an AxisArray with a 100×1 matrix, while `flexi[:sigma]` returns a 100-element vector.)
@@ -172,7 +172,7 @@ Distributions.logpdf(::BirdDist, x::Duck) = log(0.3)
 Distributions.logpdf(::BirdDist, x::Goose) = log(0.7)
 
 @model function f()
-    x ~ BirdDist()
+    return x ~ BirdDist()
 end
 
 # A bit more boilerplate is needed here to actually make it work with Turing.
@@ -199,7 +199,7 @@ For example, it will look as if your chain does not actually have any variables:
 
 ```@example 1
 @model function lp_model()
-    lp ~ Normal()
+    return lp ~ Normal()
 end
 
 mchain = sample(Xoshiro(468), lp_model(), NUTS(), 100; chain_type=Chains)
@@ -264,30 +264,30 @@ TODO Write about how this makes life a lot easier for things like `predict`.
 
 My main design goals for FlexiChains.jl were twofold:
 
-1. To provide a rich data structure that can more faithfully represent the outputs from sampling with Turing.jl.
+ 1. To provide a rich data structure that can more faithfully represent the outputs from sampling with Turing.jl.
+    
+    The restriction of MCMCChains.jl to `Symbol` keys and `Real` values means that round-trip conversion is a lossy operation.
+    Consider, e.g., the `predict(::Model, ::MCMCChains.Chains)` function, which is used to sample from the posterior predictive distribution.
+    This requires one to extract the values from the chain and insert them back into the model (or technically the `VarInfo`).
+    
+    However, in general one cannot reconstruct a vector `x` from its constituent elements `x[1]`, `x[2]`, ... as we do not know the appropriate length of the vector!
+    The current implementation of this function in DynamicPPL.jl thus has to, essentially, insert all the elements it can find and hope for the best.
+    
+    Essentially, MCMCChains' data structure forces packages like Turing.jl and DynamicPPL.jl to include workarounds to deal with the limitations of the chains package.
 
-   The restriction of MCMCChains.jl to `Symbol` keys and `Real` values means that round-trip conversion is a lossy operation.
-   Consider, e.g., the `predict(::Model, ::MCMCChains.Chains)` function, which is used to sample from the posterior predictive distribution.
-   This requires one to extract the values from the chain and insert them back into the model (or technically the `VarInfo`).
-
-   However, in general one cannot reconstruct a vector `x` from its constituent elements `x[1]`, `x[2]`, ... as we do not know the appropriate length of the vector!
-   The current implementation of this function in DynamicPPL.jl thus has to, essentially, insert all the elements it can find and hope for the best.
-
-   Essentially, MCMCChains' data structure forces packages like Turing.jl and DynamicPPL.jl to include workarounds to deal with the limitations of the chains package.
-
-1. To create a robust and readable codebase.
-
-   Much Julia code is written with the intention of efficiency or versatility, often sacrificing clarity in the process.
-   This is usually acceptable when creating simple scripts.
-   However, I believe that library code should be held to a (much) higher standard.
-
-   In particular, I consider the overuse of multiple dispatch to be a major source of confusion in Julia code.
-   Types cannot be fully inferred at compile time (and even when they can, it requires packages such as JET.jl, which do not (yet) have convenient language server integrations).
-   This means that when reading code, one cannot easily determine which method is being called.
-
-   A prime example is the `Chains` constructor in MCMCChains.jl.
-   `methods(Chains)` returns 11 methods, and each time you see a call to `Chains(...)` you need to figure out which of these 11 it is.
-   In writing FlexiChains I have made a conscious choice to create only two inner constructors for `FlexiChain`.
+ 2. To create a robust and readable codebase.
+    
+    Much Julia code is written with the intention of efficiency or versatility, often sacrificing clarity in the process.
+    This is usually acceptable when creating simple scripts.
+    However, I believe that library code should be held to a (much) higher standard.
+    
+    In particular, I consider the overuse of multiple dispatch to be a major source of confusion in Julia code.
+    Types cannot be fully inferred at compile time (and even when they can, it requires packages such as JET.jl, which do not (yet) have convenient language server integrations).
+    This means that when reading code, one cannot easily determine which method is being called.
+    
+    A prime example is the `Chains` constructor in MCMCChains.jl.
+    `methods(Chains)` returns 11 methods, and each time you see a call to `Chains(...)` you need to figure out which of these 11 it is.
+    In writing FlexiChains I have made a conscious choice to create only two inner constructors for `FlexiChain`.
 
 In particular, notice that *performance* is not one of my considerations.
 In my opinion, performance is only a minor concern for FlexiChains.jl, because the main bottleneck in Bayesian inference is the sampling, not how fast one can construct or index into a chain.

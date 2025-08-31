@@ -13,8 +13,9 @@ FlexiChain
 ```
 
 The keys must be one of two types:
-- `Parameter(::T)`: a parameter of the Markov chain itself
-- `OtherKey(::Symbol, ::Any)`: a key that is not a parameter, such as metadata. The `Symbol` argument identifies a _section_ which the key belongs to, thus allowing for multiple keys to be grouped together in meaningful ways.
+
+  - `Parameter(::T)`: a parameter of the Markov chain itself
+  - `OtherKey(::Symbol, ::Any)`: a key that is not a parameter, such as metadata. The `Symbol` argument identifies a _section_ which the key belongs to, thus allowing for multiple keys to be grouped together in meaningful ways.
 
 ```@docs
 Parameter
@@ -61,4 +62,3 @@ It does so by looking for a unique `Parameter` or `OtherKey` which can be conver
 ```@docs
 Base.getindex(::FlexiChain, key::Symbol)
 ```
-
