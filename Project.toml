@@ -1,7 +1,7 @@
 name = "FlexiChains"
 uuid = "4a37a8b9-6e57-4b92-8664-298d46e639f7"
 authors = ["Penelope Yong <penelopeysm@gmail.com>"]
-version = "0.1.0"
+version = "0.0.1"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
