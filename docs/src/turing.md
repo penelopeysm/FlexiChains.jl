@@ -112,6 +112,15 @@ chain[:lp] # other key
 
 If there is any ambiguity present (for example if there is a parameter named `lp` as well), FlexiChains will throw an error.
 
+## Saving and resuming MCMC sampling progress
+
+If you want to sample a fewer number of iterations first and then resume it later, you can use the same code as usual:
+
+```@example 1
+chn1 = sample(model, NUTS(), 10; chain_type=VNChain, save_state=true)
+chn2 = sample(model, NUTS(), 10; chain_type=VNChain, resume_from=chn1)
+```
+
 ## Posterior predictions and friends
 
 The functions `predict`, `returned`, `logjoint`, `loglikelihood`, and `logprior` all work 'as expected' using FlexiChains with exactly the same signatures that you are used to.

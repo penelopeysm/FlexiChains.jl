@@ -2,7 +2,7 @@ module FCTuringExtTests
 
 using FlexiChains: FlexiChains, VNChain, Parameter, Extra
 using FlexiChains: FlexiChains
-using Random: Xoshiro
+using Random: Random, Xoshiro
 using SliceSampling: RandPermGibbs, SliceSteppingOut
 using Test
 using Turing
@@ -49,6 +49,14 @@ Turing.setprogress!(false)
                     Xoshiro(469), model, NUTS(), 100; chain_type=VNChain, verbose=false
                 )
                 @test chn1 != chn3
+            end
+
+            @testset "single-chain with seed!" begin
+                Random.seed!(468)
+                chn1 = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+                Random.seed!(468)
+                chn2 = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+                @test chn1 == chn2
             end
 
             @testset "multi-chain" begin
@@ -131,6 +139,32 @@ Turing.setprogress!(false)
             @test size(chn) == (20, 1)
             @test all(x -> x == 1, vec(chn[@varname(x)]))
             @test all(x -> x == "hi", vec(chn[:a, :b]))
+        end
+    end
+
+    @testset "chain metadata" begin
+        @test "sampling time exists" begin
+            @model f() = x ~ Normal()
+            model = f()
+            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+            @test FlexiChains.sampling_time(chn) isa AbstractFloat
+        end
+
+        @testset "save_state and resume_from" begin
+            Random.seed!(468)
+            @model f() = x ~ Normal()
+            model = f()
+            chn1 = sample(
+                model, NUTS(), 100; chain_type=VNChain, verbose=false, save_state=true
+            )
+            @test isapprox(mean(chn1[@varname(x)]), 0.0; atol=0.1)
+            # check that the sampler state is stored
+            @test FlexiChains.last_sampler_state(chn1) !== nothing
+            # check that it can be resumed from
+            chn2 = sample(
+                model, NUTS(), 100; chain_type=VNChain, verbose=false, resume_from=chn1
+            )
+            @test isapprox(mean(chn2[@varname(x)]), 0.0; atol=0.1)
         end
     end
 

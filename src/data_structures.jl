@@ -2,6 +2,7 @@ using AbstractMCMC: AbstractMCMC
 
 @public SizedMatrix, data
 @public FlexiChain, Parameter, Extra, ParameterOrExtra
+@public sampling_time, last_sampler_state
 
 """
     SizedMatrix{NIter,NChains,T}
@@ -126,7 +127,17 @@ All keys in a `FlexiChain{T}` must be a `ParameterOrExtra{T}`.
 const ParameterOrExtra{T} = Union{Parameter{<:T},Extra}
 
 """
-    FlexiChain{TKey,NIter,NChains,Sections}
+    FlexiChainMetadata
+
+A struct to hold common kinds of metadata typically associated with a chain.
+"""
+struct FlexiChainMetadata{Ttime<:Union{AbstractFloat,Nothing},Tstate}
+    sampling_time::Ttime
+    last_sampler_state::Tstate
+end
+
+"""
+    FlexiChain{TKey,NIter,NChains}
 
 Note that the ordering of keys within a `FlexiChain` is an
 implementation detail and is not guaranteed.
@@ -137,16 +148,29 @@ TODO: Document further.
 
 $(TYPEDFIELDS)
 """
-struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
+struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata} <:
+       AbstractMCMC.AbstractChains
     """
-    Internal data. Do not access this directly unless you know what you are doing!
-    You should use the interface methods defined instead.
+    Internal per-iteration data for parameters and extra keys. Do not access this directly
+    unless you know what you are doing! You should use the interface methods defined
+    instead.
     """
     _data::Dict{<:ParameterOrExtra{TKey},<:SizedMatrix{NIter,NChains,<:Any}}
 
+    """
+    Other items associated with the chain. These are not necessarily per-iteration (for
+    example there may only be one per chain).
+
+    You should not access this directly; instead you should use the accessor functions (e.g.
+    `sampling_time(chain)`).
+    """
+    _metadata::TMetadata
+
     @doc """
         FlexiChain{TKey}(
-            array_of_dicts::AbstractArray{<:AbstractDict,N}
+            array_of_dicts::AbstractArray{<:AbstractDict,N};
+            sampling_time::Union{AbstractFloat,Nothing}=nothing,
+            last_sampler_state::Any=nothing,
         ) where {TKey,N}
 
     Construct a `FlexiChain` from a vector or matrix of dictionaries. Each
@@ -172,7 +196,9 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
     ```
     """
     function FlexiChain{TKey}(
-        array_of_dicts::AbstractArray{<:AbstractDict,N}
+        array_of_dicts::AbstractArray{<:AbstractDict,N};
+        sampling_time::Union{AbstractFloat,Nothing}=nothing,
+        last_sampler_state::Any=nothing,
     ) where {TKey,N}
         # Determine size
         niter, nchains = if N == 1
@@ -206,12 +232,17 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
             data[key] = values_smat
         end
 
-        return new{TKey,niter,nchains}(data)
+        # Construct metadata
+        metadata = FlexiChainMetadata(sampling_time, last_sampler_state)
+
+        return new{TKey,niter,nchains,typeof(metadata)}(data, metadata)
     end
 
     @doc """
         FlexiChain{TKey}(
-            dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}}
+            dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}};
+            sampling_time::Union{AbstractFloat,Nothing}=nothing,
+            last_sampler_state::Any=nothing,
         ) where {TKey,N}
 
     Construct a `FlexiChain` from a dictionary of arrays.
@@ -237,7 +268,9 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
     ```
     """
     function FlexiChain{TKey}(
-        dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}}
+        dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}};
+        sampling_time::Union{AbstractFloat,Nothing}=nothing,
+        last_sampler_state::Any=nothing,
     ) where {TKey,N}
         # If no data, assume 0 iters and 0 chains.
         if isempty(dict_of_arrays)
@@ -279,6 +312,26 @@ struct FlexiChain{TKey,NIter,NChains} <: AbstractMCMC.AbstractChains
             data[key] = mat
         end
 
-        return new{TKey,niter,nchains}(data)
+        # Construct metadata
+        metadata = FlexiChainMetadata(sampling_time, last_sampler_state)
+
+        return new{TKey,niter,nchains,typeof(metadata)}(data, metadata)
     end
 end
+
+"""
+    sampling_time(chain::FlexiChain)::Union{AbstractFloat,Nothing}
+
+Return the time taken to sample the chain (in seconds). If the time was not recorded, this
+will be `nothing`.
+"""
+sampling_time(chain::FlexiChain) = chain._metadata.sampling_time
+
+"""
+    last_sampler_state(chain::FlexiChain)
+
+Return the final state of the sampler used to generate the chain, if the `save_state=true`
+keyword argument was passed to `sample`. This can be used for resuming MCMC sampling. If the
+state was not saved, this will be `nothing`.
+"""
+last_sampler_state(chain::FlexiChain) = chain._metadata.last_sampler_state

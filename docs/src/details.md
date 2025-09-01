@@ -12,6 +12,18 @@ Indeed, a `FlexiChain` contains a `_data` field which is just a dictionary that 
 FlexiChains.FlexiChain
 ```
 
+## Metadata
+
+Before we discuss the actual _data_ stored in a `FlexiChain`, we note that it also contains a `_metadata` field.
+This field stores miscellaneous information that is pertinent to the chain as a whole, rather than information that is per-iteration.
+However, it should not be accessed manually as its fields are considered internal and subject to change.
+Instead if you need to access this you can use:
+
+```@docs
+FlexiChains.sampling_time
+FlexiChains.last_sampler_state
+```
+
 ## Key types
 
 The keys of a `FlexiChain{T}` must be one of two types:

@@ -51,6 +51,14 @@ end
 #     DELETE WHEN POSSIBLE    #
 ###############################
 
+function DynamicPPL.loadstate(chain::FlexiChain)
+    st = FlexiChains.last_sampler_state(chain)
+    st === nothing && error(
+        "attempted to resume sampling from a chain without a saved state; you must pass `save_state=true` when sampling the previous chain",
+    )
+    return st
+end
+
 ###########################################
 # DynamicPPL: predict, returned, logjoint #
 ###########################################

@@ -29,16 +29,20 @@ function AbstractMCMC.bundle_samples(
     transitions::AbstractVector,
     ::AbstractMCMC.AbstractModel,
     ::AbstractMCMC.AbstractSampler,
-    state::Any,
+    last_sampler_state::Any,
     chain_type::Type{T};
+    save_state=false,
+    stats=missing,
     # discard_initial::Int=0,
     # thinning::Int=1,
     _kwargs...,
 )::T where {T<:FlexiChain{<:VarName}}
     dicts = map(FlexiChains.to_varname_dict, transitions)
-    return T(dicts)
-    # TODO: add extra information like iteration number, time,
-    # chain save state, etc.
+    # timings
+    tm = stats === missing ? nothing : stats.stop - stats.start
+    # last sampler state
+    st = save_state ? last_sampler_state : nothing
+    return T(dicts; sampling_time=tm, last_sampler_state=st)
 end
 
 end # module FlexiChainsTuringExt
