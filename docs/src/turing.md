@@ -114,11 +114,17 @@ If there is any ambiguity present (for example if there is a parameter named `lp
 
 ## Saving and resuming MCMC sampling progress
 
-If you want to sample a fewer number of iterations first and then resume it later, you can use the same code as usual:
+If you want to sample a fewer number of iterations first and then resume it later, you can use the following:
 
 ```@example 1
 chn1 = sample(model, NUTS(), 10; chain_type=VNChain, save_state=true)
 chn2 = sample(model, NUTS(), 10; chain_type=VNChain, resume_from=chn1)
+```
+
+The chains can be combined using `vcat`:
+
+```@example 1
+chn = vcat(chn1, chn2)
 ```
 
 ## Posterior predictions and friends
