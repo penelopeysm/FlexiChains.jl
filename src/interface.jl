@@ -1,3 +1,4 @@
+@public niters, nchains
 @public subset, subset_parameters, subset_extras
 @public parameters, extras, extras_grouped
 @public get_dict_from_iter, get_parameter_dict_from_iter
@@ -6,13 +7,48 @@
 """
     size(chain::FlexiChain{TKey,NIter,NChains}) where {TKey,NIter,NChains}
 
-Returns the size of the `FlexiChain` as a tuple `(NIter, num_objects, NChains)`,
-where `num_objects` is the number of unique keys in the chain (both `Parameter`s
-and `Extra`s).
+Returns `(niters, nchains)`.
 """
-function Base.size(chain::FlexiChain{TKey,NIter,NChains}) where {TKey,NIter,NChains}
-    num_objects = length(chain._data)
-    return (NIter, num_objects, NChains)
+function Base.size(
+    ::FlexiChain{TKey,NIter,NChains}
+)::Tuple{Int,Int} where {TKey,NIter,NChains}
+    return (NIter, NChains)
+end
+"""
+    size(chain::FlexiChain{TKey,NIter,NChains}, 1)
+
+Number of iterations in the `FlexiChain`. Equivalent to `niters(chain)`.
+
+    size(chain::FlexiChain{TKey,NIter,NChains}, 2)
+
+Number of chains in the `FlexiChain`. Equivalent to `nchains(chain)`.
+"""
+function Base.size(::FlexiChain{TKey,NIter,NChains}, dim::Int) where {TKey,NIter,NChains}
+    return if dim == 1
+        NIter
+    elseif dim == 2
+        NChains
+    else
+        throw(DimensionMismatch("Dimension $dim out of range for FlexiChain"))
+    end
+end
+
+"""
+    niters(chain::FlexiChain{TKey,NIter,NChains}) where {TKey,NIter,NChains}
+
+The number of iterations in the `FlexiChain`. Equivalent to `size(chain, 1)`.
+"""
+function niters(::FlexiChain{TKey,NIter,NChains})::Int where {TKey,NIter,NChains}
+    return NIter
+end
+
+"""
+    nchains(chain::FlexiChain{TKey,NIter,NChains}) where {TKey,NIter,NChains}
+
+The number of chains in the `FlexiChain`. Equivalent to `size(chain, 2)`.
+"""
+function nchains(::FlexiChain{TKey,NIter,NChains})::Int where {TKey,NIter,NChains}
+    return NChains
 end
 
 function Base.:(==)(

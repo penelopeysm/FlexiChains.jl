@@ -17,7 +17,7 @@ using Test
                 N_iters,
             )
             chain = FlexiChain{Symbol}(dicts)
-            @test size(chain) == (N_iters, 3, 1)
+            @test size(chain) == (N_iters, 1)
 
             # Matrix of dict
             N_iters, N_chains = 10, 2
@@ -29,7 +29,7 @@ using Test
                 N_chains,
             )
             chain = FlexiChain{Symbol}(dicts)
-            @test size(chain) == (N_iters, 3, N_chains)
+            @test size(chain) == (N_iters, N_chains)
         end
 
         @testset "from dict-of-arrays" begin
@@ -41,7 +41,7 @@ using Test
                 Extra(:section, "hello") => rand(N_iters),
             )
             chain = FlexiChain{Symbol}(arrays)
-            @test size(chain) == (N_iters, 3, 1)
+            @test size(chain) == (N_iters, 1)
 
             # Dict of matrices
             N_iters, N_chains = 10, 2
@@ -51,7 +51,7 @@ using Test
                 Extra(:section, "hello") => rand(N_iters, N_chains),
             )
             chain = FlexiChain{Symbol}(arrays)
-            @test size(chain) == (N_iters, 3, N_chains)
+            @test size(chain) == (N_iters, N_chains)
         end
 
         @testset "wrong constructions" begin

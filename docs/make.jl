@@ -4,7 +4,7 @@ using FlexiChains
 makedocs(;
     sitename="FlexiChains.jl",
     modules=[FlexiChains],
-    pages=["index.md", "turing.md", "manual.md", "whynew.md"],
+    pages=["index.md", "turing.md", "details.md", "whynew.md"],
     checkdocs=:exports,
     doctest=false,
 )

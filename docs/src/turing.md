@@ -4,7 +4,7 @@ This page describes how to use FlexiChains from the perspective of a Turing.jl u
 
 In particular, it does not explain 'under the hood' how FlexiChains works.
 Rather, it focuses on the usage of FlexiChains within a typical Bayesian inference workflow.
-For more detailed information about the inner workings of FlexiChains, please see [Behind the scenes](@ref).
+For more detailed information about the inner workings of FlexiChains, please see [the next page](./details.md).
 
 ## Sampling
 

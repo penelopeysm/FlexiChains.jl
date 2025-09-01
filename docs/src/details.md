@@ -1,0 +1,125 @@
+# FlexiChains in more detail
+
+On this page we go into more detail about how FlexiChains is designed, and the ways to manipulate and extract data from a `FlexiChain`.
+
+## The `FlexiChain` type
+
+We begin by looking at the `FlexiChain` type itself.
+Fundamentally, a `FlexiChain{T}` is a mapping of keys to arrays of values.
+Indeed, a `FlexiChain` contains a `_data` field which is just a dictionary that maps keys to fixed-size arrays.
+
+```@docs
+FlexiChains.FlexiChain
+```
+
+## Key types
+
+The keys of a `FlexiChain{T}` must be one of two types:
+
+  - `Parameter(::T)`: a parameter of the Markov chain itself
+  - `Extra(::Symbol, ::Any)`: a key that is not a parameter, such as metadata. The `Symbol` argument identifies a _section_ which the key belongs to, thus allowing for multiple keys to be grouped together in meaningful ways.
+
+```@docs
+FlexiChains.Parameter
+FlexiChains.Extra
+FlexiChains.ParameterOrExtra
+```
+
+## Dimensions and sizes
+
+`size()` when called on a FlexiChain returns a 2-tuple of `(niters, nchains)`.
+
+!!! note "MCMCChains difference"
+    
+    MCMCChains returns a 3-tuple of `(niters, nkeys, nchains)` where `nkeys` is the total number of parameters. FlexiChains does not do this because the keys do not form a regular grid. If you want the total number of keys in a `FlexiChain`, you can use `length(keys(chain))`.
+
+```@docs
+Base.size(::FlexiChains.FlexiChain)
+Base.size(::FlexiChains.FlexiChain, ::Int)
+FlexiChains.niters
+FlexiChains.nchains
+```
+
+However, it is better to think of a `FlexiChain` as a mapping of keys to arrays of size `(niters, nchains)`.
+
+To provide (runtime) checks that all arrays have the same size, FlexiChains uses `FlexiChains.SizedMatrix`, which carries its size as a type parameter (although the underlying storage still uses `Base.Array`).
+
+```@docs
+FlexiChains.SizedMatrix
+```
+
+The element type of these arrays is unconstrained.
+Different keys may map to arrays with different element types.
+
+## Listing keys
+
+`keys()` will return all the keys in an unspecified order.
+
+```@docs
+Base.keys(::FlexiChains.FlexiChain)
+```
+
+If you only want `Parameter`s, or only `Extra`s you can use the following:
+
+```@docs
+FlexiChains.parameters
+FlexiChains.extras
+FlexiChains.extras_grouped
+```
+
+## Subsetting and merging parameters
+
+To restrict a `FlexiChain` to a subset of its keys, you can use `FlexiChains.subset`.
+
+```@docs
+FlexiChains.subset
+```
+
+Two common use cases are subsetting to only parameters and only extra keys:
+
+```@docs
+FlexiChains.subset_parameters
+FlexiChains.subset_extras
+```
+
+The reverse of subsetting is merging.
+This can only be done when the chains being merged have the same size.
+
+```@docs
+Base.merge(::FlexiChains.FlexiChain{TKey1,NIter,NChain}, ::FlexiChains.FlexiChain{TKey2,NIter,NChain}) where {TKey1,TKey2,NIter,NChain}
+```
+
+## Indexing via parameters
+
+This was covered in a more accessible manner on [the previous page](./turing.md), but we provide the full docstrings here for completeness.
+
+The most unambiguous way to index into a `FlexiChain` is to use either `Parameter` or `Extra`.
+
+```@docs
+Base.getindex(::FlexiChains.FlexiChain{TKey}, key::FlexiChains.ParameterOrExtra{TKey}) where {TKey}
+```
+
+This can be slightly verbose, so the following two methods are provided as a 'quick' way of accessing parameters and other keys respectively:
+
+```@docs
+Base.getindex(::FlexiChains.FlexiChain{TKey}, parameter_name::TKey) where {TKey}
+Base.getindex(::FlexiChains.FlexiChain{TKey}, section_name::Symbol, key_name::Any) where {TKey}
+```
+
+Finally, to preserve some semblance of backwards compatibility with MCMCChains.jl, FlexiChains can also be indexed by `Symbol`s.
+It does so by looking for a unique `Parameter` or `Extra` which can be converted to that `Symbol`.
+
+```@docs
+Base.getindex(::FlexiChains.FlexiChain, key::Symbol)
+```
+
+## Manually constructing a `FlexiChain`
+
+If you ever need to construct a `FlexiChain` from scratch, there are exactly two ways to do so.
+One is to pass an array of dictionaries (i.e., one dictionary per iteration); the other is to pass a dictionary of arrays (i.e., the values for each key are already grouped together).
+
+```@docs
+FlexiChains.FlexiChain{TKey}(data)
+```
+
+Note that, although the dictionaries themselves may have loose types, the key type of the `FlexiChain` must be specified (and the keys of the dictionaries will be checked against this).

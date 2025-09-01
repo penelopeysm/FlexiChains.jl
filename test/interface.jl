@@ -21,7 +21,11 @@ using Test
         chain = FlexiChain{Symbol}(dicts)
         # size
         @test chain isa FlexiChain{Symbol,N_iters,N_chains}
-        @test size(chain) == (N_iters, length(d), N_chains)
+        @test size(chain) == (N_iters, N_chains)
+        @test size(chain, 1) == N_iters
+        @test size(chain, 2) == N_chains
+        @test FlexiChains.niters(chain) == N_iters
+        @test FlexiChains.nchains(chain) == N_chains
         # keys
         @test Set(keys(chain)) == Set(keys(d))
         for k in keys(d)
@@ -219,13 +223,13 @@ using Test
 
             subsetted1 = FlexiChains.subset(chain, [Parameter(:a)])
             @test typeof(subsetted1) == typeof(chain)
-            @test size(subsetted1) == (N_iters, 1, 1)
+            @test size(subsetted1) == (N_iters, 1)
             @test Set(keys(subsetted1)) == Set([Parameter(:a)])
             @test subsetted1[:a] == chain[:a]
 
             subsetted2 = FlexiChains.subset(chain, [Extra(:b, "c")])
             @test typeof(subsetted2) == typeof(chain)
-            @test size(subsetted2) == (N_iters, 1, 1)
+            @test size(subsetted2) == (N_iters, 1)
             @test Set(keys(subsetted2)) == Set([Extra(:b, "c")])
             @test subsetted2[:b, "c"] == chain[:b, "c"]
         end
@@ -257,7 +261,7 @@ using Test
             chain2 = FlexiChain{Symbol}(fill(d2, N_iters))
             chain3 = AbstractMCMC.chainscat(chain1, chain2)
             @test chain3 isa FlexiChain{Symbol,N_iters,2}
-            @test size(chain3) == (N_iters, 2, 2)
+            @test size(chain3) == (N_iters, 2)
             @test chain3[Parameter(:a)] == repeat([1 2], N_iters)
             @test chain3[Extra(:b, "c")] == repeat([3.0 "foo"], N_iters)
         end
@@ -267,7 +271,7 @@ using Test
             chain2 = FlexiChain{Symbol}(fill(Dict(Parameter(:a) => 3), 10, 2))
             chain3 = AbstractMCMC.chainscat(chain1, chain2)
             @test chain3 isa FlexiChain{Symbol,10,3}
-            @test size(chain3) == (10, 1, 3)
+            @test size(chain3) == (10, 3)
             @test chain3[Parameter(:a)] == repeat([1 3 3], 10)
         end
 
@@ -276,7 +280,7 @@ using Test
             chain2 = FlexiChain{Symbol}(fill(Dict(Parameter(:b) => 2), 10))
             chain3 = AbstractMCMC.chainscat(chain1, chain2)
             @test chain3 isa FlexiChain{Symbol,10,2}
-            @test size(chain3) == (10, 2, 2)
+            @test size(chain3) == (10, 2)
             # need isequal() rather than `==` to handle the `missing` values
             @test isequal(chain3[Parameter(:a)], repeat([1 missing], 10))
             @test isequal(chain3[Parameter(:b)], repeat([missing 2], 10))

@@ -25,8 +25,7 @@ Turing.setprogress!(false)
         @testset "single-chain sampling" begin
             chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
             @test chn isa VNChain
-            niters, _, nchains = size(chn)
-            @test (niters, nchains) == (100, 1)
+            @test size(chn) == (100, 1)
         end
 
         @testset "multi-chain sampling" begin
@@ -34,8 +33,7 @@ Turing.setprogress!(false)
                 model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain, verbose=false
             )
             @test chn isa VNChain
-            niters, _, nchains = size(chn)
-            @test (niters, nchains) == (100, 3)
+            @test size(chn) == (100, 3)
         end
 
         @testset "rng is respected" begin
@@ -116,8 +114,7 @@ Turing.setprogress!(false)
         ]
             chn = sample(model, spl, 20; chain_type=VNChain)
             @test chn isa VNChain
-            niters, _, nchains = size(chn)
-            @test (niters, nchains) == (20, 1)
+            @test size(chn) == (20, 1)
         end
 
         @testset "with a custom sampler" begin
@@ -131,8 +128,7 @@ Turing.setprogress!(false)
             # Then we should be able to sample
             chn = sample(model, S(), 20; chain_type=VNChain)
             @test chn isa VNChain
-            niters, _, nchains = size(chn)
-            @test (niters, nchains) == (20, 1)
+            @test size(chn) == (20, 1)
             @test all(x -> x == 1, vec(chn[@varname(x)]))
             @test all(x -> x == "hi", vec(chn[:a, :b]))
         end

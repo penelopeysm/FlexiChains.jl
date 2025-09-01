@@ -73,7 +73,7 @@ function reevaluate(
     chain::FlexiChain{<:VarName},
     accs::NTuple{N,DynamicPPL.AbstractAccumulator}=_default_reevaluate_accs(),
 )::Array{Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
-    niters, _, nchains = size(chain)
+    niters, nchains = size(chain)
     vi = DynamicPPL.VarInfo(model)
     vi = DynamicPPL.setaccs!!(vi, accs)
     # TODO: Ugly code repetition based on the fact that we 
