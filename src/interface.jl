@@ -48,6 +48,7 @@ end
 The number of chains in the `FlexiChain`. Equivalent to `size(chain, 2)`.
 """
 function nchains(::FlexiChain{TKey,NIter,NChains})::Int where {TKey,NIter,NChains}
+    # Same as above but with isequal instead of ==
     return NChains
 end
 
@@ -63,6 +64,16 @@ function Base.:(==)(
     # and Dicts do not check for ordering of keys, the ordering of keys is 
     # also immaterial for FlexiChain equality.
     return c1._data == c2._data
+end
+
+function Base.isequal(
+    c1::FlexiChain{TKey1,NIter1,NChain1}, c2::FlexiChain{TKey2,NIter2,NChain2}
+) where {TKey1,TKey2,NIter1,NChain1,NIter2,NChain2}
+    # Same as above but with isequal instead of ==
+    if TKey1 != TKey2 || NIter1 != NIter2 || NChain1 != NChain2
+        return false
+    end
+    return isequal(c1._data, c2._data)
 end
 
 """
@@ -433,12 +444,68 @@ with your sampler, you will have to overload this function.
 function to_varname_dict end
 
 """
-    AbstractMCMC.chainscat(c1, c2)
+    Base.vcat(cs...::FlexiChain{TKey}) where {TKey}
 
-Concatenate two `FlexiChain`s along the chain dimension. Both `c1` and
-`c2` must have the same number of iterations and the same key type.
+Concatenate one or more `FlexiChain`s along the iteration dimension. Both `c1` and `c2` must
+have the same number of chains and the same key type.
+
+The resulting chain's keys are the union of both input chains' keys. Any keys that only have
+data in one of the arguments will be assigned `missing` data in the other chain during
+concatenation.
 """
-function AbstractMCMC.chainscat(
+function Base.vcat(
+    c1::FlexiChain{TKey,NIter1,NChains}, c2::FlexiChain{TKey,NIter2,NChains}
+)::FlexiChain{TKey,NIter1 + NIter2,NChains} where {TKey,NIter1,NIter2,NChains}
+    d = Dict{ParameterOrExtra{TKey},SizedMatrix{NIter1 + NIter2,NChains}}()
+    for k in union(keys(c1), keys(c2))
+        c1_data = if haskey(c1, k)
+            c1[k]
+        else
+            SizedMatrix{NIter1,NChains}(fill(missing, NIter1, NChains))
+        end
+        c2_data = if haskey(c2, k)
+            c2[k]
+        else
+            SizedMatrix{NIter2,NChains}(fill(missing, NIter2, NChains))
+        end
+        d[k] = SizedMatrix{NIter1 + NIter2,NChains}(vcat(c1_data, c2_data))
+    end
+    return FlexiChain{TKey}(d)
+end
+function Base.vcat(c1::FlexiChain{TKey}, c2::FlexiChain{TKey}) where {TKey}
+    throw(
+        DimensionMismatch(
+            "cannot vcat FlexiChains with different number of chains: got sizes $(size(c1)) and $(size(c2))",
+        ),
+    )
+end
+function Base.vcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1,TKey2}
+    throw(
+        ArgumentError(
+            "cannot vcat FlexiChains with different key types $(TKey1) and $(TKey2)"
+        ),
+    )
+end
+Base.vcat(c1::FlexiChain) = c1
+function Base.vcat(
+    c1::FlexiChain{TKey,NIter1,NChains},
+    c2::FlexiChain{TKey,NIter2,NChains},
+    cs::FlexiChain{TKey}...,
+) where {TKey,NIter1,NIter2,NChains}
+    return Base.vcat(Base.vcat(c1, c2), cs...)
+end
+
+"""
+    Base.hcat(cs...::FlexiChain{TKey}) where {TKey}
+
+Concatenate one or more `FlexiChain`s along the chain dimension. Both `c1` and `c2` must
+have the same number of iterations and the same key type.
+
+The resulting chain's keys are the union of both input chains' keys. Any keys that only have
+data in one of the arguments will be assigned `missing` data in the other chain during
+concatenation.
+"""
+function Base.hcat(
     c1::FlexiChain{TKey,NIter,NChains1}, c2::FlexiChain{TKey,NIter,NChains2}
 )::FlexiChain{TKey,NIter,NChains1 + NChains2} where {TKey,NIter,NChains1,NChains2}
     d = Dict{ParameterOrExtra{TKey},SizedMatrix{NIter,NChains1 + NChains2}}()
@@ -456,6 +523,47 @@ function AbstractMCMC.chainscat(
         d[k] = SizedMatrix{NIter,NChains1 + NChains2}(hcat(c1_data, c2_data))
     end
     return FlexiChain{TKey}(d)
+end
+Base.hcat(c1::FlexiChain) = c1
+function Base.hcat(c1::FlexiChain{TKey}, c2::FlexiChain{TKey}) where {TKey}
+    throw(
+        DimensionMismatch(
+            "cannot hcat FlexiChains with different number of iterations: got sizes $(size(c1)) and $(size(c2))",
+        ),
+    )
+end
+function Base.hcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1,TKey2}
+    throw(
+        ArgumentError(
+            "cannot hcat FlexiChains with different key types $(TKey1) and $(TKey2)"
+        ),
+    )
+end
+function Base.hcat(
+    c1::FlexiChain{TKey,NIter,NChains1},
+    c2::FlexiChain{TKey,NIter,NChains2},
+    cs::FlexiChain{TKey,NIter}...,
+) where {TKey,NIter,NChains1,NChains2}
+    return Base.hcat(Base.hcat(c1, c2), cs...)
+end
+
+"""
+    AbstractMCMC.chainscat(chains...)
+
+Concatenate `FlexiChain`s along the chain dimension.
+"""
+function AbstractMCMC.chainscat(
+    c1::FlexiChain{TKey,NIter,NChains1}, c2::FlexiChain{TKey,NIter,NChains2}
+)::FlexiChain{TKey,NIter,NChains1 + NChains2} where {TKey,NIter,NChains1,NChains2}
+    return Base.hcat(c1, c2)
+end
+AbstractMCMC.chainscat(c1::FlexiChain) = c1
+function AbstractMCMC.chainscat(
+    c1::FlexiChain{TKey,NIter,NChains1},
+    c2::FlexiChain{TKey,NIter,NChains2},
+    cs::FlexiChain{TKey,NIter}...,
+) where {TKey,NIter,NChains1,NChains2}
+    return AbstractMCMC.chainscat(AbstractMCMC.chainscat(c1, c2), cs...)
 end
 
 """

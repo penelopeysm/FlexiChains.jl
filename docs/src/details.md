@@ -113,6 +113,20 @@ It does so by looking for a unique `Parameter` or `Extra` which can be converted
 Base.getindex(::FlexiChains.FlexiChain, key::Symbol)
 ```
 
+## Concatenation along the other dimensions
+
+If you have two chains and want to concatenate them along the iteration or chain dimension, you can use `vcat` and `hcat` respectively.
+The chains must have the same size along the other dimension (that is not being concatenated).
+
+If there are parameters that are present in one chain but not the other, they will be assigned `missing` values in the concatenated chain.
+
+```@docs
+Base.vcat(::FlexiChains.FlexiChain{TKey,NIter1,NChains}, ::FlexiChains.FlexiChain{TKey,NIter2,NChains}) where {TKey,NIter1,NIter2,NChains}
+Base.hcat(::FlexiChains.FlexiChain{TKey,NIter,NChains1}, ::FlexiChains.FlexiChain{TKey,NIter,NChains2}) where {TKey,NIter,NChains1,NChains2}
+```
+
+The rather little-known `AbstractMCMC.chainscat` and `AbstractMCMC.chainsstack` methods (see [AbstractMCMC.jl docs](https://turinglang.org/AbstractMCMC.jl/stable/api/#Chains)) are also defined on FlexiChains; they both make use of `hcat`.
+
 ## Manually constructing a `FlexiChain`
 
 If you ever need to construct a `FlexiChain` from scratch, there are exactly two ways to do so.

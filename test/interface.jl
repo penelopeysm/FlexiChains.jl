@@ -144,7 +144,7 @@ using Test
         end
     end
 
-    @testset "dim-2 merge: `merge`" begin
+    @testset "keys merge: `merge`" begin
         @testset "basic merge" begin
             struct Foo end
             N_iters = 10
@@ -215,7 +215,7 @@ using Test
         end
     end
 
-    @testset "dim-2 subset: `subset`" begin
+    @testset "keys subset: `subset`" begin
         @testset "basic application" begin
             N_iters = 10
             d = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
@@ -252,38 +252,121 @@ using Test
         end
     end
 
-    @testset "dim-3 merge: `AbstractMCMC.chainscat`" begin
+    @testset "vcat" begin
+        @testset "basic application" begin
+            niters1 = 10
+            d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
+            chain1 = FlexiChain{Symbol}(fill(d1, niters1))
+            niters2 = 20
+            d2 = Dict(Parameter(:a) => 2, Extra(:b, "c") => "foo")
+            chain2 = FlexiChain{Symbol}(fill(d2, niters2))
+            chain12 = vcat(chain1, chain2)
+            @test chain12 isa FlexiChain{Symbol,niters1 + niters2,1}
+            @test size(chain12) == (niters1 + niters2, 1)
+            @test chain12[Parameter(:a)] == vcat(fill(1, niters1), fill(2, niters2))
+            @test chain12[Extra(:b, "c")] == vcat(fill(3.0, niters1), fill("foo", niters2))
+        end
+
+        @testset "error on different number of chains" begin
+            d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
+            chain1 = FlexiChain{Symbol}(fill(d1, 10, 1))
+            d2 = Dict(Parameter(:a) => 2, Extra(:b, "c") => "foo")
+            chain2 = FlexiChain{Symbol}(fill(d2, 10, 2))
+            @test_throws DimensionMismatch vcat(chain1, chain2)
+        end
+
+        @testset "error on different key type" begin
+            d1 = Dict(Parameter(:a) => 1)
+            chain1 = FlexiChain{Symbol}(fill(d1, 10))
+            d2 = Dict(Parameter("a") => 2)
+            chain2 = FlexiChain{String}(fill(d2, 10))
+            @test_throws ArgumentError vcat(chain1, chain2)
+        end
+    end
+
+    @testset "hcat" begin
         @testset "basic application" begin
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
             chain1 = FlexiChain{Symbol}(fill(d1, N_iters))
             d2 = Dict(Parameter(:a) => 2, Extra(:b, "c") => "foo")
             chain2 = FlexiChain{Symbol}(fill(d2, N_iters))
-            chain3 = AbstractMCMC.chainscat(chain1, chain2)
-            @test chain3 isa FlexiChain{Symbol,N_iters,2}
-            @test size(chain3) == (N_iters, 2)
-            @test chain3[Parameter(:a)] == repeat([1 2], N_iters)
-            @test chain3[Extra(:b, "c")] == repeat([3.0 "foo"], N_iters)
+            chain12 = hcat(chain1, chain2)
+            @test chain12 isa FlexiChain{Symbol,N_iters,2}
+            @test size(chain12) == (N_iters, 2)
+            @test chain12[Parameter(:a)] == repeat([1 2], N_iters)
+            @test chain12[Extra(:b, "c")] == repeat([3.0 "foo"], N_iters)
+        end
+
+        @testset "3 or more inputs" begin
+            N_iters = 10
+            d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
+            chain1 = FlexiChain{Symbol}(fill(d1, N_iters))
+            d2 = Dict(Parameter(:a) => 2, Extra(:b, "c") => "foo")
+            chain2 = FlexiChain{Symbol}(fill(d2, N_iters))
+            d3 = Dict(Parameter(:x) => 4, Extra(:d, "e") => :y)
+            chain3 = FlexiChain{Symbol}(fill(d3, N_iters))
+            chain123 = hcat(chain1, chain2, chain3)
+            @test chain123 isa FlexiChain{Symbol,N_iters,3}
+            @test size(chain123) == (N_iters, 3)
+            # need isequal() rather than `==` to handle the `missing` values
+            @test isequal(chain123[Parameter(:a)], repeat([1 2 missing], N_iters))
+            @test isequal(chain123[Extra(:b, "c")], repeat([3.0 "foo" missing], N_iters))
+            @test isequal(chain123[Parameter(:x)], repeat([missing missing 4], N_iters))
+            @test isequal(chain123[Extra(:d, "e")], repeat([missing missing :y], N_iters))
         end
 
         @testset "stacking different numbers of chains" begin
             chain1 = FlexiChain{Symbol}(fill(Dict(Parameter(:a) => 1), 10))
             chain2 = FlexiChain{Symbol}(fill(Dict(Parameter(:a) => 3), 10, 2))
-            chain3 = AbstractMCMC.chainscat(chain1, chain2)
-            @test chain3 isa FlexiChain{Symbol,10,3}
-            @test size(chain3) == (10, 3)
-            @test chain3[Parameter(:a)] == repeat([1 3 3], 10)
+            chain12 = hcat(chain1, chain2)
+            @test chain12 isa FlexiChain{Symbol,10,3}
+            @test size(chain12) == (10, 3)
+            @test chain12[Parameter(:a)] == repeat([1 3 3], 10)
+        end
+
+        @testset "error on different number of iters" begin
+            d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
+            chain1 = FlexiChain{Symbol}(fill(d1, 20))
+            d2 = Dict(Parameter(:a) => 2, Extra(:b, "c") => "foo")
+            chain2 = FlexiChain{Symbol}(fill(d2, 10))
+            @test_throws DimensionMismatch hcat(chain1, chain2)
+        end
+
+        @testset "error on different key type" begin
+            d1 = Dict(Parameter(:a) => 1)
+            chain1 = FlexiChain{Symbol}(fill(d1, 10))
+            d2 = Dict(Parameter("a") => 2)
+            chain2 = FlexiChain{String}(fill(d2, 10))
+            @test_throws ArgumentError hcat(chain1, chain2)
         end
 
         @testset "different parameters in chains" begin
             chain1 = FlexiChain{Symbol}(fill(Dict(Parameter(:a) => 1), 10))
             chain2 = FlexiChain{Symbol}(fill(Dict(Parameter(:b) => 2), 10))
-            chain3 = AbstractMCMC.chainscat(chain1, chain2)
-            @test chain3 isa FlexiChain{Symbol,10,2}
-            @test size(chain3) == (10, 2)
+            chain12 = hcat(chain1, chain2)
+            @test chain12 isa FlexiChain{Symbol,10,2}
+            @test size(chain12) == (10, 2)
             # need isequal() rather than `==` to handle the `missing` values
-            @test isequal(chain3[Parameter(:a)], repeat([1 missing], 10))
-            @test isequal(chain3[Parameter(:b)], repeat([missing 2], 10))
+            @test isequal(chain12[Parameter(:a)], repeat([1 missing], 10))
+            @test isequal(chain12[Parameter(:b)], repeat([missing 2], 10))
+        end
+
+        @testset "AbstractMCMC.chainscat and chainsstack" begin
+            # These methods make use of hcat. We just do a basic test
+            N_iters = 10
+            d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
+            chain1 = FlexiChain{Symbol}(fill(d1, N_iters))
+            d2 = Dict(Parameter(:a) => 2, Extra(:b, "c") => "foo")
+            chain2 = FlexiChain{Symbol}(fill(d2, N_iters))
+            d3 = Dict(Parameter(:x) => 4, Extra(:d, "e") => :y)
+            chain3 = FlexiChain{Symbol}(fill(d3, N_iters))
+            chain12 = hcat(chain1, chain2)
+            @test isequal(AbstractMCMC.chainscat(chain1, chain2), chain12)
+            @test isequal(AbstractMCMC.chainsstack([chain1, chain2]), chain12)
+            chain123 = hcat(chain1, chain2, chain3)
+            @test isequal(AbstractMCMC.chainscat(chain1, chain2, chain3), chain123)
+            @test isequal(AbstractMCMC.chainsstack([chain1, chain2, chain3]), chain123)
         end
     end
 end
