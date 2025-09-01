@@ -40,8 +40,6 @@ FlexiChains.niters
 FlexiChains.nchains
 ```
 
-However, it is better to think of a `FlexiChain` as a mapping of keys to arrays of size `(niters, nchains)`.
-
 To provide (runtime) checks that all arrays have the same size, FlexiChains uses `FlexiChains.SizedMatrix`, which carries its size as a type parameter (although the underlying storage still uses `Base.Array`).
 
 ```@docs
