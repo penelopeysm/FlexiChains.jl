@@ -143,7 +143,7 @@ Turing.setprogress!(false)
     end
 
     @testset "chain metadata" begin
-        @test "sampling time exists" begin
+        @testset "sampling time exists" begin
             @model f() = x ~ Normal()
             model = f()
             chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
