@@ -573,7 +573,7 @@ end
         chain_number::Union{Int,Nothing}=nothing
     )::Dict{ParameterOrExtra{TKey},Any}
 
-Extract the dictionary corresponding to a single MCMC iteration.
+Extract the dictionary mapping keys to their values in a single MCMC iteration.
 
 If `chain` only contains a single chain, then `chain_number` does not need to be
 specified.

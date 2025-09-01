@@ -147,3 +147,14 @@ FlexiChains.FlexiChain{TKey}(data)
 ```
 
 Note that, although the dictionaries themselves may have loose types, the key type of the `FlexiChain` must be specified (and the keys of the dictionaries will be checked against this).
+
+## Deconstructing a `FlexiChain`
+
+Sometimes you may want to retrieve the mapping of keys to values for a particular iteration.
+This is useful especially for DynamicPPL developers.
+To this end, the following functions are provided:
+
+```@docs
+FlexiChains.get_dict_from_iter
+FlexiChains.get_parameter_dict_from_iter
+```
