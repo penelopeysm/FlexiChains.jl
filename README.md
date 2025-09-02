@@ -4,9 +4,12 @@ Flexible Markov chains.
 
 [**Documentation**](http://pysm.dev/FlexiChains.jl/)
 
-### Usage
+### Usage with Turing.jl
 
-To obtain a `FlexiChain` via MCMC sampling in Turing.jl, pass the `chain_type` argument to the `sample` function.
+`FlexiChain{T}` represents a chain that stores data for parameters of type `T`.
+`VNChain` is a alias for `FlexiChain{VarName}`, and is the appropriate type for storing Turing.jl's outputs.
+
+To obtain a `VNChain` from MCMC sampling, pass the `chain_type` argument to the `sample` function.
 
 ```julia
 using Turing
@@ -19,7 +22,7 @@ end
 chain = sample(f(), NUTS(), 1000; chain_type=VNChain)
 ```
 
-You can index into a FlexiChain using VarNames.
+You can index into a `VNChain` using `VarName`s.
 
 ```julia
 chain[@varname(x)]    # -> Vector{Float64}
