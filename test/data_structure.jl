@@ -31,17 +31,6 @@ using Test
                 @test sm[i, 1] == x[i]
             end
         end
-
-        @testset "1 * 1" begin
-            x = rand()
-            sm = FlexiChains.SizedMatrix{1,1}([x])
-            @test FlexiChains.data(sm) == x
-            @test collect(sm) == reshape([x], 1, 1)
-            @test eltype(sm) == typeof(x)
-            @test size(sm) == (1, 1)
-            @test sm[1, 1] == x
-            @test sm[] == x
-        end
     end
 
     @testset "FlexiChains" begin

@@ -48,7 +48,7 @@ end
     data(s::SizedMatrix{NIter,NChains,T}) where {NIter,NChains,T}
 
 Return the underlying data of a `SizedMatrix` as a matrix, or a vector if
-`NChains` is 1, or a scalar if both `NChains` and `NIter` are 1.
+`NChains` is 1.
 
 Note that this differs from `Base.collect`, which always returns a matrix.
 """
@@ -57,9 +57,6 @@ function data(s::SizedMatrix{NIter,NChains,T}) where {NIter,NChains,T}
 end
 function data(s::SizedMatrix{NIter,1,T}) where {NIter,T}
     return vec(s._data)
-end
-function data(s::SizedMatrix{1,1,T}) where {T}
-    return only(s._data)
 end
 
 function Base.collect(
