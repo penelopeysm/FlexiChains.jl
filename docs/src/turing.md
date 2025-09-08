@@ -127,6 +127,20 @@ The chains can be combined using `vcat`:
 chn = vcat(chn1, chn2)
 ```
 
+!!! note "Multiple-chain sampling"
+    
+    In general, the `resume_from` argument only works automatically if both the original and resumed sampling use the same number of chains.
+    That is, `chn1` and `chn2` must either both be invoked as `sample(model, spl, N)`, or both invoked as `sample(model, spl, MCMCThreads(), N, C)` with the same `C`.
+    
+    If you need more flexibility than this, then the `initial_state` keyword argument is recommended instead.
+    When performing single-chain sampling with `sample(model, spl, N; initial_state=state)`, `initial_state` should be either `nothing` (to start a new chain) or the state to resume from.
+    For parallel sampling with `sample(model, spl, MCMCThreads(), N, C)`, `initial_state` should be a vector of length `C`, where `initial_state[i]` is the state to resume the `i`-th chain from (or `nothing` to start a new chain).
+    
+    To obtain the saved final state of a chain, you can use [`FlexiChains.last_sampler_state`](@ref).
+    This is either a single state (for single-chain sampling) or a vector of states (for multi-chain sampling).
+    
+    The above applies equally to `MCMCSerial()` and `MCMCDistributed()`.
+
 ## Posterior predictions and friends
 
 The functions `predict`, `returned`, `logjoint`, `loglikelihood`, and `logprior` all work 'as expected' using FlexiChains with exactly the same signatures that you are used to.

@@ -1,12 +1,13 @@
 module FCTuringExtTests
 
+using AbstractMCMC: AbstractMCMC
+using DynamicPPL: DynamicPPL
 using FlexiChains: FlexiChains, VNChain, Parameter, Extra
-using FlexiChains: FlexiChains
+using MCMCChains: MCMCChains
 using Random: Random, Xoshiro
 using SliceSampling: RandPermGibbs, SliceSteppingOut
 using Test
 using Turing
-using Turing: MCMCChains, AbstractMCMC
 
 Turing.setprogress!(false)
 
@@ -146,25 +147,96 @@ Turing.setprogress!(false)
         @testset "sampling time exists" begin
             @model f() = x ~ Normal()
             model = f()
-            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test FlexiChains.sampling_time(chn) isa AbstractFloat
+
+            @testset "single chain" begin
+                chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+                @test FlexiChains.sampling_time(chn) isa AbstractFloat
+            end
+            @testset "multiple chain" begin
+                chn = sample(
+                    model, NUTS(), MCMCThreads(), 100, 3; chain_type=VNChain, verbose=false
+                )
+                @test FlexiChains.sampling_time(chn) isa AbstractVector{<:AbstractFloat}
+                @test length(FlexiChains.sampling_time(chn)) == 3
+            end
         end
 
         @testset "save_state and resume_from" begin
-            Random.seed!(468)
             @model f() = x ~ Normal()
             model = f()
-            chn1 = sample(
-                model, NUTS(), 100; chain_type=VNChain, verbose=false, save_state=true
+
+            # This sampler does nothing (it just stays at the existing state)
+            struct StaticSampler <: Turing.Inference.InferenceAlgorithm end
+            function DynamicPPL.initialstep(
+                rng, model, ::DynamicPPL.Sampler{<:StaticSampler}, vi; kwargs...
             )
-            @test isapprox(mean(chn1[@varname(x)]), 0.0; atol=0.1)
-            # check that the sampler state is stored
-            @test FlexiChains.last_sampler_state(chn1) !== nothing
-            # check that it can be resumed from
-            chn2 = sample(
-                model, NUTS(), 100; chain_type=VNChain, verbose=false, resume_from=chn1
+                return Turing.Inference.Transition(model, vi, nothing), vi
+            end
+            function AbstractMCMC.step(
+                rng,
+                model,
+                ::DynamicPPL.Sampler{<:StaticSampler},
+                vi::DynamicPPL.AbstractVarInfo;
+                kwargs...,
             )
-            @test isapprox(mean(chn2[@varname(x)]), 0.0; atol=0.1)
+                return Turing.Inference.Transition(model, vi, nothing), vi
+            end
+
+            @testset "single chain" begin
+                chn1 = sample(
+                    model,
+                    StaticSampler(),
+                    10;
+                    chain_type=VNChain,
+                    verbose=false,
+                    save_state=true,
+                )
+                # check that the sampler state is stored
+                @test FlexiChains.last_sampler_state(chn1) isa DynamicPPL.VarInfo
+                # check that it can be resumed from
+                chn2 = sample(
+                    model,
+                    StaticSampler(),
+                    10;
+                    chain_type=VNChain,
+                    verbose=false,
+                    resume_from=chn1,
+                )
+                # check that it did reuse the previous state
+                xval = chn1[@varname(x)][end]
+                @test all(x -> x == xval, chn2[@varname(x)])
+            end
+
+            @testset "multiple chain" begin
+                chn1 = sample(
+                    model,
+                    StaticSampler(),
+                    MCMCThreads(),
+                    10,
+                    3;
+                    chain_type=VNChain,
+                    verbose=false,
+                    save_state=true,
+                )
+                # check that the sampler state is stored
+                @test FlexiChains.last_sampler_state(chn1) isa
+                    AbstractVector{<:DynamicPPL.VarInfo}
+                @test length(FlexiChains.last_sampler_state(chn1)) == 3
+                # check that it can be resumed from
+                chn2 = sample(
+                    model,
+                    StaticSampler(),
+                    MCMCThreads(),
+                    10,
+                    3;
+                    chain_type=VNChain,
+                    verbose=false,
+                    resume_from=chn1,
+                )
+                # check that it did reuse the previous state
+                xval = chn1[@varname(x)][end, :]
+                @test all(i -> chn2[@varname(x)][i, :] == xval, 1:10)
+            end
         end
     end
 
