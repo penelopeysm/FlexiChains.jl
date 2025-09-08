@@ -1,6 +1,5 @@
 using AbstractMCMC: AbstractMCMC
 
-@public SizedMatrix, data
 @public FlexiChain, Parameter, Extra, ParameterOrExtra
 @public sampling_time, last_sampler_state
 
