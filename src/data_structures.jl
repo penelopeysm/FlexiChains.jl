@@ -81,11 +81,6 @@ end
 function Base.getindex(s::SizedMatrix{NIter,1,T}, i::Int) where {NIter,T}
     return s._data[i, 1]
 end
-"""
-    cast_to_type(::Type{Tdst}, s::SizedMatrix{NIter,NChains,Tsrc}) where {NIter,NChains,Tsrc,Tdst}
-
-Cast the underlying data of a `SizedMatrix` to a different element type.
-"""
 function Base.convert(
     ::Type{SizedMatrix{NIter,NChains,Tdst}}, s::SizedMatrix{NIter,NChains,Tsrc}
 ) where {NIter,NChains,Tsrc,Tdst}
@@ -134,9 +129,26 @@ const ParameterOrExtra{T} = Union{Parameter{<:T},Extra}
 
 A struct to hold common kinds of metadata typically associated with a chain.
 """
-struct FlexiChainMetadata{Ttime<:Union{AbstractFloat,Nothing},Tstate}
+struct FlexiChainMetadata{Ttime<:Union{Real,Nothing},Tstate}
     sampling_time::Ttime
     last_sampler_state::Tstate
+end
+
+_check_length(n::Int, ::Nothing, ::AbstractString) = fill(nothing, n)
+function _check_length(n::Int, v::AbstractVector, s::AbstractString)
+    if length(v) != n
+        msg = "expected `$s` to have length $n (the number of chains), got $(length(v))."
+        throw(DimensionMismatch(msg))
+    end
+    return v
+end
+function _check_length(n::Int, v::Any, s::AbstractString)
+    if n == 1
+        return [v]
+    else
+        msg = "expected `$s` to be a vector of length $n (the number of chains), but got $(typeof(v))."
+        throw(DimensionMismatch(msg))
+    end
 end
 
 """
@@ -151,7 +163,7 @@ TODO: Document further.
 
 $(TYPEDFIELDS)
 """
-struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata} <:
+struct FlexiChain{TKey,NIter,NChains,TMetadata<:NTuple{NChains,FlexiChainMetadata}} <:
        AbstractMCMC.AbstractChains
     """
     Internal per-iteration data for parameters and extra keys. Do not access this directly
@@ -172,22 +184,26 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata} <:
     @doc """
         FlexiChain{TKey}(
             array_of_dicts::AbstractArray{<:AbstractDict,N};
-            sampling_time::Union{AbstractFloat,Nothing}=nothing,
+            sampling_time::Any=nothing,
             last_sampler_state::Any=nothing,
         ) where {TKey,N}
 
-    Construct a `FlexiChain` from a vector or matrix of dictionaries. Each
-    dictionary corresponds to one iteration.
+    Construct a `FlexiChain` from a vector or matrix of dictionaries. Each dictionary
+    corresponds to one iteration.
 
-    Each dictionary must be a mapping from a `ParameterOrExtra{TKey}` (i.e.,
-    either a `Parameter{TKey}` or an `Extra`) to its value at that
-    iteration.
+    Each dictionary must be a mapping from a `ParameterOrExtra{TKey}` (i.e., either a
+    `Parameter{TKey}` or an `Extra`) to its value at that iteration.
 
-    If `array_of_dicts` is a vector (i.e., `N = 1`), then `niter` is the length
-    of the vector and `nchains` is 1. If `array_of_dicts` is a matrix (i.e., `N
-    = 2`), then `(niter, nchains) = size(dicts)`.
+    If `array_of_dicts` is a vector (i.e., `N = 1`), then `niter` is the length of the
+    vector and `nchains` is 1. If `array_of_dicts` is a matrix (i.e., `N = 2`), then
+    `(niter, nchains) = size(dicts)`.
 
     Other values of `N` will error.
+
+    `sampling_time` and `last_sampler_state` are used to store metadata about each chain. If
+    there is more than one chain (i.e., if size(array_of_dicts, 2) > 1), the parameters
+    `sampling_time` and `last_sampler_state` must be vectors with length equal to the number
+    of chains. If there is only one chain, they should be scalars.
 
     ## Example usage
 
@@ -200,7 +216,7 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata} <:
     """
     function FlexiChain{TKey}(
         array_of_dicts::AbstractArray{<:AbstractDict,N};
-        sampling_time::Union{AbstractFloat,Nothing}=nothing,
+        sampling_time::Any=nothing,
         last_sampler_state::Any=nothing,
     ) where {TKey,N}
         # Determine size
@@ -236,7 +252,16 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata} <:
         end
 
         # Construct metadata
-        metadata = FlexiChainMetadata(sampling_time, last_sampler_state)
+        sampling_time = _check_length(nchains, sampling_time, "sampling_time")
+        last_sampler_state = _check_length(
+            nchains, last_sampler_state, "last_sampler_state"
+        )
+        metadata = tuple(
+            [
+                FlexiChainMetadata(sampling_time[i], last_sampler_state[i]) for
+                i in 1:nchains
+            ]...,
+        )
 
         return new{TKey,niter,nchains,typeof(metadata)}(data, metadata)
     end
@@ -244,7 +269,7 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata} <:
     @doc """
         FlexiChain{TKey}(
             dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}};
-            sampling_time::Union{AbstractFloat,Nothing}=nothing,
+            sampling_time::Any=nothing,
             last_sampler_state::Any=nothing,
         ) where {TKey,N}
 
@@ -260,6 +285,11 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata} <:
 
     Other values of `N` will error.
 
+    `sampling_time` and `last_sampler_state` are used to store metadata about each chain. If
+    there is more than one chain (i.e., for some value `v` in `dict_of_arrays`, size(v, 2) >
+    1), the parameters `sampling_time` and `last_sampler_state` must be vectors with length
+    equal to the number of chains. If there is only one chain, they should be scalars.
+
     ## Example usage
 
     ```julia
@@ -272,7 +302,7 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata} <:
     """
     function FlexiChain{TKey}(
         dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}};
-        sampling_time::Union{AbstractFloat,Nothing}=nothing,
+        sampling_time::Any=nothing,
         last_sampler_state::Any=nothing,
     ) where {TKey,N}
         # If no data, assume 0 iters and 0 chains.
@@ -316,25 +346,51 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata} <:
         end
 
         # Construct metadata
-        metadata = FlexiChainMetadata(sampling_time, last_sampler_state)
+        sampling_time = _check_length(nchains, sampling_time, "sampling_time")
+        last_sampler_state = _check_length(
+            nchains, last_sampler_state, "last_sampler_state"
+        )
+        metadata = tuple(
+            [
+                FlexiChainMetadata(sampling_time[i], last_sampler_state[i]) for
+                i in 1:nchains
+            ]...,
+        )
 
         return new{TKey,niter,nchains,typeof(metadata)}(data, metadata)
     end
 end
 
 """
-    sampling_time(chain::FlexiChain)::Union{AbstractFloat,Nothing}
+    sampling_time(chain::FlexiChain)
 
 Return the time taken to sample the chain (in seconds). If the time was not recorded, this
 will be `nothing`.
+
+If `chain` only has one chain, this will return a single value. If it has multiple chains, it will return a vector.
 """
-sampling_time(chain::FlexiChain) = chain._metadata.sampling_time
+function sampling_time(chain::FlexiChain{TKey,NIter,1}) where {TKey,NIter}
+    return only(chain._metadata).sampling_time
+end
+function sampling_time(chain::FlexiChain{TKey,NIter,NChains}) where {TKey,NIter,NChains}
+    return collect(map(m -> m.sampling_time, chain._metadata))
+end
 
 """
     last_sampler_state(chain::FlexiChain)
 
 Return the final state of the sampler used to generate the chain, if the `save_state=true`
-keyword argument was passed to `sample`. This can be used for resuming MCMC sampling. If the
-state was not saved, this will be `nothing`.
+keyword argument was passed to `sample`. This can be used for resuming MCMC sampling.
+
+If `chain` only has one chain, this will return a single value. If it has multiple chains, it will return a vector.
+
+If the state was not saved, this will be `nothing` (or a vector thereof)..
 """
-last_sampler_state(chain::FlexiChain) = chain._metadata.last_sampler_state
+function last_sampler_state(chain::FlexiChain{TKey,NIter,1}) where {TKey,NIter}
+    return only(chain._metadata).last_sampler_state
+end
+function last_sampler_state(
+    chain::FlexiChain{TKey,NIter,NChains}
+) where {TKey,NIter,NChains}
+    return collect(map(m -> m.last_sampler_state, chain._metadata))
+end

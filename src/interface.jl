@@ -522,7 +522,14 @@ function Base.hcat(
         end
         d[k] = SizedMatrix{NIter,NChains1 + NChains2}(hcat(c1_data, c2_data))
     end
-    return FlexiChain{TKey}(d)
+    # concatenate metadata
+    sampling_times = vcat(FlexiChains.sampling_time(c1), FlexiChains.sampling_time(c2))
+    last_sampler_states = vcat(
+        FlexiChains.last_sampler_state(c1), FlexiChains.last_sampler_state(c2)
+    )
+    return FlexiChain{TKey}(
+        d; sampling_time=sampling_times, last_sampler_state=last_sampler_states
+    )
 end
 Base.hcat(c1::FlexiChain) = c1
 function Base.hcat(c1::FlexiChain{TKey}, c2::FlexiChain{TKey}) where {TKey}
