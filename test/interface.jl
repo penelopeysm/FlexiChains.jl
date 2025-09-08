@@ -298,6 +298,24 @@ using Test
             @test chain12[Extra(:b, "c")] == repeat([3.0 "foo"], N_iters)
         end
 
+        @testset "combination of metadata" begin
+            N_iters = 10
+            d1 = Dict(Parameter(:a) => 1)
+            chain1 = FlexiChain{Symbol}(
+                fill(d1, N_iters); sampling_time=1, last_sampler_state="foo"
+            )
+            d2 = Dict(Parameter(:a) => 2)
+            chain2 = FlexiChain{Symbol}(
+                fill(d2, N_iters); sampling_time=2, last_sampler_state="bar"
+            )
+            chain12 = hcat(chain1, chain2)
+            @test chain12 isa FlexiChain{Symbol,N_iters,2}
+            @test size(chain12) == (N_iters, 2)
+            @test chain12[Parameter(:a)] == repeat([1 2], N_iters)
+            @test FlexiChains.sampling_time(chain12) == [1, 2]
+            @test FlexiChains.last_sampler_state(chain12) == ["foo", "bar"]
+        end
+
         @testset "3 or more inputs" begin
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
