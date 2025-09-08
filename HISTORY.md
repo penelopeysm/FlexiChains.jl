@@ -1,3 +1,7 @@
+## 0.0.2
+
+Implemented methods for `SizedMatrix{1,1}` (i.e. actually a scalar) such that `data(sm::SizedMatrix{1,1,T})` returns a single `T` rather than a 1-element array.
+
 ## 0.0.1
 
 This is the initial release of FlexiChains.jl.
