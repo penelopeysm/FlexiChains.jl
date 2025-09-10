@@ -280,7 +280,7 @@ using Test
             chain1 = FlexiChain{Symbol}(fill(d1, 10))
             d2 = Dict(Parameter("a") => 2)
             chain2 = FlexiChain{String}(fill(d2, 10))
-            @test_throws KeyError vcat(chain1, chain2)
+            @test_throws ArgumentError vcat(chain1, chain2)
         end
     end
 
@@ -356,7 +356,7 @@ using Test
             chain1 = FlexiChain{Symbol}(fill(d1, 10))
             d2 = Dict(Parameter("a") => 2)
             chain2 = FlexiChain{String}(fill(d2, 10))
-            @test_throws KeyError hcat(chain1, chain2)
+            @test_throws ArgumentError hcat(chain1, chain2)
         end
 
         @testset "different parameters in chains" begin
