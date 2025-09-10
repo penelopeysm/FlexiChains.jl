@@ -1,4 +1,6 @@
-const ChainOrSummary{TKey} = Union{<:FlexiChain{TKey},<:FlexiChainSummary{TKey}}
+const ChainOrSummary{TKey,NIter,NChain} = Union{
+    <:FlexiChain{TKey,NIter,NChain},<:FlexiChainSummary{TKey,NIter,NChain}
+}
 
 """
     Base.getindex(chain::ChainOrSummary{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
@@ -48,7 +50,7 @@ function Base.getindex(chain::ChainOrSummary{TKey}, sym_key::Symbol) where {TKey
         end
     end
     if length(potential_keys) == 0
-        throw(ArgumentError("no key corresponding to symbol $sym_key"))
+        throw(KeyError(sym_key))
     elseif length(potential_keys) > 1
         s = "multiple keys correspond to symbol :$sym_key.\n"
         s *= "Possible options are: \n"
@@ -59,7 +61,7 @@ function Base.getindex(chain::ChainOrSummary{TKey}, sym_key::Symbol) where {TKey
                 s *= "  - Extra(:$(k.section_name), $(k.key_name))\n"
             end
         end
-        throw(ArgumentError(s))
+        throw(KeyError(s))
     else
         return chain[only(potential_keys)]
     end

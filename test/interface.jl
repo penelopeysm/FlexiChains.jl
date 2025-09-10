@@ -83,8 +83,8 @@ using Test
             @test chain[:a] == fill(1, N_iters)
             @test chain[:b] == fill(2, N_iters)
             @test chain[:hello] == fill(3.0, N_iters)
-            @test_throws ArgumentError chain[:c]
-            @test_throws ArgumentError chain[:world]
+            @test_throws KeyError chain[:c]
+            @test_throws KeyError chain[:world]
         end
 
         @testset "ambiguous symbol" begin
@@ -96,7 +96,7 @@ using Test
             @test chain[Parameter(:a)] == fill(1, N_iters)
             @test chain[Extra(:section, "a")] == fill(3.0, N_iters)
             # but getindex with the symbol should fail
-            @test_throws ArgumentError chain[:a]
+            @test_throws KeyError chain[:a]
             # ... with the correct error message
             @test_throws "multiple keys" chain[:a]
         end
@@ -280,7 +280,7 @@ using Test
             chain1 = FlexiChain{Symbol}(fill(d1, 10))
             d2 = Dict(Parameter("a") => 2)
             chain2 = FlexiChain{String}(fill(d2, 10))
-            @test_throws ArgumentError vcat(chain1, chain2)
+            @test_throws KeyError vcat(chain1, chain2)
         end
     end
 
@@ -356,7 +356,7 @@ using Test
             chain1 = FlexiChain{Symbol}(fill(d1, 10))
             d2 = Dict(Parameter("a") => 2)
             chain2 = FlexiChain{String}(fill(d2, 10))
-            @test_throws ArgumentError hcat(chain1, chain2)
+            @test_throws KeyError hcat(chain1, chain2)
         end
 
         @testset "different parameters in chains" begin

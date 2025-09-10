@@ -45,3 +45,35 @@ struct FlexiChainSummaryIC{TKey,NIter,NChains} <: FlexiChainSummary{TKey,NIter,N
     _data::Dict{<:ParameterOrExtra{TKey},<:SizedMatrix{1,1,<:Any}}
 end
 _get(fcsic::FlexiChainSummaryIC, key) = only(collect(fcsic._data[key])) # scalar
+
+"""
+    _collapse_ic(
+        chain::FlexiChain{TKey,NIter,NChains}, func::Function; warn::Bool=true
+    )::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
+
+Collapse both the iteration and chain dimensions of `chain` by applying `func` to each key in the chain with numeric values.
+
+The function `func` must map a matrix or vector of numbers to a scalar.
+
+Non-numeric keys are skipped (with a warning if `warn` is true).
+"""
+function _collapse_ic(
+    chain::FlexiChain{TKey,NIter,NChains}, func::Function; warn::Bool=false
+)::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
+    data = Dict{ParameterOrExtra{TKey},SizedMatrix{1,1,<:Any}}()
+    for (k, v) in chain._data
+        if eltype(v) <: Number
+            collapsed = func(chain[k])
+            data[k] = SizedMatrix{1,1}(reshape([collapsed], 1, 1))
+        else
+            warn && @warn "cannot collapse non-numeric data for key $k; skipping."
+        end
+    end
+    return FlexiChainSummaryIC{TKey,NIter,NChains}(data)
+end
+
+function mean(
+    chain::FlexiChain{TKey,NIter,NChains}; warn::Bool=false
+)::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
+    return _collapse_ic(chain, mean; warn=warn)
+end

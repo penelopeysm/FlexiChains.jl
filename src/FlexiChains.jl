@@ -21,8 +21,9 @@ macro public(ex)
     end
 end
 
-include("data_structures.jl")
-include("summary.jl")
+include("sizedmatrix.jl")
+include("chain.jl")
+include("summaries.jl")
 include("getindex.jl")
 include("interface.jl")
 
