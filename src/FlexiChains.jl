@@ -22,6 +22,8 @@ macro public(ex)
 end
 
 include("data_structures.jl")
+include("summary.jl")
+include("getindex.jl")
 include("interface.jl")
 
 # For maximum ease of use with Turing...
