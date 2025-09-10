@@ -11,6 +11,7 @@ using FlexiChains:
     Extra,
     VarName,
     @varname
+using Statistics
 using Test
 
 @testset verbose = true "summaries.jl" begin
@@ -71,14 +72,30 @@ using Test
                         Extra(:section, "d") => ds,
                     ),
                 )
-                collapsed = FlexiChains._collapse_ic(chain, mean)
-                @test collapsed[:a] == mean(as)
-                @test collapsed[Parameter(:a)] == mean(as)
-                @test collapsed[:b] == mean(bs)
-                @test collapsed[Parameter(:b)] == mean(bs)
-                @test collapsed[:section, "c"] == mean(cs)
-                @test collapsed[Extra(:section, "c")] == mean(cs)
-                @test_throws KeyError collapsed[Extra(:section, "d")]
+                @testset "$func" for func in [mean, median, minimum, maximum, std, var]
+                    # via _collapse_ic internal function
+                    collapsed = FlexiChains._collapse_ic(chain, func)
+                    @test collapsed[:a] == func(as)
+                    @test collapsed[Parameter(:a)] == func(as)
+                    @test collapsed[:b] == func(bs)
+                    @test collapsed[Parameter(:b)] == func(bs)
+                    @test collapsed[:section, "c"] == func(cs)
+                    @test collapsed[Extra(:section, "c")] == func(cs)
+                    @test_throws KeyError collapsed[Extra(:section, "d")]
+                    @test_logs (:warn, r"non-numeric") FlexiChains._collapse_ic(
+                        chain, func; warn=true
+                    )
+                    # via user-facing function
+                    collapsed = func(chain)
+                    @test collapsed[:a] == func(as)
+                    @test collapsed[Parameter(:a)] == func(as)
+                    @test collapsed[:b] == func(bs)
+                    @test collapsed[Parameter(:b)] == func(bs)
+                    @test collapsed[:section, "c"] == func(cs)
+                    @test collapsed[Extra(:section, "c")] == func(cs)
+                    @test_throws KeyError collapsed[Extra(:section, "d")]
+                    @test_logs (:warn, r"non-numeric") func(chain; warn=true)
+                end
             end
         end
     end

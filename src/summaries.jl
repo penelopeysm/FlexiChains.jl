@@ -1,4 +1,4 @@
-using Statistics: mean, median, std
+using Statistics: Statistics
 
 abstract type FlexiChainSummary{TKey,NIter,NChains} end
 
@@ -72,8 +72,18 @@ function _collapse_ic(
     return FlexiChainSummaryIC{TKey,NIter,NChains}(data)
 end
 
-function mean(
-    chain::FlexiChain{TKey,NIter,NChains}; warn::Bool=false
-)::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    return _collapse_ic(chain, mean; warn=warn)
+macro enable_collapse_ic(func)
+    quote
+        function $(esc(func))(
+            chain::FlexiChain{TKey,NIter,NChains}; warn::Bool=false
+        )::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
+            return _collapse_ic(chain, $(esc(func)); warn=warn)
+        end
+    end
 end
+@enable_collapse_ic Statistics.mean
+@enable_collapse_ic Statistics.median
+@enable_collapse_ic Base.minimum
+@enable_collapse_ic Base.maximum
+@enable_collapse_ic Statistics.var
+@enable_collapse_ic Statistics.std
