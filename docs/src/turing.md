@@ -112,6 +112,31 @@ chain[:lp] # other key
 
 If there is any ambiguity present (for example if there is a parameter named `lp` as well), FlexiChains will throw an error.
 
+## Summary statistics
+
+You can obtain, for example, the mean of each key in the chain using `Statistics.mean`.
+This returns a `FlexiChainSummary` object which can be subsetted in exactly the same way as a `FlexiChain`.
+
+```@example 1
+using Statistics: mean
+
+mean(chain)[@varname(mu)]
+```
+
+By default this collapses the data in both the iteration and chain dimensions (the latter is only relevant if multiple chains are present).
+
+To only collapse over one dimension you can use
+
+```@example
+mean(chain; dims=:iter)[@varname(mu)]
+```
+
+or `dims=:chain` (although that is probably less useful).
+
+Other statistics such as `Statistics.median`, `Statistics.var`, and `Statistics.stdev` behave the same way.
+For a full list of functions supported by FlexiChains please see the full documentation on [the next page](./details.md).
+If you want to summarise chains with custom functions, the next page also describes how this can be done.
+
 ## Saving and resuming MCMC sampling progress
 
 If you want to sample a fewer number of iterations first and then resume it later, you can use the following:
@@ -152,9 +177,9 @@ returned(model, chain)
 
 The `pointwise_logdensity` family of functions is not yet implemented.
 
-## Statistics and plotting
+## Plotting
 
-Right now FlexiChains does not (yet) provide any functionality for calculating statistics or plotting, although these are planned for the future.
+Right now FlexiChains does not (yet) provide any functionality for plotting, although these are planned for the future.
 
 In the meantime, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using the `MCMCChains.Chains` constructor.
 

@@ -161,3 +161,23 @@ To this end, the following functions are provided:
 FlexiChains.get_dict_from_iter
 FlexiChains.get_parameter_dict_from_iter
 ```
+
+## Summaries
+
+In general a `FlexiChain` contains data in matrices of size `(niters, nchains)`.
+Often it is useful to summarise this data along one or both dimensions.
+
+The general way of accomplishing this in FlexiChains is with the following functions.
+To use these you will respectively need a function `f` which maps matrices to row vectors, column vectors, or scalars.
+
+```@docs
+FlexiChains.collapse_iter
+FlexiChains.collapse_chain
+FlexiChains.collapse_iter_chain
+```
+
+For example, you can pass the functions `x -> mean(x; dims=1)`, `x -> mean(x; dims=2)`, and `mean`.
+
+For ease of use, a number of pre-existing functions are extended to work with FlexiChains in this manner.
+Thus, for example, `mean(chain)` is automatically forwarded to `FlexiChains.collapse_iter_chain(chain, mean)`.
+For these functions, you can use `mean(chain; dims=:iter)` to collapse over the iteration dimension only, or `mean(chain; dims=:chain)` to collapse over the chain dimension only.

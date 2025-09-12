@@ -1,5 +1,7 @@
 using Statistics: Statistics
 
+@public collapse_iter_chain
+
 abstract type FlexiChainSummary{TKey,NIter,NChains} end
 
 """
@@ -47,43 +49,165 @@ end
 _get(fcsic::FlexiChainSummaryIC, key) = only(collect(fcsic._data[key])) # scalar
 
 """
-    _collapse_ic(
-        chain::FlexiChain{TKey,NIter,NChains}, func::Function; warn::Bool=true
+    collapse_iter(
+        chain::FlexiChain{TKey,NIter,NChains},
+        func::Function;
+        skip_nonnumeric::Bool=true,
+        warn::Bool=false
+        kwargs...
     )::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
 
 Collapse both the iteration and chain dimensions of `chain` by applying `func` to each key in the chain with numeric values.
 
 The function `func` must map a matrix or vector of numbers to a scalar.
 
-Non-numeric keys are skipped (with a warning if `warn` is true).
+If `skip_nonnumeric` is true, Non-numeric keys are skipped (with a warning if `warn` is true).
+
+Other keyword arguments are forwarded to `func`.
 """
-function _collapse_ic(
-    chain::FlexiChain{TKey,NIter,NChains}, func::Function; warn::Bool=false
+function collapse_iter(
+    chain::FlexiChain{TKey,NIter,NChains},
+    func::Function;
+    skip_nonnumeric::Bool=true,
+    warn::Bool=false,
+    kwargs...,
+)::FlexiChainSummaryI{TKey,NIter,NChains} where {TKey,NIter,NChains}
+    data = Dict{ParameterOrExtra{TKey},SizedMatrix{1,NChains,<:Any}}()
+    non_numerics = ParameterOrExtra{TKey}[]
+    for (k, v) in chain._data
+        if (!skip_nonnumeric) || eltype(v) <: Number
+            collapsed = func(chain[k]; kwargs...)
+            data[k] = SizedMatrix{1,NChains}(collapsed)
+        else
+            warn && push!(non_numerics, k)
+        end
+    end
+    if warn && !isempty(non_numerics)
+        @warn "The following non-numeric keys were skipped: $(non_numerics)"
+    end
+    return FlexiChainSummaryI{TKey,NIter,NChains}(data)
+end
+
+"""
+    collapse_iter_chain(
+        chain::FlexiChain{TKey,NIter,NChains},
+        func::Function;
+        skip_nonnumeric::Bool=true,
+        warn::Bool=false
+        kwargs...
+    )::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
+
+Collapse both the iteration and chain dimensions of `chain` by applying `func` to each key in the chain with numeric values.
+
+The function `func` must map a matrix or vector of numbers to a scalar.
+
+If `skip_nonnumeric` is true, Non-numeric keys are skipped (with a warning if `warn` is true).
+
+Other keyword arguments are forwarded to `func`.
+"""
+function collapse_iter_chain(
+    chain::FlexiChain{TKey,NIter,NChains},
+    func::Function;
+    skip_nonnumeric::Bool=true,
+    warn::Bool=false,
+    kwargs...,
 )::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
     data = Dict{ParameterOrExtra{TKey},SizedMatrix{1,1,<:Any}}()
+    non_numerics = ParameterOrExtra{TKey}[]
     for (k, v) in chain._data
-        if eltype(v) <: Number
-            collapsed = func(chain[k])
+        if (!skip_nonnumeric) || eltype(v) <: Number
+            collapsed = func(chain[k]; kwargs...)
             data[k] = SizedMatrix{1,1}(reshape([collapsed], 1, 1))
         else
-            warn && @warn "cannot collapse non-numeric data for key $k; skipping."
+            warn && push!(non_numerics, k)
         end
+    end
+    if warn && !isempty(non_numerics)
+        @warn "The following non-numeric keys were skipped: $(non_numerics)"
     end
     return FlexiChainSummaryIC{TKey,NIter,NChains}(data)
 end
 
-macro enable_collapse_ic(func)
+macro enable_collapse(skip_nonnumeric, func)
     quote
         function $(esc(func))(
-            chain::FlexiChain{TKey,NIter,NChains}; warn::Bool=false
-        )::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
-            return _collapse_ic(chain, $(esc(func)); warn=warn)
+            chain::FlexiChain{TKey,NIter,NChains};
+            dims::Symbol=:both,
+            warn::Bool=false,
+            kwargs...,
+        )::FlexiChainSummary{TKey,NIter,NChains} where {TKey,NIter,NChains}
+            # TODO: This is type unstable -- would be nice to change it
+            if dims == :both
+                return collapse_iter_chain(
+                    chain,
+                    $(esc(func));
+                    skip_nonnumeric=$(esc(skip_nonnumeric)),
+                    warn=warn,
+                    kwargs...,
+                )
+            elseif dims == :iter
+                return collapse_iter(
+                    chain,
+                    function (x; kwargs...)
+                        return $(esc(func))(x; dims=1, kwargs...)
+                    end;
+                    skip_nonnumeric=$(esc(skip_nonnumeric)),
+                    warn=warn,
+                    kwargs...,
+                )
+            elseif dims == :chain
+                throw(ArgumentError("not yet implemented"))
+                # return collapse_chain(
+                #     chain,
+                #     $(esc(func));
+                #     skip_nonnumeric=$(esc(skip_nonnumeric)),
+                #     warn=warn,
+                #     kwargs...,
+                # )
+            else
+                throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
+            end
         end
     end
 end
-@enable_collapse_ic Statistics.mean
-@enable_collapse_ic Statistics.median
-@enable_collapse_ic Base.minimum
-@enable_collapse_ic Base.maximum
-@enable_collapse_ic Statistics.var
-@enable_collapse_ic Statistics.std
+
+function _stat_docstring(func_name, long_name)
+    return """
+    $(func_name)(chain::FlexiChain; dims::Symbol=:both, warn::Bool=false)
+
+Calculate the $(long_name) across all iterations and chains for each numeric key in `chain`. If
+ `warn=true`, issues a warning for all non-numeric keys encountered.
+
+The `dims` keyword argument specifies which dimensions to collapse.
+- `:iter`: collapse the iteration dimension only
+- `:chain`: collapse the chain dimension only
+- `:both`: collapse both the iteration and chain dimensions (default)
+
+Other keyword arguments are forwarded to `$(func_name)`.
+"""
+end
+
+"""
+$(_stat_docstring("mean", "mean"))
+"""
+@enable_collapse true Statistics.mean
+"""
+$(_stat_docstring("median", "median"))
+"""
+@enable_collapse true Statistics.median
+"""
+$(_stat_docstring("minimum", "minimum"))
+"""
+@enable_collapse true Base.minimum
+"""
+$(_stat_docstring("maximum", "maximum"))
+"""
+@enable_collapse true Base.maximum
+"""
+$(_stat_docstring("var", "variance"))
+"""
+@enable_collapse true Statistics.var
+"""
+$(_stat_docstring("std", "standard deviation"))
+"""
+@enable_collapse true Statistics.std
