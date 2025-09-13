@@ -1,6 +1,6 @@
 using Statistics: Statistics
 
-@public collapse_iter_chain
+@public collapse_iter, collapse_chain, collapse_iter_chain
 
 abstract type FlexiChainSummary{TKey,NIter,NChains} end
 
@@ -48,6 +48,12 @@ struct FlexiChainSummaryIC{TKey,NIter,NChains} <: FlexiChainSummary{TKey,NIter,N
 end
 _get(fcsic::FlexiChainSummaryIC, key) = only(collect(fcsic._data[key])) # scalar
 
+function _warn_non_numerics(non_numerics)
+    if !isempty(non_numerics)
+        @warn "The following non-numeric keys were skipped: $(non_numerics)"
+    end
+end
+
 """
     collapse_iter(
         chain::FlexiChain{TKey,NIter,NChains},
@@ -55,15 +61,16 @@ _get(fcsic::FlexiChainSummaryIC, key) = only(collect(fcsic._data[key])) # scalar
         skip_nonnumeric::Bool=true,
         warn::Bool=false
         kwargs...
-    )::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
+    )::FlexiChainSummaryI{TKey,NIter,NChains} where {TKey,NIter,NChains}
 
-Collapse both the iteration and chain dimensions of `chain` by applying `func` to each key in the chain with numeric values.
+Collapse the iteration dimension of `chain` by applying `func` to each key in the chain with
+numeric values.
 
 The function `func` must map a matrix or vector of numbers to a scalar.
 
 If `skip_nonnumeric` is true, Non-numeric keys are skipped (with a warning if `warn` is true).
 
-Other keyword arguments are forwarded to `func`.
+Other keyword arguments passed to `collapse_iter` are forwarded to `func`.
 """
 function collapse_iter(
     chain::FlexiChain{TKey,NIter,NChains},
@@ -76,16 +83,58 @@ function collapse_iter(
     non_numerics = ParameterOrExtra{TKey}[]
     for (k, v) in chain._data
         if (!skip_nonnumeric) || eltype(v) <: Number
-            collapsed = func(chain[k]; kwargs...)
+            # We use chain._data[k] instead of chain[k] here to guarantee that the input to
+            # `k` is always a matrix (if NChains=1, chain[k] would return a vector).
+            collapsed = func(chain._data[k]; kwargs...)
             data[k] = SizedMatrix{1,NChains}(collapsed)
         else
             warn && push!(non_numerics, k)
         end
     end
-    if warn && !isempty(non_numerics)
-        @warn "The following non-numeric keys were skipped: $(non_numerics)"
-    end
+    warn && _warn_non_numerics(non_numerics)
     return FlexiChainSummaryI{TKey,NIter,NChains}(data)
+end
+
+"""
+    collapse_chain(
+        chain::FlexiChain{TKey,NIter,NChains},
+        func::Function;
+        skip_nonnumeric::Bool=true,
+        warn::Bool=false
+        kwargs...
+    )::FlexiChainSummaryC{TKey,NIter,NChains} where {TKey,NIter,NChains}
+
+Collapse the chain dimension of `chain` by applying `func` to each key in the chain with
+numeric values.
+
+The function `func` must map a matrix or vector of numbers to a scalar.
+
+If `skip_nonnumeric` is true, Non-numeric keys are skipped (with a warning if `warn` is
+true).
+
+Other keyword arguments passed to `collapse_chain` are forwarded to `func`.
+"""
+function collapse_chain(
+    chain::FlexiChain{TKey,NIter,NChains},
+    func::Function;
+    skip_nonnumeric::Bool=true,
+    warn::Bool=false,
+    kwargs...,
+)::FlexiChainSummaryC{TKey,NIter,NChains} where {TKey,NIter,NChains}
+    data = Dict{ParameterOrExtra{TKey},SizedMatrix{NIter,1,<:Any}}()
+    non_numerics = ParameterOrExtra{TKey}[]
+    for (k, v) in chain._data
+        if (!skip_nonnumeric) || eltype(v) <: Number
+            # We use chain._data[k] instead of chain[k] here to guarantee that the input to
+            # `k` is always a matrix (if NChains=1, chain[k] would return a vector).
+            collapsed = func(chain._data[k]; kwargs...)
+            data[k] = SizedMatrix{NIter,1}(collapsed)
+        else
+            warn && push!(non_numerics, k)
+        end
+    end
+    warn && _warn_non_numerics(non_numerics)
+    return FlexiChainSummaryC{TKey,NIter,NChains}(data)
 end
 
 """
@@ -116,19 +165,21 @@ function collapse_iter_chain(
     non_numerics = ParameterOrExtra{TKey}[]
     for (k, v) in chain._data
         if (!skip_nonnumeric) || eltype(v) <: Number
-            collapsed = func(chain[k]; kwargs...)
+            # We use chain._data[k] instead of chain[k] here to guarantee that the input to
+            # `k` is always a matrix (if NChains=1, chain[k] would return a vector).
+            collapsed = func(chain._data[k]; kwargs...)
             data[k] = SizedMatrix{1,1}(reshape([collapsed], 1, 1))
         else
             warn && push!(non_numerics, k)
         end
     end
-    if warn && !isempty(non_numerics)
-        @warn "The following non-numeric keys were skipped: $(non_numerics)"
-    end
+    warn && _warn_non_numerics(non_numerics)
     return FlexiChainSummaryIC{TKey,NIter,NChains}(data)
 end
 
 macro enable_collapse(skip_nonnumeric, func)
+    # TODO: This is type unstable. I don't see a way to fix this now though since we use
+    # different output types for different keyword arguments.
     quote
         function $(esc(func))(
             chain::FlexiChain{TKey,NIter,NChains};
@@ -136,7 +187,6 @@ macro enable_collapse(skip_nonnumeric, func)
             warn::Bool=false,
             kwargs...,
         )::FlexiChainSummary{TKey,NIter,NChains} where {TKey,NIter,NChains}
-            # TODO: This is type unstable -- would be nice to change it
             if dims == :both
                 return collapse_iter_chain(
                     chain,
@@ -156,14 +206,15 @@ macro enable_collapse(skip_nonnumeric, func)
                     kwargs...,
                 )
             elseif dims == :chain
-                throw(ArgumentError("not yet implemented"))
-                # return collapse_chain(
-                #     chain,
-                #     $(esc(func));
-                #     skip_nonnumeric=$(esc(skip_nonnumeric)),
-                #     warn=warn,
-                #     kwargs...,
-                # )
+                return collapse_chain(
+                    chain,
+                    function (x; kwargs...)
+                        return $(esc(func))(x; dims=2, kwargs...)
+                    end;
+                    skip_nonnumeric=$(esc(skip_nonnumeric)),
+                    warn=warn,
+                    kwargs...,
+                )
             else
                 throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
             end

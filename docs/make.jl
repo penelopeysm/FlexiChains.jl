@@ -1,5 +1,6 @@
 using Documenter
 using FlexiChains
+using Statistics: Statistics
 
 makedocs(;
     sitename="FlexiChains.jl",

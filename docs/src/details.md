@@ -181,3 +181,12 @@ For example, you can pass the functions `x -> mean(x; dims=1)`, `x -> mean(x; di
 For ease of use, a number of pre-existing functions are extended to work with FlexiChains in this manner.
 Thus, for example, `mean(chain)` is automatically forwarded to `FlexiChains.collapse_iter_chain(chain, mean)`.
 For these functions, you can use `mean(chain; dims=:iter)` to collapse over the iteration dimension only, or `mean(chain; dims=:chain)` to collapse over the chain dimension only.
+
+```@docs
+Statistics.mean(::FlexiChains.FlexiChain)
+Statistics.median(::FlexiChains.FlexiChain)
+Base.minimum(::FlexiChains.FlexiChain)
+Base.maximum(::FlexiChains.FlexiChain)
+Statistics.var(::FlexiChains.FlexiChain)
+Statistics.std(::FlexiChains.FlexiChain)
+```

@@ -127,13 +127,13 @@ By default this collapses the data in both the iteration and chain dimensions (t
 
 To only collapse over one dimension you can use
 
-```@example
+```@example 1
 mean(chain; dims=:iter)[@varname(mu)]
 ```
 
 or `dims=:chain` (although that is probably less useful).
 
-Other statistics such as `Statistics.median`, `Statistics.var`, and `Statistics.stdev` behave the same way.
+Other statistics such as `Statistics.median`, `Statistics.var`, and `Statistics.std` behave the same way.
 For a full list of functions supported by FlexiChains please see the full documentation on [the next page](./details.md).
 If you want to summarise chains with custom functions, the next page also describes how this can be done.
 
@@ -158,11 +158,11 @@ chn = vcat(chn1, chn2)
     That is, `chn1` and `chn2` must either both be invoked as `sample(model, spl, N)`, or both invoked as `sample(model, spl, MCMCThreads(), N, C)` with the same `C`.
     
     If you need more flexibility than this, then the `initial_state` keyword argument is recommended instead.
-    When performing single-chain sampling with `sample(model, spl, N; initial_state=state)`, `initial_state` should be either `nothing` (to start a new chain) or the state to resume from.
-    For parallel sampling with `sample(model, spl, MCMCThreads(), N, C)`, `initial_state` should be a vector of length `C`, where `initial_state[i]` is the state to resume the `i`-th chain from (or `nothing` to start a new chain).
+    When performing **single-chain sampling** with `sample(model, spl, N; initial_state=state)`, `initial_state` should be either `nothing` (to start a new chain) or the state to resume from.
+    For **multiple-chain sampling** with `sample(model, spl, MCMCThreads(), N, C)`, `initial_state` should be a vector of length `C`, where `initial_state[i]` is the state to resume the `i`-th chain from (or `nothing` to start a new chain).
     
     To obtain the saved final state of a chain, you can use [`FlexiChains.last_sampler_state`](@ref).
-    This is either a single state (for single-chain sampling) or a vector of states (for multi-chain sampling).
+    This is either a single state or a vector of states (depending on how many chains were sampled).
     
     The above applies equally to `MCMCSerial()` and `MCMCDistributed()`.
 
