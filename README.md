@@ -30,12 +30,19 @@ chain[@varname(y)]    # -> Vector{Vector{Float64}}
 chain[@varname(y[1])] # -> Vector{Float64}
 ```
 
+Applying summary functions to the chain returns a summary object, which can be indexed into in the same way:
+
+```julia
+mean(chain)              # -> an (internal) summary object
+mean(chain)[@varname(x)] # -> Float64
+mean(chain; dims=:iter)  # average over iterations only
+```
+
 Functions in Turing.jl which take chains as input, such as `returned`, `predict`, and `logjoint` should work out of the box with exactly the same behaviour as before.
 If you find a function that does not work, please let me know by opening an issue.
 
 Because FlexiChains is in early development, it does not have feature parity with MCMCChains.
-In particular, statistical analysis and plotting are not yet implemented.
-If you need these features, you can convert a `VNChain` to `MCMCChains.Chains` using `MCMCChains.Chains(chain)`.
+In particular, **plotting is not yet implemented**: if you need this, you can convert a `VNChain` to `MCMCChains.Chains` using `MCMCChains.Chains(chain)` and then plot that.
 
 ### How is FlexiChains better?
 
