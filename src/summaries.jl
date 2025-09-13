@@ -66,11 +66,22 @@ end
 Collapse the iteration dimension of `chain` by applying `func` to each key in the chain with
 numeric values.
 
-The function `func` must map a matrix or vector of numbers to a scalar.
+The function `func` must map an (NIter × NChains) matrix to a (1 × NChains) matrix.
 
-If `skip_nonnumeric` is true, Non-numeric keys are skipped (with a warning if `warn` is true).
+If `skip_nonnumeric` is true, non-numeric keys are skipped (with a warning if `warn` is true).
 
 Other keyword arguments passed to `collapse_iter` are forwarded to `func`.
+
+## Example
+
+```julia
+using FlexiChains, Statistics
+# This function maps an (NIter × NChains) matrix to a (1 × NChains) matrix.
+dim1_mean(x::AbstractMatrix) = mean(x; dims=1)
+# This means we can use it with `collapse_iter`.
+FlexiChains.collapse_iter(chain, dim1_mean)
+# (Note that the above is also aliased to `mean(chain; dims=:iter)`.)
+```
 """
 function collapse_iter(
     chain::FlexiChain{TKey,NIter,NChains},
@@ -107,12 +118,24 @@ end
 Collapse the chain dimension of `chain` by applying `func` to each key in the chain with
 numeric values.
 
-The function `func` must map a matrix or vector of numbers to a scalar.
+The function `func` must map an (NIter × NChains) matrix to an (NIter × 1) matrix (_not_ a
+vector).
 
-If `skip_nonnumeric` is true, Non-numeric keys are skipped (with a warning if `warn` is
+If `skip_nonnumeric` is true, non-numeric keys are skipped (with a warning if `warn` is
 true).
 
 Other keyword arguments passed to `collapse_chain` are forwarded to `func`.
+
+## Example
+
+```julia
+using FlexiChains, Statistics
+# This function maps an (NIter × NChains) matrix to an (NIter × 1) matrix.
+dim2_mean(x::AbstractMatrix) = mean(x; dims=2)
+# This means we can use it with `collapse_chain`.
+FlexiChains.collapse_chain(chain, dim2_mean)
+# (Note that the above is also aliased to `mean(chain; dims=:chain)`.)
+```
 """
 function collapse_chain(
     chain::FlexiChain{TKey,NIter,NChains},
@@ -148,11 +171,19 @@ end
 
 Collapse both the iteration and chain dimensions of `chain` by applying `func` to each key in the chain with numeric values.
 
-The function `func` must map a matrix or vector of numbers to a scalar.
+The function `func` must map an (NIter × NChains) matrix to a scalar.
 
-If `skip_nonnumeric` is true, Non-numeric keys are skipped (with a warning if `warn` is true).
+If `skip_nonnumeric` is true, non-numeric keys are skipped (with a warning if `warn` is true).
 
 Other keyword arguments are forwarded to `func`.
+
+## Example
+
+```julia
+using FlexiChains, Statistics
+FlexiChains.collapse_iter_chain(chain, mean)
+# (Note that the above is also aliased to `mean(chain)`.)
+```
 """
 function collapse_iter_chain(
     chain::FlexiChain{TKey,NIter,NChains},
