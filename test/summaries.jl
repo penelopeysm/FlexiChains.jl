@@ -241,6 +241,29 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
             end
         end
     end
+
+    @testset "check that keyword arguments are forwarded" begin
+        # We'll use `std` without Bessel correction here.
+        N_iters, N_chains = 10, 3
+        as = rand(N_iters, N_chains)
+        chain = FlexiChain{Symbol}(Dict(Parameter(:a) => as))
+
+        @testset "iter" begin
+            expected = std(as; dims=1, corrected=false)
+            result = std(chain; dims=:iter, corrected=false)[:a]
+            @test isapprox(result, expected)
+        end
+        @testset "chain" begin
+            expected = std(as; dims=2, corrected=false)
+            result = std(chain; dims=:chain, corrected=false)[:a]
+            @test isapprox(result, expected)
+        end
+        @testset "iter + chain" begin
+            expected = std(chain[:a]; corrected=false)
+            result = std(chain; corrected=false)[:a]
+            @test isapprox(result, expected)
+        end
+    end
 end
 
 end # module
