@@ -49,13 +49,26 @@ In particular, **plotting is not yet implemented**: if you need this, you can co
 Turing's default data type for Markov chains is [`MCMCChains.Chains`](https://turinglang.org/MCMCChains.jl/stable/).
 
 This entire package essentially came about because I think `MCMCChains.Chains` is a bad data structure.
-Specifically, it represents data as a mapping of `Symbol`s to arrays of `Float64`s.
+
+Consider the following model:
+
+```julia
+@model function f()
+    x ~ Poisson(1.0)
+    y ~ MvNormal(zeros(2), I)
+end
+```
+
+The way that MCMCChains and FlexiChains stores the outputs of this model is illustrated here:
 
 <div align="center">
 <img width="450" alt="MCMCChains vs FlexiChains data structure comparison" src="https://github.com/user-attachments/assets/4fbbc925-d4c3-41c7-9d6a-e83503fdb349" />
 </div>
 
+Specifically, MCMCChains represents data as a mapping of _individual_ `Symbol`s to arrays of `Float64`s.
 However, Turing.jl uses `VarName`s as keys in its models, and the values can be anything that is sampled from a distribution.
+In this case, `x` is an integer-valued parameter, and `y` is a vector-valued parameter.
+
 This leads to several problems:
 
 1. **The conversion from `VarName` to `Symbol` is lossy.** See [here](https://github.com/TuringLang/MCMCChains.jl/issues/469) and [here](https://github.com/TuringLang/MCMCChains.jl/issues/470) for examples of how this can bite users. It also forces Turing.jl to store extra information in the chain which specifies how to retrieve the original `VarName`s.
