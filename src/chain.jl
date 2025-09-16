@@ -65,11 +65,34 @@ function _check_length(n::Int, v::Any, s::AbstractString)
     end
 end
 
-"""
-    FlexiChain{TKey,NIter,NChains}
+function _infer_size(array_of_dicts::AbstractArray{<:AbstractDict,N}) where {N}
+    return if N == 1
+        length(array_of_dicts), 1
+    elseif N == 2
+        size(array_of_dicts)
+    else
+        throw(DimensionMismatch("expected vector or matrix, got $(N)-dimensional array."))
+    end
+end
+function _infer_size(dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}}) where {N}
+    return if isempty(dict_of_arrays)
+        0, 0  # If no data, assume 0 iters and 0 chains
+    elseif N == 1
+        length(first(values(dict_of_arrays))), 1
+    elseif N == 2
+        size(first(values(dict_of_arrays)))
+    else
+        throw(DimensionMismatch("expected vector or matrix, got $(N)-dimensional array."))
+    end
+end
 
-Note that the ordering of keys within a `FlexiChain` is an
-implementation detail and is not guaranteed.
+"""
+    struct FlexiChain{
+        TKey,NIter,NChains,TMetadata<:NTuple{NChains,FlexiChainMetadata}
+    } <: AbstractMCMC.AbstractChains
+
+Note that the ordering of keys within a `FlexiChain` is an implementation detail and is not
+guaranteed.
 
 TODO: Document further.
 
@@ -129,19 +152,33 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:NTuple{NChains,FlexiChainMetadat
     ```
     """
     function FlexiChain{TKey}(
-        array_of_dicts::AbstractArray{<:AbstractDict,N};
+        array_of_dicts::AbstractArray{<:AbstractDict};
         sampling_time::Any=nothing,
         last_sampler_state::Any=nothing,
-    ) where {TKey,N}
-        # Determine size
-        niter, nchains = if N == 1
-            length(array_of_dicts), 1
-        elseif N == 2
-            size(array_of_dicts)
-        else
-            throw(DimensionMismatch("expected vector or matrix, got $(N)-dimensional array."))
-        end
+    ) where {TKey}
+        NIter, NChains = _infer_size(array_of_dicts)
+        return FlexiChain{TKey,NIter,NChains}(
+            array_of_dicts;
+            sampling_time=sampling_time,
+            last_sampler_state=last_sampler_state,
+        )
+    end
 
+    @doc """
+        FlexiChain{TKey,NIter,NChains}(
+            array_of_dicts::AbstractArray{<:AbstractDict,N};
+            sampling_time::Any=nothing,
+            last_sampler_state::Any=nothing,
+        ) where {TKey,N}
+
+    Construct a `FlexiChain` from a vector or matrix of dictionaries, but with an explicit
+    specification of the desired size.
+    """
+    function FlexiChain{TKey,NIter,NChains}(
+        array_of_dicts::AbstractArray{<:AbstractDict};
+        sampling_time::Any=nothing,
+        last_sampler_state::Any=nothing,
+    ) where {TKey,NIter,NChains}
         # Extract all unique keys from the dictionaries
         keys_set = Set{ParameterOrExtra{TKey}}()
         for d in array_of_dicts
@@ -155,29 +192,29 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:NTuple{NChains,FlexiChainMetadat
         end
 
         # We have data as matrices-of-dict; we want to convert to dict-of-matrices.
-        data = Dict{ParameterOrExtra{TKey},SizedMatrix{niter,nchains}}()
+        data = Dict{ParameterOrExtra{TKey},SizedMatrix{NIter,NChains}}()
         for key in keys_set
             # Extract the values for this key from all dictionaries
             values = map(d -> get(d, key, missing), array_of_dicts)
             # Convert to SizedMatrix
-            values_smat = SizedMatrix{niter,nchains}(values)
+            values_smat = SizedMatrix{NIter,NChains}(values)
             # Store in the data dictionary
             data[key] = values_smat
         end
 
         # Construct metadata
-        sampling_time = _check_length(nchains, sampling_time, "sampling_time")
+        sampling_time = _check_length(NChains, sampling_time, "sampling_time")
         last_sampler_state = _check_length(
-            nchains, last_sampler_state, "last_sampler_state"
+            NChains, last_sampler_state, "last_sampler_state"
         )
         metadata = tuple(
             [
                 FlexiChainMetadata(sampling_time[i], last_sampler_state[i]) for
-                i in 1:nchains
+                i in 1:NChains
             ]...,
         )
 
-        return new{TKey,niter,nchains,typeof(metadata)}(data, metadata)
+        return new{TKey,NIter,NChains,typeof(metadata)}(data, metadata)
     end
 
     @doc """
@@ -215,27 +252,34 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:NTuple{NChains,FlexiChainMetadat
     ```
     """
     function FlexiChain{TKey}(
-        dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}};
+        dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any}};
         sampling_time::Any=nothing,
         last_sampler_state::Any=nothing,
-    ) where {TKey,N}
-        # If no data, assume 0 iters and 0 chains.
-        if isempty(dict_of_arrays)
-            return FlexiChain{TKey,0,0}(Dict{ParameterOrExtra{TKey},SizedMatrix{0,0}}())
-        end
+    ) where {TKey}
+        NIter, NChains = _infer_size(dict_of_arrays)
+        return FlexiChain{TKey,NIter,NChains}(
+            dict_of_arrays;
+            sampling_time=sampling_time,
+            last_sampler_state=last_sampler_state,
+        )
+    end
 
-        # dict_of_arrays is already in the correct form, but we need to do some
-        # upfront work to check the keys are consistent, and also ensure that
-        # the sizes are consistent (and convert to SMatrix).
-        niter, nchains = if N == 1
-            length(first(values(dict_of_arrays))), 1
-        elseif N == 2
-            size(first(values(dict_of_arrays)))
-        else
-            throw(DimensionMismatch("expected vector or matrix, got $(N)-dimensional array."))
-        end
+    @doc """
+        FlexiChain{TKey,NIter,NChains}(
+            dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}};
+            sampling_time::Any=nothing,
+            last_sampler_state::Any=nothing,
+        ) where {TKey,N}
 
-        data = Dict{ParameterOrExtra{TKey},SizedMatrix{niter,nchains}}()
+    Construct a `FlexiChain` from a dictionary of arrays, but with an explicit specification
+    of the desired size.
+    """
+    function FlexiChain{TKey,NIter,NChains}(
+        dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any}};
+        sampling_time::Any=nothing,
+        last_sampler_state::Any=nothing,
+    ) where {TKey,NIter,NChains}
+        data = Dict{ParameterOrExtra{TKey},SizedMatrix{NIter,NChains}}()
         for (key, array) in pairs(dict_of_arrays)
             # Check key type
             if !(key isa ParameterOrExtra{TKey})
@@ -244,34 +288,34 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:NTuple{NChains,FlexiChainMetadat
             end
             # Check size
             if array isa AbstractVector
-                if length(array) != niter
-                    msg = "data for key $key has an inconsistent size: expected $(niter), got $(length(array))."
+                if length(array) != NIter
+                    msg = "data for key $key has an inconsistent size: expected $(NIter), got $(length(array))."
                     throw(DimensionMismatch(msg))
                 end
             elseif array isa AbstractMatrix
-                if size(array) != (niter, nchains)
-                    msg = "data for key $key has an inconsistent size: expected ($(niter), $(nchains)), got $(size(array))."
+                if size(array) != (NIter, NChains)
+                    msg = "data for key $key has an inconsistent size: expected ($(NIter), $(NChains)), got $(size(array))."
                     throw(DimensionMismatch(msg))
                 end
             end
             # Convert to SMatrix
-            mat = SizedMatrix{niter,nchains}(array)
+            mat = SizedMatrix{NIter,NChains}(array)
             data[key] = mat
         end
 
         # Construct metadata
-        sampling_time = _check_length(nchains, sampling_time, "sampling_time")
+        sampling_time = _check_length(NChains, sampling_time, "sampling_time")
         last_sampler_state = _check_length(
-            nchains, last_sampler_state, "last_sampler_state"
+            NChains, last_sampler_state, "last_sampler_state"
         )
         metadata = tuple(
             [
                 FlexiChainMetadata(sampling_time[i], last_sampler_state[i]) for
-                i in 1:nchains
+                i in 1:NChains
             ]...,
         )
 
-        return new{TKey,niter,nchains,typeof(metadata)}(data, metadata)
+        return new{TKey,NIter,NChains,typeof(metadata)}(data, metadata)
     end
 end
 

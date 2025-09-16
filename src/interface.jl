@@ -169,7 +169,7 @@ function subset(
             throw(KeyError(k))
         end
     end
-    return FlexiChain{TKey}(d)
+    return FlexiChain{TKey,NIter,NChain}(d)
 end
 
 """
