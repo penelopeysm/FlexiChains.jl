@@ -134,7 +134,7 @@ function Base.merge(
     d1 = Dict{ParameterOrExtra{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c1._data)
     d2 = Dict{ParameterOrExtra{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c2._data)
     merged_data = merge(d1, d2)
-    return FlexiChain{TKeyNew}(merged_data)
+    return FlexiChain{TKeyNew,NIter,NChain}(merged_data)
 end
 function Base.merge(
     ::FlexiChain{TKey1,NIter1,NChain1}, ::FlexiChain{TKey2,NIter2,NChain2}
@@ -338,7 +338,7 @@ function Base.vcat(
         end
         d[k] = SizedMatrix{NIter1 + NIter2,NChains}(vcat(c1_data, c2_data))
     end
-    return FlexiChain{TKey}(d)
+    return FlexiChain{TKey,NIter1 + NIter2,NChains}(d)
 end
 function Base.vcat(c1::FlexiChain{TKey}, c2::FlexiChain{TKey}) where {TKey}
     throw(
@@ -395,7 +395,7 @@ function Base.hcat(
     last_sampler_states = vcat(
         FlexiChains.last_sampler_state(c1), FlexiChains.last_sampler_state(c2)
     )
-    return FlexiChain{TKey}(
+    return FlexiChain{TKey,NIter,NChains1 + NChains2}(
         d; sampling_time=sampling_times, last_sampler_state=last_sampler_states
     )
 end

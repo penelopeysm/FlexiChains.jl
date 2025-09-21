@@ -14,7 +14,9 @@ function Base.getindex(
     chain::ChainOrSummary{TKey}, key::ParameterOrExtra{TKey}
 ) where {TKey}
     return data(
-        chain[key]; iter_indices=iter_indices(chain), chain_indices=chain_indices(chain)
+        chain._data[key];
+        iter_indices=iter_indices(chain),
+        chain_indices=chain_indices(chain),
     )
 end
 """
