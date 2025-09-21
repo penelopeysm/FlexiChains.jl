@@ -13,7 +13,9 @@ same `Symbol`, such as a `Parameter(:x)` and an `Extra(:some_section, :x)`.
 function Base.getindex(
     chain::ChainOrSummary{TKey}, key::ParameterOrExtra{TKey}
 ) where {TKey}
-    return _get(chain, key)
+    return data(
+        chain[key]; iter_indices=iter_indices(chain), chain_indices=chain_indices(chain)
+    )
 end
 """
     Base.getindex(chain::ChainOrSummary{TKey}, sym_key::Symbol) where {TKey}

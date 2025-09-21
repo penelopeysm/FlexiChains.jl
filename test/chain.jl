@@ -18,11 +18,11 @@ using Test
                     ),
                     N_iters,
                 )
-                chain = FlexiChain{Symbol}(dicts)
+                chain = FlexiChain{Symbol,N_iters,1}(dicts)
                 @test size(chain) == (N_iters, 1)
 
                 @testset "with metadata" begin
-                    chain2 = FlexiChain{Symbol}(
+                    chain2 = FlexiChain{Symbol,N_iters,1}(
                         dicts; sampling_time=1, last_sampler_state="foo"
                     )
                     @test size(chain2) == (N_iters, 1)
@@ -42,11 +42,11 @@ using Test
                     N_iters,
                     N_chains,
                 )
-                chain = FlexiChain{Symbol}(dicts)
+                chain = FlexiChain{Symbol,N_iters,N_chains}(dicts)
                 @test size(chain) == (N_iters, N_chains)
 
                 @testset "with metadata" begin
-                    chain2 = FlexiChain{Symbol}(
+                    chain2 = FlexiChain{Symbol,N_iters,N_chains}(
                         dicts; sampling_time=[1, 2], last_sampler_state=["foo", "bar"]
                     )
                     @test size(chain2) == (N_iters, N_chains)
@@ -55,16 +55,16 @@ using Test
                 end
 
                 @testset "wrong metadata size" begin
-                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
                         dicts; sampling_time=1
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
                         dicts; sampling_time=1:3
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
                         dicts; last_sampler_state="foo"
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
                         dicts; last_sampler_state=["foo", "bar", "baz"]
                     )
                 end
@@ -79,11 +79,11 @@ using Test
                     Parameter(:b) => rand(N_iters),
                     Extra(:section, "hello") => rand(N_iters),
                 )
-                chain = FlexiChain{Symbol}(arrays)
+                chain = FlexiChain{Symbol,N_iters,1}(arrays)
                 @test size(chain) == (N_iters, 1)
 
                 @testset "with metadata" begin
-                    chain2 = FlexiChain{Symbol}(
+                    chain2 = FlexiChain{Symbol,N_iters,1}(
                         arrays; sampling_time=1, last_sampler_state="foo"
                     )
                     @test size(chain2) == (N_iters, 1)
@@ -99,11 +99,11 @@ using Test
                     Parameter(:b) => rand(N_iters, N_chains),
                     Extra(:section, "hello") => rand(N_iters, N_chains),
                 )
-                chain = FlexiChain{Symbol}(arrays)
+                chain = FlexiChain{Symbol,N_iters,N_chains}(arrays)
                 @test size(chain) == (N_iters, N_chains)
 
                 @testset "with metadata" begin
-                    chain2 = FlexiChain{Symbol}(
+                    chain2 = FlexiChain{Symbol,N_iters,N_chains}(
                         arrays; sampling_time=[1, 2], last_sampler_state=["foo", "bar"]
                     )
                     @test size(chain2) == (N_iters, N_chains)
@@ -112,16 +112,16 @@ using Test
                 end
 
                 @testset "wrong metadata size" begin
-                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
                         arrays; sampling_time=1
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
                         arrays; sampling_time=1:3
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
                         arrays; last_sampler_state="foo"
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
                         arrays; last_sampler_state=["foo", "bar", "baz"]
                     )
                 end

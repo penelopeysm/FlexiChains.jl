@@ -1,5 +1,6 @@
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
+DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
 DynamicPPL = "366bfd00-2699-11ea-058f-f148b4cae6d8"
 MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
