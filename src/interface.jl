@@ -1,3 +1,5 @@
+using DimensionalData: DimensionalData as DD
+
 @public niters, nchains
 @public subset, subset_parameters, subset_extras
 @public parameters, extras, extras_grouped
@@ -216,12 +218,12 @@ end
 function Base.show(
     io::IO, ::MIME"text/plain", chain::FlexiChain{TKey,niters,nchains}
 ) where {TKey,niters,nchains}
-    printstyled(
-        io,
-        "FlexiChain ($niters iterations, $nchains chain$(nchains > 1 ? "s" : ""))\n\n";
-        bold=true,
-    )
-
+    maybe_s(x) = x == 1 ? "" : "s"
+    printstyled(io, "FlexiChain | $niters iteration$(maybe_s(niters)) ("; bold=true)
+    printstyled(io, "$(FlexiChains.iter_indices(chain))"; color=DD.dimcolor(1), bold=true)
+    printstyled(io, ") | $nchains chain$(maybe_s(nchains)) ("; bold=true)
+    printstyled(io, "$(FlexiChains.chain_indices(chain))"; color=DD.dimcolor(2), bold=true)
+    printstyled(io, ")\n"; bold=true)
     # Print parameter names
     parameter_names = parameters(chain)
     printstyled(io, "Parameter type   "; bold=true)
@@ -235,7 +237,7 @@ function Base.show(
 
     # Print extras
     extras = extras_grouped(chain)
-    printstyled(io, "Other keys       "; bold=true)
+    printstyled(io, "Extra keys       "; bold=true)
     if isempty(extras)
         println(io, "(none)")
     else
