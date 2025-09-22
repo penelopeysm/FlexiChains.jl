@@ -13,10 +13,18 @@ FlexiChains.FlexiChain
 ```
 
 Each chain also stores information about which iterations and chains it contains.
+The iteration indices are typically provided by the MCMC sampler (e.g. in Turing.jl); the chain indices on the other hand will usually just `1:nchains`.
 
 ```@docs
 FlexiChains.iter_indices
 FlexiChains.chain_indices
+```
+
+To renumber these indices you can use:
+
+```@docs
+FlexiChains.renumber_iters
+FlexiChains.renumber_chains
 ```
 
 ## Metadata

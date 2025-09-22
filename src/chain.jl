@@ -1,6 +1,7 @@
 using AbstractMCMC: AbstractChains
 
 @public FlexiChain, Parameter, Extra, ParameterOrExtra
+@public iter_indices, chain_indices, renumber_iter, renumber_chain
 @public sampling_time, last_sampler_state
 
 """
@@ -333,6 +334,47 @@ numbers from the sampler: for example, if you discard the first 100 iterations a
 The accuracy of this field is reliant on the sampler providing this information, though.
 """
 iter_indices(chain::FlexiChain{T,NI,NC,TIIdx}) where {T,NI,NC,TIIdx} = chain._iter_indices
+
+"""
+    renumber_iter(
+        chain::FlexiChain,
+        iter_indices::AbstractVector{<:Integer}=1:NIter
+    )
+
+Return a copy of `chain` with the iteration indices replaced by `iter_indices`.
+"""
+function renumber_iter(
+    chain::FlexiChain{TKey,NIter,NChain}, iter_indices::AbstractVector{<:Integer}=1:NIter
+)::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
+    return FlexiChain{TKey,NIter,NChain}(
+        chain._data;
+        iter_indices=iter_indices,
+        chain_indices=chain_indices(chain),
+        sampling_time=sampling_time(chain),
+        last_sampler_state=last_sampler_state(chain),
+    )
+end
+
+"""
+    renumber_chain(
+        chain::FlexiChain,
+        chain_indices::AbstractVector{<:Integer}=1:NChains
+    )
+
+Return a copy of `chain` with the chain indices replaced by `chain_indices`.
+"""
+function renumber_chain(
+    chain::FlexiChain{TKey,NIter,NChains},
+    chain_indices::AbstractVector{<:Integer}=1:NChains,
+)::FlexiChain{TKey,NIter,NChains} where {TKey,NIter,NChains}
+    return FlexiChain{TKey,NIter,NChains}(
+        chain._data;
+        iter_indices=iter_indices(chain),
+        chain_indices=chain_indices,
+        sampling_time=sampling_time(chain),
+        last_sampler_state=last_sampler_state(chain),
+    )
+end
 
 """
     chain_indices(chain::FlexiChain)

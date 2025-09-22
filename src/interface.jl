@@ -342,16 +342,8 @@ function Base.vcat(
 )::FlexiChain{TKey,NIter1 + NIter2,NChains} where {TKey,NIter1,NIter2,NChains}
     d = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter1 + NIter2,NChains}}()
     for k in union(keys(c1), keys(c2))
-        c1_data = if haskey(c1, k)
-            c1[k]
-        else
-            SizedMatrix{NIter1,NChains}(fill(missing, NIter1, NChains))
-        end
-        c2_data = if haskey(c2, k)
-            c2[k]
-        else
-            SizedMatrix{NIter2,NChains}(fill(missing, NIter2, NChains))
-        end
+        c1_data = haskey(c1, k) ? c1._data[k] : fill(missing, NIter1, NChains)
+        c2_data = haskey(c2, k) ? c2._data[k] : fill(missing, NIter2, NChains)
         d[k] = SizedMatrix{NIter1 + NIter2,NChains}(vcat(c1_data, c2_data))
     end
     return FlexiChain{TKey,NIter1 + NIter2,NChains}(
@@ -403,22 +395,15 @@ function Base.hcat(
 )::FlexiChain{TKey,NIter,NChains1 + NChains2} where {TKey,NIter,NChains1,NChains2}
     d = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,NChains1 + NChains2}}()
     for k in union(keys(c1), keys(c2))
-        c1_data = if haskey(c1, k)
-            c1[k]
-        else
-            SizedMatrix{NIter,NChains1}(fill(missing, NIter, NChains1))
-        end
-        c2_data = if haskey(c2, k)
-            c2[k]
-        else
-            SizedMatrix{NIter,NChains2}(fill(missing, NIter, NChains2))
-        end
+        c1_data = haskey(c1, k) ? c1._data[k] : fill(missing, NIter, NChains1)
+        c2_data = haskey(c2, k) ? c2._data[k] : fill(missing, NIter, NChains2)
         d[k] = SizedMatrix{NIter,NChains1 + NChains2}(hcat(c1_data, c2_data))
     end
+    # Calculate sensible chain indices
     return FlexiChain{TKey,NIter,NChains1 + NChains2}(
         d;
         iter_indices=FlexiChains.iter_indices(c1),
-        chain_indices=vcat(FlexiChains.chain_indices(c1), FlexiChains.chain_indices(c2)),
+        chain_indices=1:(NChains1 + NChains2),
         sampling_time=vcat(FlexiChains.sampling_time(c1), FlexiChains.sampling_time(c2)),
         last_sampler_state=vcat(
             FlexiChains.last_sampler_state(c1), FlexiChains.last_sampler_state(c2)
