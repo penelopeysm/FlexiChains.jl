@@ -184,8 +184,8 @@ using Test
             )
             ii = 3:3:(N_iters * 3)
             ci = [4]
-            sampling_time = 2.5
-            last_sampler_state = "finished"
+            sampling_time = [2.5]
+            last_sampler_state = ["finished"]
             chain2 = FlexiChain{Symbol,N_iters,1}(
                 fill(dict2, N_iters);
                 iter_indices=ii,
@@ -213,8 +213,8 @@ using Test
             @testset "metadata is taken from second chain" begin
                 @test FlexiChains.iter_indices(chain3) == ii
                 @test FlexiChains.chain_indices(chain3) == ci
-                @test FlexiChains.sampling_time(chain3) == [sampling_time]
-                @test FlexiChains.last_sampler_state(chain3) == [last_sampler_state]
+                @test FlexiChains.sampling_time(chain3) == sampling_time
+                @test FlexiChains.last_sampler_state(chain3) == last_sampler_state
             end
 
             @testset "underlying data still has the right types" begin
@@ -339,12 +339,12 @@ using Test
             niters1 = 10
             d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
             chain1 = FlexiChain{Symbol,niters1,1}(
-                fill(d1, niters1); sampling_time=1, last_sampler_state="foo"
+                fill(d1, niters1); sampling_time=[1], last_sampler_state=["foo"]
             )
             niters2 = 20
             d2 = Dict(Parameter(:a) => 2, Extra(:b, "c") => "foo")
             chain2 = FlexiChain{Symbol,niters2,1}(
-                fill(d2, niters2); sampling_time=2, last_sampler_state="bar"
+                fill(d2, niters2); sampling_time=[2], last_sampler_state=["bar"]
             )
             chain12 = vcat(chain1, chain2)
 
@@ -402,11 +402,11 @@ using Test
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1)
             chain1 = FlexiChain{Symbol,N_iters,1}(
-                fill(d1, N_iters); sampling_time=1, last_sampler_state="foo"
+                fill(d1, N_iters); sampling_time=[1], last_sampler_state=["foo"]
             )
             d2 = Dict(Parameter(:a) => 2)
             chain2 = FlexiChain{Symbol,N_iters,1}(
-                fill(d2, N_iters); sampling_time=2, last_sampler_state="bar"
+                fill(d2, N_iters); sampling_time=[2], last_sampler_state=["bar"]
             )
             chain12 = hcat(chain1, chain2)
             @test chain12 isa FlexiChain{Symbol,N_iters,2}

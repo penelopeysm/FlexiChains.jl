@@ -56,8 +56,8 @@ function AbstractMCMC.bundle_samples(
         iter_indices=iter_indices,
         # 1:1 gives nicer DimMatrix output than just [1]
         chain_indices=1:1,
-        sampling_time=tm,
-        last_sampler_state=st,
+        sampling_time=[tm],
+        last_sampler_state=[st],
     )
 end
 
