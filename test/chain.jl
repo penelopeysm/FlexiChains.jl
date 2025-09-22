@@ -51,6 +51,16 @@ using Test
                 chain = FlexiChain{Symbol,N_iters,N_chains}(dicts)
                 @test size(chain) == (N_iters, N_chains)
 
+                @testset "wrong size of data" begin
+                    N_iters, N_chains = 10, 2
+                    dicts = fill(Dict(Parameter(:a) => 1), N_iters, N_chains)
+                    @test_throws DimensionMismatch FlexiChain{
+                        Symbol,N_iters + 1,N_chains + 1
+                    }(
+                        dicts
+                    )
+                end
+
                 @testset "wrong indices length" begin
                     @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
                         dicts; iter_indices=1:(2 * N_iters)
@@ -128,6 +138,16 @@ using Test
                 )
                 chain = FlexiChain{Symbol,N_iters,N_chains}(arrays)
                 @test size(chain) == (N_iters, N_chains)
+
+                @testset "wrong size of data" begin
+                    N_iters, N_chains = 10, 2
+                    arrays = Dict(Parameter(:a) => rand(N_iters, N_chains))
+                    @test_throws DimensionMismatch FlexiChain{
+                        Symbol,N_iters + 1,N_chains + 1
+                    }(
+                        arrays
+                    )
+                end
 
                 @testset "wrong indices length" begin
                     @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
