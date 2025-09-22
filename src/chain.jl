@@ -51,7 +51,7 @@ end
 _check_length(n::Int, ::Missing, ::AbstractString) = fill(missing, n)
 function _check_length(n::Int, v::AbstractVector, s::AbstractString)
     if length(v) != n
-        msg = "expected `$s` to have length $n (the number of chains), got $(length(v))."
+        msg = "expected `$s` to have length $n, got $(length(v))."
         throw(DimensionMismatch(msg))
     end
     return v
@@ -60,7 +60,7 @@ function _check_length(n::Int, v::Any, s::AbstractString)
     if n == 1
         return [v]
     else
-        msg = "expected `$s` to be a vector of length $n (the number of chains), but got $(typeof(v))."
+        msg = "expected `$s` to be a vector of length $n, but got $(typeof(v))."
         throw(DimensionMismatch(msg))
     end
 end
@@ -188,6 +188,10 @@ struct FlexiChain{
         sampling_time::Any=missing,
         last_sampler_state::Any=missing,
     ) where {TKey,NIter,NChains}
+        # Check iter and chain indices
+        iter_indices = _check_length(NIter, iter_indices, "iter_indices")
+        chain_indices = _check_length(NChains, chain_indices, "chain_indices")
+
         # Extract all unique keys from the dictionaries
         keys_set = Set{ParameterOrExtra{<:TKey}}()
         for d in array_of_dicts
@@ -271,6 +275,10 @@ struct FlexiChain{
         sampling_time::Any=missing,
         last_sampler_state::Any=missing,
     ) where {TKey,NIter,NChains}
+        # Check iter and chain indices
+        iter_indices = _check_length(NIter, iter_indices, "iter_indices")
+        chain_indices = _check_length(NChains, chain_indices, "chain_indices")
+
         data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,NChains}}()
         for (key, array) in pairs(dict_of_arrays)
             # Check key type

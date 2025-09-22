@@ -45,6 +45,15 @@ using Test
                 chain = FlexiChain{Symbol,N_iters,N_chains}(dicts)
                 @test size(chain) == (N_iters, N_chains)
 
+                @testset "wrong indices length" begin
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
+                        dicts; iter_indices=1:(2 * N_iters)
+                    )
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
+                        dicts; chain_indices=1:(2 * N_chains)
+                    )
+                end
+
                 @testset "with metadata" begin
                     chain2 = FlexiChain{Symbol,N_iters,N_chains}(
                         dicts; sampling_time=[1, 2], last_sampler_state=["foo", "bar"]
@@ -101,6 +110,15 @@ using Test
                 )
                 chain = FlexiChain{Symbol,N_iters,N_chains}(arrays)
                 @test size(chain) == (N_iters, N_chains)
+
+                @testset "wrong indices length" begin
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
+                        dicts; iter_indices=1:(2 * N_iters)
+                    )
+                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
+                        dicts; chain_indices=1:(2 * N_chains)
+                    )
+                end
 
                 @testset "with metadata" begin
                     chain2 = FlexiChain{Symbol,N_iters,N_chains}(
