@@ -23,11 +23,12 @@ chain = sample(f(), NUTS(), 1000; chain_type=VNChain)
 ```
 
 You can index into a `VNChain` using `VarName`s.
+Data is returned as a `DimMatrix` from the [`DimensionalData.jl` package](https://rafaqz.github.io/DimensionalData.jl/), which behaves exactly like an ordinary `Matrix` but additionally carries more information about its dimensions.
 
 ```julia
-chain[@varname(x)]    # -> Vector{Float64}
-chain[@varname(y)]    # -> Vector{Vector{Float64}}
-chain[@varname(y[1])] # -> Vector{Float64}
+chain[@varname(x)]    # -> DimMatrix{Float64}
+chain[@varname(y)]    # -> DimMatrix{Vector{Float64}}
+chain[@varname(y[1])] # -> DimMatrix{Float64}
 ```
 
 Applying summary functions to the chain returns a summary object, which can be indexed into in the same way:

@@ -1,6 +1,7 @@
 module FCTuringExtTests
 
 using AbstractMCMC: AbstractMCMC
+using DimensionalData: DimensionalData as DD
 using DynamicPPL: DynamicPPL
 using FlexiChains: FlexiChains, VNChain, Parameter, Extra
 using MCMCChains: MCMCChains
@@ -254,14 +255,20 @@ Turing.setprogress!(false)
         @testset "logprior" begin
             lprior = logprior(model, chn)
             @test isapprox(lprior, expected_logprior)
+            @test parent(parent(DD.dims(lprior, :iter))) == FlexiChains.iter_indices(chn)
+            @test parent(parent(DD.dims(lprior, :chain))) == FlexiChains.chain_indices(chn)
         end
         @testset "loglikelihood" begin
             llike = loglikelihood(model, chn)
             @test isapprox(llike, expected_loglike)
+            @test parent(parent(DD.dims(llike, :iter))) == FlexiChains.iter_indices(chn)
+            @test parent(parent(DD.dims(llike, :chain))) == FlexiChains.chain_indices(chn)
         end
         @testset "logjoint" begin
             ljoint = logjoint(model, chn)
             @test isapprox(ljoint, expected_logprior .+ expected_loglike)
+            @test parent(parent(DD.dims(ljoint, :iter))) == FlexiChains.iter_indices(chn)
+            @test parent(parent(DD.dims(ljoint, :chain))) == FlexiChains.chain_indices(chn)
         end
     end
 
@@ -275,6 +282,9 @@ Turing.setprogress!(false)
         expected_rtnd = chn[:x] .+ 1
         rtnd = returned(model, chn)
         @test isapprox(rtnd, expected_rtnd)
+        @test rtnd isa DD.DimMatrix
+        @test parent(parent(DD.dims(rtnd, :iter))) == FlexiChains.iter_indices(chn)
+        @test parent(parent(DD.dims(rtnd, :chain))) == FlexiChains.chain_indices(chn)
     end
 
     @testset "predict" begin

@@ -1,6 +1,7 @@
 module FlexiChainsDynamicPPLExt
 
 using FlexiChains: FlexiChains, FlexiChain, VarName, Parameter, VNChain
+using DimensionalData: DimensionalData as DD
 using DynamicPPL: DynamicPPL
 using Random: Random
 
@@ -85,44 +86,57 @@ function reevaluate(
     model::DynamicPPL.Model,
     chain::FlexiChain{<:VarName},
     accs::NTuple{N,DynamicPPL.AbstractAccumulator}=_default_reevaluate_accs(),
-)::Array{Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
+)::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
     niters, nchains = size(chain)
     vi = DynamicPPL.VarInfo(model)
     vi = DynamicPPL.setaccs!!(vi, accs)
     tuples = Iterators.product(1:niters, 1:nchains)
-    return map(tuples) do (i, j)
+    retvals_and_varinfos = map(tuples) do (i, j)
         vals = FlexiChains.get_parameter_dict_from_iter(chain, i, j)
         # TODO: use InitFromParams when DPPL 0.38 is out
         new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(rng, vals))
         new_model = DynamicPPL.contextualize(model, new_ctx)
         DynamicPPL.evaluate!!(new_model, vi)
     end
+    return DD.DimMatrix(
+        retvals_and_varinfos,
+        (
+            DD.Dim{FlexiChains.ITER_DIM_NAME}(FlexiChains.iter_indices(chain)),
+            DD.Dim{FlexiChains.CHAIN_DIM_NAME}(FlexiChains.chain_indices(chain)),
+        ),
+    )
 end
 function reevaluate(
     model::DynamicPPL.Model,
     chain::FlexiChain{<:VarName},
     accs::NTuple{N,DynamicPPL.AbstractAccumulator}=_default_reevaluate_accs(),
-)::Array{Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
+)::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
     return reevaluate(Random.default_rng(), model, chain, accs)
 end
 
-function DynamicPPL.returned(model::DynamicPPL.Model, chain::FlexiChain{<:VarName})::Array
+function DynamicPPL.returned(
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+)::DD.DimMatrix
     return map(first, reevaluate(model, chain))
 end
 
-function DynamicPPL.logjoint(model::DynamicPPL.Model, chain::FlexiChain{<:VarName})::Array
+function DynamicPPL.logjoint(
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+)::DD.DimMatrix
     accs = (DynamicPPL.LogPriorAccumulator(), DynamicPPL.LogLikelihoodAccumulator())
     return map(DynamicPPL.getlogjoint ∘ last, reevaluate(model, chain, accs))
 end
 
 function DynamicPPL.loglikelihood(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
-)::Array
+)::DD.DimMatrix
     accs = (DynamicPPL.LogLikelihoodAccumulator(),)
     return map(DynamicPPL.getloglikelihood ∘ last, reevaluate(model, chain, accs))
 end
 
-function DynamicPPL.logprior(model::DynamicPPL.Model, chain::FlexiChain{<:VarName})::Array
+function DynamicPPL.logprior(
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+)::DD.DimMatrix
     accs = (DynamicPPL.LogPriorAccumulator(),)
     return map(DynamicPPL.getlogprior ∘ last, reevaluate(model, chain, accs))
 end

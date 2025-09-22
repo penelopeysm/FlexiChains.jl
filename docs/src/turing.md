@@ -51,11 +51,13 @@ For example, this directly gives us the value of `mu` in each iteration as a pla
 chain[@varname(mu)]
 ```
 
-!!! note "Multiple chains"
+!!! note "DimMatrix"
     
-    If you sample multiple chains, e.g. with `sample(model, NUTS(), MCMCThreads(), 1000, 3; chain_type=VNChain)`, then indexing into the `FlexiChain` will give you a matrix of floats instead.
+    Indexing into a `FlexiChain` returns a [`DimensionalData.DimMatrix`](@extref DimensionalData DimArrays). This behaves exactly like a regular `Matrix`, but additionally carries extra information about its dimensions.
+    
+    This allows you to keep track of what each dimension means, and also allows for more advanced indexing operations. Please see [the DimensionalData.jl documentation](https://rafaqz.github.io/DimensionalData.jl/) for more details.
 
-For vector-valued parameters like `theta`, this works in exactly the same way, except that you get a vector of vectors (note: not a matrix).
+For vector-valued parameters like `theta`, this works in exactly the same way, except that you get a `DimMatrix` of vectors (note: _not_ a 3D array).
 
 ```@example 1
 chain[@varname(theta)]
@@ -162,7 +164,7 @@ chn = vcat(chn1, chn2)
     For **multiple-chain sampling** with `sample(model, spl, MCMCThreads(), N, C)`, `initial_state` should be a vector of length `C`, where `initial_state[i]` is the state to resume the `i`-th chain from (or `nothing` to start a new chain).
     
     To obtain the saved final state of a chain, you can use [`FlexiChains.last_sampler_state`](@ref).
-    This is either a single state or a vector of states (depending on how many chains were sampled).
+    This returns a vector of states with length equal to the number of chains.
     
     The above applies equally to `MCMCSerial()` and `MCMCDistributed()`.
 
