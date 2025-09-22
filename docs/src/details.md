@@ -12,6 +12,21 @@ Indeed, a `FlexiChain` contains a `_data` field which is just a dictionary that 
 FlexiChains.FlexiChain
 ```
 
+Each chain also stores information about which iterations and chains it contains.
+The iteration indices are typically provided by the MCMC sampler (e.g. in Turing.jl); the chain indices on the other hand will usually just `1:nchains`.
+
+```@docs
+FlexiChains.iter_indices
+FlexiChains.chain_indices
+```
+
+To renumber these indices you can use:
+
+```@docs
+FlexiChains.renumber_iters
+FlexiChains.renumber_chains
+```
+
 ## Metadata
 
 Before we discuss the actual _data_ stored in a `FlexiChain`, we note that it also contains a `_metadata` field.

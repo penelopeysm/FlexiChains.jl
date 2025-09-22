@@ -66,7 +66,11 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName,NIter,NChain}) where {N
     info = (varname_to_symbol=OrderedDict(zip(varnames, varname_symbols)),)
     # See comment above for the use of 'internals' as the only section.
     return MCMCChains.Chains(
-        all_values, all_symbols, (; internals=internal_keys); info=info
+        all_values,
+        all_symbols,
+        (; internals=internal_keys);
+        info=info,
+        iterations=FlexiChains.iter_indices(vnchain),
     )
 end
 

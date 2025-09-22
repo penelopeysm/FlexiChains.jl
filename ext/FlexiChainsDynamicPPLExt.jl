@@ -1,6 +1,7 @@
 module FlexiChainsDynamicPPLExt
 
 using FlexiChains: FlexiChains, FlexiChain, VarName, Parameter, VNChain
+using DimensionalData: DimensionalData as DD
 using DynamicPPL: DynamicPPL
 using Random: Random
 
@@ -51,8 +52,13 @@ end
 #     DELETE WHEN POSSIBLE    #
 ###############################
 
-function DynamicPPL.loadstate(chain::FlexiChain)
+function DynamicPPL.loadstate(
+    chain::FlexiChain{TKey,NIter,NChain}
+) where {TKey<:VarName,NIter,NChain}
     st = FlexiChains.last_sampler_state(chain)
+    if NChain == 1
+        st = only(st)
+    end
     st === nothing && error(
         "attempted to resume sampling from a chain without a saved state; you must pass `save_state=true` when sampling the previous chain",
     )
@@ -80,56 +86,57 @@ function reevaluate(
     model::DynamicPPL.Model,
     chain::FlexiChain{<:VarName},
     accs::NTuple{N,DynamicPPL.AbstractAccumulator}=_default_reevaluate_accs(),
-)::Array{Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
+)::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
     niters, nchains = size(chain)
     vi = DynamicPPL.VarInfo(model)
     vi = DynamicPPL.setaccs!!(vi, accs)
-    # TODO: Ugly code repetition based on the fact that we 
-    # return a vector for nchains == 1 and matrix otherwise.
-    if nchains == 1
-        return map(1:niters) do i
-            vals = FlexiChains.get_parameter_dict_from_iter(chain, i, nothing)
-            # TODO: use InitFromParams when DPPL 0.38 is out
-            new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(rng, vals))
-            new_model = DynamicPPL.contextualize(model, new_ctx)
-            DynamicPPL.evaluate!!(new_model, vi)
-        end
-    else
-        tuples = Iterators.product(1:niters, 1:nchains)
-        return map(tuples) do (i, j)
-            vals = FlexiChains.get_parameter_dict_from_iter(chain, i, j)
-            # TODO: use InitFromParams when DPPL 0.38 is out
-            new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(rng, vals))
-            new_model = DynamicPPL.contextualize(model, new_ctx)
-            DynamicPPL.evaluate!!(new_model, vi)
-        end
+    tuples = Iterators.product(1:niters, 1:nchains)
+    retvals_and_varinfos = map(tuples) do (i, j)
+        vals = FlexiChains.get_parameter_dict_from_iter(chain, i, j)
+        # TODO: use InitFromParams when DPPL 0.38 is out
+        new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(rng, vals))
+        new_model = DynamicPPL.contextualize(model, new_ctx)
+        DynamicPPL.evaluate!!(new_model, vi)
     end
+    return DD.DimMatrix(
+        retvals_and_varinfos,
+        (
+            DD.Dim{FlexiChains.ITER_DIM_NAME}(FlexiChains.iter_indices(chain)),
+            DD.Dim{FlexiChains.CHAIN_DIM_NAME}(FlexiChains.chain_indices(chain)),
+        ),
+    )
 end
 function reevaluate(
     model::DynamicPPL.Model,
     chain::FlexiChain{<:VarName},
     accs::NTuple{N,DynamicPPL.AbstractAccumulator}=_default_reevaluate_accs(),
-)::Array{Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
+)::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
     return reevaluate(Random.default_rng(), model, chain, accs)
 end
 
-function DynamicPPL.returned(model::DynamicPPL.Model, chain::FlexiChain{<:VarName})::Array
+function DynamicPPL.returned(
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+)::DD.DimMatrix
     return map(first, reevaluate(model, chain))
 end
 
-function DynamicPPL.logjoint(model::DynamicPPL.Model, chain::FlexiChain{<:VarName})::Array
+function DynamicPPL.logjoint(
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+)::DD.DimMatrix
     accs = (DynamicPPL.LogPriorAccumulator(), DynamicPPL.LogLikelihoodAccumulator())
     return map(DynamicPPL.getlogjoint ∘ last, reevaluate(model, chain, accs))
 end
 
 function DynamicPPL.loglikelihood(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
-)::Array
+)::DD.DimMatrix
     accs = (DynamicPPL.LogLikelihoodAccumulator(),)
     return map(DynamicPPL.getloglikelihood ∘ last, reevaluate(model, chain, accs))
 end
 
-function DynamicPPL.logprior(model::DynamicPPL.Model, chain::FlexiChain{<:VarName})::Array
+function DynamicPPL.logprior(
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+)::DD.DimMatrix
     accs = (DynamicPPL.LogPriorAccumulator(),)
     return map(DynamicPPL.getlogprior ∘ last, reevaluate(model, chain, accs))
 end
@@ -145,7 +152,13 @@ function DynamicPPL.predict(
         # Dict{Parameter{VarName}}
         Dict(Parameter(vn) => val for (vn, val) in vn_dict)
     end
-    chain_params_only = FlexiChain{VarName}(param_dicts)
+    chain_params_only = FlexiChain{VarName,NIter,NChain}(
+        param_dicts;
+        iter_indices=FlexiChains.iter_indices(chain),
+        chain_indices=FlexiChains.chain_indices(chain),
+        sampling_time=FlexiChains.sampling_time(chain),
+        last_sampler_state=FlexiChains.last_sampler_state(chain),
+    )
     chain_nonparams_only = FlexiChains.subset_extras(chain)
     return merge(chain_params_only, chain_nonparams_only)
 end

@@ -6,6 +6,7 @@ version = "0.0.2"
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
 AbstractPPL = "7a57a42e-76ec-4ea3-a279-07e840d6d9cf"
+DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
@@ -17,13 +18,14 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [extensions]
-FlexiChainsDynamicPPLExt = ["DynamicPPL", "Random"]
+FlexiChainsDynamicPPLExt = ["DynamicPPL", "Random", "DimensionalData"]
 FlexiChainsMCMCChainsExt = ["MCMCChains", "OrderedCollections"]
 FlexiChainsTuringExt = ["Turing"]
 
 [compat]
 AbstractMCMC = "5"
 AbstractPPL = "0.13.1"
+DimensionalData = "0.29.24"
 DocStringExtensions = "0.9"
 DynamicPPL = "0.37, 0.38"
 OrderedCollections = "1"

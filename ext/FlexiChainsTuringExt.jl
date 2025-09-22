@@ -9,8 +9,8 @@ using Turing: Turing, AbstractMCMC
 
 function FlexiChains.to_varname_dict(
     transition::Turing.Inference.Transition
-)::Dict{ParameterOrExtra{VarName},Any}
-    d = Dict{ParameterOrExtra{VarName},Any}()
+)::Dict{ParameterOrExtra{<:VarName},Any}
+    d = Dict{ParameterOrExtra{<:VarName},Any}()
     for (varname, value) in pairs(transition.θ)
         d[Parameter(varname)] = value
     end
@@ -33,16 +33,32 @@ function AbstractMCMC.bundle_samples(
     chain_type::Type{T};
     save_state=false,
     stats=missing,
-    # discard_initial::Int=0,
-    # thinning::Int=1,
+    discard_initial::Int=0,
+    thinning::Int=1,
     _kwargs...,
-)::T where {T<:FlexiChain{<:VarName}}
+)::T where {TKey<:VarName,T<:FlexiChain{TKey}}
+    NIter = length(transitions)
     dicts = map(FlexiChains.to_varname_dict, transitions)
     # timings
     tm = stats === missing ? nothing : stats.stop - stats.start
     # last sampler state
     st = save_state ? last_sampler_state : nothing
-    return T(dicts; sampling_time=tm, last_sampler_state=st)
+    # calculate iteration indices
+    start = discard_initial + 1
+    iter_indices = if thinning != 1
+        range(start; step=thinning, length=NIter)
+    else
+        # This returns UnitRange not StepRange -- a bit cleaner
+        start:(start + NIter - 1)
+    end
+    return FlexiChain{TKey,NIter,1}(
+        dicts;
+        iter_indices=iter_indices,
+        # 1:1 gives nicer DimMatrix output than just [1]
+        chain_indices=1:1,
+        sampling_time=tm,
+        last_sampler_state=st,
+    )
 end
 
 end # module FlexiChainsTuringExt

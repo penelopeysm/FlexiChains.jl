@@ -2,6 +2,7 @@
 Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterInterLinks = "d12716ef-a0f6-4df4-a9f1-a5a34e75c656"
 DynamicPPL = "366bfd00-2699-11ea-058f-f148b4cae6d8"
 FlexiChains = "4a37a8b9-6e57-4b92-8664-298d46e639f7"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

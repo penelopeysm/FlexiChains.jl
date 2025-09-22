@@ -5,7 +5,7 @@ using Statistics: Statistics
 abstract type FlexiChainSummary{TKey,NIter,NChains} end
 
 """
-    FlexiChainSummaryI{TKey,NIter,NChains}
+    FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:AbstractVector{Int}}
 
 A summary where the iteration dimension has been collapsed. The type parameter `NIter`
 refers to the original number of iterations (which have been collapsed).
@@ -13,14 +13,34 @@ refers to the original number of iterations (which have been collapsed).
 If NChains > 1, indexing into this returns a (1 × NChains) matrix for each key; otherwise
 it returns a scalar.
 """
-struct FlexiChainSummaryI{TKey,NIter,NChains} <: FlexiChainSummary{TKey,NIter,NChains}
-    _data::Dict{<:ParameterOrExtra{TKey},<:SizedMatrix{1,NChains,<:Any}}
+struct FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:AbstractVector{Int}} <:
+       FlexiChainSummary{TKey,NIter,NChains}
+    _data::Dict{ParameterOrExtra{<:TKey},<:SizedMatrix{1,NChains,<:Any}}
+    _chain_indices::TCIdx
+
+    # Constructor checks that `chain_indices` has the right length.
+    # Ideally we'd use:
+    # data::Dict{<:ParameterOrExtra{<:TKey},<:SizedMatrix{1,NChains,<:Any}},
+    # as the argument. But that errors on Julia 1.10.
+    function FlexiChainSummaryI{TKey,NIter,NChains}(
+        data::Dict{<:Any,<:SizedMatrix{1,NChains,<:Any}}, chain_indices::TCIdx
+    ) where {TKey,NIter,NChains,TCIdx<:AbstractVector{Int}}
+        # need to cast underlying dict to the right type
+        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,NChains,<:Any}}(data)
+        if length(chain_indices) != NChains
+            throw(DimensionMismatch("`chain_indices` must have length $NChains"))
+        end
+        return new{TKey,NIter,NChains,typeof(chain_indices)}(data, chain_indices)
+    end
 end
-_get(fcsi::FlexiChainSummaryI{T,Ni,Nc}, key) where {T,Ni,Nc} = collect(fcsi._data[key]) # matrix
-_get(fcsi::FlexiChainSummaryI{T,Ni,1}, key) where {T,Ni} = only(collect(fcsi._data[key])) # scalar
+function FlexiChains.chain_indices(
+    fcsi::FlexiChainSummaryI{T,NI,NC,TCIdx}
+) where {T,NI,NC,TCIdx}
+    return fcsi._chain_indices
+end
 
 """
-    FlexiChainSummaryC{TKey,NIter,NChains}
+    FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:AbstractVector{Int}}
 
 A summary where the chain dimension has been collapsed. The type parameter `NChain` refers to
 the original number of chains (which have been collapsed).
@@ -28,11 +48,28 @@ the original number of chains (which have been collapsed).
 If NChains > 1, indexing into this returns a (NIter × 1) matrix for each key; otherwise it
 returns a vector.
 """
-struct FlexiChainSummaryC{TKey,NIter,NChains} <: FlexiChainSummary{TKey,NIter,NChains}
-    _data::Dict{<:ParameterOrExtra{TKey},<:SizedMatrix{NIter,1,<:Any}}
+struct FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:AbstractVector{Int}} <:
+       FlexiChainSummary{TKey,NIter,NChains}
+    _data::Dict{ParameterOrExtra{<:TKey},<:SizedMatrix{NIter,1,<:Any}}
+    _iter_indices::TIIdx
+
+    # Constructor checks that `iter_indices` has the right length.
+    function FlexiChainSummaryC{TKey,NIter,NChains}(
+        data::Dict{<:Any,<:SizedMatrix{NIter,1,<:Any}}, iter_indices::TIIdx
+    ) where {TKey,NIter,NChains,TIIdx<:AbstractVector{Int}}
+        # need to cast underlying dict to the right type
+        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,1,<:Any}}(data)
+        if length(iter_indices) != NIter
+            throw(DimensionMismatch("`iter_indices` must have length $NIter"))
+        end
+        return new{TKey,NIter,NChains,typeof(iter_indices)}(data, iter_indices)
+    end
 end
-_get(fcsc::FlexiChainSummaryC{T,N,M}, key) where {T,N,M} = collect(fcsc._data[key]) # matrix
-_get(fcsc::FlexiChainSummaryC{T,N,1}, key) where {T,N} = data(fcsc._data[key]) # vector
+function FlexiChains.iter_indices(
+    fcsc::FlexiChainSummaryC{T,NI,NC,TIIdx}
+) where {T,NI,NC,TIIdx}
+    return fcsc._iter_indices
+end
 
 """
     FlexiChainSummaryIC{TKey,NIter,NChains}
@@ -44,7 +81,14 @@ parameters `NIter` and `NChains` refer to the original number of iterations and 
 Indexing into this returns a scalar for each key.
 """
 struct FlexiChainSummaryIC{TKey,NIter,NChains} <: FlexiChainSummary{TKey,NIter,NChains}
-    _data::Dict{<:ParameterOrExtra{TKey},<:SizedMatrix{1,1,<:Any}}
+    _data::Dict{ParameterOrExtra{<:TKey},<:SizedMatrix{1,1,<:Any}}
+
+    function FlexiChainSummaryIC{TKey,NIter,NChains}(
+        data::Dict{<:Any,<:SizedMatrix{1,1,<:Any}}
+    ) where {TKey,NIter,NChains}
+        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,1,<:Any}}(data)
+        return new{TKey,NIter,NChains}(data)
+    end
 end
 _get(fcsic::FlexiChainSummaryIC, key) = only(collect(fcsic._data[key])) # scalar
 
@@ -90,7 +134,7 @@ function collapse_iter(
     warn::Bool=false,
     kwargs...,
 )::FlexiChainSummaryI{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    data = Dict{ParameterOrExtra{TKey},SizedMatrix{1,NChains,<:Any}}()
+    data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,NChains,<:Any}}()
     non_numerics = ParameterOrExtra{TKey}[]
     for (k, v) in chain._data
         if (!skip_nonnumeric) || eltype(v) <: Number
@@ -103,7 +147,7 @@ function collapse_iter(
         end
     end
     warn && _warn_non_numerics(non_numerics)
-    return FlexiChainSummaryI{TKey,NIter,NChains}(data)
+    return FlexiChainSummaryI{TKey,NIter,NChains}(data, FlexiChains.chain_indices(chain))
 end
 
 """
@@ -144,12 +188,10 @@ function collapse_chain(
     warn::Bool=false,
     kwargs...,
 )::FlexiChainSummaryC{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    data = Dict{ParameterOrExtra{TKey},SizedMatrix{NIter,1,<:Any}}()
+    data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,1,<:Any}}()
     non_numerics = ParameterOrExtra{TKey}[]
     for (k, v) in chain._data
         if (!skip_nonnumeric) || eltype(v) <: Number
-            # We use chain._data[k] instead of chain[k] here to guarantee that the input to
-            # `k` is always a matrix (if NChains=1, chain[k] would return a vector).
             collapsed = func(chain._data[k]; kwargs...)
             data[k] = SizedMatrix{NIter,1}(collapsed)
         else
@@ -157,7 +199,7 @@ function collapse_chain(
         end
     end
     warn && _warn_non_numerics(non_numerics)
-    return FlexiChainSummaryC{TKey,NIter,NChains}(data)
+    return FlexiChainSummaryC{TKey,NIter,NChains}(data, FlexiChains.iter_indices(chain))
 end
 
 """
@@ -192,7 +234,7 @@ function collapse_iter_chain(
     warn::Bool=false,
     kwargs...,
 )::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    data = Dict{ParameterOrExtra{TKey},SizedMatrix{1,1,<:Any}}()
+    data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,1,<:Any}}()
     non_numerics = ParameterOrExtra{TKey}[]
     for (k, v) in chain._data
         if (!skip_nonnumeric) || eltype(v) <: Number

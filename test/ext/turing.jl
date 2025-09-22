@@ -1,6 +1,7 @@
 module FCTuringExtTests
 
 using AbstractMCMC: AbstractMCMC
+using DimensionalData: DimensionalData as DD
 using DynamicPPL: DynamicPPL
 using FlexiChains: FlexiChains, VNChain, Parameter, Extra
 using MCMCChains: MCMCChains
@@ -150,7 +151,7 @@ Turing.setprogress!(false)
 
             @testset "single chain" begin
                 chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
-                @test FlexiChains.sampling_time(chn) isa AbstractFloat
+                @test only(FlexiChains.sampling_time(chn)) isa AbstractFloat
             end
             @testset "multiple chain" begin
                 chn = sample(
@@ -192,7 +193,7 @@ Turing.setprogress!(false)
                     save_state=true,
                 )
                 # check that the sampler state is stored
-                @test FlexiChains.last_sampler_state(chn1) isa DynamicPPL.VarInfo
+                @test only(FlexiChains.last_sampler_state(chn1)) isa DynamicPPL.VarInfo
                 # check that it can be resumed from
                 chn2 = sample(
                     model,
@@ -254,14 +255,20 @@ Turing.setprogress!(false)
         @testset "logprior" begin
             lprior = logprior(model, chn)
             @test isapprox(lprior, expected_logprior)
+            @test parent(parent(DD.dims(lprior, :iter))) == FlexiChains.iter_indices(chn)
+            @test parent(parent(DD.dims(lprior, :chain))) == FlexiChains.chain_indices(chn)
         end
         @testset "loglikelihood" begin
             llike = loglikelihood(model, chn)
             @test isapprox(llike, expected_loglike)
+            @test parent(parent(DD.dims(llike, :iter))) == FlexiChains.iter_indices(chn)
+            @test parent(parent(DD.dims(llike, :chain))) == FlexiChains.chain_indices(chn)
         end
         @testset "logjoint" begin
             ljoint = logjoint(model, chn)
             @test isapprox(ljoint, expected_logprior .+ expected_loglike)
+            @test parent(parent(DD.dims(ljoint, :iter))) == FlexiChains.iter_indices(chn)
+            @test parent(parent(DD.dims(ljoint, :chain))) == FlexiChains.chain_indices(chn)
         end
     end
 
@@ -275,6 +282,9 @@ Turing.setprogress!(false)
         expected_rtnd = chn[:x] .+ 1
         rtnd = returned(model, chn)
         @test isapprox(rtnd, expected_rtnd)
+        @test rtnd isa DD.DimMatrix
+        @test parent(parent(DD.dims(rtnd, :iter))) == FlexiChains.iter_indices(chn)
+        @test parent(parent(DD.dims(rtnd, :chain))) == FlexiChains.chain_indices(chn)
     end
 
     @testset "predict" begin
@@ -321,6 +331,16 @@ Turing.setprogress!(false)
             @test isempty(setdiff(Set(keys(chn)), Set(keys(pdns))))
         end
 
+        @testset "metadata is preserved" begin
+            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+            pdns = predict(f(), chn)
+            @test FlexiChains.iter_indices(pdns) == FlexiChains.iter_indices(chn)
+            @test FlexiChains.chain_indices(pdns) == FlexiChains.chain_indices(chn)
+            @test FlexiChains.sampling_time(pdns) == FlexiChains.sampling_time(chn)
+            @test FlexiChains.last_sampler_state(pdns) ==
+                FlexiChains.last_sampler_state(chn)
+        end
+
         @testset "rng is respected" begin
             pdns1 = predict(Xoshiro(468), f(), chn)
             pdns2 = predict(Xoshiro(468), f(), chn)
@@ -350,6 +370,12 @@ Turing.setprogress!(false)
                 @test new_mcmcc[k] == mcmcc[k]
             end
         end
+
+        @testset "iteration indices" begin
+            @test FlexiChains.iter_indices(flexic) == range(new_mcmcc)
+            @test range(new_mcmcc) == range(mcmcc)
+        end
+
         @testset "grouping of data into sections" begin
             @test Set(keys(new_mcmcc.name_map)) == Set(keys(mcmcc.name_map))
             for k in keys(new_mcmcc.name_map)
