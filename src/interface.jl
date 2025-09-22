@@ -116,10 +116,8 @@ and a warning will be issued.
 
 The two `FlexiChain`s being merged must have the same dimensions.
 
-The chain indices and metadata are taken from the first chain. Those in the second chain are
+The chain indices and metadata are taken from the second chain. Those in the first chain are
 silently ignored.
-
-Note that this function does not perform a deepcopy of the underlying data.
 """
 function Base.merge(
     c1::FlexiChain{TKey1,NIter,NChain}, c2::FlexiChain{TKey2,NIter,NChain}
@@ -141,10 +139,10 @@ function Base.merge(
     merged_data = merge(d1, d2)
     return FlexiChain{TKeyNew,NIter,NChain}(
         merged_data;
-        iter_indices=FlexiChains.iter_indices(c1),
-        chain_indices=FlexiChains.chain_indices(c1),
-        sampling_time=FlexiChains.sampling_time(c1),
-        last_sampler_state=FlexiChains.last_sampler_state(c1),
+        iter_indices=FlexiChains.iter_indices(c2),
+        chain_indices=FlexiChains.chain_indices(c2),
+        sampling_time=FlexiChains.sampling_time(c2),
+        last_sampler_state=FlexiChains.last_sampler_state(c2),
     )
 end
 function Base.merge(
@@ -166,8 +164,6 @@ end
 
 Create a new `FlexiChain` containing only the specified keys and the data corresponding to
 them.
-
-Note that this function does not perform a deepcopy of the underlying data.
 """
 function subset(
     chain::FlexiChain{TKey,NIter,NChain}, keys::AbstractVector{<:ParameterOrExtra{<:TKey}}
@@ -186,7 +182,7 @@ function subset(
 end
 
 """
-    subset_parameters(chain::FlexiChain{TKey,NIter,NChain})
+    subset_parameters(chain::FlexiChain)
 
 Subset a chain, retaining only the `Parameter` keys.
 """

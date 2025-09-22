@@ -182,16 +182,39 @@ using Test
                 Parameter(:b) => "yes",
                 Extra(:hello, "bar") => "cheese",
             )
-            chain2 = FlexiChain{Symbol,N_iters,1}(fill(dict2, N_iters))
-
-            chain3 = merge(chain1, chain2)
-            expected_chain3 = FlexiChain{Symbol,N_iters,1}(
-                fill(merge(dict1, dict2), N_iters)
+            ii = 3:3:(N_iters * 3)
+            ci = [4]
+            sampling_time = 2.5
+            last_sampler_state = "finished"
+            chain2 = FlexiChain{Symbol,N_iters,1}(
+                fill(dict2, N_iters);
+                iter_indices=ii,
+                chain_indices=ci,
+                sampling_time=sampling_time,
+                last_sampler_state=last_sampler_state,
             )
-            @test chain3 == expected_chain3
+            chain3 = merge(chain1, chain2)
 
             @testset "values are taken from second chain" begin
+                expected_chain3 = FlexiChain{Symbol,N_iters,1}(
+                    fill(merge(dict1, dict2), N_iters);
+                    iter_indices=ii,
+                    chain_indices=ci,
+                    sampling_time=sampling_time,
+                    last_sampler_state=last_sampler_state,
+                )
+                for k in keys(expected_chain3)
+                    @test chain3[k] == expected_chain3[k]
+                end
+                # An explicit test
                 @test all(x -> x == "yes", chain3[Parameter(:b)])
+            end
+
+            @testset "metadata is taken from second chain" begin
+                @test FlexiChains.iter_indices(chain3) == ii
+                @test FlexiChains.chain_indices(chain3) == ci
+                @test FlexiChains.sampling_time(chain3) == [sampling_time]
+                @test FlexiChains.last_sampler_state(chain3) == [last_sampler_state]
             end
 
             @testset "underlying data still has the right types" begin
