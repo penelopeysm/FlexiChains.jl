@@ -171,21 +171,23 @@ using Test
         end
     end
 
-    @testset "renumber_iter and renumber_chain" begin
+    @testset "renumber_iters and renumber_chains" begin
         N_iters, N_chains = 10, 2
         dicts = fill(Dict(Parameter(:a) => 1), N_iters, N_chains)
         chain = FlexiChain{Symbol,N_iters,N_chains}(dicts)
-        @testset "renumber_iter" begin
+        @testset "renumber_iters" begin
             new_iters = 3:3:(3 * N_iters)
-            chain2 = @inferred FlexiChains.renumber_iter(chain, new_iters)
+            chain2 = @inferred FlexiChains.renumber_iters(chain, new_iters)
             @test FlexiChains.iter_indices(chain2) == new_iters
-            @test_throws DimensionMismatch FlexiChains.renumber_iter(chain, 1:(2 * N_iters))
+            @test_throws DimensionMismatch FlexiChains.renumber_iters(
+                chain, 1:(2 * N_iters)
+            )
         end
-        @testset "renumber_chain" begin
+        @testset "renumber_chains" begin
             new_chains = [2, 1]
-            chain2 = @inferred FlexiChains.renumber_chain(chain, new_chains)
+            chain2 = @inferred FlexiChains.renumber_chains(chain, new_chains)
             @test FlexiChains.chain_indices(chain2) == new_chains
-            @test_throws DimensionMismatch FlexiChains.renumber_chain(
+            @test_throws DimensionMismatch FlexiChains.renumber_chains(
                 chain, 1:(2 * N_chains)
             )
         end
