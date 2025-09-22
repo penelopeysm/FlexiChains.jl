@@ -360,6 +360,11 @@ Turing.setprogress!(false)
                 @test new_mcmcc[k] == mcmcc[k]
             end
         end
+
+        @testset "iteration indices" begin
+            @test FlexiChains.iter_indices(flexic) == range(new_mcmcc)
+        end
+
         @testset "grouping of data into sections" begin
             @test Set(keys(new_mcmcc.name_map)) == Set(keys(mcmcc.name_map))
             for k in keys(new_mcmcc.name_map)

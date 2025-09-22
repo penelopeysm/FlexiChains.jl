@@ -340,6 +340,11 @@ the last sampler state is taken from the second chain.
 function Base.vcat(
     c1::FlexiChain{TKey,NIter1,NChains}, c2::FlexiChain{TKey,NIter2,NChains}
 )::FlexiChain{TKey,NIter1 + NIter2,NChains} where {TKey,NIter1,NIter2,NChains}
+    # Warn if the chains don't line up in terms of chain indices
+    ci1, ci2 = FlexiChains.chain_indices(c1), FlexiChains.chain_indices(c2)
+    if ci1 != ci2
+        @warn "concatenating FlexiChains with different chain indices: got $(ci1) and $(ci2). The resulting chain will have the chain indices of the first chain."
+    end
     d = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter1 + NIter2,NChains}}()
     for k in union(keys(c1), keys(c2))
         c1_data = haskey(c1, k) ? c1._data[k] : fill(missing, NIter1, NChains)
@@ -393,13 +398,19 @@ those of the input chains.
 function Base.hcat(
     c1::FlexiChain{TKey,NIter,NChains1}, c2::FlexiChain{TKey,NIter,NChains2}
 )::FlexiChain{TKey,NIter,NChains1 + NChains2} where {TKey,NIter,NChains1,NChains2}
+    # Warn if the chains don't line up in terms of iteration indices
+    ii1, ii2 = FlexiChains.iter_indices(c1), FlexiChains.iter_indices(c2)
+    if ii1 != ii2
+        @warn "concatenating FlexiChains with different iteration indices: got $(ii1) and $(ii2). The resulting chain will have the iteration indices of the first chain."
+    end
+    # Build up the new data dictionary
     d = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,NChains1 + NChains2}}()
     for k in union(keys(c1), keys(c2))
         c1_data = haskey(c1, k) ? c1._data[k] : fill(missing, NIter, NChains1)
         c2_data = haskey(c2, k) ? c2._data[k] : fill(missing, NIter, NChains2)
         d[k] = SizedMatrix{NIter,NChains1 + NChains2}(hcat(c1_data, c2_data))
     end
-    # Calculate sensible chain indices
+    # TODO: Do we want to use the chain indices passed in?
     return FlexiChain{TKey,NIter,NChains1 + NChains2}(
         d;
         iter_indices=FlexiChains.iter_indices(c1),
