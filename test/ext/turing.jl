@@ -363,6 +363,7 @@ Turing.setprogress!(false)
 
         @testset "iteration indices" begin
             @test FlexiChains.iter_indices(flexic) == range(new_mcmcc)
+            @test range(new_mcmcc) == range(mcmcc)
         end
 
         @testset "grouping of data into sections" begin
