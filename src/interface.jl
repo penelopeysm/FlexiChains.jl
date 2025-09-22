@@ -88,12 +88,14 @@ function Base.keys(chain::ChainOrSummary{TKey}) where {TKey}
 end
 
 """
-    haskey(chain::ChainOrSummary{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
+    haskey(chain::ChainOrSummary{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
     haskey(chain::ChainOrSummary{TKey}, key::TKey) where {TKey}
 
 Returns `true` if the `FlexiChain` or `FlexiChainSummary` contains the given key.
 """
-function Base.haskey(chain::ChainOrSummary{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
+function Base.haskey(
+    chain::ChainOrSummary{TKey}, key::ParameterOrExtra{<:TKey}
+) where {TKey}
     return haskey(chain._data, key)
 end
 function Base.haskey(chain::ChainOrSummary{TKey}, key::TKey) where {TKey}
@@ -134,8 +136,8 @@ function Base.merge(
     # TODO: This function has to access internal data, urk
     TValNew = Base.promote_type(eltype(valtype(c1._data)), eltype(valtype(c2._data)))
     # Merge the data dictionaries
-    d1 = Dict{ParameterOrExtra{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c1._data)
-    d2 = Dict{ParameterOrExtra{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c2._data)
+    d1 = Dict{ParameterOrExtra{<:TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c1._data)
+    d2 = Dict{ParameterOrExtra{<:TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c2._data)
     merged_data = merge(d1, d2)
     return FlexiChain{TKeyNew,NIter,NChain}(
         merged_data;
@@ -331,11 +333,14 @@ have the same number of chains and the same key type.
 The resulting chain's keys are the union of both input chains' keys. Any keys that only have
 data in one of the arguments will be assigned `missing` data in the other chain during
 concatenation.
+
+The resulting chain's sampling time is the sum of the input chains' sampling times, and
+the last sampler state is taken from the second chain.
 """
 function Base.vcat(
     c1::FlexiChain{TKey,NIter1,NChains}, c2::FlexiChain{TKey,NIter2,NChains}
 )::FlexiChain{TKey,NIter1 + NIter2,NChains} where {TKey,NIter1,NIter2,NChains}
-    d = Dict{ParameterOrExtra{TKey},SizedMatrix{NIter1 + NIter2,NChains}}()
+    d = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter1 + NIter2,NChains}}()
     for k in union(keys(c1), keys(c2))
         c1_data = if haskey(c1, k)
             c1[k]
@@ -349,7 +354,13 @@ function Base.vcat(
         end
         d[k] = SizedMatrix{NIter1 + NIter2,NChains}(vcat(c1_data, c2_data))
     end
-    return FlexiChain{TKey,NIter1 + NIter2,NChains}(d)
+    return FlexiChain{TKey,NIter1 + NIter2,NChains}(
+        d;
+        iter_indices=vcat(FlexiChains.iter_indices(c1), FlexiChains.iter_indices(c2)),
+        chain_indices=FlexiChains.chain_indices(c1),
+        sampling_time=FlexiChains.sampling_time(c1) .+ FlexiChains.sampling_time(c2),
+        last_sampler_state=FlexiChains.last_sampler_state(c2),
+    )
 end
 function Base.vcat(c1::FlexiChain{TKey}, c2::FlexiChain{TKey}) where {TKey}
     throw(
@@ -383,11 +394,14 @@ have the same number of iterations and the same key type.
 The resulting chain's keys are the union of both input chains' keys. Any keys that only have
 data in one of the arguments will be assigned `missing` data in the other chain during
 concatenation.
+
+The resulting chain's sampling times and last sampler states are obtained by concatenating
+those of the input chains.
 """
 function Base.hcat(
     c1::FlexiChain{TKey,NIter,NChains1}, c2::FlexiChain{TKey,NIter,NChains2}
 )::FlexiChain{TKey,NIter,NChains1 + NChains2} where {TKey,NIter,NChains1,NChains2}
-    d = Dict{ParameterOrExtra{TKey},SizedMatrix{NIter,NChains1 + NChains2}}()
+    d = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,NChains1 + NChains2}}()
     for k in union(keys(c1), keys(c2))
         c1_data = if haskey(c1, k)
             c1[k]
@@ -401,13 +415,14 @@ function Base.hcat(
         end
         d[k] = SizedMatrix{NIter,NChains1 + NChains2}(hcat(c1_data, c2_data))
     end
-    # concatenate metadata
-    sampling_times = vcat(FlexiChains.sampling_time(c1), FlexiChains.sampling_time(c2))
-    last_sampler_states = vcat(
-        FlexiChains.last_sampler_state(c1), FlexiChains.last_sampler_state(c2)
-    )
     return FlexiChain{TKey,NIter,NChains1 + NChains2}(
-        d; sampling_time=sampling_times, last_sampler_state=last_sampler_states
+        d;
+        iter_indices=FlexiChains.iter_indices(c1),
+        chain_indices=vcat(FlexiChains.chain_indices(c1), FlexiChains.chain_indices(c2)),
+        sampling_time=vcat(FlexiChains.sampling_time(c1), FlexiChains.sampling_time(c2)),
+        last_sampler_state=vcat(
+            FlexiChains.last_sampler_state(c1), FlexiChains.last_sampler_state(c2)
+        ),
     )
 end
 Base.hcat(c1::FlexiChain) = c1

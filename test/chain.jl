@@ -26,8 +26,8 @@ using Test
                         dicts; sampling_time=1, last_sampler_state="foo"
                     )
                     @test size(chain2) == (N_iters, 1)
-                    @test FlexiChains.sampling_time(chain2) == 1
-                    @test FlexiChains.last_sampler_state(chain2) == "foo"
+                    @test FlexiChains.sampling_time(chain2) == [1]
+                    @test FlexiChains.last_sampler_state(chain2) == ["foo"]
                 end
             end
 
@@ -87,8 +87,8 @@ using Test
                         arrays; sampling_time=1, last_sampler_state="foo"
                     )
                     @test size(chain2) == (N_iters, 1)
-                    @test FlexiChains.sampling_time(chain2) == 1
-                    @test FlexiChains.last_sampler_state(chain2) == "foo"
+                    @test FlexiChains.sampling_time(chain2) == [1]
+                    @test FlexiChains.last_sampler_state(chain2) == ["foo"]
                 end
             end
 

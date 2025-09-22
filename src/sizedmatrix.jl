@@ -49,7 +49,7 @@ end
         chain_indices=1:NChains
     ) where {NIter,NChains,T}
 
-Return the underlying data of a `SizedMatrix` as a [`DimensionalData.DimMatrix`](@extref).
+Return the underlying data of a `SizedMatrix` as a [`DimensionalData.DimMatrix`](@extref DimensionalData DimArrays).
 
 The returned `DimMatrix` has dimensions named `:iter` and `:chain`. By default the indices
 along both dimensions simply count upwards from 1. You can override this by passing in

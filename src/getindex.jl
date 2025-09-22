@@ -3,15 +3,15 @@ const ChainOrSummary{TKey,NIter,NChain} = Union{
 }
 
 """
-    Base.getindex(chain::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
-    Base.getindex(summary::FlexiChainSummary{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
+    Base.getindex(chain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
+    Base.getindex(summary::FlexiChainSummary{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
 
 Unambiguously access the data corresponding to the given `key` in the `chain`.
 
 You will need to use this method if you have multiple keys that convert to the
 same `Symbol`, such as a `Parameter(:x)` and an `Extra(:some_section, :x)`.
 """
-function Base.getindex(chain::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
+function Base.getindex(chain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
     return data(
         chain._data[key];
         iter_indices=iter_indices(chain),
@@ -19,17 +19,17 @@ function Base.getindex(chain::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) whe
     )
 end
 function Base.getindex(
-    chain::FlexiChainSummaryI{TKey}, key::ParameterOrExtra{TKey}
+    chain::FlexiChainSummaryI{TKey}, key::ParameterOrExtra{<:TKey}
 ) where {TKey}
     return data_anon_iter(chain._data[key]; chain_indices=chain_indices(chain))
 end
 function Base.getindex(
-    chain::FlexiChainSummaryC{TKey}, key::ParameterOrExtra{TKey}
+    chain::FlexiChainSummaryC{TKey}, key::ParameterOrExtra{<:TKey}
 ) where {TKey}
     return data_anon_chain(chain._data[key]; iter_indices=iter_indices(chain))
 end
 function Base.getindex(
-    chain::FlexiChainSummaryIC{TKey}, key::ParameterOrExtra{TKey}
+    chain::FlexiChainSummaryIC{TKey}, key::ParameterOrExtra{<:TKey}
 ) where {TKey}
     return only(data(chain._data[key]))
 end
@@ -55,7 +55,7 @@ actual key.
 """
 function Base.getindex(chain::ChainOrSummary{TKey}, sym_key::Symbol) where {TKey}
     # Convert all keys to symbols and see if there is a unique match
-    potential_keys = ParameterOrExtra{TKey}[]
+    potential_keys = ParameterOrExtra{<:TKey}[]
     for k in keys(chain._data)
         sym = if k isa Parameter{<:TKey}
             # TODO: What happens if Symbol(...) fails on some weird type?

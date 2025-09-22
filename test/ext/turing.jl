@@ -150,7 +150,7 @@ Turing.setprogress!(false)
 
             @testset "single chain" begin
                 chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
-                @test FlexiChains.sampling_time(chn) isa AbstractFloat
+                @test only(FlexiChains.sampling_time(chn)) isa AbstractFloat
             end
             @testset "multiple chain" begin
                 chn = sample(
@@ -192,7 +192,7 @@ Turing.setprogress!(false)
                     save_state=true,
                 )
                 # check that the sampler state is stored
-                @test FlexiChains.last_sampler_state(chn1) isa DynamicPPL.VarInfo
+                @test only(FlexiChains.last_sampler_state(chn1)) isa DynamicPPL.VarInfo
                 # check that it can be resumed from
                 chn2 = sample(
                     model,

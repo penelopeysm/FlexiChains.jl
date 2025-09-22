@@ -51,8 +51,13 @@ end
 #     DELETE WHEN POSSIBLE    #
 ###############################
 
-function DynamicPPL.loadstate(chain::FlexiChain)
+function DynamicPPL.loadstate(
+    chain::FlexiChain{TKey,NIter,NChain}
+) where {TKey<:VarName,NIter,NChain}
     st = FlexiChains.last_sampler_state(chain)
+    if NChain == 1
+        st = only(st)
+    end
     st === nothing && error(
         "attempted to resume sampling from a chain without a saved state; you must pass `save_state=true` when sampling the previous chain",
     )

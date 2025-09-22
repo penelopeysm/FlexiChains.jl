@@ -12,6 +12,13 @@ Indeed, a `FlexiChain` contains a `_data` field which is just a dictionary that 
 FlexiChains.FlexiChain
 ```
 
+Each chain also stores information about which iterations and chains it contains.
+
+```@docs
+FlexiChains.iter_indices
+FlexiChains.chain_indices
+```
+
 ## Metadata
 
 Before we discuss the actual _data_ stored in a `FlexiChain`, we note that it also contains a `_metadata` field.

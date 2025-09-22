@@ -15,14 +15,18 @@ it returns a scalar.
 """
 struct FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:AbstractVector{Int}} <:
        FlexiChainSummary{TKey,NIter,NChains}
-    _data::Dict{<:ParameterOrExtra{TKey},<:SizedMatrix{1,NChains,<:Any}}
+    _data::Dict{ParameterOrExtra{<:TKey},<:SizedMatrix{1,NChains,<:Any}}
     _chain_indices::TCIdx
 
     # Constructor checks that `chain_indices` has the right length.
+    # Ideally we'd use:
+    # data::Dict{<:ParameterOrExtra{<:TKey},<:SizedMatrix{1,NChains,<:Any}},
+    # as the argument. But that errors on Julia 1.10.
     function FlexiChainSummaryI{TKey,NIter,NChains}(
-        data::Dict{<:ParameterOrExtra{TKey},<:SizedMatrix{1,NChains,<:Any}},
-        chain_indices::TCIdx,
+        data::Dict{<:Any,<:SizedMatrix{1,NChains,<:Any}}, chain_indices::TCIdx
     ) where {TKey,NIter,NChains,TCIdx<:AbstractVector{Int}}
+        # need to cast underlying dict to the right type
+        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,NChains,<:Any}}(data)
         if length(chain_indices) != NChains
             throw(DimensionMismatch("`chain_indices` must have length $NChains"))
         end
@@ -46,14 +50,15 @@ returns a vector.
 """
 struct FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:AbstractVector{Int}} <:
        FlexiChainSummary{TKey,NIter,NChains}
-    _data::Dict{<:ParameterOrExtra{TKey},<:SizedMatrix{NIter,1,<:Any}}
+    _data::Dict{ParameterOrExtra{<:TKey},<:SizedMatrix{NIter,1,<:Any}}
     _iter_indices::TIIdx
 
     # Constructor checks that `iter_indices` has the right length.
     function FlexiChainSummaryC{TKey,NIter,NChains}(
-        data::Dict{<:ParameterOrExtra{TKey},<:SizedMatrix{NIter,1,<:Any}},
-        iter_indices::TIIdx,
+        data::Dict{<:Any,<:SizedMatrix{NIter,1,<:Any}}, iter_indices::TIIdx
     ) where {TKey,NIter,NChains,TIIdx<:AbstractVector{Int}}
+        # need to cast underlying dict to the right type
+        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,1,<:Any}}(data)
         if length(iter_indices) != NIter
             throw(DimensionMismatch("`iter_indices` must have length $NIter"))
         end
@@ -76,7 +81,14 @@ parameters `NIter` and `NChains` refer to the original number of iterations and 
 Indexing into this returns a scalar for each key.
 """
 struct FlexiChainSummaryIC{TKey,NIter,NChains} <: FlexiChainSummary{TKey,NIter,NChains}
-    _data::Dict{<:ParameterOrExtra{TKey},<:SizedMatrix{1,1,<:Any}}
+    _data::Dict{ParameterOrExtra{<:TKey},<:SizedMatrix{1,1,<:Any}}
+
+    function FlexiChainSummaryIC{TKey,NIter,NChains}(
+        data::Dict{<:Any,<:SizedMatrix{1,1,<:Any}}
+    ) where {TKey,NIter,NChains}
+        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,1,<:Any}}(data)
+        return new{TKey,NIter,NChains}(data)
+    end
 end
 _get(fcsic::FlexiChainSummaryIC, key) = only(collect(fcsic._data[key])) # scalar
 
@@ -122,7 +134,7 @@ function collapse_iter(
     warn::Bool=false,
     kwargs...,
 )::FlexiChainSummaryI{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    data = Dict{ParameterOrExtra{TKey},SizedMatrix{1,NChains,<:Any}}()
+    data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,NChains,<:Any}}()
     non_numerics = ParameterOrExtra{TKey}[]
     for (k, v) in chain._data
         if (!skip_nonnumeric) || eltype(v) <: Number
@@ -176,7 +188,7 @@ function collapse_chain(
     warn::Bool=false,
     kwargs...,
 )::FlexiChainSummaryC{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    data = Dict{ParameterOrExtra{TKey},SizedMatrix{NIter,1,<:Any}}()
+    data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,1,<:Any}}()
     non_numerics = ParameterOrExtra{TKey}[]
     for (k, v) in chain._data
         if (!skip_nonnumeric) || eltype(v) <: Number
@@ -222,7 +234,7 @@ function collapse_iter_chain(
     warn::Bool=false,
     kwargs...,
 )::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    data = Dict{ParameterOrExtra{TKey},SizedMatrix{1,1,<:Any}}()
+    data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,1,<:Any}}()
     non_numerics = ParameterOrExtra{TKey}[]
     for (k, v) in chain._data
         if (!skip_nonnumeric) || eltype(v) <: Number

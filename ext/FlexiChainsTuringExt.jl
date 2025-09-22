@@ -9,8 +9,8 @@ using Turing: Turing, AbstractMCMC
 
 function FlexiChains.to_varname_dict(
     transition::Turing.Inference.Transition
-)::Dict{ParameterOrExtra{VarName},Any}
-    d = Dict{ParameterOrExtra{VarName},Any}()
+)::Dict{ParameterOrExtra{<:VarName},Any}
+    d = Dict{ParameterOrExtra{<:VarName},Any}()
     for (varname, value) in pairs(transition.θ)
         d[Parameter(varname)] = value
     end
