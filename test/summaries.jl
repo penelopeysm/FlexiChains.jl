@@ -55,31 +55,32 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                     function func_wrapper(x; kwargs...)
                         return func(x; dims=1, kwargs...)
                     end
-                    collapsed = FlexiChains.collapse_iter(chain, func_wrapper)
-                    @test isapprox(collapsed[:a], func(as; dims=1); nans=true)
-                    @test isapprox(collapsed[Parameter(:a)], func(as; dims=1); nans=true)
-                    @test isapprox(collapsed[:b], func(bs; dims=1); nans=true)
-                    @test isapprox(collapsed[Parameter(:b)], func(bs; dims=1); nans=true)
-                    @test isapprox(collapsed[:section, "c"], func(cs; dims=1); nans=true)
-                    @test isapprox(
-                        collapsed[Extra(:section, "c")], func(cs; dims=1); nans=true
-                    )
-                    @test_throws KeyError collapsed[Extra(:section, "d")]
-                    @test_logs (:warn, r"non-numeric") FlexiChains.collapse_iter_chain(
-                        chain, func; warn=true
-                    )
-                    # via user-facing function
-                    collapsed = func(chain; dims=:iter)
-                    @test isapprox(collapsed[:a], func(as; dims=1); nans=true)
-                    @test isapprox(collapsed[Parameter(:a)], func(as; dims=1); nans=true)
-                    @test isapprox(collapsed[:b], func(bs; dims=1); nans=true)
-                    @test isapprox(collapsed[Parameter(:b)], func(bs; dims=1); nans=true)
-                    @test isapprox(collapsed[:section, "c"], func(cs; dims=1); nans=true)
-                    @test isapprox(
-                        collapsed[Extra(:section, "c")], func(cs; dims=1); nans=true
-                    )
-                    @test_throws KeyError collapsed[Extra(:section, "d")]
-                    @test_logs (:warn, r"non-numeric") func(chain; dims=:iter, warn=true)
+                    @testset "$name" for (name, collapsed) in [
+                        (
+                            "via collapse_iter",
+                            FlexiChains.collapse_iter(chain, func_wrapper),
+                        ),
+                        ("via user-facing function", func(chain; dims=:iter)),
+                    ]
+                        @test isapprox(collapsed[:a], func(as; dims=1); nans=true)
+                        @test isapprox(
+                            collapsed[Parameter(:a)], func(as; dims=1); nans=true
+                        )
+                        @test isapprox(collapsed[:b], func(bs; dims=1); nans=true)
+                        @test isapprox(
+                            collapsed[Parameter(:b)], func(bs; dims=1); nans=true
+                        )
+                        @test isapprox(
+                            collapsed[:section, "c"], func(cs; dims=1); nans=true
+                        )
+                        @test isapprox(
+                            collapsed[Extra(:section, "c")], func(cs; dims=1); nans=true
+                        )
+                        @test_throws KeyError collapsed[Extra(:section, "d")]
+                        @test_logs (:warn, r"non-numeric") FlexiChains.collapse_iter_chain(
+                            chain, func; warn=true
+                        )
+                    end
                 end
             end
         end
@@ -119,31 +120,32 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                     function func_wrapper(x; kwargs...)
                         return func(x; dims=2, kwargs...)
                     end
-                    collapsed = FlexiChains.collapse_chain(chain, func_wrapper)
-                    @test isapprox(collapsed[:a], func(as; dims=2); nans=true)
-                    @test isapprox(collapsed[Parameter(:a)], func(as; dims=2); nans=true)
-                    @test isapprox(collapsed[:b], func(bs; dims=2); nans=true)
-                    @test isapprox(collapsed[Parameter(:b)], func(bs; dims=2); nans=true)
-                    @test isapprox(collapsed[:section, "c"], func(cs; dims=2); nans=true)
-                    @test isapprox(
-                        collapsed[Extra(:section, "c")], func(cs; dims=2); nans=true
-                    )
-                    @test_throws KeyError collapsed[Extra(:section, "d")]
-                    @test_logs (:warn, r"non-numeric") FlexiChains.collapse_iter_chain(
-                        chain, func; warn=true
-                    )
-                    # via user-facing function
-                    collapsed = func(chain; dims=:chain)
-                    @test isapprox(collapsed[:a], func(as; dims=2); nans=true)
-                    @test isapprox(collapsed[Parameter(:a)], func(as; dims=2); nans=true)
-                    @test isapprox(collapsed[:b], func(bs; dims=2); nans=true)
-                    @test isapprox(collapsed[Parameter(:b)], func(bs; dims=2); nans=true)
-                    @test isapprox(collapsed[:section, "c"], func(cs; dims=2); nans=true)
-                    @test isapprox(
-                        collapsed[Extra(:section, "c")], func(cs; dims=2); nans=true
-                    )
-                    @test_throws KeyError collapsed[Extra(:section, "d")]
-                    @test_logs (:warn, r"non-numeric") func(chain; dims=:chain, warn=true)
+                    @testset "$name" for (name, collapsed) in [
+                        (
+                            "via collapse_chain",
+                            FlexiChains.collapse_chain(chain, func_wrapper),
+                        ),
+                        ("via user-facing function", func(chain; dims=:chain)),
+                    ]
+                        @test isapprox(collapsed[:a], func(as; dims=2); nans=true)
+                        @test isapprox(
+                            collapsed[Parameter(:a)], func(as; dims=2); nans=true
+                        )
+                        @test isapprox(collapsed[:b], func(bs; dims=2); nans=true)
+                        @test isapprox(
+                            collapsed[Parameter(:b)], func(bs; dims=2); nans=true
+                        )
+                        @test isapprox(
+                            collapsed[:section, "c"], func(cs; dims=2); nans=true
+                        )
+                        @test isapprox(
+                            collapsed[Extra(:section, "c")], func(cs; dims=2); nans=true
+                        )
+                        @test_throws KeyError collapsed[Extra(:section, "d")]
+                        @test_logs (:warn, r"non-numeric") FlexiChains.collapse_iter_chain(
+                            chain, func; warn=true
+                        )
+                    end
                 end
             end
         end
@@ -179,28 +181,24 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                     ),
                 )
                 @testset "$func" for func in ENABLED_SUMMARY_FUNCS
-                    # via `collapse_iter_chain`
-                    collapsed = FlexiChains.collapse_iter_chain(chain, func)
-                    @test isapprox(collapsed[:a], func(as); nans=true)
-                    @test isapprox(collapsed[Parameter(:a)], func(as); nans=true)
-                    @test isapprox(collapsed[:b], func(bs); nans=true)
-                    @test isapprox(collapsed[Parameter(:b)], func(bs); nans=true)
-                    @test isapprox(collapsed[:section, "c"], func(cs); nans=true)
-                    @test isapprox(collapsed[Extra(:section, "c")], func(cs); nans=true)
-                    @test_throws KeyError collapsed[Extra(:section, "d")]
-                    @test_logs (:warn, r"non-numeric") FlexiChains.collapse_iter_chain(
-                        chain, func; warn=true
-                    )
-                    # via user-facing function
-                    collapsed = func(chain)
-                    @test isapprox(collapsed[:a], func(as); nans=true)
-                    @test isapprox(collapsed[Parameter(:a)], func(as); nans=true)
-                    @test isapprox(collapsed[:b], func(bs); nans=true)
-                    @test isapprox(collapsed[Parameter(:b)], func(bs); nans=true)
-                    @test isapprox(collapsed[:section, "c"], func(cs); nans=true)
-                    @test isapprox(collapsed[Extra(:section, "c")], func(cs); nans=true)
-                    @test_throws KeyError collapsed[Extra(:section, "d")]
-                    @test_logs (:warn, r"non-numeric") func(chain; warn=true)
+                    @testset "$name" for (name, collapsed) in [
+                        (
+                            "via collapse_iter_chain",
+                            FlexiChains.collapse_iter_chain(chain, func),
+                        ),
+                        ("via user-facing function", func(chain)),
+                    ]
+                        @test isapprox(collapsed[:a], func(as); nans=true)
+                        @test isapprox(collapsed[Parameter(:a)], func(as); nans=true)
+                        @test isapprox(collapsed[:b], func(bs); nans=true)
+                        @test isapprox(collapsed[Parameter(:b)], func(bs); nans=true)
+                        @test isapprox(collapsed[:section, "c"], func(cs); nans=true)
+                        @test isapprox(collapsed[Extra(:section, "c")], func(cs); nans=true)
+                        @test_throws KeyError collapsed[Extra(:section, "d")]
+                        @test_logs (:warn, r"non-numeric") FlexiChains.collapse_iter_chain(
+                            chain, func; warn=true
+                        )
+                    end
                 end
             end
         end
