@@ -88,7 +88,10 @@ end
 
 """
     struct FlexiChain{
-        TKey,NIter,NChains,TMetadata<:NTuple{NChains,FlexiChainMetadata}
+        TKey,NIter,NChains,
+        TIIdx<:AbstractVector{<:Integer},
+        TCIdx<:AbstractVector{<:Integer},
+        TMetadata<:NTuple{NChains,FlexiChainMetadata}
     } <: AbstractMCMC.AbstractChains
 
 An MCMC chain.
@@ -105,8 +108,14 @@ TODO: Document further.
 
 $(TYPEDFIELDS)
 """
-struct FlexiChain{TKey,NIter,NChains,TMetadata<:NTuple{NChains,FlexiChainMetadata}} <:
-       AbstractChains
+struct FlexiChain{
+    TKey,
+    NIter,
+    NChains,
+    TIIdx<:AbstractVector{<:Integer},
+    TCIdx<:AbstractVector{<:Integer},
+    TMetadata<:NTuple{NChains,FlexiChainMetadata},
+} <: AbstractChains
     """
     Internal per-iteration data for parameters and extra keys. To access the data
     in here, you should index into the chain.
@@ -120,13 +129,13 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:NTuple{NChains,FlexiChainMetadat
 
     Do not access this directly; you can use [`iter_indices`](@ref) instead.
     """
-    _iter_indices::AbstractVector{Int}
+    _iter_indices::TIIdx
 
     """
     The indices of each MCMC chain in the chain. This will pretty much always be `1:NChains`
     (unless the chain has been subsetted).
     """
-    _chain_indices::AbstractVector{Int}
+    _chain_indices::TCIdx
 
     """
     Other items associated with the chain. These are not necessarily per-iteration (for
@@ -214,7 +223,9 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:NTuple{NChains,FlexiChainMetadat
             ]...,
         )
 
-        return new{TKey,NIter,NChains,typeof(metadata)}(
+        return new{
+            TKey,NIter,NChains,typeof(iter_indices),typeof(chain_indices),typeof(metadata)
+        }(
             data, iter_indices, chain_indices, metadata
         )
     end
@@ -296,7 +307,9 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:NTuple{NChains,FlexiChainMetadat
             ]...,
         )
 
-        return new{TKey,NIter,NChains,typeof(metadata)}(
+        return new{
+            TKey,NIter,NChains,typeof(iter_indices),typeof(chain_indices),typeof(metadata)
+        }(
             data, iter_indices, chain_indices, metadata
         )
     end
@@ -311,7 +324,7 @@ numbers from the sampler: for example, if you discard the first 100 iterations a
 
 The accuracy of this field is reliant on the sampler providing this information, though.
 """
-iter_indices(chain::FlexiChain) = chain._iter_indices
+iter_indices(chain::FlexiChain{T,NI,NC,TIIdx}) where {T,NI,NC,TIIdx} = chain._iter_indices
 
 """
     chain_indices(chain::FlexiChain)
@@ -319,7 +332,8 @@ iter_indices(chain::FlexiChain) = chain._iter_indices
 The indices of each MCMC chain in the chain. This will pretty much always be `1:NChains`
 (unless the chain has been subsetted).
 """
-chain_indices(chain::FlexiChain) = chain._chain_indices
+chain_indices(chain::FlexiChain{T,NI,NC,TIIdx,TCIdx}) where {T,NI,NC,TIIdx,TCIdx} =
+    chain._chain_indices
 
 """
     sampling_time(chain::FlexiChain)

@@ -3,24 +3,39 @@ const ChainOrSummary{TKey,NIter,NChain} = Union{
 }
 
 """
-    Base.getindex(chain::ChainOrSummary{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
+    Base.getindex(chain::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
+    Base.getindex(summary::FlexiChainSummary{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
 
 Unambiguously access the data corresponding to the given `key` in the `chain`.
 
 You will need to use this method if you have multiple keys that convert to the
 same `Symbol`, such as a `Parameter(:x)` and an `Extra(:some_section, :x)`.
 """
-function Base.getindex(
-    chain::ChainOrSummary{TKey}, key::ParameterOrExtra{TKey}
-) where {TKey}
+function Base.getindex(chain::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
     return data(
         chain._data[key];
         iter_indices=iter_indices(chain),
         chain_indices=chain_indices(chain),
     )
 end
+function Base.getindex(
+    chain::FlexiChainSummaryI{TKey}, key::ParameterOrExtra{TKey}
+) where {TKey}
+    return data_anon_iter(chain._data[key]; chain_indices=chain_indices(chain))
+end
+function Base.getindex(
+    chain::FlexiChainSummaryC{TKey}, key::ParameterOrExtra{TKey}
+) where {TKey}
+    return data_anon_chain(chain._data[key]; iter_indices=iter_indices(chain))
+end
+function Base.getindex(
+    chain::FlexiChainSummaryIC{TKey}, key::ParameterOrExtra{TKey}
+) where {TKey}
+    return only(data(chain._data[key]))
+end
 """
-    Base.getindex(chain::ChainOrSummary{TKey}, sym_key::Symbol) where {TKey}
+    Base.getindex(chain::FlexiChain{TKey}, sym_key::Symbol) where {TKey}
+    Base.getindex(summary::FlexiChainSummary{TKey}, sym_key::Symbol) where {TKey}
 
 The most convenient method to index into a `ChainOrSummary` is using `Symbol`.
 
@@ -71,7 +86,8 @@ function Base.getindex(chain::ChainOrSummary{TKey}, sym_key::Symbol) where {TKey
     end
 end
 """
-    Base.getindex(chain::ChainOrSummary{TKey}, section_name::Symbol, key_name::Any) where {TKey}
+    Base.getindex(chain::FlexiChain{TKey}, section_name::Symbol, key_name::Any) where {TKey}
+    Base.getindex(summary::FlexiChainSummary{TKey}, section_name::Symbol, key_name::Any) where {TKey}
 
 Convenience method for retrieving non-parameter keys. Equal to
 `chain[Extra(section_name, key_name)]`.

@@ -106,13 +106,16 @@ end
         c2::FlexiChain{TKey2,NIter,NChain}
     ) where {TKey1,TKey2,NIter,NChain}
 
-Merge the contents of two `FlexiChain`s. If there are keys that are present in
-both chains, the values from `c2` will overwrite those from `c1`.
+Merge the contents of two `FlexiChain`s. If there are keys that are present in both chains,
+the values from `c2` will overwrite those from `c1`.
 
-If the key types are different, the resulting `FlexiChain` will have a promoted
-key type, and a warning will be issued.
+If the key types are different, the resulting `FlexiChain` will have a promoted key type,
+and a warning will be issued.
 
 The two `FlexiChain`s being merged must have the same dimensions.
+
+The chain indices and metadata are taken from the first chain. Those in the second chain are
+silently ignored.
 
 Note that this function does not perform a deepcopy of the underlying data.
 """
@@ -134,7 +137,13 @@ function Base.merge(
     d1 = Dict{ParameterOrExtra{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c1._data)
     d2 = Dict{ParameterOrExtra{TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c2._data)
     merged_data = merge(d1, d2)
-    return FlexiChain{TKeyNew,NIter,NChain}(merged_data)
+    return FlexiChain{TKeyNew,NIter,NChain}(
+        merged_data;
+        iter_indices=FlexiChains.iter_indices(c1),
+        chain_indices=FlexiChains.chain_indices(c1),
+        sampling_time=FlexiChains.sampling_time(c1),
+        last_sampler_state=FlexiChains.last_sampler_state(c1),
+    )
 end
 function Base.merge(
     ::FlexiChain{TKey1,NIter1,NChain1}, ::FlexiChain{TKey2,NIter2,NChain2}
@@ -169,7 +178,9 @@ function subset(
             throw(KeyError(k))
         end
     end
-    return FlexiChain{TKey,NIter,NChain}(d)
+    return FlexiChain{TKey,NIter,NChain}(
+        d; iter_indices=iter_indices(chain), chain_indices=chain_indices(chain)
+    )
 end
 
 """

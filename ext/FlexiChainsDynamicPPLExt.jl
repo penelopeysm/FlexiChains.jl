@@ -84,25 +84,13 @@ function reevaluate(
     niters, nchains = size(chain)
     vi = DynamicPPL.VarInfo(model)
     vi = DynamicPPL.setaccs!!(vi, accs)
-    # TODO: Ugly code repetition based on the fact that we 
-    # return a vector for nchains == 1 and matrix otherwise.
-    if nchains == 1
-        return map(1:niters) do i
-            vals = FlexiChains.get_parameter_dict_from_iter(chain, i, nothing)
-            # TODO: use InitFromParams when DPPL 0.38 is out
-            new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(rng, vals))
-            new_model = DynamicPPL.contextualize(model, new_ctx)
-            DynamicPPL.evaluate!!(new_model, vi)
-        end
-    else
-        tuples = Iterators.product(1:niters, 1:nchains)
-        return map(tuples) do (i, j)
-            vals = FlexiChains.get_parameter_dict_from_iter(chain, i, j)
-            # TODO: use InitFromParams when DPPL 0.38 is out
-            new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(rng, vals))
-            new_model = DynamicPPL.contextualize(model, new_ctx)
-            DynamicPPL.evaluate!!(new_model, vi)
-        end
+    tuples = Iterators.product(1:niters, 1:nchains)
+    return map(tuples) do (i, j)
+        vals = FlexiChains.get_parameter_dict_from_iter(chain, i, j)
+        # TODO: use InitFromParams when DPPL 0.38 is out
+        new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(rng, vals))
+        new_model = DynamicPPL.contextualize(model, new_ctx)
+        DynamicPPL.evaluate!!(new_model, vi)
     end
 end
 function reevaluate(
@@ -145,7 +133,13 @@ function DynamicPPL.predict(
         # Dict{Parameter{VarName}}
         Dict(Parameter(vn) => val for (vn, val) in vn_dict)
     end
-    chain_params_only = FlexiChain{VarName}(param_dicts)
+    chain_params_only = FlexiChain{VarName,NIter,NChain}(
+        param_dicts;
+        iter_indices=FlexiChains.iter_indices(chain),
+        chain_indices=FlexiChains.chain_indices(chain),
+        sampling_time=FlexiChains.sampling_time(chain),
+        last_sampler_state=FlexiChains.last_sampler_state(chain),
+    )
     chain_nonparams_only = FlexiChains.subset_extras(chain)
     return merge(chain_params_only, chain_nonparams_only)
 end

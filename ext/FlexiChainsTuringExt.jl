@@ -36,13 +36,22 @@ function AbstractMCMC.bundle_samples(
     # discard_initial::Int=0,
     # thinning::Int=1,
     _kwargs...,
-)::T where {T<:FlexiChain{<:VarName}}
+)::T where {TKey<:VarName,T<:FlexiChain{TKey}}
+    NIter = length(transitions)
     dicts = map(FlexiChains.to_varname_dict, transitions)
     # timings
     tm = stats === missing ? nothing : stats.stop - stats.start
     # last sampler state
     st = save_state ? last_sampler_state : nothing
-    return T(dicts; sampling_time=tm, last_sampler_state=st)
+    return FlexiChain{TKey,NIter,1}(
+        dicts;
+        # TODO: Fix iter_indices
+        iter_indices=1:NIter,
+        # 1:1 gives nicer DimMatrix output than just [1]
+        chain_indices=1:1,
+        sampling_time=tm,
+        last_sampler_state=st,
+    )
 end
 
 end # module FlexiChainsTuringExt
