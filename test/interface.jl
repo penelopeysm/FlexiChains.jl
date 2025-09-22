@@ -317,6 +317,43 @@ using Test
                 vcat(fill(3.0, niters1, 1), fill("foo", niters2, 1))
         end
 
+        @testset "handling indices" begin
+            N_iters = 10
+            d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
+            chain1 = FlexiChain{Symbol,N_iters,1}(
+                fill(d1, N_iters); iter_indices=1:10, chain_indices=[1]
+            )
+            d2 = Dict(Parameter(:a) => 2, Extra(:b, "c") => "foo")
+            chain2 = FlexiChain{Symbol,N_iters,1}(
+                fill(d2, N_iters); iter_indices=21:30, chain_indices=[2]
+            )
+
+            chain12 = vcat(chain1, chain2)
+            @test FlexiChains.iter_indices(chain12) ==
+                vcat(FlexiChains.iter_indices(chain1), FlexiChains.iter_indices(chain2))
+            @test_logs (:warn, r"different chain indices") vcat(chain1, chain2)
+            @test FlexiChains.chain_indices(chain12) == FlexiChains.chain_indices(chain1)
+        end
+
+        @testset "metadata" begin
+            niters1 = 10
+            d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
+            chain1 = FlexiChain{Symbol,niters1,1}(
+                fill(d1, niters1); sampling_time=1, last_sampler_state="foo"
+            )
+            niters2 = 20
+            d2 = Dict(Parameter(:a) => 2, Extra(:b, "c") => "foo")
+            chain2 = FlexiChain{Symbol,niters2,1}(
+                fill(d2, niters2); sampling_time=2, last_sampler_state="bar"
+            )
+            chain12 = vcat(chain1, chain2)
+
+            # Sampling times should be summed
+            @test isapprox(FlexiChains.sampling_time(chain12), [3])
+            # Last sampler state should be taken from the second chain
+            @test FlexiChains.last_sampler_state(chain12) == ["bar"]
+        end
+
         @testset "error on different number of chains" begin
             d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
             chain1 = FlexiChain{Symbol,10,1}(fill(d1, 10, 1))
@@ -346,6 +383,19 @@ using Test
             @test size(chain12) == (N_iters, 2)
             @test chain12[Parameter(:a)] == repeat([1 2], N_iters)
             @test chain12[Extra(:b, "c")] == repeat([3.0 "foo"], N_iters)
+        end
+
+        @testset "handling indices" begin
+            N_iters = 10
+            d1 = Dict(Parameter(:a) => 1, Extra(:b, "c") => 3.0)
+            chain1 = FlexiChain{Symbol,N_iters,1}(fill(d1, N_iters); iter_indices=1:10)
+            d2 = Dict(Parameter(:a) => 2, Extra(:b, "c") => "foo")
+            chain2 = FlexiChain{Symbol,N_iters,1}(fill(d2, N_iters); iter_indices=21:30)
+
+            @test_logs (:warn, r"different iteration indices") hcat(chain1, chain2)
+            chain12 = hcat(chain1, chain2)
+            @test FlexiChains.iter_indices(chain12) == FlexiChains.iter_indices(chain1)
+            @test FlexiChains.chain_indices(chain12) == [1, 2]
         end
 
         @testset "combination of metadata" begin
