@@ -23,9 +23,15 @@ using Test
 
                 @testset "with metadata" begin
                     chain2 = FlexiChain{Symbol,N_iters,1}(
-                        dicts; sampling_time=1, last_sampler_state="foo"
+                        dicts;
+                        iter_indices=3:3:(3 * N_iters),
+                        chain_indices=[2],
+                        sampling_time=1,
+                        last_sampler_state="foo",
                     )
                     @test size(chain2) == (N_iters, 1)
+                    @test FlexiChains.iter_indices(chain2) == 3:3:(3 * N_iters)
+                    @test FlexiChains.chain_indices(chain2) == [2]
                     @test FlexiChains.sampling_time(chain2) == [1]
                     @test FlexiChains.last_sampler_state(chain2) == ["foo"]
                 end
@@ -56,9 +62,15 @@ using Test
 
                 @testset "with metadata" begin
                     chain2 = FlexiChain{Symbol,N_iters,N_chains}(
-                        dicts; sampling_time=[1, 2], last_sampler_state=["foo", "bar"]
+                        dicts;
+                        iter_indices=3:3:(3 * N_iters),
+                        chain_indices=[2, 1],
+                        sampling_time=[1, 2],
+                        last_sampler_state=["foo", "bar"],
                     )
                     @test size(chain2) == (N_iters, N_chains)
+                    @test FlexiChains.iter_indices(chain2) == 3:3:(3 * N_iters)
+                    @test FlexiChains.chain_indices(chain2) == [2, 1]
                     @test FlexiChains.sampling_time(chain2) == [1, 2]
                     @test FlexiChains.last_sampler_state(chain2) == ["foo", "bar"]
                 end
@@ -93,9 +105,15 @@ using Test
 
                 @testset "with metadata" begin
                     chain2 = FlexiChain{Symbol,N_iters,1}(
-                        arrays; sampling_time=1, last_sampler_state="foo"
+                        arrays;
+                        iter_indices=3:3:(3 * N_iters),
+                        chain_indices=[2],
+                        sampling_time=1,
+                        last_sampler_state="foo",
                     )
                     @test size(chain2) == (N_iters, 1)
+                    @test FlexiChains.iter_indices(chain2) == 3:3:(3 * N_iters)
+                    @test FlexiChains.chain_indices(chain2) == [2]
                     @test FlexiChains.sampling_time(chain2) == [1]
                     @test FlexiChains.last_sampler_state(chain2) == ["foo"]
                 end
@@ -113,18 +131,24 @@ using Test
 
                 @testset "wrong indices length" begin
                     @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        dicts; iter_indices=1:(2 * N_iters)
+                        arrays; iter_indices=1:(2 * N_iters)
                     )
                     @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        dicts; chain_indices=1:(2 * N_chains)
+                        arrays; chain_indices=1:(2 * N_chains)
                     )
                 end
 
                 @testset "with metadata" begin
                     chain2 = FlexiChain{Symbol,N_iters,N_chains}(
-                        arrays; sampling_time=[1, 2], last_sampler_state=["foo", "bar"]
+                        arrays;
+                        iter_indices=3:3:(3 * N_iters),
+                        chain_indices=[2, 1],
+                        sampling_time=[1, 2],
+                        last_sampler_state=["foo", "bar"],
                     )
                     @test size(chain2) == (N_iters, N_chains)
+                    @test FlexiChains.iter_indices(chain2) == 3:3:(3 * N_iters)
+                    @test FlexiChains.chain_indices(chain2) == [2, 1]
                     @test FlexiChains.sampling_time(chain2) == [1, 2]
                     @test FlexiChains.last_sampler_state(chain2) == ["foo", "bar"]
                 end
