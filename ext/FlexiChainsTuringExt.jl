@@ -33,8 +33,8 @@ function AbstractMCMC.bundle_samples(
     chain_type::Type{T};
     save_state=false,
     stats=missing,
-    # discard_initial::Int=0,
-    # thinning::Int=1,
+    discard_initial::Int=0,
+    thinning::Int=1,
     _kwargs...,
 )::T where {TKey<:VarName,T<:FlexiChain{TKey}}
     NIter = length(transitions)
@@ -43,10 +43,17 @@ function AbstractMCMC.bundle_samples(
     tm = stats === missing ? nothing : stats.stop - stats.start
     # last sampler state
     st = save_state ? last_sampler_state : nothing
+    # calculate iteration indices
+    start = discard_initial + 1
+    iter_indices = if thinning != 1
+        range(start; step=thinning, length=NIter)
+    else
+        # This returns UnitRange not StepRange -- a bit cleaner
+        start:(start + NIter - 1)
+    end
     return FlexiChain{TKey,NIter,1}(
         dicts;
-        # TODO: Fix iter_indices
-        iter_indices=1:NIter,
+        iter_indices=iter_indices,
         # 1:1 gives nicer DimMatrix output than just [1]
         chain_indices=1:1,
         sampling_time=tm,

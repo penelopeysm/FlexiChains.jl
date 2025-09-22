@@ -163,7 +163,7 @@ end
     )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
 
 Create a new `FlexiChain` containing only the specified keys and the data corresponding to
-them.
+them. All metadata is preserved.
 """
 function subset(
     chain::FlexiChain{TKey,NIter,NChain}, keys::AbstractVector{<:ParameterOrExtra{<:TKey}}
@@ -177,7 +177,11 @@ function subset(
         end
     end
     return FlexiChain{TKey,NIter,NChain}(
-        d; iter_indices=iter_indices(chain), chain_indices=chain_indices(chain)
+        d;
+        iter_indices=iter_indices(chain),
+        chain_indices=chain_indices(chain),
+        sampling_time=sampling_time(chain),
+        last_sampler_state=last_sampler_state(chain),
     )
 end
 
