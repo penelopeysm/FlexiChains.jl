@@ -1,5 +1,7 @@
 module FCSummariesTests
 
+using DimensionalData: DimensionalData as DD
+using DimensionalData.Dimensions: AnonDim
 using FlexiChains:
     FlexiChains,
     FlexiChain,
@@ -62,6 +64,10 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                         ),
                         ("via user-facing function", func(chain; dims=:iter)),
                     ]
+                        @test collapsed[:a] isa DD.DimMatrix
+                        @test DD.dims(collapsed[:a])[1] isa AnonDim
+                        @test parent(parent(DD.dims(collapsed[:a], :chain))) ==
+                            FlexiChains.chain_indices(chain)
                         @test isapprox(collapsed[:a], func(as; dims=1); nans=true)
                         @test isapprox(
                             collapsed[Parameter(:a)], func(as; dims=1); nans=true
@@ -127,6 +133,10 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                         ),
                         ("via user-facing function", func(chain; dims=:chain)),
                     ]
+                        @test collapsed[:a] isa DD.DimMatrix
+                        @test parent(parent(DD.dims(collapsed[:a], :iter))) ==
+                            FlexiChains.iter_indices(chain)
+                        @test DD.dims(collapsed[:a])[2] isa AnonDim
                         @test isapprox(collapsed[:a], func(as; dims=2); nans=true)
                         @test isapprox(
                             collapsed[Parameter(:a)], func(as; dims=2); nans=true
@@ -188,6 +198,7 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                         ),
                         ("via user-facing function", func(chain)),
                     ]
+                        @test collapsed[:a] isa Number
                         @test isapprox(collapsed[:a], func(as); nans=true)
                         @test isapprox(collapsed[Parameter(:a)], func(as); nans=true)
                         @test isapprox(collapsed[:b], func(bs); nans=true)
