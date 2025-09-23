@@ -1,3 +1,5 @@
+using DimensionalData.Dimensions.Lookups: Lookup, Selector, selectindices
+
 const ChainOrSummary{TKey,NIter,NChain} = Union{
     <:FlexiChain{TKey,NIter,NChain},<:FlexiChainSummary{TKey,NIter,NChain}
 }
@@ -163,4 +165,32 @@ and if that is a vector-valued parameter then all of its first entries will be r
 """
 function Base.getindex(chain::ChainOrSummary{<:VarName}, vn::VarName)
     return _getindex_vn_with_map(chain, vn, identity, vn)
+end
+
+"""
+Subset a chain by iteration or chain indices.
+"""
+function Base.getindex(fchain::FlexiChain{TKey}; iter=Colon(), chain=Colon()) where {TKey}
+    # Figure out which indices we are using
+    new_iter_indices = selectindices(FlexiChains.iter_indices(fchain), iter)
+    new_chain_indices = selectindices(FlexiChains.chain_indices(fchain), chain)
+    new_iter_lookup = Lookup(new_iter_indices)
+    new_chain_lookup = Lookup(new_chain_indices)
+
+    # Construct new data
+    new_data = Dict{ParameterOrExtra{<:TKey},Matrix}()
+    for (k, v) in fchain._data
+        # Note that fchain._data[k] is always a plain old Matrix, so we can assume that it
+        # is using ordinary 1-based indexing.
+        new_data[k] = v[new_iter_indices, new_chain_indices]
+    end
+
+    # Construct new chain
+    return FlexiChain{TKey,length(new_iter_lookup),length(new_chain_lookup)}(
+        new_data;
+        iter_indices=new_iter_lookup,
+        chain_indices=new_chain_lookup,
+        sampling_time=FlexiChains.sampling_time(fchain),
+        last_sampler_state=FlexiChains.last_sampler_state(fchain),
+    )
 end
