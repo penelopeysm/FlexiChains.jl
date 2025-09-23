@@ -29,7 +29,7 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                 Dict{Parameter{<:VarName},FlexiChains.SizedMatrix{1,N_chains,Float64}}(
                     Parameter(@varname(a)) => FlexiChains.SizedMatrix{1,N_chains}(data)
                 ),
-                1:N_chains,
+                FlexiChains._make_lookup(1:N_chains),
             )
             @test fcsi[Parameter(@varname(a))] == data
             @test fcsi[@varname(a)] == data
@@ -99,7 +99,7 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
             Dict{Parameter{<:VarName},FlexiChains.SizedMatrix{N_iters,1,Float64}}(
                 Parameter(@varname(a)) => FlexiChains.SizedMatrix{N_iters,1}(data)
             ),
-            1:N_iters,
+            FlexiChains._make_lookup(1:N_iters),
         )
         @test fcsi[Parameter(@varname(a))] == data
         @test fcsi[@varname(a)] == data

@@ -1,3 +1,4 @@
+using DimensionalData: DimensionalData as DD
 using Statistics: Statistics
 
 @public collapse_iter, collapse_chain, collapse
@@ -5,7 +6,7 @@ using Statistics: Statistics
 abstract type FlexiChainSummary{TKey,NIter,NChains} end
 
 """
-    FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:AbstractVector{Int}}
+    FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:DimensionalData.Lookup}
 
 A summary where the iteration dimension has been collapsed. The type parameter `NIter`
 refers to the original number of iterations (which have been collapsed).
@@ -13,7 +14,7 @@ refers to the original number of iterations (which have been collapsed).
 If NChains > 1, indexing into this returns a (1 × NChains) matrix for each key; otherwise
 it returns a scalar.
 """
-struct FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:AbstractVector{Int}} <:
+struct FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:DD.Lookup} <:
        FlexiChainSummary{TKey,NIter,NChains}
     _data::Dict{ParameterOrExtra{<:TKey},<:SizedMatrix{1,NChains,<:Any}}
     _chain_indices::TCIdx
@@ -24,7 +25,7 @@ struct FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:AbstractVector{Int}} <:
     # as the argument. But that errors on Julia 1.10.
     function FlexiChainSummaryI{TKey,NIter,NChains}(
         data::Dict{<:Any,<:SizedMatrix{1,NChains,<:Any}}, chain_indices::TCIdx
-    ) where {TKey,NIter,NChains,TCIdx<:AbstractVector{Int}}
+    ) where {TKey,NIter,NChains,TCIdx<:DD.Lookup}
         # need to cast underlying dict to the right type
         data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,NChains,<:Any}}(data)
         if length(chain_indices) != NChains
@@ -33,14 +34,21 @@ struct FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:AbstractVector{Int}} <:
         return new{TKey,NIter,NChains,typeof(chain_indices)}(data, chain_indices)
     end
 end
+"""
+    FlexiChains.chain_indices(
+        summary::FlexiChainSummaryI{TKey,NIter,NChains,TCIdx}
+    )::TCIdx where {TKey,NIter,NChains,TCIdx}
+
+Return the chain indices of a `FlexiChainSummaryI`.
+"""
 function FlexiChains.chain_indices(
     fcsi::FlexiChainSummaryI{T,NI,NC,TCIdx}
-) where {T,NI,NC,TCIdx}
+)::TCIdx where {T,NI,NC,TCIdx}
     return fcsi._chain_indices
 end
 
 """
-    FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:AbstractVector{Int}}
+    FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:DimensionalData.Lookup}
 
 A summary where the chain dimension has been collapsed. The type parameter `NChain` refers to
 the original number of chains (which have been collapsed).
@@ -48,7 +56,7 @@ the original number of chains (which have been collapsed).
 If NChains > 1, indexing into this returns a (NIter × 1) matrix for each key; otherwise it
 returns a vector.
 """
-struct FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:AbstractVector{Int}} <:
+struct FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:DD.Lookup} <:
        FlexiChainSummary{TKey,NIter,NChains}
     _data::Dict{ParameterOrExtra{<:TKey},<:SizedMatrix{NIter,1,<:Any}}
     _iter_indices::TIIdx
@@ -56,7 +64,7 @@ struct FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:AbstractVector{Int}} <:
     # Constructor checks that `iter_indices` has the right length.
     function FlexiChainSummaryC{TKey,NIter,NChains}(
         data::Dict{<:Any,<:SizedMatrix{NIter,1,<:Any}}, iter_indices::TIIdx
-    ) where {TKey,NIter,NChains,TIIdx<:AbstractVector{Int}}
+    ) where {TKey,NIter,NChains,TIIdx<:DD.Lookup}
         # need to cast underlying dict to the right type
         data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,1,<:Any}}(data)
         if length(iter_indices) != NIter
@@ -65,9 +73,16 @@ struct FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:AbstractVector{Int}} <:
         return new{TKey,NIter,NChains,typeof(iter_indices)}(data, iter_indices)
     end
 end
+"""
+    FlexiChains.iter_indices(
+        summary::FlexiChainSummaryC{TKey,NIter,NChains,TIIdx}
+    )::TIIdx where {TKey,NIter,NChains,TIIdx}
+
+Return the iteration indices of a `FlexiChainSummaryC`.
+"""
 function FlexiChains.iter_indices(
     fcsc::FlexiChainSummaryC{T,NI,NC,TIIdx}
-) where {T,NI,NC,TIIdx}
+)::TIIdx where {T,NI,NC,TIIdx}
     return fcsc._iter_indices
 end
 

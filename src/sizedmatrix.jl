@@ -45,8 +45,8 @@ end
 """
     data(
         s::SizedMatrix{NIter,NChains,T};
-        iter_indices=1:NIter,
-        chain_indices=1:NChains
+        iter_indices::DimensionalData.Lookup=_make_lookup(1:NIter),
+        chain_indices::DimensionalData.Lookup=_make_lookup(1:NChains)
     ) where {NIter,NChains,T}
 
 Return the underlying data of a `SizedMatrix` as a [`DimensionalData.DimMatrix`](@extref DimensionalData DimArrays).
@@ -59,8 +59,8 @@ Note that this differs from `Base.collect`, which always returns a plain `Matrix
 """
 function data(
     s::SizedMatrix{NIter,NChains,T};
-    iter_indices=_make_lookup / g(1:NIter),
-    chain_indices=_make_lookup / g(1:NChains),
+    iter_indices::DD.Lookup=_make_lookup(1:NIter),
+    chain_indices::DD.Lookup=_make_lookup(1:NChains),
 ) where {NIter,NChains,T}
     return DD.DimMatrix(
         s._data,
@@ -68,12 +68,12 @@ function data(
     )
 end
 function data_anon_iter(
-    s::SizedMatrix{1,NChains,T}; chain_indices=_make_lookup / g(1:NChains)
+    s::SizedMatrix{1,NChains,T}; chain_indices::DD.Lookup=_make_lookup(1:NChains)
 ) where {NChains,T}
     return DD.DimMatrix(s._data, (AnonDim(), DD.Dim{CHAIN_DIM_NAME}(chain_indices)))
 end
 function data_anon_chain(
-    s::SizedMatrix{NIter,1,T}; iter_indices=_make_lookup / g(1:NIter)
+    s::SizedMatrix{NIter,1,T}; iter_indices::DD.Lookup=_make_lookup(1:NIter)
 ) where {NIter,T}
     return DD.DimMatrix(s._data, (DD.Dim{ITER_DIM_NAME}(iter_indices), AnonDim()))
 end
