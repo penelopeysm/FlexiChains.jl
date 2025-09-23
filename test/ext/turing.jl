@@ -336,9 +336,10 @@ Turing.setprogress!(false)
             pdns = predict(f(), chn)
             @test FlexiChains.iter_indices(pdns) == FlexiChains.iter_indices(chn)
             @test FlexiChains.chain_indices(pdns) == FlexiChains.chain_indices(chn)
-            @test FlexiChains.sampling_time(pdns) == FlexiChains.sampling_time(chn)
-            @test FlexiChains.last_sampler_state(pdns) ==
-                FlexiChains.last_sampler_state(chn)
+            @test isequal(FlexiChains.sampling_time(pdns), FlexiChains.sampling_time(chn))
+            @test isequal(
+                FlexiChains.last_sampler_state(pdns), FlexiChains.last_sampler_state(chn)
+            )
         end
 
         @testset "rng is respected" begin
