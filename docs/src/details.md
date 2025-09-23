@@ -188,13 +188,13 @@ To use these you will respectively need a function `f` which maps matrices to ro
 ```@docs
 FlexiChains.collapse_iter
 FlexiChains.collapse_chain
-FlexiChains.collapse_iter_chain
+FlexiChains.collapse
 ```
 
 For example, you can pass the functions `x -> mean(x; dims=1)`, `x -> mean(x; dims=2)`, and `mean`.
 
 For ease of use, a number of pre-existing functions are extended to work with FlexiChains in this manner.
-Thus, for example, `mean(chain)` is automatically forwarded to `FlexiChains.collapse_iter_chain(chain, mean)`.
+Thus, for example, `mean(chain)` is automatically forwarded to `FlexiChains.collapse(chain, mean)`.
 For these functions, you can use `mean(chain; dims=:iter)` to collapse over the iteration dimension only, or `mean(chain; dims=:chain)` to collapse over the chain dimension only.
 
 ```@docs

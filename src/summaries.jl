@@ -1,6 +1,6 @@
 using Statistics: Statistics
 
-@public collapse_iter, collapse_chain, collapse_iter_chain
+@public collapse_iter, collapse_chain, collapse
 
 abstract type FlexiChainSummary{TKey,NIter,NChains} end
 
@@ -203,7 +203,7 @@ function collapse_chain(
 end
 
 """
-    collapse_iter_chain(
+    collapse(
         chain::FlexiChain{TKey,NIter,NChains},
         func::Function;
         skip_nonnumeric::Bool=true,
@@ -223,11 +223,11 @@ Other keyword arguments are forwarded to `func`.
 
 ```julia
 using FlexiChains, Statistics
-FlexiChains.collapse_iter_chain(chain, mean)
+FlexiChains.collapse(chain, mean)
 # (Note that the above is also aliased to `mean(chain)`.)
 ```
 """
-function collapse_iter_chain(
+function collapse(
     chain::FlexiChain{TKey,NIter,NChains},
     func::Function;
     skip_nonnumeric::Bool=true,
@@ -261,7 +261,7 @@ macro enable_collapse(skip_nonnumeric, func)
             kwargs...,
         )::FlexiChainSummary{TKey,NIter,NChains} where {TKey,NIter,NChains}
             if dims == :both
-                return collapse_iter_chain(
+                return collapse(
                     chain,
                     $(esc(func));
                     skip_nonnumeric=$(esc(skip_nonnumeric)),

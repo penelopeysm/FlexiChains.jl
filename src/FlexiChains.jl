@@ -42,6 +42,7 @@ export VarName, @varname, VNChain
     @compile_workload begin
         fc = VNChain{10,2}(ds)
         Statistics.mean(fc)
+        Statistics.std(fc)
     end
 end
 

@@ -83,7 +83,7 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                             collapsed[Extra(:section, "c")], func(cs; dims=1); nans=true
                         )
                         @test_throws KeyError collapsed[Extra(:section, "d")]
-                        @test_logs (:warn, r"non-numeric") FlexiChains.collapse_iter_chain(
+                        @test_logs (:warn, r"non-numeric") FlexiChains.collapse(
                             chain, func; warn=true
                         )
                     end
@@ -152,7 +152,7 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                             collapsed[Extra(:section, "c")], func(cs; dims=2); nans=true
                         )
                         @test_throws KeyError collapsed[Extra(:section, "d")]
-                        @test_logs (:warn, r"non-numeric") FlexiChains.collapse_iter_chain(
+                        @test_logs (:warn, r"non-numeric") FlexiChains.collapse(
                             chain, func; warn=true
                         )
                     end
@@ -175,7 +175,7 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
             @test_throws KeyError fcsi[:b]
         end
 
-        @testset "collapse_iter_chain" begin
+        @testset "collapse" begin
             @testset "N_chains=$N_chains" for N_chains in [1, 3]
                 N_iters = 10
                 as = rand(N_iters, N_chains)
@@ -192,10 +192,7 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                 )
                 @testset "$func" for func in ENABLED_SUMMARY_FUNCS
                     @testset "$name" for (name, collapsed) in [
-                        (
-                            "via collapse_iter_chain",
-                            FlexiChains.collapse_iter_chain(chain, func),
-                        ),
+                        ("via collapse", FlexiChains.collapse(chain, func)),
                         ("via user-facing function", func(chain)),
                     ]
                         @test collapsed[:a] isa Number
@@ -206,7 +203,7 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                         @test isapprox(collapsed[:section, "c"], func(cs); nans=true)
                         @test isapprox(collapsed[Extra(:section, "c")], func(cs); nans=true)
                         @test_throws KeyError collapsed[Extra(:section, "d")]
-                        @test_logs (:warn, r"non-numeric") FlexiChains.collapse_iter_chain(
+                        @test_logs (:warn, r"non-numeric") FlexiChains.collapse(
                             chain, func; warn=true
                         )
                     end
