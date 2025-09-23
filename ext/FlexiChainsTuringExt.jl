@@ -30,13 +30,13 @@ function AbstractMCMC.bundle_samples(
     ::AbstractMCMC.AbstractModel,
     ::AbstractMCMC.AbstractSampler,
     last_sampler_state::Any,
-    chain_type::Type{T};
+    chain_type::Type{FlexiChain{VarName}};
     save_state=false,
     stats=missing,
     discard_initial::Int=0,
     thinning::Int=1,
     _kwargs...,
-)::T where {TKey<:VarName,T<:FlexiChain{TKey}}
+)::FlexiChain{VarName}
     NIter = length(transitions)
     dicts = map(FlexiChains.to_varname_dict, transitions)
     # timings
@@ -51,7 +51,7 @@ function AbstractMCMC.bundle_samples(
         # This returns UnitRange not StepRange -- a bit cleaner
         start:(start + NIter - 1)
     end
-    return FlexiChain{TKey,NIter,1}(
+    return FlexiChain{VarName,NIter,1}(
         dicts;
         iter_indices=iter_indices,
         # 1:1 gives nicer DimMatrix output than just [1]
