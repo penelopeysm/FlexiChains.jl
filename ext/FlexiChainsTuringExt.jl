@@ -1,6 +1,7 @@
 module FlexiChainsTuringExt
 
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, ParameterOrExtra, VarName
+using PrecompileTools: @setup_workload, @compile_workload
 using Turing: Turing, AbstractMCMC
 
 ######################
@@ -59,6 +60,16 @@ function AbstractMCMC.bundle_samples(
         sampling_time=[tm],
         last_sampler_state=[st],
     )
+end
+
+using Turing: @model, sample, MH, Normal, MvNormal, I
+using FlexiChains: VNChain
+@setup_workload begin
+    @model f() = x ~ Normal()
+    model, spl = f(), MH()
+    @compile_workload begin
+        sample(model, spl, 100; chain_type=VNChain, progress=false)
+    end
 end
 
 end # module FlexiChainsTuringExt
