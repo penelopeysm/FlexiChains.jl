@@ -40,9 +40,9 @@ function AbstractMCMC.bundle_samples(
     NIter = length(transitions)
     dicts = map(FlexiChains.to_varname_dict, transitions)
     # timings
-    tm = stats === missing ? nothing : stats.stop - stats.start
+    tm = stats === missing ? missing : stats.stop - stats.start
     # last sampler state
-    st = save_state ? last_sampler_state : nothing
+    st = save_state ? last_sampler_state : missing
     # calculate iteration indices
     start = discard_initial + 1
     iter_indices = if thinning != 1
