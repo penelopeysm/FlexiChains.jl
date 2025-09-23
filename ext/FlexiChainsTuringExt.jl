@@ -28,8 +28,8 @@ end
 
 function AbstractMCMC.bundle_samples(
     transitions::AbstractVector,
-    ::AbstractMCMC.AbstractModel,
-    ::AbstractMCMC.AbstractSampler,
+    @nospecialize(m::AbstractMCMC.AbstractModel),
+    @nospecialize(s::AbstractMCMC.AbstractSampler),
     last_sampler_state::Any,
     chain_type::Type{FlexiChain{VarName}};
     save_state=false,
@@ -62,13 +62,19 @@ function AbstractMCMC.bundle_samples(
     )
 end
 
-using Turing: @model, sample, MH, Normal, MvNormal, I
+using Turing: @model, sample, NUTS, Normal, MvNormal, I
+using Turing: AbstractMCMC, DynamicPPL
 using FlexiChains: VNChain
 @setup_workload begin
-    @model f() = x ~ Normal()
-    model, spl = f(), MH()
+    @model function f()
+        return x ~ Normal()
+    end
+    model, spl = f(), NUTS()
+    transitions = sample(model, spl, 100; chain_type=Any, progress=false, verbose=false)
     @compile_workload begin
-        sample(model, spl, 100; chain_type=VNChain, progress=false)
+        AbstractMCMC.bundle_samples(
+            transitions, model, DynamicPPL.Sampler(spl), nothing, VNChain
+        )
     end
 end
 
