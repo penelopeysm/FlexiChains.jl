@@ -2,6 +2,7 @@ module FlexiChains
 
 using AbstractPPL: AbstractPPL, VarName, @varname
 using DocStringExtensions: TYPEDFIELDS
+using PrecompileTools: @setup_workload, @compile_workload
 
 # For use when marking the public API.
 # On 1.11+ it just uses the `public` keyword, otherwise it does nothing.
@@ -31,5 +32,17 @@ include("interface.jl")
 const VNChain = FlexiChain{VarName}
 export VarName, @varname, VNChain
 @public VNChain, var"@varname", VarName
+
+# Attempt to precompile _some_ stuff, especially for VarName. This cuts the TTFX by about
+# 2-3x.
+@setup_workload begin
+    d = Dict{ParameterOrExtra{<:VarName},Any}()
+    d[Parameter(@varname(a))] = 1
+    ds = fill(d, 10, 2)
+    @compile_workload begin
+        fc = VNChain{10,2}(ds)
+        Statistics.mean(fc)
+    end
+end
 
 end # module FlexiChains
