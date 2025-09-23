@@ -19,7 +19,7 @@ See [the DimensionalData documentation on lookups](@extref DimensionalData Looku
 information.
 """
 _make_sampled(r::AbstractRange) =
-    Sampled(r, ForwardOrdered(), Regular(), Points(), NoMetadata())
+    Sampled(r, ForwardOrdered(), Regular(step(r)), Points(), NoMetadata())
 
 """
     Parameter(name)
