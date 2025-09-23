@@ -180,10 +180,10 @@ function subset(
     end
     return FlexiChain{TKey,NIter,NChain}(
         d;
-        iter_indices=iter_indices(chain),
-        chain_indices=chain_indices(chain),
-        sampling_time=sampling_time(chain),
-        last_sampler_state=last_sampler_state(chain),
+        iter_indices=FlexiChains.iter_indices(chain),
+        chain_indices=FlexiChains.chain_indices(chain),
+        sampling_time=FlexiChains.sampling_time(chain),
+        last_sampler_state=FlexiChains.last_sampler_state(chain),
     )
 end
 
@@ -215,14 +215,28 @@ function subset_extras(
     return subset(chain, v)
 end
 
+# Avoid printing the entire `Sampled` object if it's been constructed
+_show_range(s::DD.Dimensions.Lookups.Lookup) = parent(s)
+_show_range(s::AbstractVector) = s
+
 function Base.show(
     io::IO, ::MIME"text/plain", chain::FlexiChain{TKey,niters,nchains}
 ) where {TKey,niters,nchains}
     maybe_s(x) = x == 1 ? "" : "s"
     printstyled(io, "FlexiChain | $niters iteration$(maybe_s(niters)) ("; bold=true)
-    printstyled(io, "$(FlexiChains.iter_indices(chain))"; color=DD.dimcolor(1), bold=true)
+    printstyled(
+        io,
+        "$(_show_range(FlexiChains.iter_indices(chain)))";
+        color=DD.dimcolor(1),
+        bold=true,
+    )
     printstyled(io, ") | $nchains chain$(maybe_s(nchains)) ("; bold=true)
-    printstyled(io, "$(FlexiChains.chain_indices(chain))"; color=DD.dimcolor(2), bold=true)
+    printstyled(
+        io,
+        "$(_show_range(FlexiChains.chain_indices(chain)))";
+        color=DD.dimcolor(2),
+        bold=true,
+    )
     printstyled(io, ")\n"; bold=true)
     # Print parameter names
     parameter_names = parameters(chain)

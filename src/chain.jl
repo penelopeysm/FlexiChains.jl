@@ -1,8 +1,25 @@
 using AbstractMCMC: AbstractChains
+using DimensionalData.Dimensions.Lookups:
+    Sampled, ForwardOrdered, Regular, Points, NoMetadata
 
 @public FlexiChain, Parameter, Extra, ParameterOrExtra
 @public iter_indices, chain_indices, renumber_iters, renumber_chains
 @public sampling_time, last_sampler_state
+
+"""
+    _make_dim(AbstractRange)::DimensionalData.Dimensions.Lookups.Sampled
+
+Generate a `DimensionalData.Dimensions.Lookups.Sampled` object from a range. The range is
+assumed to be forward-ordered (i.e. step is positive), regular (which follows from it being
+a range), and consisting of points (rather than intervals). Manually specifying these
+properties allows the construction to be type-stable, rather than relying on
+DimensionalData's heuristics to infer them based on the values.
+
+See [the DimensionalData documentation on lookups](@extref DimensionalData Lookups) for more
+information.
+"""
+_make_sampled(r::AbstractRange) =
+    Sampled(r, ForwardOrdered(), Regular(), Points(), NoMetadata())
 
 """
     Parameter(name)
@@ -193,8 +210,8 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
     """
     function FlexiChain{TKey,NIter,NChains}(
         array_of_dicts::AbstractArray{<:AbstractDict};
-        iter_indices::AbstractVector{Int}=1:NIter,
-        chain_indices::AbstractVector{Int}=1:NChains,
+        iter_indices::AbstractVector{Int}=_make_sampled(1:NIter),
+        chain_indices::AbstractVector{Int}=_make_sampled(1:NChains),
         sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, NChains),
         last_sampler_state::AbstractVector=fill(missing, NChains),
     ) where {TKey,NIter,NChains}
@@ -273,8 +290,8 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
     """
     function FlexiChain{TKey,NIter,NChains}(
         dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any}};
-        iter_indices::AbstractVector{Int}=1:NIter,
-        chain_indices::AbstractVector{Int}=1:NChains,
+        iter_indices::AbstractVector{Int}=_make_sampled(1:NIter),
+        chain_indices::AbstractVector{Int}=_make_sampled(1:NChains),
         sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, NChains),
         last_sampler_state::AbstractVector=fill(missing, NChains),
     ) where {TKey,NIter,NChains}
@@ -340,7 +357,8 @@ chain_indices(chain::FlexiChain)::AbstractVector{<:Integer} = chain._metadata.ch
 Return a copy of `chain` with the iteration indices replaced by `iter_indices`.
 """
 function renumber_iters(
-    chain::FlexiChain{TKey,NIter,NChain}, iter_indices::AbstractVector{<:Integer}=1:NIter
+    chain::FlexiChain{TKey,NIter,NChain},
+    iter_indices::AbstractVector{<:Integer}=_make_sampled(1:NIter),
 )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
     return FlexiChain{TKey,NIter,NChain}(
         chain._data;
@@ -361,7 +379,7 @@ Return a copy of `chain` with the chain indices replaced by `chain_indices`.
 """
 function renumber_chains(
     chain::FlexiChain{TKey,NIter,NChains},
-    chain_indices::AbstractVector{<:Integer}=1:NChains,
+    chain_indices::AbstractVector{<:Integer}=_make_sampled(1:NChains),
 )::FlexiChain{TKey,NIter,NChains} where {TKey,NIter,NChains}
     return FlexiChain{TKey,NIter,NChains}(
         chain._data;

@@ -54,9 +54,9 @@ function AbstractMCMC.bundle_samples(
     end
     return FlexiChain{VarName,NIter,1}(
         dicts;
-        iter_indices=iter_indices,
+        iter_indices=FlexiChains._make_sampled(iter_indices),
         # 1:1 gives nicer DimMatrix output than just [1]
-        chain_indices=1:1,
+        chain_indices=FlexiChains._make_sampled(1:1),
         sampling_time=[tm],
         last_sampler_state=[st],
     )
