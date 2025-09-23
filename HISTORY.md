@@ -19,6 +19,7 @@ When the API has somewhat stabilised, the version number will be incremented to 
     Functions such as `DynamicPPL.returned` now also return a `DimMatrix`.
 
   - `FlexiChains.collapse_iter_chain` has been renamed to `FlexiChains.collapse`.
+  - Various fixes have been applied to the behaviour of `hcat`, `vcat`, and `merge`. In particular `merge` now takes all metadata from the second argument (which mimics the behaviour of `merge` on base Julia types).
 
 ## 0.0.1
 
