@@ -97,8 +97,12 @@ Helper function that, given a list of keys and a target `Symbol`, attempts to fi
 a unique key that corresponds to the `Symbol`.
 """
 function _extract_potential_symbol_key(
-    ::Type{TKey}, all_keys::Base.KeySet{<:ParameterOrExtra{<:TKey}}, target_sym::Symbol
+    ::Type{TKey}, all_keys::Base.KeySet, target_sym::Symbol
 )::ParameterOrExtra{<:TKey} where {TKey}
+    # TODO: `all_keys` should _really_ have the type
+    #     all_keys::Base.KeySet{<:ParameterOrExtra{<:TKey}}
+    # But again this fails on Julia 1.10. It's probably related to
+    # https://github.com/JuliaLang/julia/issues/59626
     potential_keys = ParameterOrExtra{<:TKey}[]
     for k in all_keys
         sym = if k isa Parameter{<:TKey}
