@@ -1,6 +1,7 @@
 module FCChainTests
 
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra
+using DimensionalData: val
 using Test
 
 @testset verbose = true "chain.jl" begin
@@ -30,8 +31,8 @@ using Test
                         last_sampler_state=["foo"],
                     )
                     @test size(chain2) == (N_iters, 1)
-                    @test FlexiChains.iter_indices(chain2) == 3:3:(3 * N_iters)
-                    @test FlexiChains.chain_indices(chain2) == [2]
+                    @test val(FlexiChains.iter_indices(chain2)) == 3:3:(3 * N_iters)
+                    @test val(FlexiChains.chain_indices(chain2)) == [2]
                     @test FlexiChains.sampling_time(chain2) == [1]
                     @test FlexiChains.last_sampler_state(chain2) == ["foo"]
                 end
@@ -79,8 +80,8 @@ using Test
                         last_sampler_state=["foo", "bar"],
                     )
                     @test size(chain2) == (N_iters, N_chains)
-                    @test FlexiChains.iter_indices(chain2) == 3:3:(3 * N_iters)
-                    @test FlexiChains.chain_indices(chain2) == [2, 1]
+                    @test val(FlexiChains.iter_indices(chain2)) == 3:3:(3 * N_iters)
+                    @test val(FlexiChains.chain_indices(chain2)) == [2, 1]
                     @test FlexiChains.sampling_time(chain2) == [1, 2]
                     @test FlexiChains.last_sampler_state(chain2) == ["foo", "bar"]
                 end
@@ -122,8 +123,8 @@ using Test
                         last_sampler_state=["foo"],
                     )
                     @test size(chain2) == (N_iters, 1)
-                    @test FlexiChains.iter_indices(chain2) == 3:3:(3 * N_iters)
-                    @test FlexiChains.chain_indices(chain2) == [2]
+                    @test val(FlexiChains.iter_indices(chain2)) == 3:3:(3 * N_iters)
+                    @test val(FlexiChains.chain_indices(chain2)) == [2]
                     @test FlexiChains.sampling_time(chain2) == [1]
                     @test FlexiChains.last_sampler_state(chain2) == ["foo"]
                 end
@@ -167,8 +168,8 @@ using Test
                         last_sampler_state=["foo", "bar"],
                     )
                     @test size(chain2) == (N_iters, N_chains)
-                    @test FlexiChains.iter_indices(chain2) == 3:3:(3 * N_iters)
-                    @test FlexiChains.chain_indices(chain2) == [2, 1]
+                    @test val(FlexiChains.iter_indices(chain2)) == 3:3:(3 * N_iters)
+                    @test val(FlexiChains.chain_indices(chain2)) == [2, 1]
                     @test FlexiChains.sampling_time(chain2) == [1, 2]
                     @test FlexiChains.last_sampler_state(chain2) == ["foo", "bar"]
                 end
@@ -198,7 +199,7 @@ using Test
         @testset "renumber_iters" begin
             new_iters = 3:3:(3 * N_iters)
             chain2 = @inferred FlexiChains.renumber_iters(chain, new_iters)
-            @test FlexiChains.iter_indices(chain2) == new_iters
+            @test val(FlexiChains.iter_indices(chain2)) == new_iters
             @test_throws DimensionMismatch FlexiChains.renumber_iters(
                 chain, 1:(2 * N_iters)
             )
@@ -206,7 +207,7 @@ using Test
         @testset "renumber_chains" begin
             new_chains = [2, 1]
             chain2 = @inferred FlexiChains.renumber_chains(chain, new_chains)
-            @test FlexiChains.chain_indices(chain2) == new_chains
+            @test val(FlexiChains.chain_indices(chain2)) == new_chains
             @test_throws DimensionMismatch FlexiChains.renumber_chains(
                 chain, 1:(2 * N_chains)
             )

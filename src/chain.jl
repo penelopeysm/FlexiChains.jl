@@ -1,8 +1,38 @@
 using AbstractMCMC: AbstractChains
+using DimensionalData.Dimensions.Lookups: Lookups as DDL
 
 @public FlexiChain, Parameter, Extra, ParameterOrExtra
 @public iter_indices, chain_indices, renumber_iters, renumber_chains
 @public sampling_time, last_sampler_state
+
+"""
+    _make_lookup(AbstractRange)::DimensionalData.Lookup
+
+Generate a `DimensionalData.Lookup` object from a range. The range is assumed to be
+forward-ordered (i.e. step is positive), regular (which follows from it being a range), and
+consisting of points (rather than intervals). Manually specifying these properties allows
+the construction to be type-stable, rather than relying on DimensionalData's heuristics to
+infer them based on the values.
+
+See [the DimensionalData documentation on lookups](@extref DimensionalData Lookups) for more
+information.
+"""
+function _make_lookup(r::AbstractRange)
+    step(r) < 0 && throw(ArgumentError("cannot use range with negative step"))
+    return DDL.Sampled(
+        r, DDL.ForwardOrdered(), DDL.Regular(step(r)), DDL.Points(), DDL.NoMetadata()
+    )
+end
+_make_lookup(l::DDL.Lookup) = l
+function _make_lookup(v::AbstractVector{<:Integer})
+    return DDL.Sampled(
+        v,
+        DDL.Unordered(),
+        DDL.Irregular(minimum(v), maximum(v)),
+        DDL.Points(),
+        DDL.NoMetadata(),
+    )
+end
 
 """
     Parameter(name)
@@ -55,8 +85,8 @@ A struct to hold common kinds of metadata typically associated with a chain.
 struct FlexiChainMetadata{
     NIter,
     NChain,
-    TIIdx<:AbstractVector{<:Integer},
-    TCIdx<:AbstractVector{<:Integer},
+    TIIdx<:DDL.Lookup,
+    TCIdx<:DDL.Lookup,
     Ttime<:AbstractVector{<:Union{Real,Missing}},
     Tstate<:AbstractVector,
 }
@@ -91,8 +121,12 @@ struct FlexiChainMetadata{
         sampling_time::AbstractVector{<:Union{Real,Missing}},
         last_sampler_state::AbstractVector,
     ) where {NIter,NChains}
-        iter_indices_checked = _check_length(NIter, iter_indices, "iter_indices")
-        chain_indices_checked = _check_length(NChains, chain_indices, "chain_indices")
+        iter_indices_checked = _make_lookup(
+            _check_length(NIter, iter_indices, "iter_indices")
+        )
+        chain_indices_checked = _make_lookup(
+            _check_length(NChains, chain_indices, "chain_indices")
+        )
         sampling_time_checked = _check_length(NChains, sampling_time, "sampling_time")
         last_sampler_state_checked = _check_length(
             NChains, last_sampler_state, "last_sampler_state"
@@ -313,7 +347,7 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
 end
 
 """
-    iter_indices(chain::FlexiChain)::AbstractVector{<:Integer}
+    iter_indices(chain::FlexiChain)::DimensionalData.Lookup
 
 The indices of each MCMC iteration in the chain. This tries to reflect the actual iteration
 numbers from the sampler: for example, if you discard the first 100 iterations and sampled
@@ -321,15 +355,15 @@ numbers from the sampler: for example, if you discard the first 100 iterations a
 
 The accuracy of this field is reliant on the sampler providing this information, though.
 """
-iter_indices(chain::FlexiChain)::AbstractVector{<:Integer} = chain._metadata.iter_indices
+iter_indices(chain::FlexiChain)::DDL.Lookup = chain._metadata.iter_indices
 
 """
-    chain_indices(chain::FlexiChain)::AbstractVector{<:Integer}
+    chain_indices(chain::FlexiChain)::DimensionalData.Lookup
 
 The indices of each MCMC chain in the chain. This will pretty much always be `1:NChains`
 (unless the chain has been subsetted).
 """
-chain_indices(chain::FlexiChain)::AbstractVector{<:Integer} = chain._metadata.chain_indices
+chain_indices(chain::FlexiChain)::DDL.Lookup = chain._metadata.chain_indices
 
 """
     renumber_iters(

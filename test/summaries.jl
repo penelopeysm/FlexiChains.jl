@@ -1,7 +1,6 @@
 module FCSummariesTests
 
 using DimensionalData: DimensionalData as DD
-using DimensionalData.Dimensions: AnonDim
 using FlexiChains:
     FlexiChains,
     FlexiChain,
@@ -29,11 +28,11 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                 Dict{Parameter{<:VarName},FlexiChains.SizedMatrix{1,N_chains,Float64}}(
                     Parameter(@varname(a)) => FlexiChains.SizedMatrix{1,N_chains}(data)
                 ),
-                1:N_chains,
+                FlexiChains._make_lookup(1:N_chains),
             )
-            @test fcsi[Parameter(@varname(a))] == data
-            @test fcsi[@varname(a)] == data
-            @test fcsi[:a] == data
+            @test fcsi[Parameter(@varname(a))] == vec(data)
+            @test fcsi[@varname(a)] == vec(data)
+            @test fcsi[:a] == vec(data)
             @test_throws KeyError fcsi[:b]
         end
 
@@ -64,23 +63,24 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                         ),
                         ("via user-facing function", func(chain; dims=:iter)),
                     ]
-                        @test collapsed[:a] isa DD.DimMatrix
-                        @test DD.dims(collapsed[:a])[1] isa AnonDim
+                        @test collapsed[:a] isa DD.DimVector
                         @test parent(parent(DD.dims(collapsed[:a], :chain))) ==
                             FlexiChains.chain_indices(chain)
-                        @test isapprox(collapsed[:a], func(as; dims=1); nans=true)
+                        @test isapprox(collapsed[:a], vec(func(as; dims=1)); nans=true)
                         @test isapprox(
-                            collapsed[Parameter(:a)], func(as; dims=1); nans=true
+                            collapsed[Parameter(:a)], vec(func(as; dims=1)); nans=true
                         )
-                        @test isapprox(collapsed[:b], func(bs; dims=1); nans=true)
+                        @test isapprox(collapsed[:b], vec(func(bs; dims=1)); nans=true)
                         @test isapprox(
-                            collapsed[Parameter(:b)], func(bs; dims=1); nans=true
-                        )
-                        @test isapprox(
-                            collapsed[:section, "c"], func(cs; dims=1); nans=true
+                            collapsed[Parameter(:b)], vec(func(bs; dims=1)); nans=true
                         )
                         @test isapprox(
-                            collapsed[Extra(:section, "c")], func(cs; dims=1); nans=true
+                            collapsed[:section, "c"], vec(func(cs; dims=1)); nans=true
+                        )
+                        @test isapprox(
+                            collapsed[Extra(:section, "c")],
+                            vec(func(cs; dims=1));
+                            nans=true,
                         )
                         @test_throws KeyError collapsed[Extra(:section, "d")]
                         @test_logs (:warn, r"non-numeric") FlexiChains.collapse(
@@ -93,18 +93,20 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
     end
 
     @testset "FlexiChainSummaryC" begin
-        N_iters = 100
-        data = rand(N_iters, 1)
-        fcsi = FlexiChainSummaryC{VarName,N_iters,3}(
-            Dict{Parameter{<:VarName},FlexiChains.SizedMatrix{N_iters,1,Float64}}(
-                Parameter(@varname(a)) => FlexiChains.SizedMatrix{N_iters,1}(data)
-            ),
-            1:N_iters,
-        )
-        @test fcsi[Parameter(@varname(a))] == data
-        @test fcsi[@varname(a)] == data
-        @test fcsi[:a] == data
-        @test_throws KeyError fcsi[:b]
+        @testset "constructor and getindex" begin
+            N_iters = 100
+            data = rand(N_iters, 1)
+            fcsi = FlexiChainSummaryC{VarName,N_iters,3}(
+                Dict{Parameter{<:VarName},FlexiChains.SizedMatrix{N_iters,1,Float64}}(
+                    Parameter(@varname(a)) => FlexiChains.SizedMatrix{N_iters,1}(data)
+                ),
+                FlexiChains._make_lookup(1:N_iters),
+            )
+            @test fcsi[Parameter(@varname(a))] == vec(data)
+            @test fcsi[@varname(a)] == vec(data)
+            @test fcsi[:a] == vec(data)
+            @test_throws KeyError fcsi[:b]
+        end
 
         @testset "collapse_chain" begin
             @testset "N_chains=$N_chains" for N_chains in [1, 3]
@@ -133,23 +135,24 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
                         ),
                         ("via user-facing function", func(chain; dims=:chain)),
                     ]
-                        @test collapsed[:a] isa DD.DimMatrix
+                        @test collapsed[:a] isa DD.DimVector
                         @test parent(parent(DD.dims(collapsed[:a], :iter))) ==
                             FlexiChains.iter_indices(chain)
-                        @test DD.dims(collapsed[:a])[2] isa AnonDim
-                        @test isapprox(collapsed[:a], func(as; dims=2); nans=true)
+                        @test isapprox(collapsed[:a], vec(func(as; dims=2)); nans=true)
                         @test isapprox(
-                            collapsed[Parameter(:a)], func(as; dims=2); nans=true
+                            collapsed[Parameter(:a)], vec(func(as; dims=2)); nans=true
                         )
-                        @test isapprox(collapsed[:b], func(bs; dims=2); nans=true)
+                        @test isapprox(collapsed[:b], vec(func(bs; dims=2)); nans=true)
                         @test isapprox(
-                            collapsed[Parameter(:b)], func(bs; dims=2); nans=true
-                        )
-                        @test isapprox(
-                            collapsed[:section, "c"], func(cs; dims=2); nans=true
+                            collapsed[Parameter(:b)], vec(func(bs; dims=2)); nans=true
                         )
                         @test isapprox(
-                            collapsed[Extra(:section, "c")], func(cs; dims=2); nans=true
+                            collapsed[:section, "c"], vec(func(cs; dims=2)); nans=true
+                        )
+                        @test isapprox(
+                            collapsed[Extra(:section, "c")],
+                            vec(func(cs; dims=2));
+                            nans=true,
                         )
                         @test_throws KeyError collapsed[Extra(:section, "d")]
                         @test_logs (:warn, r"non-numeric") FlexiChains.collapse(
@@ -221,12 +224,12 @@ ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var]
         @testset "iter" begin
             expected = std(as; dims=1, corrected=false)
             result = std(chain; dims=:iter, corrected=false)[:a]
-            @test isapprox(result, expected)
+            @test isapprox(result, vec(expected))
         end
         @testset "chain" begin
             expected = std(as; dims=2, corrected=false)
             result = std(chain; dims=:chain, corrected=false)[:a]
-            @test isapprox(result, expected)
+            @test isapprox(result, vec(expected))
         end
         @testset "iter + chain" begin
             expected = std(chain[:a]; corrected=false)

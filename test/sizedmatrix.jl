@@ -9,7 +9,8 @@ using Test
 
     @testset "SizedMatrix" begin
         x = rand(2, 3)
-        iter_indices, chain_indices = 1:2:3, 1:3
+        iter_indices = FlexiChains._make_lookup(1:2:3)
+        chain_indices = FlexiChains._make_lookup(1:3)
         dimx = DimMatrix(x, (Dim{:iter}(iter_indices), Dim{:chain}(chain_indices)))
         sm = FlexiChains.SizedMatrix{2,3}(x)
         @test collect(sm) == x
