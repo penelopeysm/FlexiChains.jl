@@ -13,6 +13,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [weakdeps]
 DynamicPPL = "366bfd00-2699-11ea-058f-f148b4cae6d8"
+InferenceObjects = "b5cf5a8d-e756-4ee3-b014-01d49d192c00"
 MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -20,6 +21,7 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [extensions]
 FlexiChainsDynamicPPLExt = ["DynamicPPL", "Random", "DimensionalData"]
+FlexiChainsInferenceObjectsExt = ["InferenceObjects", "DimensionalData", "OrderedCollections"]
 FlexiChainsMCMCChainsExt = ["MCMCChains", "OrderedCollections"]
 FlexiChainsTuringExt = ["Turing", "PrecompileTools"]
 
@@ -29,6 +31,7 @@ AbstractPPL = "0.13.1"
 DimensionalData = "0.29.24"
 DocStringExtensions = "0.9"
 DynamicPPL = "0.37, 0.38"
+InferenceObjects = "0.4"
 OrderedCollections = "1"
 PrecompileTools = "1.2.1"
 Random = "1"
