@@ -1,6 +1,5 @@
 using DimensionalData: DimensionalData as DD
 using DimensionalData.Dimensions.Lookups: Sampled
-using DimensionalData.Dimensions: AnonDim
 const ITER_DIM_NAME = :iter
 const CHAIN_DIM_NAME = :chain
 
@@ -70,12 +69,12 @@ end
 function data_anon_iter(
     s::SizedMatrix{1,NChains,T}; chain_indices::DD.Lookup=_make_lookup(1:NChains)
 ) where {NChains,T}
-    return DD.DimMatrix(s._data, (AnonDim(), DD.Dim{CHAIN_DIM_NAME}(chain_indices)))
+    return DD.DimVector(vec(s._data), (DD.Dim{CHAIN_DIM_NAME}(chain_indices),))
 end
 function data_anon_chain(
     s::SizedMatrix{NIter,1,T}; iter_indices::DD.Lookup=_make_lookup(1:NIter)
 ) where {NIter,T}
-    return DD.DimMatrix(s._data, (DD.Dim{ITER_DIM_NAME}(iter_indices), AnonDim()))
+    return DD.DimVector(vec(s._data), (DD.Dim{ITER_DIM_NAME}(iter_indices),))
 end
 
 function Base.collect(

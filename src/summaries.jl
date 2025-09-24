@@ -5,14 +5,15 @@ using Statistics: Statistics
 
 abstract type FlexiChainSummary{TKey,NIter,NChains} end
 
+Base.keys(fcs::FlexiChainSummary) = keys(fcs._data)
+
 """
     FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:DimensionalData.Lookup}
 
 A summary where the iteration dimension has been collapsed. The type parameter `NIter`
 refers to the original number of iterations (which have been collapsed).
 
-If NChains > 1, indexing into this returns a (1 × NChains) matrix for each key; otherwise
-it returns a scalar.
+Indexing into this returns a `DimensionalData.DimVector` with length `NChains`.
 """
 struct FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:DD.Lookup} <:
        FlexiChainSummary{TKey,NIter,NChains}
@@ -53,8 +54,7 @@ end
 A summary where the chain dimension has been collapsed. The type parameter `NChain` refers to
 the original number of chains (which have been collapsed).
 
-If NChains > 1, indexing into this returns a (NIter × 1) matrix for each key; otherwise it
-returns a vector.
+Indexing into this returns a `DimensionalData.DimVector` with length `NIter`.
 """
 struct FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:DD.Lookup} <:
        FlexiChainSummary{TKey,NIter,NChains}
