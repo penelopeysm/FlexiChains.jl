@@ -331,7 +331,11 @@ context of `lookup`.
 
 This is very similar to `DimensionalData.selectindices` but with a special case for when the
 length of the returned indices is 1: in that case we have to return a singleton vector
-rather than just that index, to prevent later issues in the `getindex` call.
+rather than just that index.
+
+TODO: Think carefully about whether we should really do this, or whether we should actually
+allow chains to store `DimVector`s. (The latter would require a _lot_ of work to fix all the
+`getindex` methods...)
 """
 _selectindices(::Lookup, ::Colon) = Colon()
 _selectindices(::Lookup, s::AbstractRange) = s
@@ -347,9 +351,65 @@ function _selectindices(lookup::Lookup, s)
     end
 end
 
+##############################
+
+"""
+    _get_multi_keys(
+        ::Type{TKey},
+        all_keys::Base.KeySet{ParameterOrExtra{TKey}},
+        keyvec::Union{Colon,AbstractVector}
+    )::Vector{ParameterOrExtra{TKey}} where {TKey}
+
+Given a list of all keys and a user-specified `keyvec` (which may be `Colon` or an
+`AbstractVector`), return a `Vector{ParameterOrExtra{TKey}}` corresponding to the keys
+that the user wants to select.
+"""
+function _get_multi_keys(
+    ::Type{TKey}, all_keys::Base.KeySet, ::Colon
+)::Vector{ParameterOrExtra{TKey}} where {TKey}
+    # TODO: `all_keys` has too loose a type. See above. It's a Julia 1.10 issue.
+    return collect(all_keys)
+end
+function _get_multi_keys(
+    ::Type{TKey}, all_keys::Base.KeySet, keyvec::AbstractVector
+)::Vector{ParameterOrExtra{TKey}} where {TKey}
+    # TODO: `all_keys` has too loose a type. See above. It's a Julia 1.10 issue.
+    ks = ParameterOrExtra{TKey}[]
+    for k in keyvec
+        if k isa Symbol
+            push!(ks, _extract_potential_symbol_key(TKey, all_keys, k))
+        elseif k isa ParameterOrExtra{<:TKey}
+            push!(ks, k)
+        elseif k isa TKey
+            push!(ks, Parameter(k))
+        else
+            error("go straight to jail")
+        end
+    end
+    return ks
+end
+
+function _get_iter_indices_and_lookup(
+    fchain::Union{FlexiChain{TKey},FlexiChainSummaryC{TKey}}, iter
+)::Tuple{Union{Colon,AbstractVector{Int}},DD.Lookup} where {TKey}
+    old_iter_lookup = FlexiChains.iter_indices(fchain)
+    new_iter_indices = _selectindices(old_iter_lookup, iter)
+    new_iter_lookup = old_iter_lookup[new_iter_indices]
+    return new_iter_indices, new_iter_lookup
+end
+function _get_chain_indices_and_lookup(
+    fchain::Union{FlexiChain{TKey},FlexiChainSummaryI{TKey}}, chain
+)::Tuple{Union{Colon,AbstractVector{Int}},DD.Lookup} where {TKey}
+    old_chain_lookup = FlexiChains.chain_indices(fchain)
+    new_chain_indices = _selectindices(old_chain_lookup, chain)
+    new_chain_lookup = old_chain_lookup[new_chain_indices]
+    return new_chain_indices, new_chain_lookup
+end
+
 """
     Base.getindex(
-        fchain::FlexiChain{TKey};
+        fchain::FlexiChain{TKey},
+        keys=Colon();
         iter=Colon(),
         chain=Colon()
     )::FlexiChain{TKey} where {TKey}
@@ -404,33 +464,76 @@ The same behaviour applies to the `chain` dimension
 
 For full details on the indexing syntax please refer to [the DimensionalData.jl documentation](@extref DimensionalData Dimensional-Indexing).
 """
-function Base.getindex(fchain::FlexiChain{TKey}; iter=Colon(), chain=Colon()) where {TKey}
-    old_iter_lookup = FlexiChains.iter_indices(fchain)
-    old_chain_lookup = FlexiChains.chain_indices(fchain)
+function Base.getindex(
+    fchain::FlexiChain{TKey},
+    keyvec::Union{Colon,AbstractVector}=Colon();
+    iter=Colon(),
+    chain=Colon(),
+) where {TKey}
     # Figure out which indices we are using -- these refer to the actual 1-based indices
     # that we use to index into the original Matrix
-    new_iter_indices = _selectindices(old_iter_lookup, iter)
-    new_chain_indices = _selectindices(old_chain_lookup, chain)
-    new_iter_lookup = old_iter_lookup[new_iter_indices]
-    new_chain_lookup = old_chain_lookup[new_chain_indices]
-
-    niter_new = length(new_iter_lookup)
-    nchain_new = length(new_chain_lookup)
-
+    new_iter_indices, new_iter_lookup = _get_iter_indices_and_lookup(fchain, iter)
+    new_chain_indices, new_chain_lookup = _get_chain_indices_and_lookup(fchain, chain)
+    # Figure out which keys to include in the returned chain
+    keys_to_include = _get_multi_keys(TKey, keys(fchain), keyvec)
     # Construct new data
     new_data = Dict{ParameterOrExtra{<:TKey},Matrix}()
-    for (k, v) in fchain._data
+    for k in keys_to_include
         # Note that fchain._data[k] is always a plain old Matrix, so we can assume that it
         # is using ordinary 1-based indexing.
-        new_data[k] = v[new_iter_indices, new_chain_indices]
+        new_data[k] = fchain._data[k][new_iter_indices, new_chain_indices]
     end
-
     # Construct new chain
-    return FlexiChain{TKey,niter_new,nchain_new}(
+    return FlexiChain{TKey,length(new_iter_lookup),length(new_chain_lookup)}(
         new_data;
         iter_indices=new_iter_lookup,
         chain_indices=new_chain_lookup,
         sampling_time=FlexiChains.sampling_time(fchain),
         last_sampler_state=FlexiChains.last_sampler_state(fchain),
     )
+end
+
+# TODO: This is REALLY ugly. Do we really need these methods?
+function Base.getindex(
+    summary::FlexiChainSummaryI{TKey,NIter,NChains},
+    keyvec::Union{Colon,AbstractVector}=Colon();
+    chain=Colon(),
+) where {TKey,NIter,NChains}
+    new_chain_indices, new_chain_lookup = _get_chain_indices_and_lookup(summary, chain)
+    new_NChains = length(new_chain_lookup)
+    keys_to_include = _get_multi_keys(TKey, keys(summary), keyvec)
+    new_data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,new_NChains}}()
+    for k in keys_to_include
+        new_data[k] = SizedMatrix{1,new_NChains}(
+            reshape(summary._data[k][new_chain_indices], 1, :)
+        )
+    end
+    return FlexiChainSummaryI{TKey,NIter,new_NChains}(new_data, new_chain_lookup)
+end
+function Base.getindex(
+    summary::FlexiChainSummaryC{TKey,NIter,NChains},
+    keyvec::Union{Colon,AbstractVector}=Colon();
+    iter=Colon(),
+) where {TKey,NIter,NChains}
+    new_iter_indices, new_iter_lookup = _get_iter_indices_and_lookup(summary, iter)
+    new_NIter = length(new_iter_lookup)
+    keys_to_include = _get_multi_keys(TKey, keys(summary), keyvec)
+    new_data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{new_NIter,1}}()
+    for k in keys_to_include
+        new_data[k] = SizedMatrix{new_NIter,1}(
+            reshape(summary._data[k][new_iter_indices], :, 1)
+        )
+    end
+    return FlexiChainSummaryC{TKey,new_NIter,NChains}(new_data, new_iter_lookup)
+end
+function Base.getindex(
+    summary::FlexiChainSummaryIC{TKey,NIter,NChains},
+    keyvec::Union{Colon,AbstractVector}=Colon(),
+) where {TKey,NIter,NChains}
+    keys_to_include = _get_multi_keys(TKey, keys(summary), keyvec)
+    new_data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,1}}()
+    for k in keys_to_include
+        new_data[k] = SizedMatrix{1,1}(reshape(summary._data[k], 1, 1))
+    end
+    return FlexiChainSummaryIC{TKey,NIter,NChains}(new_data)
 end

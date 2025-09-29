@@ -216,7 +216,7 @@ function subset_extras(
 end
 
 # Avoid printing the entire `Sampled` object if it's been constructed
-_show_range(s::DD.Dimensions.Lookups.Lookup) = string(parent(s))
+_show_range(s::DD.Dimensions.Lookups.Lookup) = _show_range(parent(s))
 _show_range(s::AbstractRange) = string(s)
 function _show_range(s::AbstractVector)
     if length(s) > 5

@@ -15,6 +15,8 @@ using Test
         @test FlexiChains._show_range(3:3:30) == "3:3:30"
         @test FlexiChains._show_range(FlexiChains._make_lookup(1:10)) == "1:10"
         @test FlexiChains._show_range(FlexiChains._make_lookup(3:3:30)) == "3:3:30"
+        @test FlexiChains._show_range(FlexiChains._make_lookup(1:10)[DD.Not(4)]) ==
+            "[1 … 10]"
         @test FlexiChains._show_range([1, 2, 3, 5, 7, 11]) == "[1 … 11]"
         @test FlexiChains._show_range([2, 3, 5, 7, 11]) == "[2, 3, 5, 7, 11]"
     end
@@ -78,60 +80,154 @@ using Test
             N_iters = 10
             dicts = fill(Dict(Parameter(:a) => 1), N_iters)
             # Inject some chaos with non-default iter_indices and chain_indices
+            iter_range = 3:3:(N_iters * 3)
             chain = FlexiChain{Symbol,N_iters,1}(
-                dicts; iter_indices=3:3:(N_iters * 3), chain_indices=[4]
+                dicts; iter_indices=iter_range, chain_indices=[4]
             )
 
-            returned_as = chain[Parameter(:a)]
-            @test returned_as isa DD.DimMatrix
-            @test size(returned_as) == (N_iters, 1)
-            @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter},DD.Dim{:chain}}
-            @test parent(DD.val(DD.dims(returned_as), :iter)) == 3:3:(N_iters * 3)
-            @test parent(DD.val(DD.dims(returned_as), :chain)) == [4]
+            @testset "without iter/chain indexing" begin
+                returned_as = chain[Parameter(:a)]
+                @test returned_as isa DD.DimMatrix
+                @test size(returned_as) == (N_iters, 1)
+                @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter},DD.Dim{:chain}}
+                @test parent(DD.val(DD.dims(returned_as), :iter)) == iter_range
+                @test parent(DD.val(DD.dims(returned_as), :chain)) == [4]
+            end
+
+            @testset "with iter/chain indexing" begin
+                returned_as = chain[Parameter(:a), iter=4:5, chain=DD.At([4])]
+                @test returned_as isa DD.DimMatrix
+                @test size(returned_as) == (2, 1)
+                @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter},DD.Dim{:chain}}
+                @test parent(DD.val(DD.dims(returned_as), :iter)) == iter_range[4:5]
+                @test parent(DD.val(DD.dims(returned_as), :chain)) == [4]
+            end
+
+            @testset "indexing into single chain" begin
+                returned_as = chain[Parameter(:a), chain=DD.At(4)]
+                @test returned_as isa DD.DimVector
+                @test length(returned_as) == N_iters
+                @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter}}
+                @test parent(DD.val(DD.dims(returned_as), :iter)) == iter_range
+            end
+
+            @testset "indexing into single iter + single chain" begin
+                returned_as = chain[Parameter(:a), iter=DD.At(6), chain=1]
+                @test returned_as == 1
+            end
         end
 
-        @testset "unambiguous getindex" begin
+        @testset "unambiguous: TKey and ParameterOrExtra{TKey}" begin
+            struct Shay
+                T::String
+            end
+
             N_iters = 10
             dicts = fill(
                 Dict(
-                    Parameter(:a) => 1, Parameter(:b) => 2, Extra(:section, "hello") => 3.0
+                    Parameter(Shay("a")) => 1,
+                    Parameter(Shay("b")) => 2,
+                    Extra(:section, "hello") => 3.0,
                 ),
                 N_iters,
             )
-            chain = FlexiChain{Symbol,N_iters,1}(dicts)
+            chain = FlexiChain{Shay,N_iters,1}(dicts)
 
             # Note that DimArrays compare equal to regular matrices with `==` if they have
             # the same contents, so these tests don't actually check that the types returned
-            # are correct.
+            # are correct. We assume that that's handled in the DimArray testset above.
+            @testset "TKey" begin
+                @test chain[Shay("a")] == fill(1, N_iters, 1)
+                @test chain[Shay("a")] == fill(1, N_iters, 1)
+                @test chain[Shay("b")] == fill(2, N_iters, 1)
+                @testset "with iter subsetting" begin
+                    @test chain[Shay("a"), iter=4:6] == fill(1, 3, 1)
+                    @test chain[Shay("a"), iter=4:6, chain=DD.At(1)] == fill(1, 3)
+                end
+            end
 
-            # getindex directly with key
-            @test chain[Parameter(:a)] == fill(1, N_iters, 1)
-            @test chain[Parameter(:a)] == fill(1, N_iters, 1)
-            @test chain[Parameter(:b)] == fill(2, N_iters, 1)
-            @test chain[Extra(:section, "hello")] == fill(3.0, N_iters, 1)
-            @test_throws KeyError chain[Parameter(:c)]
-            @test_throws KeyError chain[Extra(:section, "world")]
-
-            # getindex with symbol
-            @test chain[:a] == fill(1, N_iters, 1)
-            @test chain[:b] == fill(2, N_iters, 1)
-            @test chain[:hello] == fill(3.0, N_iters, 1)
-            @test_throws KeyError chain[:c]
-            @test_throws KeyError chain[:world]
+            @testset "ParameterOrExtra{TKey}" begin
+                @test chain[Parameter(Shay("a"))] == fill(1, N_iters, 1)
+                @test chain[Parameter(Shay("a"))] == fill(1, N_iters, 1)
+                @test chain[Parameter(Shay("b"))] == fill(2, N_iters, 1)
+                @test chain[Extra(:section, "hello")] == fill(3.0, N_iters, 1)
+                @test_throws KeyError chain[Parameter(Shay("c"))]
+                @test_throws KeyError chain[Extra(:section, "world")]
+                @testset "with iter subsetting" begin
+                    @test chain[Parameter(Shay("a")), iter=4:6] == fill(1, 3, 1)
+                    @test chain[Parameter(Shay("a")), iter=4:6, chain=DD.At(1)] ==
+                        fill(1, 3)
+                end
+            end
         end
 
-        @testset "ambiguous symbol" begin
-            N_iters = 10
-            dicts = fill(Dict(Parameter(:a) => 1, Extra(:section, "a") => 3.0), N_iters)
-            chain = FlexiChain{Symbol,N_iters,1}(dicts)
+        @testset "indexing with Symbol" begin
+            @testset "no ambiguity" begin
+                N_iters = 10
+                dicts = fill(Dict(Parameter("a") => 1, Parameter("b") => 2), N_iters)
+                chain = FlexiChain{String,N_iters,1}(dicts)
+                # This relies on there being a unique key that can be converted to the given
+                # Symbol
+                @test chain[:a] == fill(1, N_iters, 1)
+                @test chain[:b] == fill(2, N_iters, 1)
 
-            # getindex with the full key should be fine
-            @test chain[Parameter(:a)] == fill(1, N_iters, 1)
-            @test chain[Extra(:section, "a")] == fill(3.0, N_iters, 1)
-            # but getindex with the symbol should fail
-            @test_throws KeyError chain[:a]
-            # ... with the correct error message
-            @test_throws "multiple keys" chain[:a]
+                @testset "with iter subsetting" begin
+                    @test chain[:a, iter=4:6] == fill(1, 3, 1)
+                    @test chain[:a, iter=4:6, chain=DD.At(1)] == fill(1, 3)
+                end
+            end
+
+            @testset "with ambiguity" begin
+                # What happens if you have multiple keys that convert to the same Symbol?
+                N_iters = 10
+                dicts = fill(Dict(Parameter(:a) => 1, Extra(:section, "a") => 3.0), N_iters)
+                chain = FlexiChain{Symbol,N_iters,1}(dicts)
+
+                # getindex with the full key should be fine
+                @test chain[Parameter(:a)] == fill(1, N_iters, 1)
+                @test chain[Extra(:section, "a")] == fill(3.0, N_iters, 1)
+                # but getindex with the symbol should fail
+                @test_throws KeyError chain[:a]
+                # ... with the correct error message
+                @test_throws "multiple keys" chain[:a]
+            end
+        end
+
+        @testset "multiple keys: Colon and AbstractVector" begin
+            # These methods all return FlexiChain
+            N_iters = 10
+            dicts = fill(
+                Dict(
+                    Parameter("a") => 1,
+                    Parameter("b") => 2,
+                    Extra(:section, "hello") => 3.0,
+                ),
+                N_iters,
+            )
+            chain = FlexiChain{String,N_iters,1}(dicts)
+
+            @testset "No argument (should default to colon)" begin
+                c = chain[]
+                @test c == chain
+                @testset "with iter subsetting" begin
+                    c2 = chain[iter=4:6]
+                    @test c2 isa FlexiChain{String,3,1}
+                    @test c2[Parameter("a")] == fill(1, 3, 1)
+                end
+            end
+            @testset "Explicit colon" begin
+                c = chain[:]
+                @test c == chain
+            end
+            @testset "AbstractVector{ParameterOrExtra{TKey}}" begin
+                keys = [Parameter("a"), Extra(:section, "hello")]
+                c = chain[keys]
+                @test c isa FlexiChain{String,N_iters,1}
+                @test c[Parameter("a")] == fill(1, N_iters, 1)
+                @test c[Extra(:section, "hello")] == fill(3.0, N_iters, 1)
+                @test !haskey(c, Parameter("b"))
+                @test_throws KeyError c[Parameter("b")]
+            end
         end
 
         @testset "VarName" begin
@@ -142,16 +238,28 @@ using Test
                 Parameter(@varname(c)) => (x=4.0, y=5.0),
             )
             chain = FlexiChain{VarName,N_iters,1}(fill(d, N_iters))
-            @test chain[@varname(a)] == fill(1.0, N_iters, 1)
-            @test chain[@varname(b)] == fill([2.0, 3.0], N_iters, 1)
-            @test chain[@varname(c)] == fill((x=4.0, y=5.0), N_iters, 1)
-            @test_throws KeyError chain[@varname(d)]
-            @test chain[@varname(b[1])] == fill(2.0, N_iters, 1)
-            @test chain[@varname(b[2])] == fill(3.0, N_iters, 1)
-            @test_throws BoundsError chain[@varname(b[3])]
-            @test chain[@varname(c.x)] == fill(4.0, N_iters, 1)
-            @test chain[@varname(c.y)] == fill(5.0, N_iters, 1)
-            @test_throws "has no field" chain[@varname(c.z)]
+
+            @testset "ordinary VarName" begin
+                @test chain[@varname(a)] == fill(1.0, N_iters, 1)
+                @test chain[@varname(b)] == fill([2.0, 3.0], N_iters, 1)
+                @test chain[@varname(c)] == fill((x=4.0, y=5.0), N_iters, 1)
+                @test_throws KeyError chain[@varname(d)]
+                @test chain[@varname(b[1])] == fill(2.0, N_iters, 1)
+                @test chain[@varname(b[2])] == fill(3.0, N_iters, 1)
+                @test_throws BoundsError chain[@varname(b[3])]
+                @test chain[@varname(c.x)] == fill(4.0, N_iters, 1)
+                @test chain[@varname(c.y)] == fill(5.0, N_iters, 1)
+                @test_throws "has no field" chain[@varname(c.z)]
+            end
+
+            @testset "using Symbol" begin
+                @test chain[:a] == fill(1.0, N_iters, 1)
+                @test chain[:b] == fill([2.0, 3.0], N_iters, 1)
+                @test chain[:c] == fill((x=4.0, y=5.0), N_iters, 1)
+                @test_throws KeyError chain[:d]
+                # If you want to do fancy sub-indexing you had better use VarNames
+                @test_throws KeyError chain[Symbol("b[1]")]
+            end
         end
     end
 
