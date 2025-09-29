@@ -216,8 +216,15 @@ function subset_extras(
 end
 
 # Avoid printing the entire `Sampled` object if it's been constructed
-_show_range(s::DD.Dimensions.Lookups.Lookup) = parent(s)
-_show_range(s::AbstractVector) = s
+_show_range(s::DD.Dimensions.Lookups.Lookup) = string(parent(s))
+_show_range(s::AbstractRange) = string(s)
+function _show_range(s::AbstractVector)
+    if length(s) > 5
+        return "[$(first(s)) … $(last(s))]"
+    else
+        return string(s)
+    end
+end
 
 function Base.show(
     io::IO, ::MIME"text/plain", chain::FlexiChain{TKey,niters,nchains}

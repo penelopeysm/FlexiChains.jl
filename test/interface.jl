@@ -8,6 +8,17 @@ using Test
 @testset verbose = true "interface.jl" begin
     @info "Testing interface.jl"
 
+    @testset "_show_range" begin
+        # Don't really want to test the full `show` for FlexiChain, so just unit test this
+        # function
+        @test FlexiChains._show_range(1:10) == "1:10"
+        @test FlexiChains._show_range(3:3:30) == "3:3:30"
+        @test FlexiChains._show_range(FlexiChains._make_lookup(1:10)) == "1:10"
+        @test FlexiChains._show_range(FlexiChains._make_lookup(3:3:30)) == "3:3:30"
+        @test FlexiChains._show_range([1, 2, 3, 5, 7, 11]) == "[1 … 11]"
+        @test FlexiChains._show_range([2, 3, 5, 7, 11]) == "[2, 3, 5, 7, 11]"
+    end
+
     @testset "equality" begin
         d = Dict(Parameter(:a) => 1, Extra(:section, "hello") => 3.0)
         chain1 = FlexiChain{Symbol,10,1}(fill(d, 10))
