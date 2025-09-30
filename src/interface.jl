@@ -81,25 +81,25 @@ function Base.isequal(
 end
 
 """
-    keys(chain::FlexiChain{TKey}) where {TKey}
+    keys(cs::ChainOrSummary)
 
-Returns the keys of the `FlexiChain` as an iterable collection.
+Returns the keys of the `FlexiChain` (or summary thereof) as an iterable collection.
 """
-function Base.keys(chain::FlexiChain{TKey}) where {TKey}
-    return keys(chain._data)
+function Base.keys(cs::ChainOrSummary)
+    return keys(cs._data)
 end
 
 """
-    haskey(chain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
-    haskey(chain::FlexiChain{TKey}, key::TKey) where {TKey}
+    haskey(cs::ChainOrSummary{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
+    haskey(cs::ChainOrSummary{TKey}, key::TKey) where {TKey}
 
-Returns `true` if the `FlexiChain` contains the given key.
+Returns `true` if the `FlexiChain` or summary contains the given key.
 """
-function Base.haskey(chain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
-    return haskey(chain._data, key)
+function Base.haskey(cs::ChainOrSummary{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
+    return haskey(cs._data, key)
 end
-function Base.haskey(chain::FlexiChain{TKey}, key::TKey) where {TKey}
-    return haskey(chain._data, Parameter(key))
+function Base.haskey(cs::ChainOrSummary{TKey}, key::TKey) where {TKey}
+    return haskey(cs._data, Parameter(key))
 end
 
 """
@@ -272,13 +272,13 @@ function _get(chain::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
 end
 
 """
-    parameters(chain::FlexiChain{TKey}) where {TKey}
+    parameters(cs::ChainOrSummary{TKey}) where {TKey}
 
-Returns a vector of parameter names in the `FlexiChain`.
+Returns a vector of parameter names in the `FlexiChain` or summary thereof.
 """
-function parameters(chain::FlexiChain{TKey})::Vector{TKey} where {TKey}
+function parameters(cs::ChainOrSummary{TKey})::Vector{TKey} where {TKey}
     parameter_names = TKey[]
-    for k in keys(chain._data)
+    for k in keys(cs)
         if k isa Parameter{<:TKey}
             push!(parameter_names, k.name)
         end
@@ -287,13 +287,13 @@ function parameters(chain::FlexiChain{TKey})::Vector{TKey} where {TKey}
 end
 
 """
-    extras(chain::FlexiChain)
+    extras(cs::ChainOrSummary)
 
-Returns a vector of non-parameter names in the `FlexiChain`.
+Returns a vector of non-parameter names in the `FlexiChain` or summary thereof.
 """
-function extras(chain::FlexiChain)::Vector{Extra}
+function extras(cs::ChainOrSummary)::Vector{Extra}
     other_key_names = Extra[]
-    for k in keys(chain._data)
+    for k in keys(cs)
         if k isa Extra
             push!(other_key_names, k)
         end

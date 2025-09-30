@@ -80,6 +80,52 @@ function stat_indices(
     return fs._stat_indices
 end
 
+function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) where {TKey}
+    maybe_s(x) = x == 1 ? "" : "s"
+    printstyled(io, "FlexiSummary "; bold=true)
+    ii = summary._iter_indices # Note iter_indices(summary) will error
+    if !isnothing(ii)
+        printstyled(io, "| $(length(ii)) iterations ("; bold=true)
+        printstyled(io, "$(_show_range(ii))"; color=DD.dimcolor(1), bold=true)
+        printstyled(io, ") "; bold=true)
+    end
+    ci = summary._chain_indices # Note chain_indices(summary) will error
+    if !isnothing(ci)
+        printstyled(io, "| $(length(ci)) iterations ("; bold=true)
+        printstyled(io, "$(_show_range(ci))"; color=DD.dimcolor(2), bold=true)
+        printstyled(io, ") "; bold=true)
+    end
+    si = stat_indices(summary)
+    printstyled(io, "| $(length(si)) statistic$(maybe_s(length(si))) ("; bold=true)
+    printstyled(io, "$(join(parent(si), ", "))"; color=DD.dimcolor(3), bold=true)
+    printstyled(io, ") "; bold=true)
+    println(io)
+    println(io)
+
+    # Print parameter names
+    parameter_names = parameters(summary)
+    printstyled(io, "Parameter type   "; bold=true)
+    println(io, "$TKey")
+    printstyled(io, "Parameters       "; bold=true)
+    if isempty(parameter_names)
+        println(io, "(none)")
+    else
+        println(io, join(parameter_names, ", "))
+    end
+
+    # Print extras
+    extra_names = extras(summary)
+    printstyled(io, "Extra keys       "; bold=true)
+    if isempty(extra_names)
+        println(io, "(none)")
+    else
+        println(io, join(map(e -> repr(e.name), extra_names), ", "))
+    end
+
+    # TODO: Dataframe-like printing
+    return nothing
+end
+
 const STAT_DIM_NAME = :stat
 function _get_data(
     fs::FlexiSummary{TKey,Nothing,TCIdx}, key::ParameterOrExtra{<:TKey}
@@ -111,12 +157,6 @@ function _get_data(
     a1d = dropdims(fs._data[key]; dims=(1, 2))
     return DD.DimArray(a1d, (DD.Dim{STAT_DIM_NAME}(stat_indices(fs)),))
 end
-
-Base.keys(fs::FlexiSummary) = keys(fs._data)
-function Base.haskey(fs::FlexiSummary{TKey}, k::ParameterOrExtra{<:TKey}) where {TKey}
-    return haskey(fs._data, k)
-end
-Base.haskey(fs::FlexiSummary{TKey}, k::TKey) where {TKey} = haskey(fs._data, Parameter(k))
 
 function _get_names_and_funcs(names_or_funcs::AbstractVector)
     names = Symbol[]

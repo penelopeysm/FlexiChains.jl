@@ -117,6 +117,21 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
     end
 
+    @testset "show doesn't error" begin
+        ds = [
+            Dict(Parameter(:a) => 1, Extra("hello") => 3.0),
+            Dict(Parameter(:a) => 1),
+            Dict(Extra("hello") => 3.0),
+            Dict(),
+        ]
+        for d in ds
+            chain = FlexiChain{Symbol,10,3}(fill(d, 10, 3))
+            display(mean(chain; dims=:iter))
+            display(median(chain; dims=:chain))
+            display(std(chain; dims=:both))
+        end
+    end
+
     @testset "getindex on summaries" begin
         N_iters, N_chains = 10, 3
         xs = Matrix{Vector{Float64}}(undef, N_iters, N_chains)
