@@ -257,10 +257,10 @@ function Base.show(
     # Print extras
     extra_names = extras(chain)
     printstyled(io, "Extra keys       "; bold=true)
-    if isempty(extras)
+    if isempty(extra_names)
         println(io, "(none)")
     else
-        println(io, join(extra_names, ", "))
+        println(io, join(map(e -> repr(e.name), extra_names), ", "))
     end
 
     # TODO: Summary statistics?

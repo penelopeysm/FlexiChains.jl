@@ -8,9 +8,22 @@ using Test
 @testset verbose = true "interface.jl" begin
     @info "Testing interface.jl"
 
+    @testset "show doesn't error" begin
+        ds = [
+            Dict(Parameter(:a) => 1, Extra("hello") => 3.0),
+            Dict(Parameter(:a) => 1),
+            Dict(Extra("hello") => 3.0),
+            Dict(),
+        ]
+        for d in ds
+            chain = FlexiChain{Symbol,10,1}(fill(d, 10))
+            display(chain)
+        end
+    end
+
     @testset "_show_range" begin
-        # Don't really want to test the full `show` for FlexiChain, so just unit test this
-        # function
+        # Don't really want to test the full `show` output for FlexiChain, so just unit test
+        # this function
         @test FlexiChains._show_range(1:10) == "1:10"
         @test FlexiChains._show_range(3:3:30) == "3:3:30"
         @test FlexiChains._show_range(FlexiChains._make_lookup(1:10)) == "1:10"
