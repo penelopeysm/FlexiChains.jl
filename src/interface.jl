@@ -57,7 +57,7 @@ function nchains(::FlexiChain{TKey,NIter,NChains})::Int where {TKey,NIter,NChain
 end
 
 function Base.:(==)(
-    c1::ChainOrSummary{TKey1,NIter1,NChain1}, c2::ChainOrSummary{TKey2,NIter2,NChain2}
+    c1::FlexiChain{TKey1,NIter1,NChain1}, c2::FlexiChain{TKey2,NIter2,NChain2}
 ) where {TKey1,TKey2,NIter1,NChain1,NIter2,NChain2}
     # Check if the type parameters are the same
     if TKey1 != TKey2 || NIter1 != NIter2 || NChain1 != NChain2
@@ -71,7 +71,7 @@ function Base.:(==)(
 end
 
 function Base.isequal(
-    c1::ChainOrSummary{TKey1,NIter1,NChain1}, c2::ChainOrSummary{TKey2,NIter2,NChain2}
+    c1::FlexiChain{TKey1,NIter1,NChain1}, c2::FlexiChain{TKey2,NIter2,NChain2}
 ) where {TKey1,TKey2,NIter1,NChain1,NIter2,NChain2}
     # Same as above but with isequal instead of ==
     if TKey1 != TKey2 || NIter1 != NIter2 || NChain1 != NChain2
@@ -81,26 +81,24 @@ function Base.isequal(
 end
 
 """
-    keys(chain::ChainOrSummary{TKey}) where {TKey}
+    keys(chain::FlexiChain{TKey}) where {TKey}
 
-Returns the keys of the `FlexiChain` or `FlexiChainSummary` as an iterable collection.
+Returns the keys of the `FlexiChain` as an iterable collection.
 """
-function Base.keys(chain::ChainOrSummary{TKey}) where {TKey}
+function Base.keys(chain::FlexiChain{TKey}) where {TKey}
     return keys(chain._data)
 end
 
 """
-    haskey(chain::ChainOrSummary{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
-    haskey(chain::ChainOrSummary{TKey}, key::TKey) where {TKey}
+    haskey(chain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
+    haskey(chain::FlexiChain{TKey}, key::TKey) where {TKey}
 
-Returns `true` if the `FlexiChain` or `FlexiChainSummary` contains the given key.
+Returns `true` if the `FlexiChain` contains the given key.
 """
-function Base.haskey(
-    chain::ChainOrSummary{TKey}, key::ParameterOrExtra{<:TKey}
-) where {TKey}
+function Base.haskey(chain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
     return haskey(chain._data, key)
 end
-function Base.haskey(chain::ChainOrSummary{TKey}, key::TKey) where {TKey}
+function Base.haskey(chain::FlexiChain{TKey}, key::TKey) where {TKey}
     return haskey(chain._data, Parameter(key))
 end
 

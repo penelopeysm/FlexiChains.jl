@@ -244,14 +244,17 @@ fchain[@varname(lp)]
 
 and the corresponding metadata:
 
+(TODO: fix interface)
+
 ```@example 1
-fchain[:logprobs, :lp]
+using FlexiChains: Extra
+fchain[Extra(:logprobs, :lp)]
 ```
 
 and indeed we can check that these do align:
 
 ```@example 1
-logpdf.(Normal(), fchain[@varname(lp)]) ≈ fchain[:logprobs, :lp]
+logpdf.(Normal(), fchain[@varname(lp)]) ≈ fchain[Extra(:logprobs, :lp)]
 ```
 
 TODO pretty-printing / summary stats

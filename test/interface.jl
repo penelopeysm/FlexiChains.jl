@@ -399,7 +399,6 @@ using Test
             @test typeof(subsetted2) == typeof(chain)
             @test size(subsetted2) == (N_iters, 1)
             @test Set(keys(subsetted2)) == Set([Extra(:b, "c")])
-            @test subsetted2[:b, "c"] == chain[:b, "c"]
         end
 
         @testset "key not present" begin

@@ -1,352 +1,299 @@
 using DimensionalData: DimensionalData as DD
 using Statistics: Statistics
 
-@public collapse_iter, collapse_chain, collapse
+@public FlexiSummary, collapse
 
-abstract type FlexiChainSummary{TKey,NIter,NChains} end
-
-Base.keys(fcs::FlexiChainSummary) = keys(fcs._data)
-
-"""
-    FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:DimensionalData.Lookup}
-
-A summary where the iteration dimension has been collapsed. The type parameter `NIter`
-refers to the original number of iterations (which have been collapsed).
-
-Indexing into this returns a `DimensionalData.DimVector` with length `NChains`.
-"""
-struct FlexiChainSummaryI{TKey,NIter,NChains,TCIdx<:DD.Lookup} <:
-       FlexiChainSummary{TKey,NIter,NChains}
-    _data::Dict{ParameterOrExtra{<:TKey},<:SizedMatrix{1,NChains,<:Any}}
-    _chain_indices::TCIdx
-
-    # Constructor checks that `chain_indices` has the right length.
-    # Ideally we'd use:
-    # data::Dict{<:ParameterOrExtra{<:TKey},<:SizedMatrix{1,NChains,<:Any}},
-    # as the argument. But that errors on Julia 1.10.
-    function FlexiChainSummaryI{TKey,NIter,NChains}(
-        data::Dict{<:Any,<:SizedMatrix{1,NChains,<:Any}}, chain_indices::TCIdx
-    ) where {TKey,NIter,NChains,TCIdx<:DD.Lookup}
-        # need to cast underlying dict to the right type
-        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,NChains,<:Any}}(data)
-        if length(chain_indices) != NChains
-            throw(DimensionMismatch("`chain_indices` must have length $NChains"))
-        end
-        return new{TKey,NIter,NChains,typeof(chain_indices)}(data, chain_indices)
-    end
-end
-"""
-    FlexiChains.chain_indices(
-        summary::FlexiChainSummaryI{TKey,NIter,NChains,TCIdx}
-    )::TCIdx where {TKey,NIter,NChains,TCIdx}
-
-Return the chain indices of a `FlexiChainSummaryI`.
-"""
-function FlexiChains.chain_indices(
-    fcsi::FlexiChainSummaryI{T,NI,NC,TCIdx}
-)::TCIdx where {T,NI,NC,TCIdx}
-    return fcsi._chain_indices
+function _make_categorical(v::AbstractVector{Symbol})
+    return DD.Categorical(v; order=DD.Unordered())
 end
 
 """
-    FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:DimensionalData.Lookup}
+    FlexiChains.FlexiSummary{
+        TKey,
+        TIIdx<:Union{DimensionalData.Lookup,Nothing},
+        TCIdx<:Union{DimensionalData.Lookup,Nothing},
+        TSIdx<:DimensionalData.Categorical
+    }
 
-A summary where the chain dimension has been collapsed. The type parameter `NChain` refers to
-the original number of chains (which have been collapsed).
+A data structure containing summary statistics of a [`FlexiChain`](@ref).
 
-Indexing into this returns a `DimensionalData.DimVector` with length `NIter`.
+TODO: Document.
 """
-struct FlexiChainSummaryC{TKey,NIter,NChains,TIIdx<:DD.Lookup} <:
-       FlexiChainSummary{TKey,NIter,NChains}
-    _data::Dict{ParameterOrExtra{<:TKey},<:SizedMatrix{NIter,1,<:Any}}
+struct FlexiSummary{
+    TKey,
+    TIIdx<:Union{DD.Lookup,Nothing},
+    TCIdx<:Union{DD.Lookup,Nothing},
+    TSIdx<:DD.Categorical,
+}
+    _data::Dict{ParameterOrExtra{<:TKey},<:AbstractArray{<:Any,3}}
     _iter_indices::TIIdx
+    _chain_indices::TCIdx
+    _stat_indices::TSIdx
 
-    # Constructor checks that `iter_indices` has the right length.
-    function FlexiChainSummaryC{TKey,NIter,NChains}(
-        data::Dict{<:Any,<:SizedMatrix{NIter,1,<:Any}}, iter_indices::TIIdx
-    ) where {TKey,NIter,NChains,TIIdx<:DD.Lookup}
-        # need to cast underlying dict to the right type
-        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,1,<:Any}}(data)
-        if length(iter_indices) != NIter
-            throw(DimensionMismatch("`iter_indices` must have length $NIter"))
+    function FlexiSummary{TKey}(
+        data::Dict{<:Any,<:AbstractArray{<:Any,3}},
+        # Note: These are NOT keyword arguments, they are mandatory
+        iter_indices::TIIdx,
+        chain_indices::TCIdx,
+        stat_indices::TSIdx,
+    )::FlexiSummary{
+        TKey,TIIdx,TCIdx,TSIdx
+    } where {
+        TKey,
+        TIIdx<:Union{DD.Lookup,Nothing},
+        TCIdx<:Union{DD.Lookup,Nothing},
+        TSIdx<:DD.Categorical,
+    }
+        # Get expected size.
+        expected_size = (
+            TIIdx === Nothing ? 1 : length(iter_indices),
+            TCIdx === Nothing ? 1 : length(chain_indices),
+            TSIdx === Nothing ? 1 : length(stat_indices),
+        )
+        # Size verification (while marshalling into a Dict with the right type).
+        d = Dict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
+        for (k, v) in pairs(data)
+            if size(v) != expected_size
+                msg = "got size $(size(v)) for key $k, expected $expected_size"
+                throw(DimensionMismatch(msg))
+            end
+            d[k] = v
         end
-        return new{TKey,NIter,NChains,typeof(iter_indices)}(data, iter_indices)
+        return new{TKey,TIIdx,TCIdx,TSIdx}(d, iter_indices, chain_indices, stat_indices)
     end
 end
-"""
-    FlexiChains.iter_indices(
-        summary::FlexiChainSummaryC{TKey,NIter,NChains,TIIdx}
-    )::TIIdx where {TKey,NIter,NChains,TIIdx}
-
-Return the iteration indices of a `FlexiChainSummaryC`.
-"""
-function FlexiChains.iter_indices(
-    fcsc::FlexiChainSummaryC{T,NI,NC,TIIdx}
-)::TIIdx where {T,NI,NC,TIIdx}
-    return fcsc._iter_indices
+function iter_indices(::FlexiSummary{TKey,Nothing}) where {TKey}
+    return error("iteration dimension has already been collapsed")
+end
+function iter_indices(fs::FlexiSummary{TKey,TIIdx})::TIIdx where {TKey,TIIdx}
+    return fs._iter_indices
+end
+function chain_indices(::FlexiSummary{TKey,TIIdx,Nothing}) where {TKey,TIIdx}
+    return error("chain dimension has already been collapsed")
+end
+function chain_indices(fs::FlexiSummary{TKey,TIIdx,TCIdx})::TCIdx where {TKey,TIIdx,TCIdx}
+    return fs._chain_indices
+end
+function stat_indices(
+    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}
+)::TSIdx where {TKey,TIIdx,TCIdx,TSIdx}
+    return fs._stat_indices
 end
 
-"""
-    FlexiChainSummaryIC{TKey,NIter,NChains}
-
-A summary where both the iteration and chain dimensions have been collapsed. The type
-parameters `NIter` and `NChains` refer to the original number of iterations and chains
-(which have been collapsed).
-
-Indexing into this returns a scalar for each key.
-"""
-struct FlexiChainSummaryIC{TKey,NIter,NChains} <: FlexiChainSummary{TKey,NIter,NChains}
-    _data::Dict{ParameterOrExtra{<:TKey},<:SizedMatrix{1,1,<:Any}}
-
-    function FlexiChainSummaryIC{TKey,NIter,NChains}(
-        data::Dict{<:Any,<:SizedMatrix{1,1,<:Any}}
-    ) where {TKey,NIter,NChains}
-        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,1,<:Any}}(data)
-        return new{TKey,NIter,NChains}(data)
-    end
+const STAT_DIM_NAME = :stat
+function _get_data(
+    fs::FlexiSummary{TKey,Nothing,TCIdx}, key::ParameterOrExtra{<:TKey}
+) where {TKey,TCIdx}
+    # Collapse iteration dimension
+    a2d = dropdims(fs._data[key]; dims=1)
+    return DD.DimMatrix(
+        a2d,
+        (
+            DD.Dim{CHAIN_DIM_NAME}(chain_indices(fs)),
+            DD.Dim{STAT_DIM_NAME}(stat_indices(fs)),
+        ),
+    )
 end
-_get(fcsic::FlexiChainSummaryIC, key) = only(collect(fcsic._data[key])) # scalar
-
-function _warn_non_numerics(non_numerics)
-    if !isempty(non_numerics)
-        @warn "The following non-numeric keys were skipped: $(non_numerics)"
-    end
+function _get_data(
+    fs::FlexiSummary{TKey,TIIdx,Nothing}, key::ParameterOrExtra{<:TKey}
+) where {TKey,TIIdx}
+    # Collapse chain dimension
+    a2d = dropdims(fs._data[key]; dims=2)
+    return DD.DimMatrix(
+        a2d,
+        (DD.Dim{ITER_DIM_NAME}(iter_indices(fs)), DD.Dim{STAT_DIM_NAME}(stat_indices(fs))),
+    )
+end
+function _get_data(
+    fs::FlexiSummary{TKey,Nothing,Nothing}, key::ParameterOrExtra{<:TKey}
+) where {TKey}
+    # Collapse both iteration and chain dimensions
+    a1d = dropdims(fs._data[key]; dims=(1, 2))
+    return DD.DimArray(a1d, (DD.Dim{STAT_DIM_NAME}(stat_indices(fs)),))
 end
 
-"""
-    collapse_iter(
-        chain::FlexiChain{TKey,NIter,NChains},
-        func::Function;
-        skip_nonnumeric::Bool=true,
-        warn::Bool=false
-        kwargs...
-    )::FlexiChainSummaryI{TKey,NIter,NChains} where {TKey,NIter,NChains}
+Base.keys(fs::FlexiSummary) = keys(fs._data)
+function Base.haskey(fs::FlexiSummary{TKey}, k::ParameterOrExtra{<:TKey}) where {TKey}
+    return haskey(fs._data, k)
+end
+Base.haskey(fs::FlexiSummary{TKey}, k::TKey) where {TKey} = haskey(fs._data, Parameter(k))
 
-Collapse the iteration dimension of `chain` by applying `func` to each key in the chain with
-numeric values.
-
-The function `func` must map an (NIter × NChains) matrix to a (1 × NChains) matrix.
-
-If `skip_nonnumeric` is true, non-numeric keys are skipped (with a warning if `warn` is true).
-
-Other keyword arguments passed to `collapse_iter` are forwarded to `func`.
-
-## Example
-
-```julia
-using FlexiChains, Statistics
-# This function maps an (NIter × NChains) matrix to a (1 × NChains) matrix.
-dim1_mean(x::AbstractMatrix) = mean(x; dims=1)
-# This means we can use it with `collapse_iter`.
-FlexiChains.collapse_iter(chain, dim1_mean)
-# (Note that the above is also aliased to `mean(chain; dims=:iter)`.)
-```
-"""
-function collapse_iter(
-    chain::FlexiChain{TKey,NIter,NChains},
-    func::Function;
-    skip_nonnumeric::Bool=true,
-    warn::Bool=false,
-    kwargs...,
-)::FlexiChainSummaryI{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,NChains,<:Any}}()
-    non_numerics = ParameterOrExtra{TKey}[]
-    for (k, v) in chain._data
-        if (!skip_nonnumeric) || eltype(v) <: Number
-            # We use chain._data[k] instead of chain[k] here to guarantee that the input to
-            # `k` is always a matrix (if NChains=1, chain[k] would return a vector).
-            collapsed = func(chain._data[k]; kwargs...)
-            data[k] = SizedMatrix{1,NChains}(collapsed)
+function _get_names_and_funcs(names_or_funcs::AbstractVector)
+    names = Symbol[]
+    funcs = Function[]
+    for nf in names_or_funcs
+        if nf isa Function
+            push!(names, Symbol(nf))
+            push!(funcs, nf)
+        elseif nf isa Tuple{Symbol,Function}
+            push!(names, nf[1])
+            push!(funcs, nf[2])
         else
-            warn && push!(non_numerics, k)
+            throw(
+                ArgumentError(
+                    "each element of `funcs` must be a Function or a (Symbol, Function) tuple",
+                ),
+            )
         end
     end
-    warn && _warn_non_numerics(non_numerics)
-    return FlexiChainSummaryI{TKey,NIter,NChains}(data, FlexiChains.chain_indices(chain))
+    # check that there are no repeats
+    if length(names) != length(unique(names))
+        throw(ArgumentError("function names must be unique"))
+    end
+    return names, funcs
+end
+function _get_expected_size(niters::Int, nchains::Int, collapsed_dims::Symbol)
+    return if collapsed_dims == :iter
+        (1, nchains)
+    elseif collapsed_dims == :chain
+        (niters, 1)
+    elseif collapsed_dims == :both
+        (1, 1)
+    else
+        throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
+    end
+end
+function _size_matches(collapsed::Any, expected_size::Tuple{Int,Int}, dims::Symbol)
+    return (dims == :both) || size(collapsed) == expected_size
+end
+
+struct CollapseFailedError{T,E<:Exception} <: Exception
+    key::T
+    fname::Symbol
+    exception::E
 end
 
 """
-    collapse_chain(
-        chain::FlexiChain{TKey,NIter,NChains},
-        func::Function;
-        skip_nonnumeric::Bool=true,
-        warn::Bool=false
-        kwargs...
-    )::FlexiChainSummaryC{TKey,NIter,NChains} where {TKey,NIter,NChains}
+    FlexiChains.collapse(
+        chain::FlexiChain,
+        funcs::AbstractVector;
+        dims::Symbol=:both
+    )
 
-Collapse the chain dimension of `chain` by applying `func` to each key in the chain with
-numeric values.
+Low-level function to collapse one or both dimensions of a `FlexiChain` by applying a list
+of summary functions.
 
-The function `func` must map an (NIter × NChains) matrix to an (NIter × 1) matrix (_not_ a
-vector).
+The `funcs` argument must be a vector which contains either:
+ - tuples of the form `(statistic_name::Symbol, func::Function)`; or
+ - just functions, in which case the statistic name is obtained from the function name.
 
-If `skip_nonnumeric` is true, non-numeric keys are skipped (with a warning if `warn` is
-true).
+The `dims` keyword argument specifies which dimensions to collapse. By default, `dims` is `:both`, which
+collapses both the iteration and chain dimensions. Other valid values are `:iter` or `:chain`, which 
+respectively collapse only the iteration or chain dimension.
 
-Other keyword arguments passed to `collapse_chain` are forwarded to `func`.
+The functions in `funcs` **must** map an (NIter × NChains) matrix to:
+ - a single item if `dims=:both`;
+ - a (1 × NChains) matrix if `dims=:iter`;
+ - an (NIter × 1) matrix if `dims=:chain`.
 
-## Example
-
-```julia
-using FlexiChains, Statistics
-# This function maps an (NIter × NChains) matrix to an (NIter × 1) matrix.
-dim2_mean(x::AbstractMatrix) = mean(x; dims=2)
-# This means we can use it with `collapse_chain`.
-FlexiChains.collapse_chain(chain, dim2_mean)
-# (Note that the above is also aliased to `mean(chain; dims=:chain)`.)
-```
-"""
-function collapse_chain(
-    chain::FlexiChain{TKey,NIter,NChains},
-    func::Function;
-    skip_nonnumeric::Bool=true,
-    warn::Bool=false,
-    kwargs...,
-)::FlexiChainSummaryC{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,1,<:Any}}()
-    non_numerics = ParameterOrExtra{TKey}[]
-    for (k, v) in chain._data
-        if (!skip_nonnumeric) || eltype(v) <: Number
-            collapsed = func(chain._data[k]; kwargs...)
-            data[k] = SizedMatrix{NIter,1}(collapsed)
-        else
-            warn && push!(non_numerics, k)
-        end
-    end
-    warn && _warn_non_numerics(non_numerics)
-    return FlexiChainSummaryC{TKey,NIter,NChains}(data, FlexiChains.iter_indices(chain))
-end
-
-"""
-    collapse(
-        chain::FlexiChain{TKey,NIter,NChains},
-        func::Function;
-        skip_nonnumeric::Bool=true,
-        warn::Bool=false
-        kwargs...
-    )::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
-
-Collapse both the iteration and chain dimensions of `chain` by applying `func` to each key in the chain with numeric values.
-
-The function `func` must map an (NIter × NChains) matrix to a scalar.
-
-If `skip_nonnumeric` is true, non-numeric keys are skipped (with a warning if `warn` is true).
-
-Other keyword arguments are forwarded to `func`.
-
-## Example
+This means that the exact function used will differ depending on the value of `dims`. For
+example, suppose that `chn` is a FlexiChain. Then the following are all valid:
 
 ```julia
-using FlexiChains, Statistics
-FlexiChains.collapse(chain, mean)
-# (Note that the above is also aliased to `mean(chain)`.)
+using FlexiChains: collapse
+using Statistics: mean, std
+
+collapse(chn, [mean, std]; dims=:both)
+collapse(chn, [x -> mean(x; dims=1), x -> std(x; dims=1)]; dims=:iter)
+collapse(chn, [x -> mean(x; dims=2), x -> std(x; dims=2)]; dims=:chain)
 ```
+
+Note that, in the latter two cases, the inferred statistic name will _not_ be `mean` or
+`std` but rather some unintelligible name of an anonymous function. This is why it is
+recommended to use the `(statistic_name::Symbol, func::Function)` tuple form in these cases,
+such as in the following:
+
+```julia
+collapse(chn, [
+    (:mean, x -> mean(x; dims=1)),
+    (:std, x -> std(x; dims=1))
+]; dims=:iter)
+```
+
+The return type is a [`FlexiSummary`](@ref).
 """
 function collapse(
-    chain::FlexiChain{TKey,NIter,NChains},
-    func::Function;
-    skip_nonnumeric::Bool=true,
-    warn::Bool=false,
-    kwargs...,
-)::FlexiChainSummaryIC{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,1,<:Any}}()
-    non_numerics = ParameterOrExtra{TKey}[]
+    chain::FlexiChain{TKey,NIter,NChains}, funcs::AbstractVector; dims::Symbol=:both
+) where {TKey,NIter,NChains}
+    data = Dict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
+    names, funcs = _get_names_and_funcs(funcs)
+    expected_size = _get_expected_size(NIter, NChains, dims)
+    # Not proud of this function, but it does what it needs to do... sigh.
     for (k, v) in chain._data
-        if (!skip_nonnumeric) || eltype(v) <: Number
-            # We use chain._data[k] instead of chain[k] here to guarantee that the input to
-            # `k` is always a matrix (if NChains=1, chain[k] would return a vector).
-            collapsed = func(chain._data[k]; kwargs...)
-            data[k] = SizedMatrix{1,1}(reshape([collapsed], 1, 1))
-        else
-            warn && push!(non_numerics, k)
-        end
-    end
-    warn && _warn_non_numerics(non_numerics)
-    return FlexiChainSummaryIC{TKey,NIter,NChains}(data)
-end
-
-macro enable_collapse(skip_nonnumeric, func)
-    # TODO: This is type unstable. I don't see a way to fix this now though since we use
-    # different output types for different keyword arguments.
-    quote
-        function $(esc(func))(
-            chain::FlexiChain{TKey,NIter,NChains};
-            dims::Symbol=:both,
-            warn::Bool=false,
-            kwargs...,
-        )::FlexiChainSummary{TKey,NIter,NChains} where {TKey,NIter,NChains}
-            if dims == :both
-                return collapse(
-                    chain,
-                    $(esc(func));
-                    skip_nonnumeric=$(esc(skip_nonnumeric)),
-                    warn=warn,
-                    kwargs...,
-                )
-            elseif dims == :iter
-                return collapse_iter(
-                    chain,
-                    function (x; kwargs...)
-                        return $(esc(func))(x; dims=1, kwargs...)
-                    end;
-                    skip_nonnumeric=$(esc(skip_nonnumeric)),
-                    warn=warn,
-                    kwargs...,
-                )
-            elseif dims == :chain
-                return collapse_chain(
-                    chain,
-                    function (x; kwargs...)
-                        return $(esc(func))(x; dims=2, kwargs...)
-                    end;
-                    skip_nonnumeric=$(esc(skip_nonnumeric)),
-                    warn=warn,
-                    kwargs...,
-                )
+        try
+            output = Array{Any,3}(undef, (expected_size..., length(funcs)))
+            for (i, f) in enumerate(funcs)
+                try
+                    collapsed = f(v)
+                    if !_size_matches(collapsed, expected_size, dims)
+                        msg = "function $f returned size $(size(collapsed)) for key $k, expected $(expected_size)"
+                        throw(DimensionMismatch(msg))
+                    end
+                    if dims == :both
+                        collapsed = reshape([collapsed], 1, 1)
+                    end
+                    output[:, :, i] = collapsed
+                catch e
+                    throw(CollapseFailedError(k, names[i], e))
+                end
+            end
+            data[k] = map(identity, output)
+        catch e
+            if e isa CollapseFailedError
+                @warn "skipping key `$(e.key)` as applying the function `$(e.fname)` to it encountered an error: $(e.exception)"
             else
-                throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
+                rethrow()
             end
         end
     end
+    iter_idxs = dims == :chain ? FlexiChains.iter_indices(chain) : nothing
+    chain_idxs = dims == :iter ? FlexiChains.chain_indices(chain) : nothing
+    stat_lookup = _make_categorical(names)
+    return FlexiSummary{TKey}(data, iter_idxs, chain_idxs, stat_lookup)
 end
 
-function _stat_docstring(func_name, long_name)
-    return """
-    $(func_name)(chain::FlexiChain; dims::Symbol=:both, warn::Bool=false)
+macro forward_stat_function(func, func_name, short_name)
+    docstring = """
+                $(func_name)(chain::FlexiChain; dims::Symbol=:both, warn::Bool=false)
 
-Calculate the $(long_name) across all iterations and chains for each numeric key in `chain`. If
- `warn=true`, issues a warning for all non-numeric keys encountered.
+                Calculate the $(short_name) across all iterations and chains for each numeric
+                key in `chain`. If `warn=true`, issues a warning for all non-numeric keys
+                encountered.
 
-The `dims` keyword argument specifies which dimensions to collapse.
-- `:iter`: collapse the iteration dimension only
-- `:chain`: collapse the chain dimension only
-- `:both`: collapse both the iteration and chain dimensions (default)
+                The `dims` keyword argument specifies which dimensions to collapse.
+                - `:iter`: collapse the iteration dimension only
+                - `:chain`: collapse the chain dimension only
+                - `:both`: collapse both the iteration and chain dimensions (default)
 
-Other keyword arguments are forwarded to `$(func_name)`.
-"""
+                Other keyword arguments are forwarded to `$(func_name)`.
+                """
+    quote
+        @doc $docstring function $(esc(func))(
+            chn::FlexiChain; dims::Symbol=:both, kwargs...
+        )
+            funcs = if dims == :both
+                [(Symbol($(esc(func))), x -> $(esc(func))(x; kwargs...))]
+            elseif dims == :iter
+                [(Symbol($(esc(func))), x -> $(esc(func))(x; dims=1, kwargs...))]
+            elseif dims == :chain
+                [(Symbol($(esc(func))), x -> $(esc(func))(x; dims=2, kwargs...))]
+            else
+                throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
+            end
+            return collapse(chn, funcs; dims=dims)
+        end
+    end
 end
 
-"""
-$(_stat_docstring("mean", "mean"))
-"""
-@enable_collapse true Statistics.mean
-"""
-$(_stat_docstring("median", "median"))
-"""
-@enable_collapse true Statistics.median
-"""
-$(_stat_docstring("minimum", "minimum"))
-"""
-@enable_collapse true Base.minimum
-"""
-$(_stat_docstring("maximum", "maximum"))
-"""
-@enable_collapse true Base.maximum
-"""
-$(_stat_docstring("var", "variance"))
-"""
-@enable_collapse true Statistics.var
-"""
-$(_stat_docstring("std", "standard deviation"))
-"""
-@enable_collapse true Statistics.std
+@forward_stat_function Statistics.mean "Statistics.mean" "mean"
+@forward_stat_function Statistics.median "Statistics.median" "median"
+@forward_stat_function Statistics.std "Statistics.std" "standard deviation"
+@forward_stat_function Statistics.var "Statistics.var" "variance"
+@forward_stat_function Base.minimum "Base.minimum" "minimum"
+@forward_stat_function Base.maximum "Base.maximum" "maximum"
+@forward_stat_function Base.sum "Base.sum" "sum"
+@forward_stat_function Base.prod "Base.prod" "product"
+
+# Convenience re-exports.
+using Statistics: mean, median, std, var
+export mean, median, std, var

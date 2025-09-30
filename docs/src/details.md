@@ -131,7 +131,6 @@ This can be slightly verbose, so the following two methods are provided as a 'qu
 
 ```@docs
 Base.getindex(::FlexiChains.FlexiChain{TKey}, parameter_name::TKey) where {TKey}
-Base.getindex(::FlexiChains.FlexiChain{TKey}, section_name::Symbol, key_name::Any) where {TKey}
 ```
 
 Finally, to preserve some semblance of backwards compatibility with MCMCChains.jl, FlexiChains can also be indexed by `Symbol`s.
@@ -179,29 +178,53 @@ FlexiChains.get_parameter_dict_from_iter
 
 ## Summaries
 
+### A basic overview
+
 In general a `FlexiChain` contains data in matrices of size `(niters, nchains)`.
 Often it is useful to summarise this data along one or both dimensions.
 
-The general way of accomplishing this in FlexiChains is with the following functions.
-To use these you will respectively need a function `f` which maps matrices to row vectors, column vectors, or scalars.
+For ease of use, a number of pre-existing functions are extended to work with FlexiChains in this manner.
+For these functions, you can use `f(chain; dims=:iter)` to collapse over the iteration dimension only, or `f(chain; dims=:chain)` to collapse over the chain dimension only.
+
+Keyword arguments are automatically forwarded to the underlying function.
 
 ```@docs
-FlexiChains.collapse_iter
-FlexiChains.collapse_chain
+Statistics.mean(::FlexiChains.FlexiChain; kwargs...)
+Statistics.median(::FlexiChains.FlexiChain; kwargs...)
+Statistics.var(::FlexiChains.FlexiChain; kwargs...)
+Statistics.std(::FlexiChains.FlexiChain; kwargs...)
+Base.minimum(::FlexiChains.FlexiChain; kwargs...)
+Base.maximum(::FlexiChains.FlexiChain; kwargs...)
+Base.sum(::FlexiChains.FlexiChain; kwargs...)
+Base.prod(::FlexiChains.FlexiChain; kwargs...)
+```
+
+!!! note "Errors"
+    
+    Since FlexiChains is _really_ general in its data types, functions like `mean` may well error if the data type does not support the operation.
+    For example, the mean of `String` values is not defined.
+    In such cases, a warning is emitted and the key is dropped from the returned summary object.
+
+### Indexing
+
+TODO: write this
+
+### Multiple functions at once
+
+TODO: we don't have a nice API for this. There is `collapse` but that's a bit clunky.
+
+### Summaries in more depth
+
+All of the above functions dispatch to a more general function, called `collapse`.
+
+```@docs
 FlexiChains.collapse
 ```
 
 For example, you can pass the functions `x -> mean(x; dims=1)`, `x -> mean(x; dims=2)`, and `mean`.
 
-For ease of use, a number of pre-existing functions are extended to work with FlexiChains in this manner.
-Thus, for example, `mean(chain)` is automatically forwarded to `FlexiChains.collapse(chain, mean)`.
-For these functions, you can use `mean(chain; dims=:iter)` to collapse over the iteration dimension only, or `mean(chain; dims=:chain)` to collapse over the chain dimension only.
+The return type of `collapse` is `FlexiSummary`, which has very similar indexing behaviour to `FlexiChain`.
 
 ```@docs
-Statistics.mean(::FlexiChains.FlexiChain)
-Statistics.median(::FlexiChains.FlexiChain)
-Base.minimum(::FlexiChains.FlexiChain)
-Base.maximum(::FlexiChains.FlexiChain)
-Statistics.var(::FlexiChains.FlexiChain)
-Statistics.std(::FlexiChains.FlexiChain)
+FlexiChains.FlexiSummary
 ```

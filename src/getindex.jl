@@ -1,8 +1,6 @@
 using DimensionalData.Dimensions.Lookups: Lookup, Selector, selectindices
 
-const ChainOrSummary{TKey,NIter,NChain} = Union{
-    <:FlexiChain{TKey,NIter,NChain},<:FlexiChainSummary{TKey,NIter,NChain}
-}
+const ChainOrSummary{TKey} = Union{FlexiChain{TKey},FlexiSummary{TKey}}
 
 ############################
 ### Unambiguous indexing ###
@@ -33,54 +31,11 @@ function Base.getindex(
         iter, chain
     ]
 end
-"""
-    Base.getindex(
-        summary::FlexiChainSummaryI{TKey},
-        key::ParameterOrExtra{<:TKey});
-        chain=Colon()
-    where {TKey}
-
-Unambiguously access the data corresponding to the given `key` in the `summary` object
-(which has been collapsed over the iteration dimension).
-
-The `chain` keyword argument further allows you to extract specific chains from the summary.
-"""
+# TODO: iter/chain/stat kwargs
 function Base.getindex(
-    summary::FlexiChainSummaryI{TKey}, key::ParameterOrExtra{<:TKey}; chain=Colon()
-) where {TKey}
-    return data_anon_iter(summary._data[key]; chain_indices=chain_indices(summary))[chain=chain]
-end
-"""
-    Base.getindex(
-        summary::FlexiChainSummaryC{TKey},
-        key::ParameterOrExtra{<:TKey});
-        iter=Colon()
-    where {TKey}
-
-Unambiguously access the data corresponding to the given `key` in the `summary` (which has
-been collapsed over the chain dimension).
-
-The `chain` keyword argument further allows you to extract specific iterations from the
-summary.
-"""
-function Base.getindex(
-    summary::FlexiChainSummaryC{TKey}, key::ParameterOrExtra{<:TKey}; iter=Colon()
-) where {TKey}
-    return data_anon_chain(summary._data[key]; iter_indices=iter_indices(summary))[iter=iter]
-end
-"""
-    Base.getindex(
-        summary::FlexiChainSummaryIC{TKey},
-        key::ParameterOrExtra{<:TKey})
-    where {TKey}
-
-Unambiguously access the data corresponding to the given `key` in the `summary` (which has
-been collapsed over both dimensions).
-"""
-function Base.getindex(
-    summary::FlexiChainSummaryIC{TKey}, key::ParameterOrExtra{<:TKey}
-) where {TKey}
-    return only(data(summary._data[key]))
+    fs::FlexiSummary{TKey,TIIdx,TCIdx}, key::ParameterOrExtra{<:TKey}
+) where {TKey,TIIdx,TCIdx}
+    return _get_data(fs, key)
 end
 
 #################
@@ -140,21 +95,19 @@ end
         iter=Colon(), chain=Colon()
     )
 
-The least verbose method to index into a `ChainOrSummary` is using `Symbol`.
+The least verbose method to index into a `FlexiChain` is using `Symbol`.
 
-However, recall that the keys in a `ChainOrSummary{TKey}` are not stored as
-`Symbol`s but rather as either `Parameter{TKey}` or `Extra`. Thus, to
-access the data corresponding to a `Symbol`, we first convert all key names
-(both parameters and other keys) to `Symbol`s, and then check if there is a
-unique match.
+However, recall that the keys in a `FlexiChain{TKey}` are not stored as `Symbol`s but rather
+as either `Parameter{TKey}` or `Extra`. Thus, to access the data corresponding to a
+`Symbol`, we first convert all key names (both parameters and other keys) to `Symbol`s, and
+then check if there is a unique match.
 
-If there is, then we can return that data. If there are no valid matches,
-then we throw a `KeyError`.
+If there is, then we can return that data. If there are no valid matches, then we throw a
+`KeyError`.
 
-If there are multiple matches: for example, if you have a `Parameter(:x)`
-and also an `Extra(:some_section, :x)`, then this method will also
-throw a `KeyError`. You will then have to index into it using the
-actual key.
+If there are multiple matches: for example, if you have a `Parameter(:x)` and also an
+`Extra(:some_section, :x)`, then this method will also throw a `KeyError`. You will then
+have to index into it using the actual key.
 """
 function Base.getindex(
     fchain::FlexiChain{TKey}, sym_key::Symbol; iter=Colon(), chain=Colon()
@@ -163,49 +116,9 @@ function Base.getindex(
         iter=iter, chain=chain
     ]
 end
-# Same boilerplate for the summary types
-# TODO: Is it possible to reduce this boilerplate?
-# TODO: Document (after we've decided how best to organise it in the docs)
-function Base.getindex(
-    summary::FlexiChainSummaryI{TKey}, sym_key::Symbol; chain=Colon()
-) where {TKey}
-    return summary[_extract_potential_symbol_key(TKey, keys(summary), sym_key)][chain=chain]
-end
-function Base.getindex(
-    summary::FlexiChainSummaryC{TKey}, sym_key::Symbol; iter=Colon()
-) where {TKey}
-    return summary[_extract_potential_symbol_key(TKey, keys(summary), sym_key)][iter=iter]
-end
-function Base.getindex(summary::FlexiChainSummaryIC{TKey}, sym_key::Symbol) where {TKey}
-    return summary[_extract_potential_symbol_key(TKey, keys(summary), sym_key)]
-end
-
-"""
-    Base.getindex(
-        fchain::FlexiChain{TKey}, section_name::Symbol, key_name::Any;
-        iter=Colon(), chain=Colon()
-    ) where {TKey}
-
-Convenience method for retrieving non-parameter keys. Equal to
-`chain[Extra(section_name, key_name)]`.
-"""
-function Base.getindex(
-    fchain::FlexiChain, section_name::Symbol, key_name::Any; iter=Colon(), chain=Colon()
-)
-    return fchain[Extra(section_name, key_name)][iter=iter, chain=chain]
-end
-function Base.getindex(
-    summary::FlexiChainSummaryI, section_name::Symbol, key_name::Any; chain=Colon()
-)
-    return summary[Extra(section_name, key_name)][chain=chain]
-end
-function Base.getindex(
-    summary::FlexiChainSummaryC, section_name::Symbol, key_name::Any; iter=Colon()
-)
-    return summary[Extra(section_name, key_name)][iter=iter]
-end
-function Base.getindex(summary::FlexiChainSummaryIC, section_name::Symbol, key_name::Any)
-    return summary[Extra(section_name, key_name)]
+# TODO: iter/chain/stat kwargs
+function Base.getindex(fs::FlexiSummary{TKey}, sym_key::Symbol) where {TKey}
+    return fs[_extract_potential_symbol_key(TKey, keys(fs), sym_key)]
 end
 
 """
@@ -214,29 +127,16 @@ end
         iter=Colon(), chain=Colon()
     ) where {TKey}
 
-Convenience method for retrieving parameters. Equal to
-`chain[Parameter(parameter_name)]`.
+Convenience method for retrieving parameters. Equal to `chain[Parameter(parameter_name)]`.
 """
 function Base.getindex(
     fchain::FlexiChain{TKey}, parameter_name::TKey; iter=Colon(), chain=Colon()
 ) where {TKey}
     return fchain[Parameter(parameter_name)][iter=iter, chain=chain]
 end
-# TODO: Boilerplate
-function Base.getindex(
-    summary::FlexiChainSummaryI{TKey}, parameter_name::TKey; chain=Colon()
-) where {TKey}
-    return summary[Parameter(parameter_name)][chain=chain]
-end
-function Base.getindex(
-    summary::FlexiChainSummaryC{TKey}, parameter_name::TKey; iter=Colon()
-) where {TKey}
-    return summary[Parameter(parameter_name)][iter=iter]
-end
-function Base.getindex(
-    summary::FlexiChainSummaryIC{TKey}, parameter_name::TKey
-) where {TKey}
-    return summary[Parameter(parameter_name)]
+# TODO: iter/chain/stat kwargs
+function Base.getindex(fs::FlexiSummary{TKey}, parameter_name::TKey) where {TKey}
+    return fs[Parameter(parameter_name)]
 end
 
 """
@@ -294,32 +194,18 @@ function Base.getindex(
     return if optic === identity
         fchain[Parameter(vn), iter=iter, chain=chain]
     else
+        # TODO: Would be nice to throw a nicer error if optic is incompatible with the
+        # stored data.
         map(optic, fchain[Parameter(vn), iter=iter, chain=chain])
     end
 end
-# TODO: Boilerplate ...
-function Base.getindex(summary::FlexiChainSummaryI{<:VarName}, vn::VarName; chain=Colon())
-    optic, vn = _getindex_optic_and_vn(summary, vn, identity, vn)
+# TODO: iter/chain/stat kwargs
+function Base.getindex(fs::FlexiSummary{<:VarName}, vn::VarName)
+    optic, vn = _getindex_optic_and_vn(fs, vn, identity, vn)
     return if optic === identity
-        summary[Parameter(vn), chain=chain]
+        fs[Parameter(vn)]
     else
-        map(optic, summary[Parameter(vn), chain=chain])
-    end
-end
-function Base.getindex(summary::FlexiChainSummaryC{<:VarName}, vn::VarName; iter=Colon())
-    optic, vn = _getindex_optic_and_vn(summary, vn, identity, vn)
-    return if optic === identity
-        summary[Parameter(vn), iter=iter]
-    else
-        map(optic, summary[Parameter(vn), iter=iter])
-    end
-end
-function Base.getindex(summary::FlexiChainSummaryIC{<:VarName}, vn::VarName)
-    optic, vn = _getindex_optic_and_vn(summary, vn, identity, vn)
-    return if optic === identity
-        summary[Parameter(vn)]
-    else
-        optic(summary[Parameter(vn)])
+        map(optic, fs[Parameter(vn)])
     end
 end
 
@@ -390,7 +276,7 @@ function _get_multi_keys(
 end
 
 function _get_iter_indices_and_lookup(
-    fchain::Union{FlexiChain{TKey},FlexiChainSummaryC{TKey}}, iter
+    fchain::ChainOrSummary{TKey}, iter
 )::Tuple{Union{Colon,AbstractVector{Int}},DD.Lookup} where {TKey}
     old_iter_lookup = FlexiChains.iter_indices(fchain)
     new_iter_indices = _selectindices(old_iter_lookup, iter)
@@ -398,7 +284,7 @@ function _get_iter_indices_and_lookup(
     return new_iter_indices, new_iter_lookup
 end
 function _get_chain_indices_and_lookup(
-    fchain::Union{FlexiChain{TKey},FlexiChainSummaryI{TKey}}, chain
+    fchain::ChainOrSummary{TKey}, chain
 )::Tuple{Union{Colon,AbstractVector{Int}},DD.Lookup} where {TKey}
     old_chain_lookup = FlexiChains.chain_indices(fchain)
     new_chain_indices = _selectindices(old_chain_lookup, chain)
@@ -492,48 +378,15 @@ function Base.getindex(
         last_sampler_state=FlexiChains.last_sampler_state(fchain),
     )
 end
-
-# TODO: This is REALLY ugly. Do we really need these methods?
+# TODO: iter/chain/stat kwargs
 function Base.getindex(
-    summary::FlexiChainSummaryI{TKey,NIter,NChains},
-    keyvec::Union{Colon,AbstractVector}=Colon();
-    chain=Colon(),
-) where {TKey,NIter,NChains}
-    new_chain_indices, new_chain_lookup = _get_chain_indices_and_lookup(summary, chain)
-    new_NChains = length(new_chain_lookup)
-    keys_to_include = _get_multi_keys(TKey, keys(summary), keyvec)
-    new_data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,new_NChains}}()
+    fs::FlexiSummary{TKey}, keyvec::Union{Colon,AbstractVector}=Colon();
+) where {TKey}
+    keys_to_include = _get_multi_keys(TKey, keys(fs), keyvec)
+    new_data = Dict{ParameterOrExtra{<:TKey},Any}()
     for k in keys_to_include
-        new_data[k] = SizedMatrix{1,new_NChains}(
-            reshape(summary._data[k][new_chain_indices], 1, :)
-        )
+        # Note that fs._data[k] is always a plain old 3D matrix.
+        new_data[k] = fs._data[k]
     end
-    return FlexiChainSummaryI{TKey,NIter,new_NChains}(new_data, new_chain_lookup)
-end
-function Base.getindex(
-    summary::FlexiChainSummaryC{TKey,NIter,NChains},
-    keyvec::Union{Colon,AbstractVector}=Colon();
-    iter=Colon(),
-) where {TKey,NIter,NChains}
-    new_iter_indices, new_iter_lookup = _get_iter_indices_and_lookup(summary, iter)
-    new_NIter = length(new_iter_lookup)
-    keys_to_include = _get_multi_keys(TKey, keys(summary), keyvec)
-    new_data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{new_NIter,1}}()
-    for k in keys_to_include
-        new_data[k] = SizedMatrix{new_NIter,1}(
-            reshape(summary._data[k][new_iter_indices], :, 1)
-        )
-    end
-    return FlexiChainSummaryC{TKey,new_NIter,NChains}(new_data, new_iter_lookup)
-end
-function Base.getindex(
-    summary::FlexiChainSummaryIC{TKey,NIter,NChains},
-    keyvec::Union{Colon,AbstractVector}=Colon(),
-) where {TKey,NIter,NChains}
-    keys_to_include = _get_multi_keys(TKey, keys(summary), keyvec)
-    new_data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{1,1}}()
-    for k in keys_to_include
-        new_data[k] = SizedMatrix{1,1}(reshape(summary._data[k], 1, 1))
-    end
-    return FlexiChainSummaryIC{TKey,NIter,NChains}(new_data)
+    return FlexiSummary{TKey}(new_data)
 end

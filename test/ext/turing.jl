@@ -112,7 +112,7 @@ Turing.setprogress!(false)
             @test vec(chn_flexi[@varname(s2)]) == vec(chn_mcmc[:s2])
             @test vec(chn_flexi[@varname(m)]) == vec(chn_mcmc[:m])
             for lp_type in [:lp, :logprior, :loglikelihood]
-                @test vec(chn_flexi[:logprobs, lp_type]) == vec(chn_mcmc[lp_type])
+                @test vec(chn_flexi[Extra(:logprobs, lp_type)]) == vec(chn_mcmc[lp_type])
             end
         end
 
@@ -140,7 +140,7 @@ Turing.setprogress!(false)
             @test chn isa VNChain
             @test size(chn) == (20, 1)
             @test all(x -> x == 1, vec(chn[@varname(x)]))
-            @test all(x -> x == "hi", vec(chn[:a, :b]))
+            @test all(x -> x == "hi", vec(chn[Extra(:a, :b)]))
         end
     end
 

@@ -86,10 +86,12 @@ For example, the log-joint probability of each sample is stored with the key `:l
 Notice in the `FlexiChain` output displayed above, this is associated with a _section_, labelled `:logprobs`.
 In `FlexiChain`s, all non-parameter keys are grouped into _sections_.
 
-To access these, you need to specify both the section name and the key name.
+TODO: We removed this getindex method. Now it's a bit clunky having to import `Extra`. I need to rethink this bit of it.
 
 ```@example 1
-chain[:logprobs, :lp]
+using FlexiChains: Extra
+
+chain[Extra(:logprobs, :lp)]
 ```
 
 ### Shortcuts
@@ -117,7 +119,7 @@ If there is any ambiguity present (for example if there is a parameter named `lp
 ## Summary statistics
 
 You can obtain, for example, the mean of each key in the chain using `Statistics.mean`.
-This returns a `FlexiChainSummary` object which can be subsetted in exactly the same way as a `FlexiChain`.
+This returns a `FlexiSummary` object which can be subsetted in exactly the same way as a `FlexiChain`.
 
 ```@example 1
 using Statistics: mean
