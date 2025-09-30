@@ -15,14 +15,16 @@ function FlexiChains.to_varname_dict(
     for (varname, value) in pairs(transition.θ)
         d[Parameter(varname)] = value
     end
-    # add in the log probs
-    d[Extra(:logprobs, :logprior)] = transition.logprior
-    d[Extra(:logprobs, :loglikelihood)] = transition.loglikelihood
-    d[Extra(:logprobs, :lp)] = transition.logprior + transition.loglikelihood
     # add in the transition stats (if available)
     for (key, value) in pairs(transition.stat)
-        d[Extra(:sampler_stats, key)] = value
+        # Note that if `transition.stat` contains `lp`, `logprior`, or `loglikelihood`, it
+        # will be overwritten below...
+        d[Extra(key)] = value
     end
+    # add in the log probs
+    d[Extra(:logprior)] = transition.logprior
+    d[Extra(:loglikelihood)] = transition.loglikelihood
+    d[Extra(:lp)] = transition.logprior + transition.loglikelihood
     return d
 end
 

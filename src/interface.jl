@@ -255,17 +255,12 @@ function Base.show(
     end
 
     # Print extras
-    extras = extras_grouped(chain)
+    extra_names = extras(chain)
     printstyled(io, "Extra keys       "; bold=true)
     if isempty(extras)
         println(io, "(none)")
     else
-        print_space = false
-        for (section, keys) in pairs(extras)
-            print_space && print(io, "\n                 ")
-            print(io, "{:$section} ", join(keys, ", "))
-            print_space = true
-        end
+        println(io, join(extra_names, ", "))
     end
 
     # TODO: Summary statistics?
@@ -304,31 +299,6 @@ function extras(chain::FlexiChain)::Vector{Extra}
         end
     end
     return other_key_names
-end
-
-"""
-    extras_grouped(chain::FlexiChain)
-
-Returns a NamedTuple of `Extra` names, grouped by their section.
-"""
-function extras_grouped(chain::FlexiChain)::NamedTuple
-    other_keys = Dict{Symbol,Any}()
-    # Build up the dictionary of section name => key name
-    for k in keys(chain._data)
-        if k isa Extra
-            section = k.section_name
-            key_name = k.key_name
-            if !haskey(other_keys, section)
-                other_keys[section] = Any[]
-            end
-            push!(other_keys[section], key_name)
-        end
-    end
-    # concretise
-    for (section, keys) in pairs(other_keys)
-        other_keys[section] = Set(map(identity, keys))
-    end
-    return NamedTuple(other_keys)
 end
 
 # Overloaded in TuringExt.

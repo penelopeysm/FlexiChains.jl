@@ -43,13 +43,10 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName,NIter,NChain}) where {N
     # Handle non-parameter keys
     internal_keys = Symbol[]
     internal_values = Array{Real,3}(undef, NIter, 0, NChain)
-    # Note that Turing.jl stores all other keys in the 'internals' section, which is a bit
-    # coarse (we could use our own section keys...) but we reproduce it here to make sure
-    # that downstream usage of the resulting MCMCChains.Chains object works as expected.
     for k in FlexiChains.extras(vnchain)
         v = map(identity, vnchain[k])
         if eltype(v) <: Real
-            push!(internal_keys, Symbol(k.key_name))
+            push!(internal_keys, Symbol(k.name))
             internal_values = hcat(internal_values, reshape(v, NIter, 1, NChain))
         else
             @warn "key $k skipped in MCMCChains conversion as it is not Real-valued"
@@ -68,6 +65,7 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName,NIter,NChain}) where {N
     return MCMCChains.Chains(
         all_values,
         all_symbols,
+        # Note that Turing.jl stores all other keys in the 'internals' section.
         (; internals=internal_keys);
         info=info,
         iterations=FlexiChains.iter_indices(vnchain),

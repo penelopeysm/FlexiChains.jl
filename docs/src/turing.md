@@ -83,15 +83,11 @@ You can still call `chain[@varname(x[1])]` and `chain[@varname(x[2])]` and then 
 
 In general Turing.jl tries to package up some extra metadata into the chain that may be helpful.
 For example, the log-joint probability of each sample is stored with the key `:lp`.
-Notice in the `FlexiChain` output displayed above, this is associated with a _section_, labelled `:logprobs`.
-In `FlexiChain`s, all non-parameter keys are grouped into _sections_.
-
-TODO: We removed this getindex method. Now it's a bit clunky having to import `Extra`. I need to rethink this bit of it.
+To access non-parameter information like this in an unambiguous fashion, you should use the `Extra` wrapper (the next section describes a shortcut that may be more convenient when there is no ambiguity).
 
 ```@example 1
 using FlexiChains: Extra
-
-chain[Extra(:logprobs, :lp)]
+chain[Extra(:lp)]
 ```
 
 ### Shortcuts
@@ -108,7 +104,7 @@ chain[:mu] # parameter
     
     In this case, because the only parameter `p` for which `Symbol(p) == :mu` is `@varname(mu)`, we can safely identify `@varname(mu)` as the parameter that we want.
 
-Likewise, we can omit the section symbol for the `:lp` data.
+Likewise, we can omit wrapping `:lp` in `Extra(...)`:
 
 ```@example 1
 chain[:lp] # other key

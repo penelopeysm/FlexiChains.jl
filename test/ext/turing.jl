@@ -112,7 +112,7 @@ Turing.setprogress!(false)
             @test vec(chn_flexi[@varname(s2)]) == vec(chn_mcmc[:s2])
             @test vec(chn_flexi[@varname(m)]) == vec(chn_mcmc[:m])
             for lp_type in [:lp, :logprior, :loglikelihood]
-                @test vec(chn_flexi[Extra(:logprobs, lp_type)]) == vec(chn_mcmc[lp_type])
+                @test vec(chn_flexi[Extra(lp_type)]) == vec(chn_mcmc[lp_type])
             end
         end
 
@@ -134,13 +134,13 @@ Turing.setprogress!(false)
             AbstractMCMC.step(rng, model, ::S, state=nothing; kwargs...) = (Tn(), nothing)
             # Get it to work with FlexiChains
             FlexiChains.to_varname_dict(::Tn) =
-                Dict(Parameter(@varname(x)) => 1, Extra(:a, :b) => "hi")
+                Dict(Parameter(@varname(x)) => 1, Extra(:b) => "hi")
             # Then we should be able to sample
             chn = sample(model, S(), 20; chain_type=VNChain)
             @test chn isa VNChain
             @test size(chn) == (20, 1)
             @test all(x -> x == 1, vec(chn[@varname(x)]))
-            @test all(x -> x == "hi", vec(chn[Extra(:a, :b)]))
+            @test all(x -> x == "hi", vec(chn[Extra(:b)]))
         end
     end
 

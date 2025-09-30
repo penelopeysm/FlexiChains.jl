@@ -15,7 +15,7 @@ const ChainOrSummary{TKey} = Union{FlexiChain{TKey},FlexiSummary{TKey}}
 Unambiguously access the data corresponding to the given `key` in the `chain`.
 
 You will need to use this method if you have multiple keys that convert to the
-same `Symbol`, such as a `Parameter(:x)` and an `Extra(:some_section, :x)`.
+same `Symbol`, such as a `Parameter(:x)` and an `Extra(:x)`.
 
 The `iter` and `chain` keyword arguments further allow you to extract specific
 iterations or chains from the data corresponding to the given `key`.
@@ -60,14 +60,8 @@ function _extract_potential_symbol_key(
     # https://github.com/JuliaLang/julia/issues/59626
     potential_keys = ParameterOrExtra{<:TKey}[]
     for k in all_keys
-        sym = if k isa Parameter{<:TKey}
-            # TODO: What happens if Symbol(...) fails on some weird type?
-            Symbol(k.name)
-        elseif k isa Extra
-            # TODO: What happens if Symbol(...) fails on some weird type?
-            Symbol(k.key_name)
-        end
-        if sym == target_sym
+        # TODO: What happens if Symbol(...) fails on some weird type?
+        if Symbol(k.name) == target_sym
             push!(potential_keys, k)
         end
     end
@@ -80,7 +74,7 @@ function _extract_potential_symbol_key(
             if k isa Parameter{<:TKey}
                 s *= "  - Parameter($(k.name))\n"
             elseif k isa Extra
-                s *= "  - Extra(:$(k.section_name), $(k.key_name))\n"
+                s *= "  - Extra(:$(k.name))\n"
             end
         end
         throw(KeyError(s))
@@ -106,8 +100,8 @@ If there is, then we can return that data. If there are no valid matches, then w
 `KeyError`.
 
 If there are multiple matches: for example, if you have a `Parameter(:x)` and also an
-`Extra(:some_section, :x)`, then this method will also throw a `KeyError`. You will then
-have to index into it using the actual key.
+`Extra(:x)`, then this method will also throw a `KeyError`. You will then have to index into
+it using the actual key.
 """
 function Base.getindex(
     fchain::FlexiChain{TKey}, sym_key::Symbol; iter=Colon(), chain=Colon()
@@ -269,6 +263,7 @@ function _get_multi_keys(
         elseif k isa TKey
             push!(ks, Parameter(k))
         else
+            # TODO Fix this error message!
             error("go straight to jail")
         end
     end

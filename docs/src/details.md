@@ -44,7 +44,7 @@ FlexiChains.last_sampler_state
 The keys of a `FlexiChain{T}` must be one of two types:
 
   - `Parameter(::T)`: a parameter of the Markov chain itself
-  - `Extra(::Symbol, ::Any)`: a key that is not a parameter, such as metadata. The `Symbol` argument identifies a _section_ which the key belongs to, thus allowing for multiple keys to be grouped together in meaningful ways.
+  - `Extra(::Any)`: a key that is not a parameter, such as metadata.
 
 ```@docs
 FlexiChains.Parameter
@@ -92,7 +92,6 @@ If you only want `Parameter`s, or only `Extra`s you can use the following:
 ```@docs
 FlexiChains.parameters
 FlexiChains.extras
-FlexiChains.extras_grouped
 ```
 
 ## Subsetting and merging parameters

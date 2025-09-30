@@ -48,16 +48,13 @@ struct Parameter{T}
 end
 
 """
-    Extra(section_name::Symbol, key_name::Any)
+    Extra(name::Any)
 
-A key in a `FlexiChain` that is not a parameter. FlexiChain allows for
-such informations to be grouped into _sections_, which are identified by
-`Symbol`s. The name of the key itself can be of any type and is not
-constrained by the type of the `FlexiChain`.
+A key in a `FlexiChain` that is not a parameter. The name of the key itself can be of any
+type and is not constrained by the type of the `FlexiChain`.
 """
 struct Extra{T}
-    section_name::Symbol
-    key_name::T
+    name::T
 end
 
 """
@@ -220,7 +217,7 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
 
     ```julia
     d = fill(
-        Dict(Parameter(:x) => rand(), Extra(:section, "y") => rand()), 200, 3
+        Dict(Parameter(:x) => rand(), Extra("y") => rand()), 200, 3
     )
     chn = FlexiChain{Symbol,200,3}(d)
     ```
@@ -300,7 +297,7 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
     ```julia
     d = Dict(
         Parameter(:x) => rand(200, 3),
-        Extra(:section, "y") => rand(200, 3),
+        Extra("y") => rand(200, 3),
     )
     chn = FlexiChain{Symbol,200,3}(d)
     ```

@@ -21,8 +21,8 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         Dict(
             Parameter(:a) => as,
             Parameter(:b) => bs,
-            Extra(:section, "c") => cs,
-            Extra(:section, "actuallyString") => ds,
+            Extra("c") => cs,
+            Extra("actuallyString") => ds,
         );
         iter_indices=FlexiChains._make_lookup(4:4:(4 * N_iters)),
         chain_indices=FlexiChains._make_lookup(1:N_chains),
@@ -43,7 +43,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 if func in WORKS_ON_STRING
                     # the 1 dim at the end is the stat dim
                     expected = reshape(func(ds; dims=1), N_chains, 1)
-                    @test fs[Extra(:section, "actuallyString")] == expected
+                    @test fs[Extra("actuallyString")] == expected
                 else
                     # the key "actuallyString" should be skipped
                     @test_logs (:warn, r"\"actuallyString\"") FlexiChains.collapse(
@@ -65,7 +65,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 if func in WORKS_ON_STRING
                     # the 1 dim at the end is the stat dim
                     expected = reshape(func(ds; dims=2), N_iters, 1)
-                    @test fs[Extra(:section, "actuallyString")] == expected
+                    @test fs[Extra("actuallyString")] == expected
                 else
                     # the key "actuallyString" should be skipped
                     @test_logs (:warn, r"\"actuallyString\"") FlexiChains.collapse(
@@ -83,7 +83,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 if func in WORKS_ON_STRING
                     # the 1 dim at the end is the stat dim
                     expected = func(ds)
-                    @test only(fs[Extra(:section, "actuallyString")]) == expected
+                    @test only(fs[Extra("actuallyString")]) == expected
                 else
                     # the key "actuallyString" should be skipped
                     @test_logs (:warn, r"\"actuallyString\"") FlexiChains.collapse(
