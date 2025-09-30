@@ -37,7 +37,6 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 @test parent(parent(DD.dims(fs[:a], :chain))) ==
                     FlexiChains.chain_indices(chain) ==
                     FlexiChains.chain_indices(fs)
-                @test parent(parent(DD.dims(fs[:a], :stat))) == [Symbol(func)]
                 @test isapprox(fs[:a], vec(func(as; dims=1)); nans=true)
 
                 if func in WORKS_ON_STRING
@@ -94,6 +93,36 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
     end
 
+    @testset "drop_stat_dim=true" begin
+        @testset "iter" begin
+            fs = FlexiChains.collapse(
+                chain, [(:mean, x -> mean(x; dims=1))]; dims=:iter, drop_stat_dim=true
+            )
+            @test fs[:a] isa DD.DimVector
+            @test parent(parent(DD.dims(fs[:a], :chain))) ==
+                FlexiChains.chain_indices(chain) ==
+                FlexiChains.chain_indices(fs)
+            @test isapprox(fs[:a], vec(mean(as; dims=1)))
+        end
+
+        @testset "chain" begin
+            fs = FlexiChains.collapse(
+                chain, [(:mean, x -> mean(x; dims=2))]; dims=:chain, drop_stat_dim=true
+            )
+            @test fs[:a] isa DD.DimVector
+            @test parent(parent(DD.dims(fs[:a], :iter))) ==
+                FlexiChains.iter_indices(chain) ==
+                FlexiChains.iter_indices(fs)
+            @test isapprox(fs[:a], vec(mean(as; dims=2)))
+        end
+
+        @testset "both" begin
+            fs = FlexiChains.collapse(chain, [mean]; dims=:both, drop_stat_dim=true)
+            @test fs[:a] isa Float64
+            @test isapprox(fs[:a], mean(as))
+        end
+    end
+
     @testset "check that keyword arguments are forwarded" begin
         # We'll use `std` without Bessel correction here.
         N_iters, N_chains = 10, 3
@@ -145,34 +174,28 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         fs = mean(chain; dims=:iter)
 
         @testset "VarName" begin
-            @test fs[@varname(x)] isa DD.DimMatrix
+            @test fs[@varname(x)] isa DD.DimVector
             @test parent(parent(DD.dims(fs[@varname(x)], :chain))) ==
                 FlexiChains.chain_indices(chain) ==
                 FlexiChains.chain_indices(fs)
-            @test parent(parent(DD.dims(fs[@varname(x)], :stat))) == [:mean]
-            @test isapprox(
-                dropdims(fs[@varname(x)]; dims=:stat), dropdims(mean(xs; dims=1); dims=1)
-            )
+            @test isapprox(fs[@varname(x)], dropdims(mean(xs; dims=1); dims=1))
         end
 
         @testset "Symbol" begin
-            @test fs[:x] isa DD.DimMatrix
+            @test fs[:x] isa DD.DimVector
             @test parent(parent(DD.dims(fs[:x], :chain))) ==
                 FlexiChains.chain_indices(chain) ==
                 FlexiChains.chain_indices(fs)
-            @test parent(parent(DD.dims(fs[:x], :stat))) == [:mean]
-            @test isapprox(dropdims(fs[:x]; dims=:stat), dropdims(mean(xs; dims=1); dims=1))
+            @test isapprox(fs[:x], dropdims(mean(xs; dims=1); dims=1))
         end
 
         @testset "sub-VarName" begin
-            @test fs[@varname(x[1])] isa DD.DimMatrix
+            @test fs[@varname(x[1])] isa DD.DimVector
             @test parent(parent(DD.dims(fs[@varname(x[1])], :chain))) ==
                 FlexiChains.chain_indices(chain) ==
                 FlexiChains.chain_indices(fs)
-            @test parent(parent(DD.dims(fs[@varname(x[1])], :stat))) == [:mean]
             @test isapprox(
-                dropdims(fs[@varname(x[1])]; dims=:stat),
-                dropdims(mean(getindex.(xs, 1); dims=1); dims=1),
+                fs[@varname(x[1])], dropdims(mean(getindex.(xs, 1); dims=1); dims=1)
             )
         end
 

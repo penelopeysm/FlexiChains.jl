@@ -12,18 +12,26 @@ end
         TKey,
         TIIdx<:Union{DimensionalData.Lookup,Nothing},
         TCIdx<:Union{DimensionalData.Lookup,Nothing},
-        TSIdx<:DimensionalData.Categorical
+        TSIdx<:Union{DimensionalData.Categorical,Nothing},
     }
 
 A data structure containing summary statistics of a [`FlexiChain`](@ref).
 
-TODO: Document.
+A `FlexiSummary{TKey}` can be indexed into using exactly the same techniques as a
+`FlexiChain{TKey}`. That is to say:
+
+- with `Parameter{TKey}` or `Extra` to unambiguously get the summary statistics for that
+  key
+- with `TKey` for automatic conversion to `Parameter{TKey}`
+- with `Symbol` to find unambiguous matches
+- if `TKey<:VarName`, using `VarName` or sub-`VarName`s to additionally extract part of the
+  data.
 """
 struct FlexiSummary{
     TKey,
     TIIdx<:Union{DD.Lookup,Nothing},
     TCIdx<:Union{DD.Lookup,Nothing},
-    TSIdx<:DD.Categorical,
+    TSIdx<:Union{DD.Categorical,Nothing},
 }
     _data::Dict{ParameterOrExtra{<:TKey},<:AbstractArray{<:Any,3}}
     _iter_indices::TIIdx
@@ -42,7 +50,7 @@ struct FlexiSummary{
         TKey,
         TIIdx<:Union{DD.Lookup,Nothing},
         TCIdx<:Union{DD.Lookup,Nothing},
-        TSIdx<:DD.Categorical,
+        TSIdx<:Union{DD.Categorical,Nothing},
     }
         # Get expected size.
         expected_size = (
@@ -62,14 +70,8 @@ struct FlexiSummary{
         return new{TKey,TIIdx,TCIdx,TSIdx}(d, iter_indices, chain_indices, stat_indices)
     end
 end
-function iter_indices(::FlexiSummary{TKey,Nothing}) where {TKey}
-    return error("iteration dimension has already been collapsed")
-end
 function iter_indices(fs::FlexiSummary{TKey,TIIdx})::TIIdx where {TKey,TIIdx}
     return fs._iter_indices
-end
-function chain_indices(::FlexiSummary{TKey,TIIdx,Nothing}) where {TKey,TIIdx}
-    return error("chain dimension has already been collapsed")
 end
 function chain_indices(fs::FlexiSummary{TKey,TIIdx,TCIdx})::TCIdx where {TKey,TIIdx,TCIdx}
     return fs._chain_indices
@@ -83,22 +85,24 @@ end
 function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) where {TKey}
     maybe_s(x) = x == 1 ? "" : "s"
     printstyled(io, "FlexiSummary "; bold=true)
-    ii = summary._iter_indices # Note iter_indices(summary) will error
+    ii = iter_indices(summary)
     if !isnothing(ii)
-        printstyled(io, "| $(length(ii)) iterations ("; bold=true)
+        printstyled(io, " | $(length(ii)) iterations ("; bold=true)
         printstyled(io, "$(_show_range(ii))"; color=DD.dimcolor(1), bold=true)
-        printstyled(io, ") "; bold=true)
+        printstyled(io, ")"; bold=true)
     end
-    ci = summary._chain_indices # Note chain_indices(summary) will error
+    ci = chain_indices(summary)
     if !isnothing(ci)
-        printstyled(io, "| $(length(ci)) iterations ("; bold=true)
+        printstyled(io, " | $(length(ci)) iterations ("; bold=true)
         printstyled(io, "$(_show_range(ci))"; color=DD.dimcolor(2), bold=true)
-        printstyled(io, ") "; bold=true)
+        printstyled(io, ")"; bold=true)
     end
-    si = stat_indices(summary)
-    printstyled(io, "| $(length(si)) statistic$(maybe_s(length(si))) ("; bold=true)
-    printstyled(io, "$(join(parent(si), ", "))"; color=DD.dimcolor(3), bold=true)
-    printstyled(io, ") "; bold=true)
+    si = summary._stat_indices
+    if !isnothing(si)
+        printstyled(io, " | $(length(si)) statistic$(maybe_s(length(si))) ("; bold=true)
+        printstyled(io, "$(join(parent(si), ", "))"; color=DD.dimcolor(3), bold=true)
+        printstyled(io, ")"; bold=true)
+    end
     println(io)
     println(io)
 
@@ -128,34 +132,29 @@ end
 
 const STAT_DIM_NAME = :stat
 function _get_data(
-    fs::FlexiSummary{TKey,Nothing,TCIdx}, key::ParameterOrExtra{<:TKey}
-) where {TKey,TCIdx}
-    # Collapse iteration dimension
-    a2d = dropdims(fs._data[key]; dims=1)
-    return DD.DimMatrix(
-        a2d,
-        (
-            DD.Dim{CHAIN_DIM_NAME}(chain_indices(fs)),
-            DD.Dim{STAT_DIM_NAME}(stat_indices(fs)),
-        ),
-    )
-end
-function _get_data(
-    fs::FlexiSummary{TKey,TIIdx,Nothing}, key::ParameterOrExtra{<:TKey}
-) where {TKey,TIIdx}
-    # Collapse chain dimension
-    a2d = dropdims(fs._data[key]; dims=2)
-    return DD.DimMatrix(
-        a2d,
-        (DD.Dim{ITER_DIM_NAME}(iter_indices(fs)), DD.Dim{STAT_DIM_NAME}(stat_indices(fs))),
-    )
-end
-function _get_data(
-    fs::FlexiSummary{TKey,Nothing,Nothing}, key::ParameterOrExtra{<:TKey}
-) where {TKey}
-    # Collapse both iteration and chain dimensions
-    a1d = dropdims(fs._data[key]; dims=(1, 2))
-    return DD.DimArray(a1d, (DD.Dim{STAT_DIM_NAME}(stat_indices(fs)),))
+    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}, key::ParameterOrExtra{<:TKey}
+) where {TKey,TIIdx,TCIdx,TSIdx}
+    dim_indices = []
+    dims = []
+    if TIIdx !== Nothing
+        push!(dim_indices, 1)
+        push!(dims, DD.Dim{ITER_DIM_NAME}(iter_indices(fs)))
+    end
+    if TCIdx !== Nothing
+        push!(dim_indices, 2)
+        push!(dims, DD.Dim{CHAIN_DIM_NAME}(chain_indices(fs)))
+    end
+    if TSIdx !== Nothing
+        push!(dim_indices, 3)
+        push!(dims, DD.Dim{STAT_DIM_NAME}(stat_indices(fs)))
+    end
+    dropped_dim_indices = tuple(setdiff(1:3, dim_indices)...)
+    array = dropdims(fs._data[key]; dims=dropped_dim_indices)
+    return if isempty(dims)
+        array[]
+    else
+        return DD.DimArray(array, tuple(dims...))
+    end
 end
 
 function _get_names_and_funcs(names_or_funcs::AbstractVector)
@@ -207,7 +206,8 @@ end
     FlexiChains.collapse(
         chain::FlexiChain,
         funcs::AbstractVector;
-        dims::Symbol=:both
+        dims::Symbol=:both,
+        drop_stat_dim::Bool=false,
     )
 
 Low-level function to collapse one or both dimensions of a `FlexiChain` by applying a list
@@ -250,10 +250,18 @@ collapse(chn, [
 ]; dims=:iter)
 ```
 
+If the `drop_stat_dim` keyword argument is `true` and only one function is provided in
+`funcs`, then the resulting `FlexiSummary` will have the `stat` dimension dropped. This allows
+for easier indexing into the result when only one statistic is computed. It is an error to set
+`drop_stat_dim=true` when more than one function is provided.
+
 The return type is a [`FlexiSummary`](@ref).
 """
 function collapse(
-    chain::FlexiChain{TKey,NIter,NChains}, funcs::AbstractVector; dims::Symbol=:both
+    chain::FlexiChain{TKey,NIter,NChains},
+    funcs::AbstractVector;
+    dims::Symbol=:both,
+    drop_stat_dim::Bool=false,
 ) where {TKey,NIter,NChains}
     data = Dict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
     names, funcs = _get_names_and_funcs(funcs)
@@ -288,7 +296,19 @@ function collapse(
     end
     iter_idxs = dims == :chain ? FlexiChains.iter_indices(chain) : nothing
     chain_idxs = dims == :iter ? FlexiChains.chain_indices(chain) : nothing
-    stat_lookup = _make_categorical(names)
+    stat_lookup = if drop_stat_dim
+        if length(funcs) != 1
+            throw(
+                ArgumentError(
+                    "`drop_stat_dim=true` only allowed when one function is provided"
+                ),
+            )
+        else
+            nothing
+        end
+    else
+        _make_categorical(names)
+    end
     return FlexiSummary{TKey}(data, iter_idxs, chain_idxs, stat_lookup)
 end
 
@@ -320,7 +340,7 @@ macro forward_stat_function(func, func_name, short_name)
             else
                 throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
             end
-            return collapse(chn, funcs; dims=dims)
+            return collapse(chn, funcs; dims=dims, drop_stat_dim=true)
         end
     end
 end
