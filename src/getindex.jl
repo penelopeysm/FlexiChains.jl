@@ -13,6 +13,34 @@ const SUMMARY_GETINDEX_KWARGS = """
     error).
 """
 
+const _UNSPECIFIED_KWARG = gensym("kwarg")
+
+function _check_summary_kwargs(fs, iter, chain, stat)
+    function err_msg(kw)
+        return "The `$kw` keyword argument cannot be used because the `$kw` dimension does not exist in this summary."
+    end
+    kwargs = NamedTuple()
+    if FlexiChains.iter_indices(fs) === nothing
+        iter === _UNSPECIFIED_KWARG || throw(ArgumentError(err_msg(:iter)))
+    else
+        new_iter = iter === _UNSPECIFIED_KWARG ? Colon() : iter
+        kwargs = merge(kwargs, (iter=new_iter,))
+    end
+    if FlexiChains.chain_indices(fs) === nothing
+        chain === _UNSPECIFIED_KWARG || throw(ArgumentError(err_msg(:chain)))
+    else
+        new_chain = chain === _UNSPECIFIED_KWARG ? Colon() : chain
+        kwargs = merge(kwargs, (chain=new_chain,))
+    end
+    if FlexiChains.stat_indices(fs) === nothing
+        stat === _UNSPECIFIED_KWARG || throw(ArgumentError(err_msg(:stat)))
+    else
+        new_stat = stat === _UNSPECIFIED_KWARG ? Colon() : stat
+        kwargs = merge(kwargs, (stat=new_stat,))
+    end
+    return kwargs
+end
+
 ############################
 ### Unambiguous indexing ###
 ############################
@@ -45,9 +73,9 @@ end
 """
     Base.getindex(
         fs::FlexiSummary{TKey}, key::ParameterOrExtra{<:TKey};
-        iter=Colon(),
-        chain=Colon(),
-        stat=Colon(),
+        [iter=Colon(),]
+        [chain=Colon(),]
+        [stat=Colon()]
     ) where {TKey}
 
 Unambiguously access the data corresponding to the given `key` in the summary.
@@ -58,9 +86,14 @@ You will need to use this method if you have multiple keys that convert to the s
 $(SUMMARY_GETINDEX_KWARGS)
 """
 function Base.getindex(
-    fs::FlexiSummary{TKey,TIIdx,TCIdx}, key::ParameterOrExtra{<:TKey}
+    fs::FlexiSummary{TKey,TIIdx,TCIdx},
+    key::ParameterOrExtra{<:TKey};
+    iter=_UNSPECIFIED_KWARG,
+    chain=_UNSPECIFIED_KWARG,
+    stat=_UNSPECIFIED_KWARG,
 ) where {TKey,TIIdx,TCIdx}
-    return _get_data(fs, key)
+    relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
+    return _get_data(fs, key)[relevant_kwargs...]
 end
 
 #################

@@ -170,6 +170,50 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
     end
 
+    @testset "kwarg handling for getindex" begin
+        N_iters, N_chains = 10, 3
+        xs = Matrix{Vector{Float64}}(undef, N_iters, N_chains)
+        for i in 1:N_iters, j in 1:N_chains
+            xs[i, j] = rand(10)
+        end
+        chain = FlexiChain{VarName,N_iters,N_chains}(Dict(Parameter(@varname(x)) => xs))
+
+        @testset "iter and stat collapsed" begin
+            # Test that attempting to index in with either `iter=...` or `stat=...` errors
+            fs = mean(chain; dims=:iter)
+            @test_throws ArgumentError FlexiChains._check_summary_kwargs(
+                fs, Colon(), Colon(), Colon()
+            )
+            @test_throws ArgumentError fs[Parameter(@varname(x)), iter=:]
+            @test_throws ArgumentError FlexiChains._check_summary_kwargs(
+                fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), Colon()
+            )
+            @test_throws ArgumentError fs[Parameter(@varname(x)), stat=:]
+            # And that omitting both works
+            @test FlexiChains._check_summary_kwargs(
+                fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), FlexiChains._UNSPECIFIED_KWARG
+            ) == (chain=Colon(),)
+            @test fs[Parameter(@varname(x))] isa Any
+        end
+
+        @testset "iter collapsed only" begin
+            # Test that attempting to index in with `iter=...` errors, but `stat=...` works
+            fs = FlexiChains.collapse(chain, [(:mean, x -> mean(x; dims=1))]; dims=:iter)
+            @test_throws ArgumentError FlexiChains._check_summary_kwargs(
+                fs, Colon(), Colon(), Colon()
+            )
+            @test_throws ArgumentError fs[Parameter(@varname(x)), iter=:]
+            @test FlexiChains._check_summary_kwargs(
+                fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), Colon()
+            ) isa Any
+            @test fs[Parameter(@varname(x)), stat=:] isa Any
+            @test FlexiChains._check_summary_kwargs(
+                fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), FlexiChains._UNSPECIFIED_KWARG
+            ) == (chain=Colon(), stat=Colon())
+            @test fs[Parameter(@varname(x))] isa Any
+        end
+    end
+
     @testset "getindex on summaries" begin
         N_iters, N_chains = 10, 3
         xs = Matrix{Vector{Float64}}(undef, N_iters, N_chains)
