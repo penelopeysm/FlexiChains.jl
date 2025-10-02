@@ -322,9 +322,10 @@ macro forward_stat_function(func, func_name, short_name)
     docstring = """
                     $(func_name)(chain::FlexiChain; dims::Symbol=:both, warn::Bool=true)
 
-                Calculate the $(short_name) across all iterations and chains for each numeric
-                key in `chain`. If `warn=true`, issues a warning for all non-numeric keys
-                encountered.
+                Calculate the $(short_name) across all iterations and chains for each key in
+                the `chain`. If the statistic cannot be computed for a key, that key is
+                skipped and a warning is issued (which can be suppressed by setting
+                `warn=false`).
 
                 The `dims` keyword argument specifies which dimensions to collapse.
                 - `:iter`: collapse the iteration dimension only
