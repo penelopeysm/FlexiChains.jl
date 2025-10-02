@@ -2,6 +2,17 @@ using DimensionalData.Dimensions.Lookups: Lookup, Selector, selectindices
 
 const ChainOrSummary{TKey} = Union{FlexiChain{TKey},FlexiSummary{TKey}}
 
+const SUMMARY_GETINDEX_KWARGS = """
+!!! note "Keyword arguments"
+
+    The `iter`, `chain`, and `stat` keyword arguments further allow you to extract specific
+    iterations, chains, or statistics from the data corresponding to the given `key`. Note
+    that these keyword arguments can only be used if the corresponding dimension exists (for
+    example, if the summary statistic has been calculated over all iterations, then the
+    `iter` dimension will not exist and using the `iter` keyword argument will throw an
+    error).
+"""
+
 ############################
 ### Unambiguous indexing ###
 ############################
@@ -12,7 +23,7 @@ const ChainOrSummary{TKey} = Union{FlexiChain{TKey},FlexiSummary{TKey}}
         iter=Colon(), chain=Colon()
     ) where {TKey}
 
-Unambiguously access the data corresponding to the given `key` in the `chain`.
+Unambiguously access the data corresponding to the given `key` in the chain.
 
 You will need to use this method if you have multiple keys that convert to the
 same `Symbol`, such as a `Parameter(:x)` and an `Extra(:x)`.
@@ -31,7 +42,21 @@ function Base.getindex(
         iter, chain
     ]
 end
-# TODO: iter/chain/stat kwargs
+"""
+    Base.getindex(
+        fs::FlexiSummary{TKey}, key::ParameterOrExtra{<:TKey};
+        iter=Colon(),
+        chain=Colon(),
+        stat=Colon(),
+    ) where {TKey}
+
+Unambiguously access the data corresponding to the given `key` in the summary.
+
+You will need to use this method if you have multiple keys that convert to the same
+`Symbol`, such as a `Parameter(:x)` and an `Extra(:x)`.
+
+$(SUMMARY_GETINDEX_KWARGS)
+"""
 function Base.getindex(
     fs::FlexiSummary{TKey,TIIdx,TCIdx}, key::ParameterOrExtra{<:TKey}
 ) where {TKey,TIIdx,TCIdx}

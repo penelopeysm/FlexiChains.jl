@@ -207,6 +207,7 @@ end
         chain::FlexiChain,
         funcs::AbstractVector;
         dims::Symbol=:both,
+        warn::Bool=true,
         drop_stat_dim::Bool=false,
     )
 
@@ -250,6 +251,9 @@ collapse(chn, [
 ]; dims=:iter)
 ```
 
+If a statistic function errors when applied to a key, that key is skipped and a warning
+is issued. The warning can be suppressed by setting `warn=false`.
+
 If the `drop_stat_dim` keyword argument is `true` and only one function is provided in
 `funcs`, then the resulting `FlexiSummary` will have the `stat` dimension dropped. This allows
 for easier indexing into the result when only one statistic is computed. It is an error to set
@@ -261,6 +265,7 @@ function collapse(
     chain::FlexiChain{TKey,NIter,NChains},
     funcs::AbstractVector;
     dims::Symbol=:both,
+    warn::Bool=true,
     drop_stat_dim::Bool=false,
 ) where {TKey,NIter,NChains}
     data = Dict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
@@ -288,7 +293,8 @@ function collapse(
             data[k] = map(identity, output)
         catch e
             if e isa CollapseFailedError
-                @warn "skipping key `$(e.key)` as applying the function `$(e.fname)` to it encountered an error: $(e.exception)"
+                warn &&
+                    @warn "skipping key `$(e.key)` as applying the function `$(e.fname)` to it encountered an error: $(e.exception)"
             else
                 rethrow()
             end
@@ -314,7 +320,7 @@ end
 
 macro forward_stat_function(func, func_name, short_name)
     docstring = """
-                $(func_name)(chain::FlexiChain; dims::Symbol=:both, warn::Bool=false)
+                    $(func_name)(chain::FlexiChain; dims::Symbol=:both, warn::Bool=true)
 
                 Calculate the $(short_name) across all iterations and chains for each numeric
                 key in `chain`. If `warn=true`, issues a warning for all non-numeric keys
@@ -329,7 +335,7 @@ macro forward_stat_function(func, func_name, short_name)
                 """
     quote
         @doc $docstring function $(esc(func))(
-            chn::FlexiChain; dims::Symbol=:both, kwargs...
+            chn::FlexiChain; dims::Symbol=:both, warn::Bool=true, kwargs...
         )
             funcs = if dims == :both
                 [(Symbol($(esc(func))), x -> $(esc(func))(x; kwargs...))]
@@ -340,7 +346,7 @@ macro forward_stat_function(func, func_name, short_name)
             else
                 throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
             end
-            return collapse(chn, funcs; dims=dims, drop_stat_dim=true)
+            return collapse(chn, funcs; dims=dims, warn=warn, drop_stat_dim=true)
         end
     end
 end

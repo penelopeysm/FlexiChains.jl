@@ -187,6 +187,12 @@ For these functions, you can use `f(chain; dims=:iter)` to collapse over the ite
 
 Keyword arguments are automatically forwarded to the underlying function.
 
+!!! note "Errors"
+    
+    Since FlexiChains is _really_ general in its data types, functions like `Statistics.mean` may not work on all values that are present in the chain.
+    For example, the mean of `String` values is not defined.
+    In such cases, a warning is emitted and the key is dropped from the returned summary object.
+
 ```@docs
 Statistics.mean(::FlexiChains.FlexiChain; kwargs...)
 Statistics.median(::FlexiChains.FlexiChain; kwargs...)
@@ -198,15 +204,11 @@ Base.sum(::FlexiChains.FlexiChain; kwargs...)
 Base.prod(::FlexiChains.FlexiChain; kwargs...)
 ```
 
-!!! note "Errors"
-    
-    Since FlexiChains is _really_ general in its data types, functions like `mean` may well error if the data type does not support the operation.
-    For example, the mean of `String` values is not defined.
-    In such cases, a warning is emitted and the key is dropped from the returned summary object.
-
 ### Indexing
 
-TODO: write this
+```@docs
+Base.getindex(::FlexiChains.FlexiSummary{TKey}, key::FlexiChains.ParameterOrExtra{TKey}) where {TKey}
+```
 
 ### Multiple functions at once
 

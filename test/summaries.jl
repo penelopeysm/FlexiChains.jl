@@ -3,6 +3,7 @@ module FCSummariesTests
 using DimensionalData: DimensionalData as DD
 using FlexiChains:
     FlexiChains, FlexiChain, Parameter, ParameterOrExtra, Extra, VarName, @varname
+using Logging: Warn
 using Statistics
 using Test
 
@@ -91,6 +92,14 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 end
             end
         end
+    end
+
+    @testset "warn=false" begin
+        # Check that no warnings are issued when warn=false
+        @test_logs min_level = Warn mean(chain; warn=false)
+        @test_logs min_level = Warn FlexiChains.collapse(
+            chain, [mean]; dims=:both, warn=false
+        )
     end
 
     @testset "drop_stat_dim=true" begin
