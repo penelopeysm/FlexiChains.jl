@@ -41,41 +41,6 @@ struct SizedMatrix{NIter,NChain,T} <: AbstractArray{T,2}
         return new{NIter,1,T}(data)
     end
 end
-"""
-    data(
-        s::SizedMatrix{NIter,NChains,T};
-        iter_indices::DimensionalData.Lookup=_make_lookup(1:NIter),
-        chain_indices::DimensionalData.Lookup=_make_lookup(1:NChains)
-    ) where {NIter,NChains,T}
-
-Return the underlying data of a `SizedMatrix` as a [`DimensionalData.DimMatrix`](@extref DimensionalData DimArrays).
-
-The returned `DimMatrix` has dimensions named `:iter` and `:chain`. By default the indices
-along both dimensions simply count upwards from 1. You can override this by passing in
-custom `iter_indices` and `chain_indices` keyword arguments.
-
-Note that this differs from `Base.collect`, which always returns a plain `Matrix`.
-"""
-function data(
-    s::SizedMatrix{NIter,NChains,T};
-    iter_indices::DD.Lookup=_make_lookup(1:NIter),
-    chain_indices::DD.Lookup=_make_lookup(1:NChains),
-) where {NIter,NChains,T}
-    return DD.DimMatrix(
-        s._data,
-        (DD.Dim{ITER_DIM_NAME}(iter_indices), DD.Dim{CHAIN_DIM_NAME}(chain_indices)),
-    )
-end
-function data_anon_iter(
-    s::SizedMatrix{1,NChains,T}; chain_indices::DD.Lookup=_make_lookup(1:NChains)
-) where {NChains,T}
-    return DD.DimVector(vec(s._data), (DD.Dim{CHAIN_DIM_NAME}(chain_indices),))
-end
-function data_anon_chain(
-    s::SizedMatrix{NIter,1,T}; iter_indices::DD.Lookup=_make_lookup(1:NIter)
-) where {NIter,T}
-    return DD.DimVector(vec(s._data), (DD.Dim{ITER_DIM_NAME}(iter_indices),))
-end
 
 function Base.collect(
     ::Type{Tdst}, s::SizedMatrix{NIter,NChains,T}

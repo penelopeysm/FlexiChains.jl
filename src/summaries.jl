@@ -131,9 +131,33 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
 end
 
 const STAT_DIM_NAME = :stat
-function _get_data(
-    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}, key::ParameterOrExtra{<:TKey}
-) where {TKey,TIIdx,TCIdx,TSIdx}
+"""
+    _get_raw_data(summary::FlexiSummary{<:TKey}, key::ParameterOrExtra{<:TKey})
+
+Extract the raw data (i.e. a matrix of samples) corresponding to a given key in the chain.
+
+!!! important
+    This function does not check if the key exists.
+"""
+_get_raw_data(summary::FlexiSummary{<:TKey}, key::ParameterOrExtra{<:TKey}) where {TKey} =
+    summary._data[key]
+"""
+    _to_dimdata(summary::FlexiSummary, data::AbstractArray)
+
+Convert `data`, which is a raw 3D array of samples, to a `DimensionalData.DimArray` using
+the indices stored in in the `FlexiSummary`.
+
+Note that, unlike the corresponding method for `FlexiChain`, this function may drop
+dimensions that are supposed to be collapsed. In the case where _all_ dimensions are
+supposed to be collapsed, this simply returns the lone value.
+
+!!! important
+    This function performs no checks to make sure that the lengths of the indices stored in
+the chain line up with the size of the matrix.
+"""
+function _to_dimdata(
+    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}, arr::Array{T,3}
+) where {TKey,TIIdx,TCIdx,TSIdx,T}
     dim_indices = []
     dims = []
     if TIIdx !== Nothing
@@ -149,11 +173,11 @@ function _get_data(
         push!(dims, DD.Dim{STAT_DIM_NAME}(stat_indices(fs)))
     end
     dropped_dim_indices = tuple(setdiff(1:3, dim_indices)...)
-    array = dropdims(fs._data[key]; dims=dropped_dim_indices)
+    dropped_arr = dropdims(arr; dims=dropped_dim_indices)
     return if isempty(dims)
-        array[]
+        dropped_arr[]
     else
-        return DD.DimArray(array, tuple(dims...))
+        return DD.DimArray(dropped_arr, tuple(dims...))
     end
 end
 

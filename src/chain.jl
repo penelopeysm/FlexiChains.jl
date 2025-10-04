@@ -427,3 +427,36 @@ If the state was not saved, this will be `missing` (or a vector thereof).
 function last_sampler_state(chain::FlexiChain)::Vector
     return chain._metadata.last_sampler_state
 end
+
+"""
+    _get_raw_data(chain::FlexiChain{<:TKey}, key::ParameterOrExtra{<:TKey})
+
+Extract the raw data (i.e. a matrix of samples) corresponding to a given key in the chain.
+
+!!! important
+    This function does not check if the key exists.
+"""
+function _get_raw_data(
+    chain::FlexiChain{<:TKey}, key::ParameterOrExtra{<:TKey}
+)::Matrix where {TKey}
+    return collect(chain._data[key])
+end
+"""
+    _to_dimdata(chain::FlexiChain, data::AbstractArray)
+
+Convert `data`, which is a raw matrix of samples, to a `DimensionalData.DimArray` using the
+indices stored in in the `FlexiChain`.
+
+!!! important
+    This function performs no checks to make sure that the lengths of the indices stored in
+the chain line up with the size of the matrix.
+"""
+function _to_dimdata(chain::FlexiChain, mat::Matrix{T}) where {T}
+    return DD.DimMatrix(
+        mat,
+        (
+            DD.Dim{ITER_DIM_NAME}(iter_indices(chain)),
+            DD.Dim{CHAIN_DIM_NAME}(chain_indices(chain)),
+        ),
+    )
+end

@@ -62,13 +62,7 @@ iterations or chains from the data corresponding to the given `key`.
 function Base.getindex(
     fchain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}; iter=Colon(), chain=Colon()
 ) where {TKey}
-    return data(
-        fchain._data[key];
-        iter_indices=iter_indices(fchain),
-        chain_indices=chain_indices(fchain),
-    )[
-        iter, chain
-    ]
+    return _to_dimdata(fchain, _get_raw_data(fchain, key))[iter, chain]
 end
 """
     Base.getindex(
@@ -93,7 +87,7 @@ function Base.getindex(
     stat=_UNSPECIFIED_KWARG,
 ) where {TKey,TIIdx,TCIdx}
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    return _get_data(fs, key)[relevant_kwargs...]
+    return getindex(_to_dimdata(fs, _get_raw_data(fs, key)); relevant_kwargs...)
 end
 
 #################
@@ -164,14 +158,39 @@ it using the actual key.
 function Base.getindex(
     fchain::FlexiChain{TKey}, sym_key::Symbol; iter=Colon(), chain=Colon()
 ) where {TKey}
-    return fchain[_extract_potential_symbol_key(TKey, keys(fchain), sym_key)][
-        iter=iter, chain=chain
-    ]
+    k = _extract_potential_symbol_key(TKey, keys(fchain), sym_key)
+    return fchain[k, iter=iter, chain=chain]
 end
-# TODO: iter/chain/stat kwargs
-function Base.getindex(fs::FlexiSummary{TKey}, sym_key::Symbol) where {TKey}
-    return fs[_extract_potential_symbol_key(TKey, keys(fs), sym_key)]
+"""
+    Base.getindex(
+        fs::FlexiSummary{TKey},
+        key::Symbol;
+        [iter=Colon(),]
+        [chain=Colon(),]
+        [stat=Colon()]
+    ) where {TKey}
+
+Index into a summary using an unambiguous `Symbol` key. This requires that the summary has a
+unique key `k` for which `Symbol(k)` matches the provided `Symbol`. Errors if such a key
+does not exist, or if it is not unique.
+
+$(SUMMARY_GETINDEX_KWARGS)
+"""
+function Base.getindex(
+    fs::FlexiSummary{TKey},
+    sym_key::Symbol;
+    iter=_UNSPECIFIED_KWARG,
+    chain=_UNSPECIFIED_KWARG,
+    stat=_UNSPECIFIED_KWARG,
+) where {TKey}
+    k = _extract_potential_symbol_key(TKey, keys(fs), sym_key)
+    relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
+    return getindex(fs, k; relevant_kwargs...)
 end
+
+####################
+### By parameter ###
+####################
 
 """
     Base.getindex(
@@ -184,11 +203,47 @@ Convenience method for retrieving parameters. Equal to `chain[Parameter(paramete
 function Base.getindex(
     fchain::FlexiChain{TKey}, parameter_name::TKey; iter=Colon(), chain=Colon()
 ) where {TKey}
-    return fchain[Parameter(parameter_name)][iter=iter, chain=chain]
+    return fchain[Parameter(parameter_name), iter=iter, chain=chain]
 end
-# TODO: iter/chain/stat kwargs
-function Base.getindex(fs::FlexiSummary{TKey}, parameter_name::TKey) where {TKey}
-    return fs[Parameter(parameter_name)]
+function Base.getindex(
+    fchain::FlexiChain{Symbol}, parameter_name::Symbol; iter=Colon(), chain=Colon()
+)
+    # Explicitly specify the behaviour for TKey==Symbol so that it doesn't direct to the Symbol method above.
+    return fchain[Parameter(parameter_name), iter=iter, chain=chain]
+end
+"""
+    Base.getindex(
+        fs::FlexiSummary{TKey},
+        parameter_name::TKey;
+        [iter=Colon(),]
+        [chain=Colon(),]
+        [stat=Colon()]
+    ) where {TKey}
+
+Convenience method for retrieving parameters. Equal to `summary[Parameter(parameter_name)]`.
+
+$(SUMMARY_GETINDEX_KWARGS)
+"""
+function Base.getindex(
+    fs::FlexiSummary{TKey},
+    parameter_name::TKey;
+    iter=_UNSPECIFIED_KWARG,
+    chain=_UNSPECIFIED_KWARG,
+    stat=_UNSPECIFIED_KWARG,
+) where {TKey}
+    relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
+    return getindex(fs, Parameter(parameter_name); relevant_kwargs...)
+end
+function Base.getindex(
+    fs::FlexiSummary{Symbol},
+    parameter_name::Symbol;
+    iter=_UNSPECIFIED_KWARG,
+    chain=_UNSPECIFIED_KWARG,
+    stat=_UNSPECIFIED_KWARG,
+)
+    # Explicitly specify the behaviour for TKey==Symbol so that it doesn't direct to the Symbol method above.
+    relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
+    return getindex(fs, Parameter(parameter_name); relevant_kwargs...)
 end
 
 """
@@ -222,6 +277,14 @@ function _getindex_optic_and_vn(
         end
     end
 end
+function _map_optic(::typeof(identity), arr::AbstractArray)
+    return arr
+end
+function _map_optic(optic::Function, arr::AbstractArray)
+    # TODO: Handle errors, cases where partial data is missing, etc
+    return map(optic, arr)
+end
+
 """
     Base.getindex(
         fchain::FlexiChain{<:VarName}, vn::VarName;
@@ -243,23 +306,40 @@ function Base.getindex(
     fchain::FlexiChain{<:VarName}, vn::VarName; iter=Colon(), chain=Colon()
 )
     optic, vn = _getindex_optic_and_vn(fchain, vn, identity, vn)
-    return if optic === identity
-        fchain[Parameter(vn), iter=iter, chain=chain]
-    else
-        # TODO: Would be nice to throw a nicer error if optic is incompatible with the
-        # stored data.
-        map(optic, fchain[Parameter(vn), iter=iter, chain=chain])
-    end
+    raw = _get_raw_data(fchain, Parameter(vn))
+    dimd = _to_dimdata(fchain, raw)[iter=iter, chain=chain]
+    return _map_optic(optic, dimd)
 end
-# TODO: iter/chain/stat kwargs
-function Base.getindex(fs::FlexiSummary{<:VarName}, vn::VarName)
+"""
+    Base.getindex(
+        fs::FlexiSummary{<:VarName},
+        vn::VarName;
+        [iter=Colon(),]
+        [chain=Colon(),]
+        [stat=Colon()]
+    )
+
+An additional specialisation for `VarName`, meant for convenience when working with
+Turing.jl models.
+
+$(SUMMARY_GETINDEX_KWARGS)
+"""
+function Base.getindex(
+    fs::FlexiSummary{<:VarName},
+    vn::VarName;
+    iter=_UNSPECIFIED_KWARG,
+    chain=_UNSPECIFIED_KWARG,
+    stat=_UNSPECIFIED_KWARG,
+)
+    relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     optic, vn = _getindex_optic_and_vn(fs, vn, identity, vn)
-    return if optic === identity
-        fs[Parameter(vn)]
-    else
-        map(optic, fs[Parameter(vn)])
-    end
+    dimd = getindex(fs, Parameter(vn); relevant_kwargs...)
+    return _map_optic(optic, dimd)
 end
+
+############################
+### With vectors of keys ###
+############################
 
 """
     _selectindices(lookup::Lookup, s)
@@ -288,8 +368,6 @@ function _selectindices(lookup::Lookup, s)
         indices
     end
 end
-
-##############################
 
 """
     _get_multi_keys(
@@ -418,9 +496,8 @@ function Base.getindex(
     # Construct new data
     new_data = Dict{ParameterOrExtra{<:TKey},Matrix}()
     for k in keys_to_include
-        # Note that fchain._data[k] is always a plain old Matrix, so we can assume that it
-        # is using ordinary 1-based indexing.
-        new_data[k] = fchain._data[k][new_iter_indices, new_chain_indices]
+        # TODO: This doesn't work with the VarName method
+        new_data[k] = _get_raw_data(fchain, k)[new_iter_indices, new_chain_indices]
     end
     # Construct new chain
     return FlexiChain{TKey,length(new_iter_lookup),length(new_chain_lookup)}(
@@ -431,15 +508,19 @@ function Base.getindex(
         last_sampler_state=FlexiChains.last_sampler_state(fchain),
     )
 end
-# TODO: iter/chain/stat kwargs
 function Base.getindex(
-    fs::FlexiSummary{TKey}, keyvec::Union{Colon,AbstractVector}=Colon();
+    fs::FlexiSummary{TKey},
+    keyvec::Union{Colon,AbstractVector}=Colon();
+    iter=_UNSPECIFIED_KWARG,
+    chain=_UNSPECIFIED_KWARG,
+    stat=_UNSPECIFIED_KWARG,
 ) where {TKey}
+    # TODO: Fix kwargs and stuff
+    relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     keys_to_include = _get_multi_keys(TKey, keys(fs), keyvec)
     new_data = Dict{ParameterOrExtra{<:TKey},Any}()
     for k in keys_to_include
-        # Note that fs._data[k] is always a plain old 3D matrix.
-        new_data[k] = fs._data[k]
+        new_data[k] = _get_raw_data(fs, k)[relevant_kwargs...]
     end
     return FlexiSummary{TKey}(new_data)
 end

@@ -185,11 +185,11 @@ using Test
             @testset "with ambiguity" begin
                 # What happens if you have multiple keys that convert to the same Symbol?
                 N_iters = 10
-                dicts = fill(Dict(Parameter(:a) => 1, Extra("a") => 3.0), N_iters)
-                chain = FlexiChain{Symbol,N_iters,1}(dicts)
+                dicts = fill(Dict(Parameter(@varname(a)) => 1, Extra("a") => 3.0), N_iters)
+                chain = FlexiChain{VarName,N_iters,1}(dicts)
 
                 # getindex with the full key should be fine
-                @test chain[Parameter(:a)] == fill(1, N_iters, 1)
+                @test chain[Parameter(@varname(a))] == fill(1, N_iters, 1)
                 @test chain[Extra("a")] == fill(3.0, N_iters, 1)
                 # but getindex with the symbol should fail
                 @test_throws KeyError chain[:a]

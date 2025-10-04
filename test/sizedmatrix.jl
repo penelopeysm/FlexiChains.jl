@@ -14,9 +14,6 @@ using Test
         dimx = DimMatrix(x, (Dim{:iter}(iter_indices), Dim{:chain}(chain_indices)))
         sm = FlexiChains.SizedMatrix{2,3}(x)
         @test collect(sm) == x
-        @test FlexiChains.data(
-            sm; iter_indices=iter_indices, chain_indices=chain_indices
-        ) == dimx
         @test eltype(sm) == eltype(x)
         @test size(sm) == (2, 3)
         for i in 1:2, j in 1:3
