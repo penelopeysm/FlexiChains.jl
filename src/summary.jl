@@ -189,15 +189,6 @@ function _get_raw_data(
 ) where {TKey}
     return summary._data[key]
 end
-function _get_raw_data(summary::FlexiSummary{<:VarName}, vn_param::Parameter{<:VarName})
-    orig_vn = vn_param.name
-    optic, vn = _getindex_optic_and_vn(
-        FlexiChains.parameters(summary), orig_vn, identity, orig_vn
-    )
-    # can't use get_raw_data in this line or else it will recurse
-    raw = summary._data[Parameter(vn)]
-    return _map_optic(optic, raw, orig_vn)
-end
 
 """
     _raw_to_user_data(summary::FlexiSummary, data::AbstractArray)

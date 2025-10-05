@@ -257,55 +257,6 @@ function Base.getindex(
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
-"""
-    Base.getindex(
-        fchain::FlexiChain{<:VarName}, vn::VarName;
-        iter=Colon(), chain=Colon()
-    )
-
-An additional specialisation for `VarName`, meant for convenience when working with
-Turing.jl models.
-
-`chn[vn]` first checks if the VarName `vn` itself is stored in the chain. If not, it will
-attempt to check if the 'parent' of `vn` is in the chain, and so on, until all possibilities
-have been exhausted.
-
-For example, the parent of `@varname(x[1])` is `@varname(x)`. If `@varname(x[1])` itself is
-in the chain, then that will be returned. If not, then `@varname(x)` will be checked next,
-and if that is a vector-valued parameter then all of its first entries will be returned.
-"""
-function Base.getindex(
-    fchain::FlexiChain{<:VarName}, vn::VarName; iter=Colon(), chain=Colon()
-)
-    raw = _get_raw_data(fchain, Parameter(vn))
-    return _raw_to_user_data(fchain, raw)[iter=iter, chain=chain]
-end
-"""
-    Base.getindex(
-        fs::FlexiSummary{<:VarName},
-        vn::VarName;
-        [iter=Colon(),]
-        [chain=Colon(),]
-        [stat=Colon()]
-    )
-
-An additional specialisation for `VarName`, meant for convenience when working with
-Turing.jl models.
-
-$(SUMMARY_GETINDEX_KWARGS)
-"""
-function Base.getindex(
-    fs::FlexiSummary{<:VarName},
-    vn::VarName;
-    iter=_UNSPECIFIED_KWARG,
-    chain=_UNSPECIFIED_KWARG,
-    stat=_UNSPECIFIED_KWARG,
-)
-    relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(vn)))
-    return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
-end
-
 ############################
 ### With vectors of keys ###
 ############################

@@ -1,6 +1,5 @@
 module FlexiChains
 
-using AbstractPPL: AbstractPPL, VarName, @varname
 using DocStringExtensions: TYPEDFIELDS
 using PrecompileTools: @setup_workload, @compile_workload
 
@@ -23,9 +22,10 @@ macro public(ex)
 end
 
 include("chain.jl")
-include("summaries.jl")
+include("summary.jl")
 include("getindex.jl")
 include("interface.jl")
+include("varname.jl")
 
 # Convenience re-exports.
 using DimensionalData: At, Near, Contains, (..), Touches, Where, Not
@@ -37,7 +37,6 @@ export ess, rhat, mcse
 # For maximum ease of use with Turing...
 const VNChain = FlexiChain{VarName}
 export VarName, @varname, VNChain, summarize
-@public VNChain, var"@varname", VarName
 
 # Attempt to precompile _some_ stuff, especially for VarName. This cuts the TTFX by about
 # 2-3x.
