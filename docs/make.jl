@@ -12,7 +12,7 @@ links = InterLinks(
 makedocs(;
     sitename="FlexiChains.jl",
     modules=[FlexiChains],
-    pages=["index.md", "turing.md", "details.md", "whynew.md"],
+    pages=["index.md", "turing.md", "indexing.md", "details.md", "whynew.md"],
     checkdocs=:exports,
     doctest=false,
     plugins=[links],

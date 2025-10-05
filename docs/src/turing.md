@@ -4,7 +4,7 @@ This page describes how to use FlexiChains from the perspective of a Turing.jl u
 
 In particular, it does not explain 'under the hood' how FlexiChains works.
 Rather, it focuses on the usage of FlexiChains within a typical Bayesian inference workflow.
-For more detailed information about the inner workings of FlexiChains, please see [the next page](./details.md).
+For more detailed information about the inner workings of FlexiChains, please see [the 'more detail' page](./details.md).
 
 ## Sampling
 
@@ -37,14 +37,16 @@ chain = sample(model, NUTS(), 5; chain_type=VNChain)
 
 ## Accessing data
 
-First, notice in the printout above that a `FlexiChain` stores parameters and 'other keys' separately.
-The way to access these differs slightly.
+First, notice in the printout above that a `FlexiChain` stores 'parameters' and 'other keys' separately.
+Parameters correspond to random variables of the model you sampled from, whereas other keys are extra data associated with the samples drawn (for example, the log-joint probability of each sample).
+Each of these are accessed in a slightly different way.
 
 ### Parameters
 
 To access parameters, the _most correct_ way is to use `VarName`s to index into the chain.
 `VarName` is a data structure [defined in AbstractPPL.jl](https://turinglang.org/AbstractPPL.jl/stable/api/#AbstractPPL.VarName), and is what Turing.jl uses to represent the name of a random variable (appearing on the left-hand side of a tilde-statement).
 
+`VarName`s are most easily constructed by applying the `@varname` macro to the name of the variable that you want to access.
 For example, this directly gives us the value of `mu` in each iteration as a plain old vector of floats.
 
 ```@example 1
@@ -55,42 +57,70 @@ chain[@varname(mu)]
     
     Indexing into a `FlexiChain` returns a [`DimensionalData.DimMatrix`](@extref DimensionalData DimArrays). This behaves exactly like a regular `Matrix`, but additionally carries extra information about its dimensions.
     
-    This allows you to keep track of what each dimension means, and also allows for more advanced indexing operations. Please see [the DimensionalData.jl documentation](https://rafaqz.github.io/DimensionalData.jl/) for more details.
+    This allows you to keep track of what each dimension means, and also allows for more advanced indexing operations. The indexing behaviour of FlexiChains.jl is described in [the 'indexing' page](./indexing.md).
 
-For vector-valued parameters like `theta`, this works in exactly the same way, except that you get a `DimMatrix` of vectors (note: _not_ a 3D array).
+For vector-valued parameters like `theta`, this works in exactly the same way, except that you get a `DimMatrix` of vectors.
 
 ```@example 1
 chain[@varname(theta)]
 ```
 
-This is probably the most major difference between FlexiChains and MCMCChains.
+Note that the samples are stored _not_ as a 3D array, bu rather a matrix of vectors.
+**This is probably the biggest difference between FlexiChains and MCMCChains.**
 MCMCChains by default will break vector-valued parameters into multiple scalar-valued parameters called `theta[1]`, `theta[2]`, etc., whereas FlexiChains keeps them together as they were defined in the model.
 
-If you want to obtain the first element of `theta`, you can index into it with the corresponding `VarName`:
+If you want to obtain only the first element of `theta`, you can index into it with the corresponding `VarName`:
 
 ```@example 1
 chain[@varname(theta[1])]
 ```
 
-Note that this can only be used to 'break down', or access nested fields of, larger parameters.
+In this way, you can 'break down', or access nested fields of, larger parameters.
 That is, if your model has `x ~ dist`, FlexiChains will let you access some field or index of `x`.
 
-However, you cannot go the other way: if your model has `x[1] ~ dist` you cannot 'reconstruct' `x` from its component elements.
-(Or at least, you can't do it with FlexiChains.
-You can still call `chain[@varname(x[1])]` and `chain[@varname(x[2])]` and then perform `hcat` or similar to put them together yourself.)
+!!! note "Heterogeneous data"
+    
+    If some samples of `x` have one element and others have two elements, attempting to access `x[2]` will return an array with `missing` values for the samples where `x` only has one element.
 
-### Other information in the chain
+!!! note "Sub-variables"
+    
+    You can access _sub-variables_ of a model parameter, but not the other way around. If your model looks like
+    
+    ```julia
+    @model function f()
+        x[1] ~ dist
+        return x[2] ~ dist
+    end
+    ```
+    
+    or alternatively
+    
+    ```julia
+    @model function f()
+        x = Vector{Float64}(undef, 2)
+        return x .~ dist
+    end
+    ```
+    
+    you cannot 'reconstruct' `x` from its component elements, because `x` does not exist as a single parameter in the model.
+    (Or at least, you can't do it with FlexiChains.
+    You can still call `chain[@varname(x[1])]` and `chain[@varname(x[2])]` and then perform `hcat` or similar to put them together yourself.)
+
+### Other keys
 
 In general Turing.jl tries to package up some extra metadata into the chain that may be helpful.
 For example, the log-joint probability of each sample is stored with the key `:lp`.
-To access non-parameter information like this in an unambiguous fashion, you should use the `Extra` wrapper (the next section describes a shortcut that may be more convenient when there is no ambiguity).
+To access non-parameter information like this in an unambiguous fashion, you should use the `Extra` wrapper.
 
 ```@example 1
 using FlexiChains: Extra
+
 chain[Extra(:lp)]
 ```
 
-### Shortcuts
+If there is no ambiguity in the symbol `:lp`, then you can use a shortcut which is described in the next section.
+
+### Indexing by `Symbol`: a shortcut
 
 If you are used to MCMCChains.jl, you may find this more cumbersome than before.
 So, FlexiChains provides some shortcuts for accessing data.
@@ -104,26 +134,76 @@ chain[:mu] # parameter
     
     In this case, because the only parameter `p` for which `Symbol(p) == :mu` is `@varname(mu)`, we can safely identify `@varname(mu)` as the parameter that we want.
 
+!!! note "No sub-varnames"
+    
+    You cannot use `chain[Symbol("theta[1]")]` as a replacement for `chain[@varname(theta[1])]`.
+
 Likewise, we can omit wrapping `:lp` in `Extra(...)`:
 
 ```@example 1
 chain[:lp] # other key
 ```
 
-If there is any ambiguity present (for example if there is a parameter named `lp` as well), FlexiChains will throw an error.
+If there is any ambiguity present (for example if there is also a parameter named `@varname(lp)`), FlexiChains will throw an error.
 
 ## Summary statistics
 
+### Overall summaries
+
+For a very quick summary of the chain, you can use `FlexiChains.summarize`:
+
+```@example 1
+using FlexiChains: FlexiChains
+
+FlexiChains.summarize(chain)
+```
+
+!!! note "Name conflict"
+    
+    Right now, both MCMCChains and FlexiChains export their own versions of `summarize`. You may therefore have to prefix the function with the package name. This will hopefully be fixed in the near future, by declaring a single `summarize` function in AbstractMCMC and having both packages extend that.
+
+### Individual summaries
+
 You can obtain, for example, the mean of each key in the chain using `Statistics.mean`.
-This returns a `FlexiSummary` object which can be subsetted in exactly the same way as a `FlexiChain`.
+This returns a `FlexiSummary` object:
 
 ```@example 1
 using Statistics: mean
 
-mean(chain)[@varname(mu)]
+mn = mean(chain)
 ```
 
-By default this collapses the data in both the iteration and chain dimensions (the latter is only relevant if multiple chains are present).
+You can index into a `FlexiSummary` in exactly the same ways as a `FlexiChain`.
+
+```@example 1
+mn[@varname(mu)]
+```
+
+Out of the box, FlexiChains provides:
+
+  - `Statistics.mean`
+  - `Statistics.median`
+  - `Statistics.std`
+  - `Statistics.var`
+  - `Statistics.quantile`
+  - `Base.minimum`
+  - `Base.maximum`
+  - `Base.sum`
+  - `Base.prod`
+  - `MCMCDiagnosticTools.ess`
+  - `MCMCDiagnosticTools.rhat`
+  - `MCMCDiagnosticTools.mcse`
+
+These functions can all be applied to a `FlexiChain` with their usual signatures (for example, `quantile` will require a second argument).
+Keyword arguments of the original functions are also supported, for example `ess(chain; kind=:tail)` returns the tail ESS.
+
+!!! note "Other summary functions"
+    
+    If you want to apply a summary function that isn't listed above, you can manually use [`FlexiChains.collapse`](@ref). If it is something that is worth appearing in FlexiChains proper, please do open an issue!
+
+### Collapsed dimensions
+
+By default, applying summary functions will collapse the data in both the iteration and chain dimensions (the latter is only relevant if multiple chains are present).
 
 To only collapse over one dimension you can use
 
@@ -132,10 +212,6 @@ mean(chain; dims=:iter)[@varname(mu)]
 ```
 
 or `dims=:chain` (although that is probably less useful).
-
-Other statistics such as `Statistics.median`, `Statistics.var`, and `Statistics.std` behave the same way.
-For a full list of functions supported by FlexiChains please see the full documentation on [the next page](./details.md).
-If you want to summarise chains with custom functions, the next page also describes how this can be done.
 
 ## Saving and resuming MCMC sampling progress
 
@@ -162,7 +238,8 @@ chn = vcat(chn1, chn2)
     For **multiple-chain sampling** with `sample(model, spl, MCMCThreads(), N, C)`, `initial_state` should be a vector of length `C`, where `initial_state[i]` is the state to resume the `i`-th chain from (or `nothing` to start a new chain).
     
     To obtain the saved final state of a chain, you can use [`FlexiChains.last_sampler_state`](@ref).
-    This returns a vector of states with length equal to the number of chains.
+    This always returns a vector of states with length equal to the number of chains.
+    Note that this applies also if you only sampled a single chain, in which case the returned value is a vector of length 1: you will therefore have to use `only()` to extract the state itself.
     
     The above applies equally to `MCMCSerial()` and `MCMCDistributed()`.
 
