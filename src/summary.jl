@@ -131,21 +131,26 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
     maybe_s(x) = x == 1 ? "" : "s"
     printstyled(io, "FlexiSummary"; bold=true)
     ii = iter_indices(summary)
+    color_counter = 1
     if !isnothing(ii)
         printstyled(io, " | $(length(ii)) iterations ("; bold=true)
-        printstyled(io, "$(_show_range(ii))"; color=DD.dimcolor(1), bold=true)
+        printstyled(io, "$(_show_range(ii))"; color=DD.dimcolor(color_counter), bold=true)
+        color_counter += 1
         printstyled(io, ")"; bold=true)
     end
     ci = chain_indices(summary)
     if !isnothing(ci)
         printstyled(io, " | $(length(ci)) iterations ("; bold=true)
-        printstyled(io, "$(_show_range(ci))"; color=DD.dimcolor(2), bold=true)
+        printstyled(io, "$(_show_range(ci))"; color=DD.dimcolor(color_counter), bold=true)
+        color_counter += 1
         printstyled(io, ")"; bold=true)
     end
     si = summary._stat_indices
     if !isnothing(si)
         printstyled(io, " | $(length(si)) statistic$(maybe_s(length(si))) ("; bold=true)
-        printstyled(io, "$(join(parent(si), ", "))"; color=DD.dimcolor(3), bold=true)
+        printstyled(
+            io, "$(join(parent(si), ", "))"; color=DD.dimcolor(color_counter), bold=true
+        )
         printstyled(io, ")"; bold=true)
     end
     println(io)
