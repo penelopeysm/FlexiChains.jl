@@ -134,8 +134,8 @@ function Base.merge(
     # TODO: This function has to access internal data, urk
     TValNew = Base.promote_type(eltype(valtype(c1._data)), eltype(valtype(c2._data)))
     # Merge the data dictionaries
-    d1 = Dict{ParameterOrExtra{<:TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c1._data)
-    d2 = Dict{ParameterOrExtra{<:TKeyNew},SizedMatrix{NIter,NChain,<:TValNew}}(c2._data)
+    d1 = Dict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c1._data)
+    d2 = Dict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c2._data)
     merged_data = merge(d1, d2)
     return FlexiChain{TKeyNew,NIter,NChain}(
         merged_data;
@@ -336,11 +336,11 @@ function Base.vcat(
     if ci1 != ci2
         @warn "concatenating FlexiChains with different chain indices: got $(ci1) and $(ci2). The resulting chain will have the chain indices of the first chain."
     end
-    d = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter1 + NIter2,NChains}}()
+    d = Dict{ParameterOrExtra{<:TKey},Matrix}()
     for k in union(keys(c1), keys(c2))
-        c1_data = haskey(c1, k) ? c1._data[k] : fill(missing, NIter1, NChains)
-        c2_data = haskey(c2, k) ? c2._data[k] : fill(missing, NIter2, NChains)
-        d[k] = SizedMatrix{NIter1 + NIter2,NChains}(vcat(c1_data, c2_data))
+        c1_data = haskey(c1, k) ? _get_raw_data(c1, k) : fill(missing, NIter1, NChains)
+        c2_data = haskey(c2, k) ? _get_raw_data(c2, k) : fill(missing, NIter2, NChains)
+        d[k] = vcat(c1_data, c2_data)
     end
     return FlexiChain{TKey,NIter1 + NIter2,NChains}(
         d;
@@ -395,11 +395,11 @@ function Base.hcat(
         @warn "concatenating FlexiChains with different iteration indices: got $(ii1) and $(ii2). The resulting chain will have the iteration indices of the first chain."
     end
     # Build up the new data dictionary
-    d = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,NChains1 + NChains2}}()
+    d = Dict{ParameterOrExtra{<:TKey},Matrix}()
     for k in union(keys(c1), keys(c2))
-        c1_data = haskey(c1, k) ? c1._data[k] : fill(missing, NIter, NChains1)
-        c2_data = haskey(c2, k) ? c2._data[k] : fill(missing, NIter, NChains2)
-        d[k] = SizedMatrix{NIter,NChains1 + NChains2}(hcat(c1_data, c2_data))
+        c1_data = haskey(c1, k) ? _get_raw_data(c1, k) : fill(missing, NIter, NChains1)
+        c2_data = haskey(c2, k) ? _get_raw_data(c2, k) : fill(missing, NIter, NChains2)
+        d[k] = hcat(c1_data, c2_data)
     end
     # TODO: Do we want to use the chain indices passed in?
     return FlexiChain{TKey,NIter,NChains1 + NChains2}(

@@ -68,12 +68,10 @@ FlexiChains.nchains
 ```
 
 To provide (runtime) checks that all arrays have the same size, FlexiChains uses `FlexiChains.SizedMatrix`, which carries its size as a type parameter (although the underlying storage still uses `Base.Array`).
-The function `data` extracts the data from a `SizedMatrix` and returns it as a regular `Array`.
-**Note that `SizedMatrix` and `data` are not public and are subject to breaking changes even in patch releases.**
+**Note that `SizedMatrix` is not public and is subject to breaking changes even in patch releases.**
 
 ```@docs
 FlexiChains.SizedMatrix
-FlexiChains.data
 ```
 
 The element type of these arrays is unconstrained.

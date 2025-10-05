@@ -62,7 +62,7 @@ iterations or chains from the data corresponding to the given `key`.
 function Base.getindex(
     fchain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}; iter=Colon(), chain=Colon()
 ) where {TKey}
-    return _to_dimdata(fchain, _get_raw_data(fchain, key))[iter, chain]
+    return _raw_to_user_data(fchain, _get_raw_data(fchain, key))[iter, chain]
 end
 """
     Base.getindex(
@@ -87,7 +87,11 @@ function Base.getindex(
     stat=_UNSPECIFIED_KWARG,
 ) where {TKey,TIIdx,TCIdx}
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    return getindex(_to_dimdata(fs, _get_raw_data(fs, key)); relevant_kwargs...)
+    if isempty(relevant_kwargs)
+        return _raw_to_user_data(fs, _get_raw_data(fs, key))
+    else
+        return getindex(_raw_to_user_data(fs, _get_raw_data(fs, key)); relevant_kwargs...)
+    end
 end
 
 #################
@@ -307,7 +311,7 @@ function Base.getindex(
 )
     optic, vn = _getindex_optic_and_vn(fchain, vn, identity, vn)
     raw = _get_raw_data(fchain, Parameter(vn))
-    dimd = _to_dimdata(fchain, raw)[iter=iter, chain=chain]
+    dimd = _raw_to_user_data(fchain, raw)[iter=iter, chain=chain]
     return _map_optic(optic, dimd)
 end
 """
@@ -333,8 +337,13 @@ function Base.getindex(
 )
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     optic, vn = _getindex_optic_and_vn(fs, vn, identity, vn)
-    dimd = getindex(fs, Parameter(vn); relevant_kwargs...)
-    return _map_optic(optic, dimd)
+    raw_data = _map_optic(optic, _get_raw_data(fs, Parameter(vn)))
+    user_data = _raw_to_user_data(fs, raw_data)
+    if isempty(relevant_kwargs)
+        return user_data
+    else
+        return getindex(user_data; relevant_kwargs...)
+    end
 end
 
 ############################

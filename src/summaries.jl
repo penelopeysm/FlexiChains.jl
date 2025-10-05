@@ -134,50 +134,62 @@ const STAT_DIM_NAME = :stat
 """
     _get_raw_data(summary::FlexiSummary{<:TKey}, key::ParameterOrExtra{<:TKey})
 
-Extract the raw data (i.e. a matrix of samples) corresponding to a given key in the chain.
+Extract the raw data (i.e. an Array of samples) corresponding to a given key in the summary.
+Note that the dimension of the returned data depends on the number of collapsed dimensions
+in the `FlexiSummary`. If there are N non-collapsed dimensions, the returned data will be an
+N-dimensional array.
 
 !!! important
     This function does not check if the key exists.
 """
-_get_raw_data(summary::FlexiSummary{<:TKey}, key::ParameterOrExtra{<:TKey}) where {TKey} =
-    summary._data[key]
+function _get_raw_data(
+    summary::FlexiSummary{<:TKey,TIIdx,TCIdx,TSIdx}, key::ParameterOrExtra{<:TKey}
+) where {TKey,TIIdx,TCIdx,TSIdx}
+    dims_to_drop = []
+    if TIIdx === Nothing
+        push!(dims_to_drop, 1)
+    end
+    if TCIdx === Nothing
+        push!(dims_to_drop, 2)
+    end
+    if TSIdx === Nothing
+        push!(dims_to_drop, 3)
+    end
+    return dropdims(summary._data[key]; dims=tuple(dims_to_drop...))
+end
+
 """
-    _to_dimdata(summary::FlexiSummary, data::AbstractArray)
+    _raw_to_user_data(summary::FlexiSummary, data::AbstractArray)
 
-Convert `data`, which is a raw 3D array of samples, to a `DimensionalData.DimArray` using
-the indices stored in in the `FlexiSummary`.
+Convert `data`, which is a raw nD array of samples (where n is the number of non-collapsed
+dimensions), to either:
 
-Note that, unlike the corresponding method for `FlexiChain`, this function may drop
-dimensions that are supposed to be collapsed. In the case where _all_ dimensions are
-supposed to be collapsed, this simply returns the lone value.
+- a `DimensionalData.DimArray` using the indices stored in in the `FlexiSummary`, if n >= 1; or
+- a single value, if n == 0, i.e. all dimensions are collapsed.
 
 !!! important
     This function performs no checks to make sure that the lengths of the indices stored in
 the chain line up with the size of the matrix.
 """
-function _to_dimdata(
-    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}, arr::Array{T,3}
-) where {TKey,TIIdx,TCIdx,TSIdx,T}
-    dim_indices = []
+function _raw_to_user_data(
+    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}, arr::Array{T,N}
+) where {TKey,TIIdx,TCIdx,TSIdx,T,N}
     dims = []
     if TIIdx !== Nothing
-        push!(dim_indices, 1)
         push!(dims, DD.Dim{ITER_DIM_NAME}(iter_indices(fs)))
     end
     if TCIdx !== Nothing
-        push!(dim_indices, 2)
         push!(dims, DD.Dim{CHAIN_DIM_NAME}(chain_indices(fs)))
     end
     if TSIdx !== Nothing
-        push!(dim_indices, 3)
         push!(dims, DD.Dim{STAT_DIM_NAME}(stat_indices(fs)))
     end
-    dropped_dim_indices = tuple(setdiff(1:3, dim_indices)...)
-    dropped_arr = dropdims(arr; dims=dropped_dim_indices)
     return if isempty(dims)
-        dropped_arr[]
+        @assert N == 0
+        arr[]
     else
-        return DD.DimArray(dropped_arr, tuple(dims...))
+        @assert length(dims) == N
+        return DD.DimArray(arr, tuple(dims...))
     end
 end
 

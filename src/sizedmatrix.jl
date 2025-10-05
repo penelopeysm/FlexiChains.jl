@@ -1,3 +1,23 @@
+function check_size(data::AbstractMatrix, iters::Int, chains::Int; key_name=nothing)::Matrix
+    if size(data) != (iters, chains)
+        key_str = isnothing(key_name) ? "" : " for key $(key_name)"
+        msg = "expected matrix of size ($(iters), $(chains))$(key_str), but got $(size(data))."
+        throw(DimensionMismatch(msg))
+    end
+    return collect(data)
+end
+function check_size(data::AbstractVector, iters::Int, chains::Int; key_name=nothing)::Matrix
+    if chains != 1
+        throw(ArgumentError("expected chains=1 for vector input."))
+    end
+    if length(data) != iters
+        key_str = isnothing(key_name) ? "" : " for key $(key_name)"
+        msg = "expected vector of length $(iters)$(key_str), but got $(length(data))."
+        throw(DimensionMismatch(msg))
+    end
+    return reshape(collect(data), iters, 1)
+end
+
 using DimensionalData: DimensionalData as DD
 using DimensionalData.Dimensions.Lookups: Sampled
 const ITER_DIM_NAME = :iter

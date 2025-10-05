@@ -221,40 +221,99 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             xs[i, j] = rand(10)
         end
         chain = FlexiChain{VarName,N_iters,N_chains}(Dict(Parameter(@varname(x)) => xs))
-        # We'll just test `mean` on `:iter`, because we're only testing the behaviour of
-        # getindex (so we don't have to worry about other functions or other collapsed
-        # dimensions).
-        fs = mean(chain; dims=:iter)
 
-        @testset "VarName" begin
-            @test fs[@varname(x)] isa DD.DimVector
-            @test parent(parent(DD.dims(fs[@varname(x)], :chain))) ==
-                FlexiChains.chain_indices(chain) ==
-                FlexiChains.chain_indices(fs)
-            @test isapprox(fs[@varname(x)], dropdims(mean(xs; dims=1); dims=1))
+        @testset "dims=:iter" begin
+            fs = mean(chain; dims=:iter)
+
+            @testset "VarName" begin
+                @test fs[@varname(x)] isa DD.DimVector
+                @test parent(parent(DD.dims(fs[@varname(x)], :chain))) ==
+                    FlexiChains.chain_indices(chain) ==
+                    FlexiChains.chain_indices(fs)
+                @test isapprox(fs[@varname(x)], dropdims(mean(xs; dims=1); dims=1))
+            end
+
+            @testset "Symbol" begin
+                @test fs[:x] isa DD.DimVector
+                @test parent(parent(DD.dims(fs[:x], :chain))) ==
+                    FlexiChains.chain_indices(chain) ==
+                    FlexiChains.chain_indices(fs)
+                @test isapprox(fs[:x], dropdims(mean(xs; dims=1); dims=1))
+            end
+
+            @testset "sub-VarName" begin
+                @test fs[@varname(x[1])] isa DD.DimVector
+                @test parent(parent(DD.dims(fs[@varname(x[1])], :chain))) ==
+                    FlexiChains.chain_indices(chain) ==
+                    FlexiChains.chain_indices(fs)
+                @test isapprox(
+                    fs[@varname(x[1])], dropdims(mean(getindex.(xs, 1); dims=1); dims=1)
+                )
+            end
+
+            @testset "nonexistent VarName" begin
+                @test_throws KeyError fs[@varname(y)]
+                @test_throws Exception fs[@varname(x.a)]
+            end
         end
 
-        @testset "Symbol" begin
-            @test fs[:x] isa DD.DimVector
-            @test parent(parent(DD.dims(fs[:x], :chain))) ==
-                FlexiChains.chain_indices(chain) ==
-                FlexiChains.chain_indices(fs)
-            @test isapprox(fs[:x], dropdims(mean(xs; dims=1); dims=1))
+        @testset "dims=:chain" begin
+            fs = mean(chain; dims=:chain)
+
+            @testset "VarName" begin
+                @test fs[@varname(x)] isa DD.DimVector
+                @test parent(parent(DD.dims(fs[@varname(x)], :iter))) ==
+                    FlexiChains.iter_indices(chain) ==
+                    FlexiChains.iter_indices(fs)
+                @test isapprox(fs[@varname(x)], dropdims(mean(xs; dims=2); dims=2))
+            end
+
+            @testset "Symbol" begin
+                @test fs[:x] isa DD.DimVector
+                @test parent(parent(DD.dims(fs[:x], :iter))) ==
+                    FlexiChains.iter_indices(chain) ==
+                    FlexiChains.iter_indices(fs)
+                @test isapprox(fs[:x], dropdims(mean(xs; dims=2); dims=2))
+            end
+
+            @testset "sub-VarName" begin
+                @test fs[@varname(x[1])] isa DD.DimVector
+                @test parent(parent(DD.dims(fs[@varname(x[1])], :iter))) ==
+                    FlexiChains.iter_indices(chain) ==
+                    FlexiChains.iter_indices(fs)
+                @test isapprox(
+                    fs[@varname(x[1])], dropdims(mean(getindex.(xs, 1); dims=2); dims=2)
+                )
+            end
+
+            @testset "nonexistent VarName" begin
+                @test_throws KeyError fs[@varname(y)]
+                @test_throws Exception fs[@varname(x.a)]
+            end
         end
 
-        @testset "sub-VarName" begin
-            @test fs[@varname(x[1])] isa DD.DimVector
-            @test parent(parent(DD.dims(fs[@varname(x[1])], :chain))) ==
-                FlexiChains.chain_indices(chain) ==
-                FlexiChains.chain_indices(fs)
-            @test isapprox(
-                fs[@varname(x[1])], dropdims(mean(getindex.(xs, 1); dims=1); dims=1)
-            )
-        end
+        @testset "dims=:both" begin
+            fs = mean(chain)
 
-        @testset "nonexistent VarName" begin
-            @test_throws KeyError fs[@varname(y)]
-            @test_throws Exception fs[@varname(x.a)]
+            @testset "VarName" begin
+                @test fs[@varname(x)] isa Vector{Float64}
+                @test isapprox(fs[@varname(x)], mean(xs))
+            end
+
+            @testset "Symbol" begin
+                @test fs[:x] isa Vector{Float64}
+                @test isapprox(fs[:x], mean(xs))
+            end
+
+            @testset "sub-VarName" begin
+                @test fs[@varname(x[1])] isa Float64
+                @test isapprox(fs[@varname(x[1])], mean(getindex.(xs, 1)))
+            end
+
+            @testset "nonexistent VarName" begin
+                @test_throws KeyError fs[@varname(y)]
+                @test_throws Exception fs[@varname(x.a)]
+            end
         end
     end
 end

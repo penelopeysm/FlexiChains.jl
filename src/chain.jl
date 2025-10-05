@@ -170,7 +170,7 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
     Internal per-iteration data for parameters and extra keys. To access the data
     in here, you should index into the chain.
     """
-    _data::Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,NChains,<:Any}}
+    _data::Dict{ParameterOrExtra{<:TKey},Matrix{<:Any}}
 
     """
     Other items associated with the chain. These are not necessarily per-iteration (for
@@ -248,14 +248,12 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
         end
 
         # We have data as matrices-of-dict; we want to convert to dict-of-matrices.
-        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,NChains}}()
+        data = Dict{ParameterOrExtra{<:TKey},Matrix}()
         for key in keys_set
             # Extract the values for this key from all dictionaries
             values = map(d -> get(d, key, missing), array_of_dicts)
-            # Convert to SizedMatrix
-            values_smat = SizedMatrix{NIter,NChains}(values)
             # Store in the data dictionary
-            data[key] = values_smat
+            data[key] = check_size(values, NIter, NChains; key_name=key)
         end
 
         return new{TKey,NIter,NChains,typeof(metadata)}(data, metadata)
@@ -315,28 +313,15 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
             iter_indices, chain_indices, sampling_time, last_sampler_state
         )
 
-        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,NChains}}()
+        data = Dict{ParameterOrExtra{<:TKey},Matrix}()
         for (key, array) in pairs(dict_of_arrays)
             # Check key type
             if !(key isa ParameterOrExtra{<:TKey})
                 msg = "all keys should either be `Parameter{<:$TKey}` or `Extra`; got `$(typeof(key))`."
                 throw(ArgumentError(msg))
             end
-            # Check size
-            if array isa AbstractVector
-                if length(array) != NIter
-                    msg = "data for key $key has an inconsistent size: expected $(NIter), got $(length(array))."
-                    throw(DimensionMismatch(msg))
-                end
-            elseif array isa AbstractMatrix
-                if size(array) != (NIter, NChains)
-                    msg = "data for key $key has an inconsistent size: expected ($(NIter), $(NChains)), got $(size(array))."
-                    throw(DimensionMismatch(msg))
-                end
-            end
-            # Convert to SMatrix
-            mat = SizedMatrix{NIter,NChains}(array)
-            data[key] = mat
+            # Check size and store in dictionary
+            data[key] = check_size(array, NIter, NChains; key_name=key)
         end
 
         return new{TKey,NIter,NChains,typeof(metadata)}(data, metadata)
@@ -439,19 +424,21 @@ Extract the raw data (i.e. a matrix of samples) corresponding to a given key in 
 function _get_raw_data(
     chain::FlexiChain{<:TKey}, key::ParameterOrExtra{<:TKey}
 )::Matrix where {TKey}
-    return collect(chain._data[key])
+    return chain._data[key]
 end
+
 """
-    _to_dimdata(chain::FlexiChain, data::AbstractArray)
+    _raw_to_user_data(chain::FlexiChain, data::Matrix)
 
 Convert `data`, which is a raw matrix of samples, to a `DimensionalData.DimArray` using the
-indices stored in in the `FlexiChain`.
+indices stored in in the `FlexiChain`. This is the format that users expect to obtain when
+indexing into a `FlexiChain`.
 
 !!! important
     This function performs no checks to make sure that the lengths of the indices stored in
 the chain line up with the size of the matrix.
 """
-function _to_dimdata(chain::FlexiChain, mat::Matrix{T}) where {T}
+function _raw_to_user_data(chain::FlexiChain, mat::Matrix)
     return DD.DimMatrix(
         mat,
         (

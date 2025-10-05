@@ -332,9 +332,8 @@ using Test
             end
 
             @testset "underlying data still has the right types" begin
-                # Essentially we want to avoid that the underlying data
-                # is converted into SizedMatrix{N,M,Any} which would
-                # lose type information.
+                # Essentially we want to avoid that the underlying data is converted into
+                # Matrix{Any} which would lose type information.
                 @test eltype(chain3[Parameter(:a)]) == Int
                 @test eltype(chain3[Parameter(:b)]) == String
                 @test eltype(chain3[Extra("foo")]) == Float64
