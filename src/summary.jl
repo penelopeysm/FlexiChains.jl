@@ -273,10 +273,9 @@ function _size_matches(collapsed::Any, expected_size::Tuple{Int,Int}, dims::Symb
     return (dims == :both) || size(collapsed) == expected_size
 end
 
-struct CollapseFailedError{T,E<:Exception} <: Exception
+struct CollapseFailedError{T} <: Exception
     key::T
     fname::Symbol
-    exception::E
 end
 
 """
@@ -351,6 +350,7 @@ function collapse(
     # Not proud of this function, but it does what it needs to do... sigh.
     for (k, v) in chain._data
         try
+            at_least_one_summary_func_succeeded = false
             output = Array{Any,3}(undef, (expected_size..., length(funcs)))
             for (i, f) in enumerate(funcs)
                 try
@@ -363,10 +363,12 @@ function collapse(
                         collapsed = reshape([collapsed], 1, 1)
                     end
                     output[:, :, i] = collapsed
-                catch e
-                    throw(CollapseFailedError(k, names[i], e))
+                    at_least_one_summary_func_succeeded = true
+                catch
+                    output[:, :, i] = fill(missing, expected_size)
                 end
             end
+            at_least_one_summary_func_succeeded || throw(CollapseFailedError(k, names[1]))
             data[k] = map(identity, output)
         catch e
             if e isa CollapseFailedError

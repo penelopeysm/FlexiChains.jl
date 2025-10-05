@@ -6,8 +6,8 @@ Additionally, `FlexiSummary` objects also sometimes store information about whic
 This information is used when constructing the `DimensionalData.DimArray` outputs that you see when indexing into a `FlexiChain` or `FlexiSummary` object.
 But, on top of this, it also allows you to more surgically index into these objects using this information.
 
-This page first begins with some illustrative examples, which are hopefully the clearest way to illustrate the indexing behaviour.
-The sections below that describe the exact behaviour in more detail.
+This page first begins with some illustrative examples, which might be the clearest way to demonstrate the indexing behaviour.
+If you prefer reading a fuller specification, the sections below that describe the exact behaviour in more detail.
 
 ## Examples: chains
 
@@ -74,13 +74,49 @@ chn[[@varname(x[1]), @varname(x[2])]]
 ## Examples: summaries
 
 ```@example 1
-m = FlexiChains.summarize(chn)
+sm = FlexiChains.summarize(chn)
 ```
 
 Notice how this summary no longer has `iter` or `chain` dimensions, because the summary statistics have been calculated over all iterations and chains.
 However, it has a `stat` dimension, which we will need to use when accessing the data.
 
-TODO
+```@example 1
+sm[@varname(x), stat=At(:mean)]
+```
+
+```@example 1
+# All the chain indexing behaviour still works, e.g. sub-VarNames
+sm[@varname(x[1]), stat=At(:mean)]
+```
+
+Note that the bulk ESS cannot be computed for `x` because it is a vector-valued parameter.
+Thus, attempting to access it will yield a `missing` value.
+
+```@example 1
+sm[@varname(x), stat=At(:ess_bulk)]
+```
+
+To obtain it, you will first need to re-index the original chain to 'break up' the sub-`VarName`s before performing the summary:
+
+```@example 1
+chn2 = chn[[@varname(x[1]), @varname(x[2])]]
+sm2 = FlexiChains.summarize(chn2)
+sm2[@varname(x[1]), stat=At(:ess_bulk)], sm2[@varname(x[2]), stat=At(:ess_bulk)]
+```
+
+If you only apply a single summary function, such as `mean`, then the `stat` dimension will be automatically collapsed for you; you won't need to again specify `At(:mean)` when indexing.
+
+```@example 1
+sm_mean = mean(chn)
+sm_mean[@varname(x)]
+```
+
+If you collapse only over iterations (for example), then you can specify the `chain` keyword argument (and likewise for `iter` if you collapse over chains).
+
+```@example 1
+sm_iter = mean(chn; dims=:iter)
+sm_iter[@varname(x), chain=2]
+```
 
 ## Positional arguments
 
