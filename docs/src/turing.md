@@ -13,8 +13,7 @@ To obtain a `FlexiChain` from Turing.jl, you will need to specify a `chain_type`
 Let's use a non-trivial model so that we can illustrate some features of FlexiChains.
 
 ```@example 1
-using Turing
-using FlexiChains
+using Turing, FlexiChains
 
 y = [28, 8, -3, 7, -1, 1, 18, 12]
 sigma = [15, 10, 16, 11, 9, 11, 10, 18]
