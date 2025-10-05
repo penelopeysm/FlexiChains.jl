@@ -276,6 +276,36 @@ using Test
                 cs = chain[[@varname(a), @varname(b[1]), @varname(c.x)]]
                 @test cs isa FlexiChain{VarName}
             end
+
+            @testset "ragged data e.g. vectors of different lengths" begin
+                # The first sample of `a` has `a[1]` only, but the second has
+                # both `a[1]` and `a[2]`
+                d = Dict(Parameter(@varname(a)) => [[1.0], [2.0, 3.0]])
+                chn = FlexiChain{VarName}(2, 1, d; iter_indices=[6, 7])
+                @test chn[@varname(a)] == reshape([[1.0], [2.0, 3.0]], 2, 1)
+                @test chn[@varname(a[1])] == reshape([1.0, 2.0], 2, 1)
+                # when indexing into `a[2]` we should get a `missing` for the first sample
+                @test isequal(chn[@varname(a[2])], reshape([missing, 3.0], 2, 1))
+                # and if we try to get `a[3]` we should get an error
+                @test_throws KeyError chn[@varname(a[3])]
+
+                # For good measure we'll throw in some iter subsetting too
+                @test chn[@varname(a), iter=2] == [[2.0, 3.0]]
+                @test chn[@varname(a[1]), iter=2] == [2.0]
+                @test isequal(chn[@varname(a[2]), iter=1], [missing])
+                @test chn[@varname(a[2]), iter=2] == [3.0]
+                @test_throws KeyError chn[@varname(a[3]), iter=2]
+                @test chn[@varname(a), iter=At(7)] == [[2.0, 3.0]]
+                @test chn[@varname(a[1]), iter=At(7)] == [2.0]
+                @test isequal(chn[@varname(a[2]), iter=1], [missing])
+                @test chn[@varname(a[2]), iter=At(7)] == [3.0]
+                @test_throws KeyError chn[@varname(a[3]), iter=At(7)]
+                # and chain
+                @test chn[@varname(a), chain=1] == [[1.0], [2.0, 3.0]]
+                @test chn[@varname(a[1]), chain=1] == [1.0, 2.0]
+                @test isequal(chn[@varname(a[2]), chain=1], [missing, 3.0])
+                @test_throws KeyError chn[@varname(a[3]), chain=1]
+            end
         end
     end
 

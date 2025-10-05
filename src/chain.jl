@@ -469,12 +469,29 @@ function _get_raw_data(
     return chain._data[key]
 end
 
-function _map_optic(::typeof(identity), arr::AbstractArray)
+"""
+Helper function to apply an optic function to an array. Errors if none of the array elements
+actually can be transformed by the optic. If only some of the array elements can be
+transformed, then the transformed elements are returned and the rest are `missing`.
+
+`orig_vn` is the VarName that the user attempted to access. It is used only for error
+reporting.
+"""
+function _map_optic(::typeof(identity), arr::AbstractArray, ::VarName)
     return arr
 end
-function _map_optic(optic::Function, arr::AbstractArray)
-    # TODO: Handle errors, cases where partial data is missing, etc
-    return map(optic, arr)
+function _map_optic(optic::Function, arr::AbstractArray, orig_vn::VarName)
+    found = false
+    results = map(arr) do elem
+        if AbstractPPL.canview(optic, elem)
+            found = true
+            optic(elem)
+        else
+            missing
+        end
+    end
+    found || throw(KeyError(orig_vn))
+    return results
 end
 
 """
@@ -509,11 +526,13 @@ function _getindex_optic_and_vn(
     end
 end
 function _get_raw_data(chain::FlexiChain{<:VarName}, vn_param::Parameter{<:VarName})
-    vn = vn_param.name
-    optic, vn = _getindex_optic_and_vn(FlexiChains.parameters(chain), vn, identity, vn)
+    orig_vn = vn_param.name
+    optic, vn = _getindex_optic_and_vn(
+        FlexiChains.parameters(chain), orig_vn, identity, orig_vn
+    )
     # can't use get_raw_data in this line or else it will recurse
     raw = chain._data[Parameter(vn)]
-    return _map_optic(optic, raw)
+    return _map_optic(optic, raw, orig_vn)
 end
 
 """
