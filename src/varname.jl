@@ -1,4 +1,5 @@
 using AbstractPPL: AbstractPPL, VarName, @varname
+@public split_varname
 
 """
 Helper function to apply an optic function to an array. Errors if none of the array elements
@@ -117,4 +118,24 @@ function Base.getindex(
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(vn)))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
+end
+
+"""
+    FlexiChains.split_varnames(cs::ChainOrSummary{<:VarName})
+
+Split up a chain, which in general may contain array- or other-valued parameters, into a
+chain containing only scalar-valued parameters. This is done by replacing the original
+`VarName` keys with appropriate _leaves_. For example, if `x` is a vector-valued parameter,
+then it is replaced by `x[1]`, `x[2]`, etc.
+"""
+function split_varnames(cs::ChainOrSummary{<:VarName})
+    vns = Set{VarName}()
+    for vn in FlexiChains.parameters(cs)
+        d = _get_raw_data(cs, Parameter(vn))
+        for i in eachindex(d)
+            vn_leaves = Set(AbstractPPL.varname_leaves(vn, d[i]))
+            union!(vns, vn_leaves)
+        end
+    end
+    return cs[[collect(vns)..., FlexiChains.extras(cs)...]]
 end

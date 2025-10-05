@@ -127,6 +127,12 @@ It does so by looking for a unique `Parameter` or `Extra` which can be converted
 Base.getindex(::FlexiChains.FlexiChain, key::Symbol)
 ```
 
+## Splitting up VarNames
+
+```@docs
+FlexiChains.split_varnames
+```
+
 ## Concatenation along the other dimensions
 
 If you have two chains and want to concatenate them along the iteration or chain dimension, you can use `vcat` and `hcat` respectively.

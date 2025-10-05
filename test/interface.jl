@@ -651,6 +651,26 @@ using Test
             @test isequal(AbstractMCMC.chainsstack([chain1, chain2, chain3]), chain123)
         end
     end
+
+    @testset "split_varnames" begin
+        N_iters = 10
+        d = Dict(
+            Parameter(@varname(a)) => 1.0,
+            Parameter(@varname(b)) => [2.0, 3.0],
+            Parameter(@varname(c)) => (x=4.0, y=5.0),
+            Extra("hello") => 3.0,
+        )
+        chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
+        chain2 = FlexiChains.split_varnames(chain)
+        @test Set(keys(chain2)) == Set([
+            Parameter(@varname(a)),
+            Parameter(@varname(b[1])),
+            Parameter(@varname(b[2])),
+            Parameter(@varname(c.x)),
+            Parameter(@varname(c.y)),
+            Extra("hello"),
+        ])
+    end
 end
 
 end # module
