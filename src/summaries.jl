@@ -1,7 +1,8 @@
 using DimensionalData: DimensionalData as DD
 using Statistics: Statistics
+using MCMCDiagnosticTools: MCMCDiagnosticTools
 
-@public FlexiSummary, collapse
+@public FlexiSummary, collapse, summarize
 
 const STAT_DIM_NAME = :stat
 function _make_categorical(v::AbstractVector{Symbol})
@@ -372,8 +373,10 @@ function collapse(
             data[k] = map(identity, output)
         catch e
             if e isa CollapseFailedError
+                # TODO: Print e.exception; but the problem is that that can be very long! If
+                # there's a nice way to truncate it, then we could add that to the info.
                 warn &&
-                    @warn "skipping key `$(e.key)` as applying the function `$(e.fname)` to it encountered an error: $(e.exception)"
+                    @warn "skipping key `$(e.key)` as applying the function `$(e.fname)` to it encountered an error"
             else
                 rethrow()
             end
@@ -397,24 +400,39 @@ function collapse(
     return FlexiSummary{TKey}(data, iter_idxs, chain_idxs, stat_lookup)
 end
 
-macro forward_stat_function(func, func_name, short_name)
-    docstring = """
-                    $(func_name)(chain::FlexiChain; dims::Symbol=:both, warn::Bool=true)
+function _stat_docstring(func_name, short_name)
+    return """
+    $(func_name)(chain::FlexiChain; dims::Symbol=:both, warn::Bool=true)
 
-                Calculate the $(short_name) across all iterations and chains for each key in
-                the `chain`. If the statistic cannot be computed for a key, that key is
-                skipped and a warning is issued (which can be suppressed by setting
-                `warn=false`).
+Calculate the $(short_name) across all iterations and chains for each key in
+the `chain`. If the statistic cannot be computed for a key, that key is
+skipped and a warning is issued (which can be suppressed by setting
+`warn=false`).
 
-                The `dims` keyword argument specifies which dimensions to collapse.
-                - `:iter`: collapse the iteration dimension only
-                - `:chain`: collapse the chain dimension only
-                - `:both`: collapse both the iteration and chain dimensions (default)
+The `dims` keyword argument specifies which dimensions to collapse.
+- `:iter`: collapse the iteration dimension only
+- `:chain`: collapse the chain dimension only
+- `:both`: collapse both the iteration and chain dimensions (default)
 
-                Other keyword arguments are forwarded to `$(func_name)`.
-                """
+Other keyword arguments are forwarded to `$(func_name)`.
+"""
+end
+
+"""
+    @forward_stat_function_dims(func)
+
+Helper macro to define the functions `func(chain; dims, warn, kwargs...)`. This macro
+assumes that `func` has the following behaviour:
+
+- `func` maps a Matrix to a single value;
+- `x -> func(x; dims=1) maps a (m × n) matrix to a (1 × n) matrix; and
+- `x -> func(x; dims=2) maps a (m × n) matrix to a (m × 1) matrix.
+
+This is true of e.g. `Statistics.mean`, `Statistics.std`, `Base.sum`, etc.
+"""
+macro forward_stat_function_dims(func)
     quote
-        @doc $docstring function $(esc(func))(
+        function $(esc(func))(
             chn::FlexiChain; dims::Symbol=:both, warn::Bool=true, kwargs...
         )
             funcs = if dims == :both
@@ -430,16 +448,119 @@ macro forward_stat_function(func, func_name, short_name)
         end
     end
 end
+"""
+    @forward_stat_function_each(func)
 
-@forward_stat_function Statistics.mean "Statistics.mean" "mean"
-@forward_stat_function Statistics.median "Statistics.median" "median"
-@forward_stat_function Statistics.std "Statistics.std" "standard deviation"
-@forward_stat_function Statistics.var "Statistics.var" "variance"
-@forward_stat_function Base.minimum "Base.minimum" "minimum"
-@forward_stat_function Base.maximum "Base.maximum" "maximum"
-@forward_stat_function Base.sum "Base.sum" "sum"
-@forward_stat_function Base.prod "Base.prod" "product"
+Helper macro to define the functions `func(chain; dims, warn, kwargs...)`. This macro
+assumes that `func` has the following behaviour:
 
-# Convenience re-exports.
-using Statistics: mean, median, std, var
-export mean, median, std, var
+- `func` maps a Matrix to a single value; and
+- `func` maps a Vector to a single value;
+
+In other words, `func` does not accept the `dims` keyword argument. This is true of e.g.
+`MCMCDiagnosticTools.ess`. In its place this function manually maps `func` over each
+row/column where necessary.
+"""
+macro forward_stat_function_each(func)
+    quote
+        function $(esc(func))(
+            chn::FlexiChain; dims::Symbol=:both, warn::Bool=true, kwargs...
+        )
+            funcs = if dims == :both
+                [(Symbol($(esc(func))), x -> $(esc(func))(x; kwargs...))]
+            elseif dims == :iter
+                [(
+                    Symbol($(esc(func))),
+                    x -> reshape(
+                        map(c -> $(esc(func))(c; kwargs...), eachcol(x)),
+                        1,
+                        size(x, 2),
+                    ),
+                )]
+            elseif dims == :chain
+                [(
+                    Symbol($(esc(func))),
+                    x -> reshape(
+                        map(c -> $(esc(func))(c; kwargs...), eachrow(x)),
+                        size(x, 1),
+                        1,
+                    ),
+                )]
+            else
+                throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
+            end
+            return collapse(chn, funcs; dims=dims, warn=warn, drop_stat_dim=true)
+        end
+    end
+end
+
+"""
+$(_stat_docstring("Statistics.mean", "mean"))
+"""
+@forward_stat_function_dims Statistics.mean
+"""
+$(_stat_docstring("Statistics.median", "median"))
+"""
+@forward_stat_function_dims Statistics.median
+"""
+$(_stat_docstring("Statistics.std", "standard deviation"))
+"""
+@forward_stat_function_dims Statistics.std
+"""
+$(_stat_docstring("Statistics.var", "variance"))
+"""
+@forward_stat_function_dims Statistics.var
+"""
+$(_stat_docstring("Base.minimum", "minimum"))
+"""
+@forward_stat_function_dims Base.minimum
+"""
+$(_stat_docstring("Base.maximum", "maximum"))
+"""
+@forward_stat_function_dims Base.maximum
+"""
+$(_stat_docstring("Base.sum", "sum"))
+"""
+@forward_stat_function_dims Base.sum
+"""
+$(_stat_docstring("Base.prod", "product"))
+"""
+@forward_stat_function_dims Base.prod
+
+"""
+$(_stat_docstring("MCMCDiagnosticTools.ess", "effective sample size"))
+
+For a full list of keyword arguments, please see the documentation for
+[`MCMCDiagnosticTools.ess`](@extref).
+"""
+@forward_stat_function_each MCMCDiagnosticTools.ess
+"""
+$(_stat_docstring("MCMCDiagnosticTools.rhat", "R-hat diagnostic"))
+
+For a full list of keyword arguments, please see the documentation for
+[`MCMCDiagnosticTools.rhat`](@extref).
+"""
+@forward_stat_function_each MCMCDiagnosticTools.rhat
+"""
+$(_stat_docstring("MCMCDiagnosticTools.mcse", "Monte Carlo standard error"))
+
+For a full list of keyword arguments, please see the documentation for
+[`MCMCDiagnosticTools.mcse`](@extref).
+"""
+@forward_stat_function_each MCMCDiagnosticTools.mcse
+
+function summarize(chain::FlexiChain)
+    return collapse(
+        chain,
+        [
+            (:mean, Statistics.mean),
+            (:std, Statistics.std),
+            (:mcse, MCMCDiagnosticTools.mcse),
+            (:ess_bulk, x -> MCMCDiagnosticTools.ess(x; kind=:bulk)),
+            (:ess_tail, x -> MCMCDiagnosticTools.ess(x; kind=:tail)),
+            (:rhat, MCMCDiagnosticTools.rhat),
+        ];
+        dims=:both,
+        warn=false,
+    )
+end

@@ -27,9 +27,14 @@ include("summaries.jl")
 include("getindex.jl")
 include("interface.jl")
 
+# Convenience re-exports.
+using Statistics: mean, median, std, var
+export mean, median, std, var
+using MCMCDiagnosticTools: ess
+export ess, rhat, mcse
 # For maximum ease of use with Turing...
 const VNChain = FlexiChain{VarName}
-export VarName, @varname, VNChain
+export VarName, @varname, VNChain, summarize
 @public VNChain, var"@varname", VarName
 
 # Attempt to precompile _some_ stuff, especially for VarName. This cuts the TTFX by about
@@ -40,8 +45,7 @@ export VarName, @varname, VNChain
     ds = fill(d, 10, 2)
     @compile_workload begin
         fc = VNChain{10,2}(ds)
-        mean(fc)
-        std(fc)
+        summarize(fc)
     end
 end
 
