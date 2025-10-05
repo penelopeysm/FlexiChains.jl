@@ -1,5 +1,8 @@
 # FlexiChains in more detail
 
+!!! danger
+    This page contains discussion of internal implementation details of FlexiChains. It is also not always completely up-to-date, due to the rapid development that is going on right now. You should not need to read this unless you are actively developing FlexiChains or a package that interacts with it.
+
 On this page we go into more detail about how FlexiChains is designed, and the ways to manipulate and extract data from a `FlexiChain`.
 
 ## The `FlexiChain` type
