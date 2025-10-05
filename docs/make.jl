@@ -2,6 +2,7 @@ using Documenter
 using DocumenterInterLinks
 using FlexiChains
 using Statistics: Statistics
+using StatsBase: StatsBase
 using MCMCDiagnosticTools: MCMCDiagnosticTools
 
 links = InterLinks(

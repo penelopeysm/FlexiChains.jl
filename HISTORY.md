@@ -1,10 +1,10 @@
 ## 0.0.2
 
-There are **many** interface changes in this release.
+There are **many** breaking changes to FlexiChains.jl's interface in this release.
 As the version number suggests, this is still a very early release of FlexiChains.jl, and the API is likely to change in future versions.
 When the API has somewhat stabilised, the version number will be incremented to 0.1.0.
 
-My belief is that the core functionality of FlexiChains (base data types, indexing, and summary functions) is largely in place. 
+My current belief is that the core functionality of FlexiChains (base data types, indexing, and summary functions) is largely in place. 
 However, I would like to have some real-world battle testing before releasing 0.1.0.
 
 The main changes in 0.0.2 are:

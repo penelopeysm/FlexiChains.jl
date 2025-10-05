@@ -77,15 +77,12 @@ chn[[@varname(x[1]), @varname(x[2])]]
 sm = summarystats(chn)
 ```
 
-Notice how this summary no longer has `iter` or `chain` dimensions, because the summary statistics have been calculated over all iterations and chains.
-However, it has a `stat` dimension, which we will need to use when accessing the data.
+Notice two things: 
+
+1. This summary no longer has `iter` or `chain` dimensions, because the summary statistics have been calculated over all iterations and chains. However, it has a `stat` dimension, which we will need to use when accessing the data.
+2. The variable `x` has been broken up for you into its components `x[1]` and `x[2]`.
 
 ```@example 1
-sm[@varname(x), stat=At(:mean)]
-```
-
-```@example 1
-# All the chain indexing behaviour still works, e.g. sub-VarNames
 sm[@varname(x[1]), stat=At(:mean)]
 ```
 
@@ -93,14 +90,21 @@ If you only apply a single summary function, such as `mean`, then the `stat` dim
 
 ```@example 1
 sm_mean = mean(chn)
-sm_mean[@varname(x)]
+sm_mean[@varname(x[1])]
+```
+
+If you don't want to split the VarNames up, you can specify this as a keyword argument.
+
+```@example 1
+sm_mean_nosplit = mean(chn; split_varnames=false)
+sm_mean_nosplit[@varname(x)]
 ```
 
 If you collapse only over iterations (for example), then you can specify the `chain` keyword argument (and likewise for `iter` if you collapse over chains).
 
 ```@example 1
 sm_iter = mean(chn; dims=:iter)
-sm_iter[@varname(x), chain=2]
+sm_iter[@varname(x[1]), chain=2]
 ```
 
 ## Positional arguments
