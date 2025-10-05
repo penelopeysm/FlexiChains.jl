@@ -7,6 +7,7 @@ using FlexiChains: FlexiChains, VNChain, Parameter, Extra
 using MCMCChains: MCMCChains
 using Random: Random, Xoshiro
 using SliceSampling: RandPermGibbs, SliceSteppingOut
+using StableRNGs: StableRNG
 using Test
 using Turing
 
@@ -289,16 +290,15 @@ Turing.setprogress!(false)
 
     @testset "predict" begin
         @model function f()
+            m ~ MvNormal(zeros(2), I)
             x ~ Normal()
             return y ~ Normal(x)
         end
         model = f() | (; y=4.0)
         # We sample larger numbers so that we have some confidence that
         # the results weren't obtained by sheer luck.
-        # TODO: Use StableRNG. I couldn't download the package because
-        # train WiFi.
         chn = sample(
-            Xoshiro(468),
+            StableRNG(468),
             model,
             NUTS(),
             1000;
@@ -310,15 +310,13 @@ Turing.setprogress!(false)
         @test isapprox(mean(chn[@varname(x)]), 2.0; atol=0.1)
 
         @testset "chain values are actually used" begin
-            # TODO: Use StableRNG. I couldn't download the package because
-            # train WiFi.
-            pdns = predict(Xoshiro(468), f(), chn)
+            pdns = predict(StableRNG(468), f(), chn)
             # Sanity check.
             @test pdns[@varname(x)] == chn[@varname(x)]
             # Since the model was conditioned with y = 4.0, we should
             # expect that the chain's mean of x is approx 2.0.
             # So the posterior predictions for y should be centred on
-            # 1.0 (ish).
+            # 2.0 (ish).
             @test isapprox(mean(pdns[@varname(y)]), 2.0; atol=0.1)
         end
 
@@ -340,6 +338,15 @@ Turing.setprogress!(false)
             @test isequal(
                 FlexiChains.last_sampler_state(pdns), FlexiChains.last_sampler_state(chn)
             )
+        end
+
+        @testset "still works after chain has been split up" begin
+            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+            # I mean, just in case people want to do it......
+            split_chn = FlexiChains.split_varnames(chn)
+            pdns = predict(Xoshiro(468), f(), split_chn)
+            @test pdns[@varname(x)] == chn[@varname(x)]
+            @test isapprox(mean(pdns[@varname(y)]), 2.0; atol=0.1)
         end
 
         @testset "rng is respected" begin

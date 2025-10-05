@@ -36,7 +36,7 @@ using MCMCDiagnosticTools: ess
 export ess, rhat, mcse
 # For maximum ease of use with Turing...
 const VNChain = FlexiChain{VarName}
-export VarName, @varname, VNChain, summarize
+export VarName, @varname, VNChain, summarize, split_varname
 
 # Attempt to precompile _some_ stuff, especially for VarName. This cuts the TTFX by about
 # 2-3x.

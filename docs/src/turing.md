@@ -146,6 +146,20 @@ chain[:lp] # other key
 
 If there is any ambiguity present (for example if there is also a parameter named `@varname(lp)`), FlexiChains will throw an error.
 
+## Splitting VarNames up
+
+The way that FlexiChains keeps vector-valued parameters together can make it more difficult to perform subsequent analyses, such as summarising or plotting.
+Therefore, to 'break up' parameters into their constituent sub-`VarName`s, you can use `FlexiChains.split_varnames`:
+
+```@example 1
+split_varnames(chain)
+```
+
+Do note that this is a lossy conversion.
+There is no way to un-split the chain!
+Furthermore, while functions like `predict` will still work with a split chain, there will be substantial performance regressions.
+It is therefore strongly recommended that you only split a chain up only when necessary, and never earlier than that.
+
 ## Summary statistics
 
 ### Overall summaries
