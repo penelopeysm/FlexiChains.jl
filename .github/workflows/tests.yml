@@ -14,7 +14,8 @@ permissions:
 # Cancel existing tests on the same PR if a new commit is added to a pull request
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
-  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }} || ${{ github.ref == 'refs/heads/main' }}
+
 
 jobs:
   test:
