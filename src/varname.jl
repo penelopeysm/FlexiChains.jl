@@ -1,4 +1,6 @@
 using AbstractPPL: AbstractPPL, VarName, @varname
+using OrderedCollections: OrderedSet
+
 @public split_varname
 
 """
@@ -129,61 +131,14 @@ chain containing only scalar-valued parameters. This is done by replacing the or
 then it is replaced by `x[1]`, `x[2]`, etc.
 """
 function split_varnames(cs::ChainOrSummary{<:VarName})
-    vns = Set{VarName}()
+    vns = OrderedSet{VarName}()
     for vn in FlexiChains.parameters(cs)
         d = _get_raw_data(cs, Parameter(vn))
         for i in eachindex(d)
-            vn_leaves = Set(AbstractPPL.varname_leaves(vn, d[i]))
+            vn_leaves = collect(AbstractPPL.varname_leaves(vn, d[i]))
+            @show vn_leaves
             union!(vns, vn_leaves)
         end
     end
     return cs[[collect(vns)..., FlexiChains.extras(cs)...]]
 end
-
-##################################
-## MOVE THIS TO ABSTRACTPPL!!!! ##
-##################################
-using AbstractPPL: IndexLens, PropertyLens, ComposedFunction
-function Base.isless(::typeof(identity), ::Union{IndexLens,PropertyLens,ComposedFunction})
-    return true
-end
-function Base.isless(::Union{IndexLens,PropertyLens,ComposedFunction}, ::typeof(identity))
-    return false
-end
-Base.isless(opt1::IndexLens, opt2::PropertyLens) = true
-Base.isless(opt1::PropertyLens, opt2::IndexLens) = false
-function Base.isless(opt1::IndexLens, opt2::IndexLens)
-    return isless(opt1.indices, opt2.indices)
-end
-function Base.isless(opt1::PropertyLens{sym1}, opt2::PropertyLens{sym2}) where {sym1,sym2}
-    return isless(sym1, sym2)
-end
-function Base.isless(opt1::Union{IndexLens,PropertyLens}, opt2::ComposedFunction)
-    if isequal(opt1, opt2.outer)
-        return true
-    else
-        return isless(opt1, opt2.outer)
-    end
-end
-function Base.isless(opt1::ComposedFunction, opt2::Union{IndexLens,PropertyLens})
-    if isequal(opt1.outer, opt2)
-        return false
-    else
-        return isless(opt1.outer, opt2)
-    end
-end
-function Base.isless(opt1::ComposedFunction, opt2::ComposedFunction)
-    if isequal(opt1.outer, opt2)
-        return isless(opt1.inner, opt2.inner)
-    else
-        return isless(opt1.outer, opt2)
-    end
-end
-function Base.isless(vn1::VarName{sym1}, vn2::VarName{sym2}) where {sym1,sym2}
-    if sym1 == sym2
-        return isless(AbstractPPL.getoptic(vn1), AbstractPPL.getoptic(vn2))
-    else
-        return isless(sym1, sym2)
-    end
-end
-_sort_param_names(v::AbstractVector{<:VarName}) = sort(v)

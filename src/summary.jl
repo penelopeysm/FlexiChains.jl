@@ -80,13 +80,13 @@ struct FlexiSummary{
     TCIdx<:Union{DD.Lookup,Nothing},
     TSIdx<:Union{DD.Categorical,Nothing},
 }
-    _data::Dict{ParameterOrExtra{<:TKey},<:AbstractArray{<:Any,3}}
+    _data::OrderedDict{ParameterOrExtra{<:TKey},<:AbstractArray{<:Any,3}}
     _iter_indices::TIIdx
     _chain_indices::TCIdx
     _stat_indices::TSIdx
 
     function FlexiSummary{TKey}(
-        data::Dict{<:Any,<:AbstractArray{<:Any,3}},
+        data::OrderedDict{<:Any,<:AbstractArray{<:Any,3}},
         # Note: These are NOT keyword arguments, they are mandatory positional arguments
         iter_indices::TIIdx,
         chain_indices::TCIdx,
@@ -106,7 +106,7 @@ struct FlexiSummary{
             TSIdx === Nothing ? 1 : length(stat_indices),
         )
         # Size verification (while marshalling into a Dict with the right type).
-        d = Dict{ParameterOrExtra{<:TKey},Array{<:Any,3}}()
+        d = OrderedDict{ParameterOrExtra{<:TKey},Array{<:Any,3}}()
         for (k, v) in pairs(data)
             if size(v) != expected_size
                 msg = "got size $(size(v)) for key $k, expected $expected_size"
@@ -140,7 +140,6 @@ end
 _pretty_value(x, ::Bool=false) = repr(x)
 _truncate(x::String, n::Int) = length(x) > n ? first(x, n - 1) * "…" : x
 
-_sort_param_names(v::AbstractVector) = sort(v; by=repr)
 function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) where {TKey}
     maybe_s(x) = x == 1 ? "" : "s"
     printstyled(io, "FlexiSummary"; bold=true)
@@ -171,7 +170,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
     println(io)
 
     # Print parameter names
-    parameter_names = _sort_param_names(parameters(summary))
+    parameter_names = parameters(summary)
     printstyled(io, "Parameter type   "; bold=true)
     println(io, "$TKey")
     printstyled(io, "Parameters       "; bold=true)
@@ -403,7 +402,7 @@ function collapse(
     warn::Bool=true,
     drop_stat_dim::Bool=false,
 ) where {TKey}
-    data = Dict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
+    data = OrderedDict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
     names, funcs = _get_names_and_funcs(funcs)
     expected_size = _get_expected_size(niters(chain), nchains(chain), dims)
     # Not proud of this function, but it does what it needs to do... sigh.

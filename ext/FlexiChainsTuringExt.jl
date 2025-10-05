@@ -1,6 +1,7 @@
 module FlexiChainsTuringExt
 
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, ParameterOrExtra, VarName
+using OrderedCollections: OrderedDict
 using PrecompileTools: @setup_workload, @compile_workload
 using Turing: Turing, AbstractMCMC
 
@@ -10,8 +11,8 @@ using Turing: Turing, AbstractMCMC
 
 function FlexiChains.to_varname_dict(
     transition::Turing.Inference.Transition
-)::Dict{ParameterOrExtra{<:VarName},Any}
-    d = Dict{ParameterOrExtra{<:VarName},Any}()
+)::OrderedDict{ParameterOrExtra{<:VarName},Any}
+    d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
     for (varname, value) in pairs(transition.θ)
         d[Parameter(varname)] = value
     end
@@ -25,6 +26,7 @@ function FlexiChains.to_varname_dict(
     d[Extra(:logprior)] = transition.logprior
     d[Extra(:loglikelihood)] = transition.loglikelihood
     d[Extra(:lp)] = transition.logprior + transition.loglikelihood
+    @show d
     return d
 end
 
@@ -71,8 +73,9 @@ using Turing: AbstractMCMC, DynamicPPL
 using FlexiChains: VNChain, summarystats
 @setup_workload begin
     @model function f()
-        x ~ Normal()
-        return y ~ MvNormal(zeros(2), I)
+        x ~ MvNormal(zeros(10), I)
+        z ~ Normal()
+        return y ~ LKJCholesky(3, 3.0)
     end
     model, spl = f(), NUTS()
     transitions = sample(model, spl, 10; chain_type=Any, progress=false, verbose=false)

@@ -410,7 +410,7 @@ function Base.getindex(
     # Figure out which keys to include in the returned chain
     keys_to_include = _get_multi_keys(TKey, keys(fchain), keyvec)
     # Construct new data
-    new_data = Dict{ParameterOrExtra{<:TKey},Matrix}(
+    new_data = OrderedDict{ParameterOrExtra{<:TKey},Matrix}(
         k => _get_raw_data(fchain, k)[new_iter_indices, new_chain_indices] for
         k in keys_to_include
     )
@@ -444,7 +444,7 @@ function Base.getindex(
         fs, stat_indices, get(relevant_kwargs, :stat, Colon())
     )
     keys_to_include = _get_multi_keys(TKey, keys(fs), keyvec)
-    new_data = Dict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}(
+    new_data = OrderedDict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}(
         k => _get_raw_data(fs, k)[new_iter_indices, new_chain_indices, new_stat_indices] for
         k in keys_to_include
     )

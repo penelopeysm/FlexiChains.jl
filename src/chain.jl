@@ -1,6 +1,7 @@
 using AbstractMCMC: AbstractChains
 using DimensionalData: DimensionalData as DD
 using DimensionalData.Dimensions.Lookups: Lookups as DDL
+using OrderedCollections: OrderedDict, OrderedSet
 
 @public FlexiChain, Parameter, Extra, ParameterOrExtra
 @public iter_indices, chain_indices, renumber_iters, renumber_chains
@@ -187,9 +188,7 @@ An MCMC chain.
 
 !!! warning
 
-    Please note that all fields of the FlexiChain type are considered internal. Furthermore,
-the ordering of keys within a `FlexiChain` is an implementation detail and is not
-guaranteed.
+    Please note that all fields of the FlexiChain type are considered internal.
 
 TODO: Document further.
 
@@ -202,7 +201,7 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractChains
     Internal per-iteration data for parameters and extra keys. To access the data
     in here, you should index into the chain.
     """
-    _data::Dict{ParameterOrExtra{<:TKey},Matrix{<:Any}}
+    _data::OrderedDict{ParameterOrExtra{<:TKey},Matrix{<:Any}}
 
     """
     Other items associated with the chain. These are not necessarily per-iteration (for
@@ -272,7 +271,7 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractChains
         )
 
         # Extract all unique keys from the dictionaries
-        keys_set = Set{ParameterOrExtra{<:TKey}}()
+        keys_set = OrderedSet{ParameterOrExtra{<:TKey}}()
         for d in array_of_dicts
             for k in keys(d)
                 if !(k isa ParameterOrExtra{<:TKey})
@@ -284,7 +283,7 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractChains
         end
 
         # We have data as matrices-of-dict; we want to convert to dict-of-matrices.
-        data = Dict{ParameterOrExtra{<:TKey},Matrix}()
+        data = OrderedDict{ParameterOrExtra{<:TKey},Matrix}()
         for key in keys_set
             # Extract the values for this key from all dictionaries
             values = map(d -> get(d, key, missing), array_of_dicts)
@@ -352,7 +351,7 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractChains
             niters, nchains, iter_indices, chain_indices, sampling_time, last_sampler_state
         )
 
-        data = Dict{ParameterOrExtra{<:TKey},Matrix}()
+        data = OrderedDict{ParameterOrExtra{<:TKey},Matrix}()
         for (key, array) in pairs(dict_of_arrays)
             # Check key type
             if !(key isa ParameterOrExtra{<:TKey})

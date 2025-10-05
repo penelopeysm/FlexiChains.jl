@@ -220,7 +220,7 @@ function Base.show(io::IO, ::MIME"text/plain", chain::FlexiChain{TKey}) where {T
     )
     printstyled(io, ")\n"; bold=true)
     # Print parameter names
-    parameter_names = _sort_param_names(parameters(chain))
+    parameter_names = parameters(chain)
     printstyled(io, "Parameter type   "; bold=true)
     println(io, "$TKey")
     printstyled(io, "Parameters       "; bold=true)
@@ -275,7 +275,7 @@ end
 
 # Overloaded in TuringExt.
 """
-    to_varname_dict(transition)::Dict{VarName,Any}
+    to_varname_dict(transition)::AbstractDict{VarName,Any}
 
 Convert the _first output_ (i.e. the 'transition') of an AbstractMCMC sampler
 into a dictionary mapping `VarName`s to their corresponding values.
