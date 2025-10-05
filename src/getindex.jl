@@ -15,7 +15,7 @@ const SUMMARY_GETINDEX_KWARGS = """
 
 const _UNSPECIFIED_KWARG = gensym("kwarg")
 
-function _check_summary_kwargs(fs, iter, chain, stat)
+function _check_summary_kwargs(fs::FlexiSummary, iter, chain, stat)
     function err_msg(kw)
         return "The `$kw` keyword argument cannot be used because the `$kw` dimension does not exist in this summary."
     end
@@ -39,6 +39,13 @@ function _check_summary_kwargs(fs, iter, chain, stat)
         kwargs = merge(kwargs, (stat=new_stat,))
     end
     return kwargs
+end
+function _maybe_getindex_with_summary_kwargs(user_data, summary_getindex_kwargs)
+    if isempty(summary_getindex_kwargs)
+        return user_data
+    else
+        return getindex(user_data; summary_getindex_kwargs...)
+    end
 end
 
 ############################
@@ -87,11 +94,8 @@ function Base.getindex(
     stat=_UNSPECIFIED_KWARG,
 ) where {TKey,TIIdx,TCIdx}
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    if isempty(relevant_kwargs)
-        return _raw_to_user_data(fs, _get_raw_data(fs, key))
-    else
-        return getindex(_raw_to_user_data(fs, _get_raw_data(fs, key)); relevant_kwargs...)
-    end
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, key))
+    return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
 #################
@@ -189,7 +193,8 @@ function Base.getindex(
 ) where {TKey}
     k = _extract_potential_symbol_key(TKey, keys(fs), sym_key)
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    return getindex(fs, k; relevant_kwargs...)
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, k))
+    return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
 ####################
@@ -236,7 +241,8 @@ function Base.getindex(
     stat=_UNSPECIFIED_KWARG,
 ) where {TKey}
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    return getindex(fs, Parameter(parameter_name); relevant_kwargs...)
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)))
+    return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 function Base.getindex(
     fs::FlexiSummary{Symbol},
@@ -247,46 +253,8 @@ function Base.getindex(
 )
     # Explicitly specify the behaviour for TKey==Symbol so that it doesn't direct to the Symbol method above.
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    return getindex(fs, Parameter(parameter_name); relevant_kwargs...)
-end
-
-"""
-Helper function for `getindex` with `VarName`. Accesses the VarName `vn` in the chain (if it
-is a parameter) and applies the `optic` function to the data before returning it.
-
-`orig_vn` is the VarName that the user attempted to access. It is used only for error
-reporting.
-"""
-function _getindex_optic_and_vn(
-    chain::ChainOrSummary{<:VarName},
-    vn::VarName{sym},
-    optic::Function,
-    orig_vn::VarName{sym},
-)::Tuple{AbstractPPL.ALLOWED_OPTICS,VarName} where {sym}
-    if haskey(chain, vn)
-        return (optic, vn)
-    else
-        # Not found -- attempt to reduce.
-        # TODO: This depends on AbstractPPL internals and is prone to breaking.
-        # These should be exported from AbstractPPL.
-        o = AbstractPPL.getoptic(vn)
-        i, l = AbstractPPL._init(o), AbstractPPL._last(o)
-        if l === identity
-            # Cannot reduce further
-            throw(KeyError(orig_vn))
-        else
-            new_vn = VarName{sym}(i)
-            new_optic = optic ∘ l
-            return _getindex_optic_and_vn(chain, new_vn, new_optic, orig_vn)
-        end
-    end
-end
-function _map_optic(::typeof(identity), arr::AbstractArray)
-    return arr
-end
-function _map_optic(optic::Function, arr::AbstractArray)
-    # TODO: Handle errors, cases where partial data is missing, etc
-    return map(optic, arr)
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)))
+    return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
 """
@@ -309,10 +277,8 @@ and if that is a vector-valued parameter then all of its first entries will be r
 function Base.getindex(
     fchain::FlexiChain{<:VarName}, vn::VarName; iter=Colon(), chain=Colon()
 )
-    optic, vn = _getindex_optic_and_vn(fchain, vn, identity, vn)
     raw = _get_raw_data(fchain, Parameter(vn))
-    dimd = _raw_to_user_data(fchain, raw)[iter=iter, chain=chain]
-    return _map_optic(optic, dimd)
+    return _raw_to_user_data(fchain, raw)[iter=iter, chain=chain]
 end
 """
     Base.getindex(
@@ -336,14 +302,8 @@ function Base.getindex(
     stat=_UNSPECIFIED_KWARG,
 )
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    optic, vn = _getindex_optic_and_vn(fs, vn, identity, vn)
-    raw_data = _map_optic(optic, _get_raw_data(fs, Parameter(vn)))
-    user_data = _raw_to_user_data(fs, raw_data)
-    if isempty(relevant_kwargs)
-        return user_data
-    else
-        return getindex(user_data; relevant_kwargs...)
-    end
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(vn)))
+    return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
 ############################
@@ -359,11 +319,8 @@ context of `lookup`.
 This is very similar to `DimensionalData.selectindices` but with a special case for when the
 length of the returned indices is 1: in that case we have to return a singleton vector
 rather than just that index.
-
-TODO: Think carefully about whether we should really do this, or whether we should actually
-allow chains to store `DimVector`s. (The latter would require a _lot_ of work to fix all the
-`getindex` methods...)
 """
+_selectindices(::Nothing, ::Any) = Colon() # this happens with collapsed stat dimension
 _selectindices(::Lookup, ::Colon) = Colon()
 _selectindices(::Lookup, s::AbstractRange) = s
 _selectindices(::Lookup, i::Integer) = i:i # Nicer output than just [i]
@@ -408,28 +365,25 @@ function _get_multi_keys(
         elseif k isa TKey
             push!(ks, Parameter(k))
         else
-            # TODO Fix this error message!
-            error("go straight to jail")
+            errmsg = "cannot index using keys of type $(typeof(k))"
+            throw(ArgumentError(errmsg))
         end
     end
     return ks
 end
-
-function _get_iter_indices_and_lookup(
-    fchain::ChainOrSummary{TKey}, iter
-)::Tuple{Union{Colon,AbstractVector{Int}},DD.Lookup} where {TKey}
-    old_iter_lookup = FlexiChains.iter_indices(fchain)
-    new_iter_indices = _selectindices(old_iter_lookup, iter)
-    new_iter_lookup = old_iter_lookup[new_iter_indices]
-    return new_iter_indices, new_iter_lookup
-end
-function _get_chain_indices_and_lookup(
-    fchain::ChainOrSummary{TKey}, chain
-)::Tuple{Union{Colon,AbstractVector{Int}},DD.Lookup} where {TKey}
-    old_chain_lookup = FlexiChains.chain_indices(fchain)
-    new_chain_indices = _selectindices(old_chain_lookup, chain)
-    new_chain_lookup = old_chain_lookup[new_chain_indices]
-    return new_chain_indices, new_chain_lookup
+function _get_indices_and_lookup(
+    fcs::ChainOrSummary,
+    indices_function::Union{
+        typeof(iter_indices),typeof(chain_indices),typeof(stat_indices)
+    },
+    index,
+)
+    old_lookup = indices_function(fcs)
+    # handle collapsed stat dimension
+    isnothing(old_lookup) && return Colon(), nothing
+    new_indices = _selectindices(old_lookup, index)
+    new_lookup = old_lookup[new_indices]
+    return new_indices, new_lookup
 end
 
 """
@@ -498,16 +452,17 @@ function Base.getindex(
 ) where {TKey}
     # Figure out which indices we are using -- these refer to the actual 1-based indices
     # that we use to index into the original Matrix
-    new_iter_indices, new_iter_lookup = _get_iter_indices_and_lookup(fchain, iter)
-    new_chain_indices, new_chain_lookup = _get_chain_indices_and_lookup(fchain, chain)
+    new_iter_indices, new_iter_lookup = _get_indices_and_lookup(fchain, iter_indices, iter)
+    new_chain_indices, new_chain_lookup = _get_indices_and_lookup(
+        fchain, chain_indices, chain
+    )
     # Figure out which keys to include in the returned chain
     keys_to_include = _get_multi_keys(TKey, keys(fchain), keyvec)
     # Construct new data
-    new_data = Dict{ParameterOrExtra{<:TKey},Matrix}()
-    for k in keys_to_include
-        # TODO: This doesn't work with the VarName method
-        new_data[k] = _get_raw_data(fchain, k)[new_iter_indices, new_chain_indices]
-    end
+    new_data = Dict{ParameterOrExtra{<:TKey},Matrix}(
+        k => _get_raw_data(fchain, k)[new_iter_indices, new_chain_indices] for
+        k in keys_to_include
+    )
     # Construct new chain
     return FlexiChain{TKey}(
         length(new_iter_lookup),
@@ -526,16 +481,21 @@ function Base.getindex(
     chain=_UNSPECIFIED_KWARG,
     stat=_UNSPECIFIED_KWARG,
 ) where {TKey}
+    # Follows exactly the same pattern as above except for the additional kwarg handling.
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    # TODO: Figure out which indices we are using -- these refer to the actual 1-based
-    # indices, so that we can index into the original Matrix
-    keys_to_include = _get_multi_keys(TKey, keys(fs), keyvec)
-    new_data = Dict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
-    for k in keys_to_include
-        # TODO: This doesn't work with the VarName method
-        new_data[k] = _get_raw_data(fs, k)
-    end
-    return FlexiSummary{TKey}(
-        new_data, iter_indices(fs), chain_indices(fs), stat_indices(fs)
+    new_iter_indices, new_iter_lookup = _get_indices_and_lookup(
+        fs, iter_indices, get(relevant_kwargs, :iter, Colon())
     )
+    new_chain_indices, new_chain_lookup = _get_indices_and_lookup(
+        fs, chain_indices, get(relevant_kwargs, :chain, Colon())
+    )
+    new_stat_indices, new_stat_lookup = _get_indices_and_lookup(
+        fs, stat_indices, get(relevant_kwargs, :stat, Colon())
+    )
+    keys_to_include = _get_multi_keys(TKey, keys(fs), keyvec)
+    new_data = Dict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}(
+        k => _get_raw_data(fs, k)[new_iter_indices, new_chain_indices, new_stat_indices] for
+        k in keys_to_include
+    )
+    return FlexiSummary{TKey}(new_data, new_iter_lookup, new_chain_lookup, new_stat_lookup)
 end

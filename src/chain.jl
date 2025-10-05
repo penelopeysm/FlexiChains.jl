@@ -469,6 +469,53 @@ function _get_raw_data(
     return chain._data[key]
 end
 
+function _map_optic(::typeof(identity), arr::AbstractArray)
+    return arr
+end
+function _map_optic(optic::Function, arr::AbstractArray)
+    # TODO: Handle errors, cases where partial data is missing, etc
+    return map(optic, arr)
+end
+
+"""
+Helper function for `getindex` with `VarName`. Accesses the VarName `vn` in the chain (if it
+is a parameter) and applies the `optic` function to the data before returning it.
+
+`orig_vn` is the VarName that the user attempted to access. It is used only for error
+reporting.
+"""
+function _getindex_optic_and_vn(
+    vn_keys::AbstractVector{<:VarName},
+    vn::VarName{sym},
+    optic::Function,
+    orig_vn::VarName{sym},
+)::Tuple{AbstractPPL.ALLOWED_OPTICS,VarName} where {sym}
+    if vn in vn_keys
+        return (optic, vn)
+    else
+        # Not found -- attempt to reduce.
+        # TODO: This depends on AbstractPPL internals and is prone to breaking.
+        # These should be exported from AbstractPPL.
+        o = AbstractPPL.getoptic(vn)
+        i, l = AbstractPPL._init(o), AbstractPPL._last(o)
+        if l === identity
+            # Cannot reduce further
+            throw(KeyError(orig_vn))
+        else
+            new_vn = VarName{sym}(i)
+            new_optic = optic ∘ l
+            return _getindex_optic_and_vn(vn_keys, new_vn, new_optic, orig_vn)
+        end
+    end
+end
+function _get_raw_data(chain::FlexiChain{<:VarName}, vn_param::Parameter{<:VarName})
+    vn = vn_param.name
+    optic, vn = _getindex_optic_and_vn(FlexiChains.parameters(chain), vn, identity, vn)
+    # can't use get_raw_data in this line or else it will recurse
+    raw = chain._data[Parameter(vn)]
+    return _map_optic(optic, raw)
+end
+
 """
     _raw_to_user_data(chain::FlexiChain, data::Matrix)
 

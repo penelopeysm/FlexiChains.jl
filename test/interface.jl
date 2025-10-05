@@ -201,20 +201,28 @@ using Test
         @testset "multiple keys: Colon and AbstractVector" begin
             # These methods all return FlexiChain
             N_iters = 10
-            dicts = fill(
-                Dict(Parameter("a") => 1, Parameter("b") => 2, Extra("hello") => 3.0),
-                N_iters,
+            hellos = randn(N_iters)
+            dicts = Dict(
+                Parameter("a") => 1:N_iters,
+                Parameter("b") => fill(2, N_iters),
+                Extra("hello") => hellos,
             )
-            chain = FlexiChain{String}(N_iters, 1, dicts)
+            chain = FlexiChain{String}(N_iters, 1, dicts; iter_indices=2:2:(N_iters * 2))
 
             @testset "No argument (should default to colon)" begin
                 c = chain[]
                 @test c == chain
                 @testset "with iter subsetting" begin
+                    # Ordinary indices
                     c2 = chain[iter=4:6]
                     @test c2 isa FlexiChain{String}
                     @test size(c2) == (3, 1)
-                    @test c2[Parameter("a")] == fill(1, 3, 1)
+                    @test c2[Parameter("a")] == reshape(4:6, 3, 1)
+                    # With DimensionalData selectors
+                    c3 = chain[iter=DD.At([4, 6, 8])]
+                    @test c3 isa FlexiChain{String}
+                    @test size(c3) == (3, 1)
+                    @test c3[Parameter("a")] == reshape(2:4, 3, 1)
                 end
             end
             @testset "Explicit colon" begin
@@ -226,8 +234,8 @@ using Test
                 c = chain[keys]
                 @test c isa FlexiChain{String}
                 @test size(c) == (N_iters, 1)
-                @test c[Parameter("a")] == fill(1, N_iters, 1)
-                @test c[Extra("hello")] == fill(3.0, N_iters, 1)
+                @test c[Parameter("a")] == reshape(1:N_iters, N_iters, 1)
+                @test c[Extra("hello")] == reshape(hellos, N_iters, 1)
                 @test !haskey(c, Parameter("b"))
                 @test_throws KeyError c[Parameter("b")]
             end
@@ -262,6 +270,11 @@ using Test
                 @test_throws KeyError chain[:d]
                 # If you want to do fancy sub-indexing you had better use VarNames
                 @test_throws KeyError chain[Symbol("b[1]")]
+            end
+
+            @testset "multiple keys" begin
+                cs = chain[[@varname(a), @varname(b[1]), @varname(c.x)]]
+                @test cs isa FlexiChain{VarName}
             end
         end
     end
