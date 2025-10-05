@@ -370,8 +370,6 @@ Turing.setprogress!(false)
         flexic = sample(Xoshiro(468), f(), NUTS(), 20; chain_type=VNChain, verbose=false)
         new_mcmcc = MCMCChains.Chains(flexic)
 
-        # In general because the ordering of parameters in FlexiChains is not guaranteed
-        # we cannot directly compare the two chains.
         @testset "the data itself" begin
             @test Set(keys(new_mcmcc)) == Set(keys(mcmcc))
             for k in keys(new_mcmcc)

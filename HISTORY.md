@@ -59,6 +59,12 @@ All underlying data is stored as raw `Array`s (2D for `FlexiChain`, 3D for `Flex
 
 ### Other fixes
 
+The order of keys in a `FlexiChain` is now guaranteed (and is preserved by all operations on chains).
+If you want to construct a chain with a specific order of keys, you should ensure that the input data (either dict-of-arrays or array-of-dicts) can be iterated on to yield the keys in the desired order.
+This is most easily done by using `OrderedCollections.OrderedDict`.
+(Conversely, if the order does not matter, you can use any other `AbstractDict`.)
+To reorder keys, you can index into the chain with a vector of keys in the desired order.
+
 A `split_varnames` function has been added to split VarNames in a chain into their individual scalar components.
 
 Small precompile workloads have been added to improve the time-to-first-chain and summary for typical Turing workflows.

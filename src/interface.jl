@@ -443,21 +443,22 @@ end
         chain::FlexiChain{TKey},
         iteration_number::Int,
         chain_number::Union{Int,Nothing}=nothing
-    )::Dict{ParameterOrExtra{TKey},Any}
+    )::OrderedDict{ParameterOrExtra{TKey},Any}
 
 Extract the dictionary mapping keys to their values in a single MCMC iteration.
 
 If `chain` only contains a single chain, then `chain_number` does not need to be
 specified.
 
-The order of keys in the returned dictionary is not guaranteed.
-
 To get only the parameter keys, use `get_parameter_dict_from_iter`.
+
+The keys are returned in the same order as they are stored in the `FlexiChain`. This also
+corresponds to the order returned by `keys(chain)`.
 """
 function get_dict_from_iter(
     chain::FlexiChain{TKey}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing
-)::Dict{ParameterOrExtra{TKey},Any} where {TKey}
-    d = Dict{ParameterOrExtra{TKey},Any}()
+)::OrderedDict{ParameterOrExtra{TKey},Any} where {TKey}
+    d = OrderedDict{ParameterOrExtra{TKey},Any}()
     for k in keys(chain)
         if chain_number === nothing
             d[k] = chain[k][iteration_number]
@@ -473,19 +474,20 @@ end
         chain::FlexiChain{TKey},
         iteration_number::Int,
         chain_number::Union{Int,Nothing}=nothing
-    )::Dict{TKey,Any} where {TKey}
+    )::OrderedDict{TKey,Any} where {TKey}
 
 Extract the dictionary corresponding to a single MCMC iteration, but with only
 the parameters.
 
 To get all other non-parameter keys as well, use `get_dict_from_iter`.
 
-The order of keys in the returned dictionary is not guaranteed.
+The parameters are returned in the same order as they are stored in the `FlexiChain`. This
+also corresponds to the order returned by `FlexiChains.parameters(chain)`.
 """
 function get_parameter_dict_from_iter(
     chain::FlexiChain{TKey}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing
-)::Dict{TKey,Any} where {TKey}
-    d = Dict{TKey,Any}()
+)::OrderedDict{TKey,Any} where {TKey}
+    d = OrderedDict{TKey,Any}()
     for k in parameters(chain)
         if chain_number === nothing
             d[k] = chain[k][iteration_number]

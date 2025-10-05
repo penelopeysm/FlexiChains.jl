@@ -72,7 +72,8 @@ FlexiChains.nchains
 
 ## Listing keys
 
-`keys()` will return all the keys in an unspecified order.
+`keys()` will return all the keys.
+The order is fixed and is determined at the time of `FlexiChain` construction.
 
 ```@docs
 Base.keys(::FlexiChains.FlexiChain)
