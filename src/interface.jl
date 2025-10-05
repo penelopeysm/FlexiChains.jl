@@ -220,7 +220,7 @@ function Base.show(io::IO, ::MIME"text/plain", chain::FlexiChain{TKey}) where {T
     )
     printstyled(io, ")\n"; bold=true)
     # Print parameter names
-    parameter_names = parameters(chain)
+    parameter_names = _sort_param_names(parameters(chain))
     printstyled(io, "Parameter type   "; bold=true)
     println(io, "$TKey")
     printstyled(io, "Parameters       "; bold=true)

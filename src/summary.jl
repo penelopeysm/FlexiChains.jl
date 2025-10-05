@@ -1,4 +1,5 @@
 using DimensionalData: DimensionalData as DD
+using Printf: @sprintf
 using Statistics: Statistics
 using MCMCDiagnosticTools: MCMCDiagnosticTools
 
@@ -127,6 +128,18 @@ function stat_indices(
     return fs._stat_indices
 end
 
+_pretty_value(x::Integer, ::Bool=false) = repr(x)
+function _pretty_value(x::AbstractFloat, short::Bool=false)
+    return short ? @sprintf("%.1f", x) : @sprintf("%.4f", x)
+end
+function _pretty_value(x::AbstractVector, ::Bool=false)
+    return "[" * join(map(x -> _pretty_value(x, true), x), ",") * "]"
+end
+# Fallback: just use show
+_pretty_value(x, ::Bool=false) = repr(x)
+_truncate(x::String, n::Int) = length(x) > n ? first(x, n - 1) * "…" : x
+
+_sort_param_names(v::AbstractVector) = sort(v; by=repr)
 function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) where {TKey}
     maybe_s(x) = x == 1 ? "" : "s"
     printstyled(io, "FlexiSummary"; bold=true)
@@ -157,7 +170,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
     println(io)
 
     # Print parameter names
-    parameter_names = parameters(summary)
+    parameter_names = _sort_param_names(parameters(summary))
     printstyled(io, "Parameter type   "; bold=true)
     println(io, "$TKey")
     printstyled(io, "Parameters       "; bold=true)
@@ -176,7 +189,51 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
         println(io, join(map(e -> repr(e.name), extra_names), ", "))
     end
 
-    # TODO: Dataframe-like printing
+    # If both iter and chain dimensions have been collapsed, we can print in a 
+    # DataFrame-like format.
+    if isnothing(ii) && isnothing(ci)
+        MAX_COL_WIDTH = 12 # absolute max
+        header_col = [
+            "param", map(p -> _truncate(repr(p), MAX_COL_WIDTH), parameter_names)...
+        ]
+
+        if isnothing(si)
+            stat_cols = [[
+                "value",
+                [
+                    _truncate(_pretty_value(summary[param_name]), MAX_COL_WIDTH) for
+                    param_name in parameter_names
+                ]...,
+            ]]
+        else
+            stat_cols = map(enumerate(parent(si))) do (stat_i, stat_name)
+                [
+                    String(stat_name)
+                    [
+                        _truncate(
+                            _pretty_value(summary[param_name][stat_i]), MAX_COL_WIDTH
+                        ) for param_name in parameter_names
+                    ]...
+                ]
+            end
+        end
+
+        rows = hcat(header_col, stat_cols...)
+        colwidths = map(maximum, eachcol(map(length, rows)))
+        colpadding = 3
+
+        for (i, row) in enumerate(eachrow(rows))
+            println(io)
+            for (j, (entry, width)) in enumerate(zip(row, colwidths))
+                kwargs = if i == 1 || j == 1
+                    (; bold=true)
+                else
+                    (;)
+                end
+                printstyled(io, lpad(entry, width + colpadding); kwargs...)
+            end
+        end
+    end
     return nothing
 end
 

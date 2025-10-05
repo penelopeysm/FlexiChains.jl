@@ -13,7 +13,7 @@ To obtain a `VNChain` from MCMC sampling, pass the `chain_type` argument to the 
 
 ```julia
 using Turing
-using FlexiChains: VNChain
+using FlexiChains
 
 @model function f()
     x ~ Normal()
@@ -34,9 +34,10 @@ chain[@varname(y[1])] # -> DimMatrix{Float64}
 Applying summary functions to the chain returns a summary object, which can be indexed into in the same way:
 
 ```julia
-mean(chain)              # -> an (internal) summary object
+summarize(chain)         # mean, std, mcse, ess, rhat for all variables
+mean(chain)              # just the mean for all variables
 mean(chain)[@varname(x)] # -> Float64
-mean(chain; dims=:iter)  # average over iterations only
+mean(chain; dims=:iter)  # take the mean over iterations only
 ```
 
 Functions in Turing.jl which take chains as input, such as `returned`, `predict`, and `logjoint` should work out of the box with exactly the same behaviour as before.
