@@ -257,10 +257,10 @@ using Test
                 @test_throws KeyError chain[@varname(d)]
                 @test chain[@varname(b[1])] == fill(2.0, N_iters, 1)
                 @test chain[@varname(b[2])] == fill(3.0, N_iters, 1)
-                @test_throws BoundsError chain[@varname(b[3])]
+                @test_throws KeyError chain[@varname(b[3])]
                 @test chain[@varname(c.x)] == fill(4.0, N_iters, 1)
                 @test chain[@varname(c.y)] == fill(5.0, N_iters, 1)
-                @test_throws "has no field" chain[@varname(c.z)]
+                @test_throws KeyError chain[@varname(c.z)]
             end
 
             @testset "using Symbol" begin
@@ -295,11 +295,11 @@ using Test
                 @test isequal(chn[@varname(a[2]), iter=1], [missing])
                 @test chn[@varname(a[2]), iter=2] == [3.0]
                 @test_throws KeyError chn[@varname(a[3]), iter=2]
-                @test chn[@varname(a), iter=At(7)] == [[2.0, 3.0]]
-                @test chn[@varname(a[1]), iter=At(7)] == [2.0]
+                @test chn[@varname(a), iter=DD.At(7)] == [[2.0, 3.0]]
+                @test chn[@varname(a[1]), iter=DD.At(7)] == [2.0]
                 @test isequal(chn[@varname(a[2]), iter=1], [missing])
-                @test chn[@varname(a[2]), iter=At(7)] == [3.0]
-                @test_throws KeyError chn[@varname(a[3]), iter=At(7)]
+                @test chn[@varname(a[2]), iter=DD.At(7)] == [3.0]
+                @test_throws KeyError chn[@varname(a[3]), iter=DD.At(7)]
                 # and chain
                 @test chn[@varname(a), chain=1] == [[1.0], [2.0, 3.0]]
                 @test chn[@varname(a[1]), chain=1] == [1.0, 2.0]
