@@ -129,7 +129,7 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) where {TKey}
     maybe_s(x) = x == 1 ? "" : "s"
-    printstyled(io, "FlexiSummary "; bold=true)
+    printstyled(io, "FlexiSummary"; bold=true)
     ii = iter_indices(summary)
     if !isnothing(ii)
         printstyled(io, " | $(length(ii)) iterations ("; bold=true)
