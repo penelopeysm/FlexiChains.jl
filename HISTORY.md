@@ -1,25 +1,70 @@
 ## 0.0.2
 
-There are many interface changes in this release.
+There are **many** interface changes in this release.
 As the version number suggests, this is still a very early release of FlexiChains.jl, and the API is likely to change in future versions.
 When the API has somewhat stabilised, the version number will be incremented to 0.1.0.
 
-  - In particular, indexing into a FlexiChain (or summary) now returns a DimMatrix from the DimensionalData.jl package.
-    This is a much nicer representation of the data.
-    It does mean that this version now sacrifices the idea that single-chain `FlexiChain`s are "special": `chn[k]` now returns a 2D matrix even if the chain dimension only has length 1.
-    This is probably for the better anyway since it makes the behaviour more consistent.
-    
-    To make this work optimally, when constructing a `FlexiChain` you should now also provide `iter_indices` and `chain_indices` keyword arguments which specify how the iteration and chain dimensions should be labelled.
-    When sampling with Turing.jl these are automatically provided (via the keyword arguments to `bundle_samples`).
-    
-    There are numerous other changes associated with this.
-    For example the sampling time and final sampler state should now always be given as vectors, even if there is only one chain.
-    They are also always returned as vectors.
-    
-    Functions such as `DynamicPPL.returned` now also return a `DimMatrix`.
+My belief is that the core functionality of FlexiChains (base data types, indexing, and summary functions) is largely in place. 
+However, I would like to have some real-world battle testing before releasing 0.1.0.
 
-  - `FlexiChains.collapse_iter_chain` has been renamed to `FlexiChains.collapse`.
-  - Various fixes have been applied to the behaviour of `hcat`, `vcat`, and `merge`. In particular `merge` now takes all metadata from the second argument (which mimics the behaviour of `merge` on base Julia types).
+The main changes in 0.0.2 are:
+
+### DimensionalData.jl
+
+Indexing into a FlexiChain now returns `DimensionalData.DimArray` types.
+
+User-facing changes:
+
+ - This is a much richer representation of the data and allows you to index into the resulting matrix with powerful selectors. To make this easier, FlexiChains re-exports all of DimensionalData's selectors.
+ - The iteration and chain dimensions are now always explicitly represented, even if there is only one chain. This is probably for the better anyway since it makes the behaviour more consistent.
+ - Functions such as `DynamicPPL.returned` now also return a `DimMatrix`.
+
+Indexing into a `FlexiSummary` also returns `DimArray`s, unless all dimensions have been collapsed, in which case it just returns the single value in the array.
+
+### Summaries
+
+Summaries have been completely reworked.
+
+User-facing changes:
+
+- `StatsBase.summarystats` provides a super-quick way to generate summary functions for an entire chain. If the chain type is VarName, this will additionally split VarNames up into their individual scalar-valued components. `summarystats` is re-exported by FlexiChains.
+- More high-level functions have been added, namely `ess`, `rhat`, and `mcse` from MCMCDiagnosticTools, as well as `Statistics.quantile`. All of these are re-exported by FlexiChains.
+- For low-level, highly customised summary functions, there is now only a single function: `FlexiChains.collapse`. This function also allows you to specify multiple summary functions of your choice.
+
+Furthermore, if you collapse both the iteration and chain dimensions (this is the default when applying summary functions), a nice summary table will be pretty-printed in the REPL.
+
+More internal changes:
+
+There is only one return type, `FlexiSummary`, instead of the three different return types previously.
+Indexing behaviour for `FlexiSummary` has been thoroughly designed to be as intuitive, and as similar to `FlexiChain` indexing, as possible.
+Please see its docstring, as well as the built documentation, for more information.
+
+### Indexing
+
+In light of the DimensionalData.jl integration, as well as the new `FlexiSummary` format, indexing into chains and summaries has also been completely overhauled.
+In particular, indexing can now be done with keyword arguments corresponding to the dimension names.
+Furthermore, it is possible to provide a vector of keys to select multiple parameters at once (this will returns a new `FlexiChain` or `FlexiSummary` rather than the `DimArray` itself).
+
+Please see the documentation for more information: there is one whole page dedicated to the indexing behaviour of FlexiChains.jl.
+
+### Sizes as type parameters
+
+The sizes of the chain and iteration dimensions are no longer type parameters of `FlexiChain`.
+Instead of constructing a chain with `FlexiChain{TKey,NIter,NChains}(data)` you should now pass these as positional arguments, i.e., `FlexiChain{TKey}(NIter, NChains, data)`.
+The same runtime checks are still performed.
+This prevents overspecialisation of methods and leads to improved performance.
+
+`FlexiChains.SizedMatrix` has been removed.
+All underlying data is stored as raw `Array`s (2D for `FlexiChain`, 3D for `FlexiSummary`).
+
+### Other fixes
+
+A `split_varnames` function has been added to split VarNames in a chain into their individual scalar components.
+
+Small precompile workloads have been added to improve the time-to-first-chain and summary for typical Turing workflows.
+
+Various fixes have been applied to the behaviour of `hcat`, `vcat`, and `merge`.
+In particular `merge` now takes all metadata from the second argument (which mimics the behaviour of `merge` on base Julia types).
 
 ## 0.0.1
 
