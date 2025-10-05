@@ -68,7 +68,7 @@ function AbstractMCMC.bundle_samples(
     )
 end
 
-using Turing: @model, sample, NUTS, Normal, MvNormal, I
+using Turing: @model, sample, NUTS, Normal, MvNormal, I, LKJCholesky
 using Turing: AbstractMCMC, DynamicPPL
 using FlexiChains: VNChain, summarystats
 @setup_workload begin
