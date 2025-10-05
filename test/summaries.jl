@@ -26,7 +26,9 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
     bs = rand(1:100, N_iters, N_chains)
     cs = rand(Bool, N_iters, N_chains)
     ds = fill("hello", N_iters, N_chains)
-    chain = FlexiChain{Symbol,N_iters,N_chains}(
+    chain = FlexiChain{Symbol}(
+        N_iters,
+        N_chains,
         Dict(
             Parameter(:a) => as,
             Parameter(:b) => bs,
@@ -171,7 +173,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         # We'll use `std` without Bessel correction here.
         N_iters, N_chains = 10, 3
         as = rand(N_iters, N_chains)
-        chain = FlexiChain{Symbol,N_iters,N_chains}(Dict(Parameter(:a) => as))
+        chain = FlexiChain{Symbol}(N_iters, N_chains, Dict(Parameter(:a) => as))
 
         @testset "iter" begin
             expected = std(as; dims=1, corrected=false)
@@ -198,7 +200,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             Dict(),
         ]
         for d in ds
-            chain = FlexiChain{Symbol,10,3}(fill(d, 10, 3))
+            chain = FlexiChain{Symbol}(10, 3, fill(d, 10, 3))
             display(mean(chain; dims=:iter))
             display(median(chain; dims=:chain))
             display(std(chain; dims=:both))
@@ -211,7 +213,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         for i in 1:N_iters, j in 1:N_chains
             xs[i, j] = rand(10)
         end
-        chain = FlexiChain{VarName,N_iters,N_chains}(Dict(Parameter(@varname(x)) => xs))
+        chain = FlexiChain{VarName}(N_iters, N_chains, Dict(Parameter(@varname(x)) => xs))
 
         @testset "iter and stat collapsed" begin
             # Test that attempting to index in with either `iter=...` or `stat=...` errors
@@ -255,7 +257,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         for i in 1:N_iters, j in 1:N_chains
             xs[i, j] = rand(10)
         end
-        chain = FlexiChain{VarName,N_iters,N_chains}(Dict(Parameter(@varname(x)) => xs))
+        chain = FlexiChain{VarName}(N_iters, N_chains, Dict(Parameter(@varname(x)) => xs))
 
         @testset "dims=:iter" begin
             fs = mean(chain; dims=:iter)

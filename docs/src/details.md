@@ -101,7 +101,7 @@ The reverse of subsetting is merging.
 This can only be done when the chains being merged have the same size.
 
 ```@docs
-Base.merge(::FlexiChains.FlexiChain{TKey1,NIter,NChain}, ::FlexiChains.FlexiChain{TKey2,NIter,NChain}) where {TKey1,TKey2,NIter,NChain}
+Base.merge(::FlexiChains.FlexiChain{TKey1}, ::FlexiChains.FlexiChain{TKey2}) where {TKey1,TKey2}
 ```
 
 ## Indexing via parameters
@@ -135,8 +135,8 @@ The chains must have the same size along the other dimension (that is not being 
 If there are parameters that are present in one chain but not the other, they will be assigned `missing` values in the concatenated chain.
 
 ```@docs
-Base.vcat(::FlexiChains.FlexiChain{TKey,NIter1,NChains}, ::FlexiChains.FlexiChain{TKey,NIter2,NChains}) where {TKey,NIter1,NIter2,NChains}
-Base.hcat(::FlexiChains.FlexiChain{TKey,NIter,NChains1}, ::FlexiChains.FlexiChain{TKey,NIter,NChains2}) where {TKey,NIter,NChains1,NChains2}
+Base.vcat(::FlexiChains.FlexiChain{TKey}, ::FlexiChains.FlexiChain{TKey}) where {TKey}
+Base.hcat(::FlexiChains.FlexiChain{TKey}, ::FlexiChains.FlexiChain{TKey}) where {TKey}
 ```
 
 The rather little-known `AbstractMCMC.chainscat` and `AbstractMCMC.chainsstack` methods (see [AbstractMCMC.jl docs](https://turinglang.org/AbstractMCMC.jl/stable/api/#Chains)) are also defined on FlexiChains; they both make use of `hcat`.
@@ -190,6 +190,16 @@ Base.minimum(::FlexiChains.FlexiChain; kwargs...)
 Base.maximum(::FlexiChains.FlexiChain; kwargs...)
 Base.sum(::FlexiChains.FlexiChain; kwargs...)
 Base.prod(::FlexiChains.FlexiChain; kwargs...)
+Statistics.quantile(::FlexiChains.FlexiChain, p; kwargs...)
+MCMCDiagnosticTools.ess(::FlexiChains.FlexiChain; kwargs...)
+MCMCDiagnosticTools.rhat(::FlexiChains.FlexiChain; kwargs...)
+MCMCDiagnosticTools.mcse(::FlexiChains.FlexiChain; kwargs...)
+```
+
+To calculate all of `mean`, `std`, `mcse`, bulk `ess`, tail `ess`, and `rhat` at once:
+
+```@docs
+FlexiChains.summarize
 ```
 
 ### Indexing

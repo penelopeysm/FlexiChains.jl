@@ -9,75 +9,58 @@ using DimensionalData: DimensionalData as DD
 using AbstractMCMC: AbstractMCMC
 
 """
-    size(chain::FlexiChain{TKey,NIter,NChains}) where {TKey,NIter,NChains}
+    size(chain::FlexiChain{TKey}) where {TKey}
 
 Returns `(niters, nchains)`.
 """
-function Base.size(
-    ::FlexiChain{TKey,NIter,NChains}
-)::Tuple{Int,Int} where {TKey,NIter,NChains}
-    return (NIter, NChains)
+function Base.size(chain::FlexiChain)::Tuple{Int,Int}
+    return (niters(chain), nchains(chain))
 end
 """
-    size(chain::FlexiChain{TKey,NIter,NChains}, 1)
+    size(chain::FlexiChain{TKey}, 1)
 
 Number of iterations in the `FlexiChain`. Equivalent to `niters(chain)`.
 
-    size(chain::FlexiChain{TKey,NIter,NChains}, 2)
+    size(chain::FlexiChain{TKey}, 2)
 
 Number of chains in the `FlexiChain`. Equivalent to `nchains(chain)`.
 """
-function Base.size(::FlexiChain{TKey,NIter,NChains}, dim::Int) where {TKey,NIter,NChains}
+function Base.size(chain::FlexiChain{TKey}, dim::Int) where {TKey}
     return if dim == 1
-        NIter
+        niters(chain)
     elseif dim == 2
-        NChains
+        nchains(chain)
     else
         throw(DimensionMismatch("Dimension $dim out of range for FlexiChain"))
     end
 end
 
 """
-    niters(chain::FlexiChain{TKey,NIter,NChains}) where {TKey,NIter,NChains}
+    niters(chain::FlexiChain)
 
 The number of iterations in the `FlexiChain`. Equivalent to `size(chain, 1)`.
 """
-function niters(::FlexiChain{TKey,NIter,NChains})::Int where {TKey,NIter,NChains}
-    return NIter
+function niters(chain::FlexiChain)::Int
+    return length(iter_indices(chain))
 end
 
 """
-    nchains(chain::FlexiChain{TKey,NIter,NChains}) where {TKey,NIter,NChains}
+    nchains(chain::FlexiChain)
 
 The number of chains in the `FlexiChain`. Equivalent to `size(chain, 2)`.
 """
-function nchains(::FlexiChain{TKey,NIter,NChains})::Int where {TKey,NIter,NChains}
-    # Same as above but with isequal instead of ==
-    return NChains
+function nchains(chain::FlexiChain)::Int
+    return length(chain_indices(chain))
 end
 
-function Base.:(==)(
-    c1::FlexiChain{TKey1,NIter1,NChain1}, c2::FlexiChain{TKey2,NIter2,NChain2}
-) where {TKey1,TKey2,NIter1,NChain1,NIter2,NChain2}
-    # Check if the type parameters are the same
-    if TKey1 != TKey2 || NIter1 != NIter2 || NChain1 != NChain2
-        return false
-    end
-    # Check if the data dictionaries are the same
-    # Note: Because FlexiChains uses `Dict` for the underlying storage,
-    # and Dicts do not check for ordering of keys, the ordering of keys is 
-    # also immaterial for FlexiChain equality.
-    return c1._data == c2._data
+function Base.:(==)(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2})::Bool where {TKey1,TKey2}
+    return TKey1 == TKey2 && size(c1) == size(c2) && c1._data == c2._data
 end
 
 function Base.isequal(
-    c1::FlexiChain{TKey1,NIter1,NChain1}, c2::FlexiChain{TKey2,NIter2,NChain2}
-) where {TKey1,TKey2,NIter1,NChain1,NIter2,NChain2}
-    # Same as above but with isequal instead of ==
-    if TKey1 != TKey2 || NIter1 != NIter2 || NChain1 != NChain2
-        return false
-    end
-    return isequal(c1._data, c2._data)
+    c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}
+)::Bool where {TKey1,TKey2}
+    return TKey1 == TKey2 && size(c1) == size(c2) && isequal(c1._data, c2._data)
 end
 
 """
@@ -104,9 +87,9 @@ end
 
 """
     Base.merge(
-        c1::FlexiChain{TKey1,NIter,NChain},
-        c2::FlexiChain{TKey2,NIter,NChain}
-    ) where {TKey1,TKey2,NIter,NChain}
+        c1::FlexiChain{TKey1},
+        c2::FlexiChain{TKey2}
+    ) where {TKey1,TKey2}
 
 Merge the contents of two `FlexiChain`s. If there are keys that are present in both chains,
 the values from `c2` will overwrite those from `c1`.
@@ -119,9 +102,13 @@ The two `FlexiChain`s being merged must have the same dimensions.
 The chain indices and metadata are taken from the second chain. Those in the first chain are
 silently ignored.
 """
-function Base.merge(
-    c1::FlexiChain{TKey1,NIter,NChain}, c2::FlexiChain{TKey2,NIter,NChain}
-) where {TKey1,TKey2,NIter,NChain}
+function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1,TKey2}
+    # Check size
+    size(c1) == size(c2) || throw(
+        DimensionMismatch(
+            "cannot merge FlexiChains with different sizes $(size(c1)) and $(size(c2))."
+        ),
+    )
     # Promote key type if necessary and warn
     TKeyNew = if TKey1 != TKey2
         new = Base.promote_type(TKey1, TKey2)
@@ -137,7 +124,9 @@ function Base.merge(
     d1 = Dict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c1._data)
     d2 = Dict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c2._data)
     merged_data = merge(d1, d2)
-    return FlexiChain{TKeyNew,NIter,NChain}(
+    return FlexiChain{TKeyNew}(
+        niters(c1),
+        nchains(c1),
         merged_data;
         iter_indices=FlexiChains.iter_indices(c2),
         chain_indices=FlexiChains.chain_indices(c2),
@@ -145,29 +134,19 @@ function Base.merge(
         last_sampler_state=FlexiChains.last_sampler_state(c2),
     )
 end
-function Base.merge(
-    ::FlexiChain{TKey1,NIter1,NChain1}, ::FlexiChain{TKey2,NIter2,NChain2}
-) where {TKey1,TKey2,NIter1,NChain1,NIter2,NChain2}
-    # Fallback if niter and nchains are different
-    throw(
-        DimensionMismatch(
-            "cannot merge FlexiChains with different sizes $(NIter1)×$(NChain1) and $(NIter2)×$(NChain2).",
-        ),
-    )
-end
 
 """
     subset(
-        chain::FlexiChain{TKey,NIter,NChain},
+        chain::FlexiChain{TKey},
         keys::AbstractVector{<:ParameterOrExtra{<:TKey}}
-    )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
+    )::FlexiChain{TKey} where {TKey}
 
 Create a new `FlexiChain` containing only the specified keys and the data corresponding to
 them. All metadata is preserved.
 """
 function subset(
-    chain::FlexiChain{TKey,NIter,NChain}, keys::AbstractVector{<:ParameterOrExtra{<:TKey}}
-)::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
+    chain::FlexiChain{TKey}, keys::AbstractVector{<:ParameterOrExtra{<:TKey}}
+)::FlexiChain{TKey} where {TKey}
     d = empty(chain._data)
     for k in keys
         if haskey(chain._data, k)
@@ -176,7 +155,9 @@ function subset(
             throw(KeyError(k))
         end
     end
-    return FlexiChain{TKey,NIter,NChain}(
+    return FlexiChain{TKey}(
+        niters(chain),
+        nchains(chain),
         d;
         iter_indices=FlexiChains.iter_indices(chain),
         chain_indices=FlexiChains.chain_indices(chain),
@@ -190,20 +171,16 @@ end
 
 Subset a chain, retaining only the `Parameter` keys.
 """
-function subset_parameters(
-    chain::FlexiChain{TKey,NIter,NChain}
-)::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
+function subset_parameters(chain::FlexiChain{TKey})::FlexiChain{TKey} where {TKey}
     return subset(chain, Parameter.(parameters(chain)))
 end
 
 """
-    subset_parameters(chain::FlexiChain{TKey,NIter,NChain})
+    subset_parameters(chain::FlexiChain{TKey})
 
 Subset a chain, retaining only the keys that are `Extra`s (i.e. not parameters).
 """
-function subset_extras(
-    chain::FlexiChain{TKey,NIter,NChain}
-)::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
+function subset_extras(chain::FlexiChain{TKey})::FlexiChain{TKey} where {TKey}
     v = Extra[]
     for k in keys(chain)
         if !(k isa Parameter)
@@ -224,18 +201,17 @@ function _show_range(s::AbstractVector)
     end
 end
 
-function Base.show(
-    io::IO, ::MIME"text/plain", chain::FlexiChain{TKey,niters,nchains}
-) where {TKey,niters,nchains}
+function Base.show(io::IO, ::MIME"text/plain", chain::FlexiChain{TKey}) where {TKey}
     maybe_s(x) = x == 1 ? "" : "s"
-    printstyled(io, "FlexiChain | $niters iteration$(maybe_s(niters)) ("; bold=true)
+    ni, nc = size(chain)
+    printstyled(io, "FlexiChain | $ni iteration$(maybe_s(ni)) ("; bold=true)
     printstyled(
         io,
         "$(_show_range(FlexiChains.iter_indices(chain)))";
         color=DD.dimcolor(1),
         bold=true,
     )
-    printstyled(io, ") | $nchains chain$(maybe_s(nchains)) ("; bold=true)
+    printstyled(io, ") | $nc chain$(maybe_s(nc)) ("; bold=true)
     printstyled(
         io,
         "$(_show_range(FlexiChains.chain_indices(chain)))";
@@ -265,10 +241,6 @@ function Base.show(
 
     # TODO: Summary statistics?
     return nothing
-end
-
-function _get(chain::FlexiChain{TKey}, key::ParameterOrExtra{TKey}) where {TKey}
-    return data(chain._data[key])  # errors if key not found
 end
 
 """
@@ -329,8 +301,14 @@ The resulting chain's sampling time is the sum of the input chains' sampling tim
 the last sampler state is taken from the second chain.
 """
 function Base.vcat(
-    c1::FlexiChain{TKey,NIter1,NChains}, c2::FlexiChain{TKey,NIter2,NChains}
-)::FlexiChain{TKey,NIter1 + NIter2,NChains} where {TKey,NIter1,NIter2,NChains}
+    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}
+)::FlexiChain{TKey} where {TKey}
+    # Check sizes are compatible
+    nchains(c1) == nchains(c2) || throw(
+        DimensionMismatch(
+            "cannot vcat FlexiChains with different number of chains: got sizes $(size(c1)) and $(size(c2))",
+        ),
+    )
     # Warn if the chains don't line up in terms of chain indices
     ci1, ci2 = FlexiChains.chain_indices(c1), FlexiChains.chain_indices(c2)
     if ci1 != ci2
@@ -338,23 +316,26 @@ function Base.vcat(
     end
     d = Dict{ParameterOrExtra{<:TKey},Matrix}()
     for k in union(keys(c1), keys(c2))
-        c1_data = haskey(c1, k) ? _get_raw_data(c1, k) : fill(missing, NIter1, NChains)
-        c2_data = haskey(c2, k) ? _get_raw_data(c2, k) : fill(missing, NIter2, NChains)
+        c1_data = if haskey(c1, k)
+            _get_raw_data(c1, k)
+        else
+            fill(missing, size(c1)...)
+        end
+        c2_data = if haskey(c2, k)
+            _get_raw_data(c2, k)
+        else
+            fill(missing, size(c2)...)
+        end
         d[k] = vcat(c1_data, c2_data)
     end
-    return FlexiChain{TKey,NIter1 + NIter2,NChains}(
+    return FlexiChain{TKey}(
+        niters(c1) + niters(c2),
+        nchains(c1),
         d;
         iter_indices=vcat(FlexiChains.iter_indices(c1), FlexiChains.iter_indices(c2)),
         chain_indices=FlexiChains.chain_indices(c1),
         sampling_time=FlexiChains.sampling_time(c1) .+ FlexiChains.sampling_time(c2),
         last_sampler_state=FlexiChains.last_sampler_state(c2),
-    )
-end
-function Base.vcat(c1::FlexiChain{TKey}, c2::FlexiChain{TKey}) where {TKey}
-    throw(
-        DimensionMismatch(
-            "cannot vcat FlexiChains with different number of chains: got sizes $(size(c1)) and $(size(c2))",
-        ),
     )
 end
 function Base.vcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1,TKey2}
@@ -366,10 +347,8 @@ function Base.vcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1,TKey2}
 end
 Base.vcat(c1::FlexiChain) = c1
 function Base.vcat(
-    c1::FlexiChain{TKey,NIter1,NChains},
-    c2::FlexiChain{TKey,NIter2,NChains},
-    cs::FlexiChain{TKey}...,
-) where {TKey,NIter1,NIter2,NChains}
+    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}, cs::FlexiChain{TKey}...
+) where {TKey}
     return Base.vcat(Base.vcat(c1, c2), cs...)
 end
 
@@ -387,8 +366,14 @@ The resulting chain's sampling times and last sampler states are obtained by con
 those of the input chains.
 """
 function Base.hcat(
-    c1::FlexiChain{TKey,NIter,NChains1}, c2::FlexiChain{TKey,NIter,NChains2}
-)::FlexiChain{TKey,NIter,NChains1 + NChains2} where {TKey,NIter,NChains1,NChains2}
+    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}
+)::FlexiChain{TKey} where {TKey}
+    # Check sizes are compatible
+    niters(c1) == niters(c2) || throw(
+        DimensionMismatch(
+            "cannot hcat FlexiChains with different number of iterations: got sizes $(size(c1)) and $(size(c2))",
+        ),
+    )
     # Warn if the chains don't line up in terms of iteration indices
     ii1, ii2 = FlexiChains.iter_indices(c1), FlexiChains.iter_indices(c2)
     if ii1 != ii2
@@ -397,15 +382,25 @@ function Base.hcat(
     # Build up the new data dictionary
     d = Dict{ParameterOrExtra{<:TKey},Matrix}()
     for k in union(keys(c1), keys(c2))
-        c1_data = haskey(c1, k) ? _get_raw_data(c1, k) : fill(missing, NIter, NChains1)
-        c2_data = haskey(c2, k) ? _get_raw_data(c2, k) : fill(missing, NIter, NChains2)
+        c1_data = if haskey(c1, k)
+            _get_raw_data(c1, k)
+        else
+            fill(missing, size(c1)...)
+        end
+        c2_data = if haskey(c2, k)
+            _get_raw_data(c2, k)
+        else
+            fill(missing, size(c2)...)
+        end
         d[k] = hcat(c1_data, c2_data)
     end
     # TODO: Do we want to use the chain indices passed in?
-    return FlexiChain{TKey,NIter,NChains1 + NChains2}(
+    return FlexiChain{TKey}(
+        niters(c1),
+        nchains(c1) + nchains(c2),
         d;
         iter_indices=FlexiChains.iter_indices(c1),
-        chain_indices=1:(NChains1 + NChains2),
+        chain_indices=1:(nchains(c1) + nchains(c2)),
         sampling_time=vcat(FlexiChains.sampling_time(c1), FlexiChains.sampling_time(c2)),
         last_sampler_state=vcat(
             FlexiChains.last_sampler_state(c1), FlexiChains.last_sampler_state(c2)
@@ -413,13 +408,6 @@ function Base.hcat(
     )
 end
 Base.hcat(c1::FlexiChain) = c1
-function Base.hcat(c1::FlexiChain{TKey}, c2::FlexiChain{TKey}) where {TKey}
-    throw(
-        DimensionMismatch(
-            "cannot hcat FlexiChains with different number of iterations: got sizes $(size(c1)) and $(size(c2))",
-        ),
-    )
-end
 function Base.hcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1,TKey2}
     throw(
         ArgumentError(
@@ -428,10 +416,8 @@ function Base.hcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1,TKey2}
     )
 end
 function Base.hcat(
-    c1::FlexiChain{TKey,NIter,NChains1},
-    c2::FlexiChain{TKey,NIter,NChains2},
-    cs::FlexiChain{TKey,NIter}...,
-) where {TKey,NIter,NChains1,NChains2}
+    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}, cs::FlexiChain{TKey}...
+) where {TKey}
     return Base.hcat(Base.hcat(c1, c2), cs...)
 end
 
@@ -441,16 +427,14 @@ end
 Concatenate `FlexiChain`s along the chain dimension.
 """
 function AbstractMCMC.chainscat(
-    c1::FlexiChain{TKey,NIter,NChains1}, c2::FlexiChain{TKey,NIter,NChains2}
-)::FlexiChain{TKey,NIter,NChains1 + NChains2} where {TKey,NIter,NChains1,NChains2}
+    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}
+)::FlexiChain{TKey} where {TKey}
     return Base.hcat(c1, c2)
 end
 AbstractMCMC.chainscat(c1::FlexiChain) = c1
 function AbstractMCMC.chainscat(
-    c1::FlexiChain{TKey,NIter,NChains1},
-    c2::FlexiChain{TKey,NIter,NChains2},
-    cs::FlexiChain{TKey,NIter}...,
-) where {TKey,NIter,NChains1,NChains2}
+    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}, cs::FlexiChain{TKey}...
+) where {TKey}
     return AbstractMCMC.chainscat(AbstractMCMC.chainscat(c1, c2), cs...)
 end
 

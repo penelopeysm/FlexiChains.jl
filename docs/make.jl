@@ -2,9 +2,11 @@ using Documenter
 using DocumenterInterLinks
 using FlexiChains
 using Statistics: Statistics
+using MCMCDiagnosticTools: MCMCDiagnosticTools
 
 links = InterLinks(
-    "DimensionalData" => "https://rafaqz.github.io/DimensionalData.jl/stable/"
+    "DimensionalData" => "https://rafaqz.github.io/DimensionalData.jl/stable/",
+    "MCMCDiagnosticTools" => "https://turinglang.org/MCMCDiagnosticTools.jl/stable/",
 )
 
 makedocs(;

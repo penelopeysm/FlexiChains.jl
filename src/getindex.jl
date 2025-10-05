@@ -458,7 +458,7 @@ that the actual iteration numbers stored in the chain are 101, 103, 105, ..., 29
 ```julia
 using FlexiChains: FlexiChain, Parameter
 x = Dict(Parameter(:a) => randn(100, 1))
-chn = FlexiChain{Symbol,100,1}(x; iter_indices=101:2:299)
+chn = FlexiChain{Symbol}(100, 1, x; iter_indices=101:2:299)
 ```
 
 !!! note
@@ -466,7 +466,7 @@ chn = FlexiChain{Symbol,100,1}(x; iter_indices=101:2:299)
 calculated for you.
 
 To subset to the first three stored iterations (i.e., the true iteration numbers `[101, 103,
-105]`), you can do any of the following. They all return a new `FlexiChain{Symbol,3,1}`
+105]`), you can do any of the following. They all return a new `FlexiChain{Symbol}`
 object.
 
 ```julia
@@ -509,7 +509,9 @@ function Base.getindex(
         new_data[k] = _get_raw_data(fchain, k)[new_iter_indices, new_chain_indices]
     end
     # Construct new chain
-    return FlexiChain{TKey,length(new_iter_lookup),length(new_chain_lookup)}(
+    return FlexiChain{TKey}(
+        length(new_iter_lookup),
+        length(new_chain_lookup),
         new_data;
         iter_indices=new_iter_lookup,
         chain_indices=new_chain_lookup,

@@ -52,11 +52,9 @@ end
 #     DELETE WHEN POSSIBLE    #
 ###############################
 
-function DynamicPPL.loadstate(
-    chain::FlexiChain{TKey,NIter,NChain}
-) where {TKey<:VarName,NIter,NChain}
+function DynamicPPL.loadstate(chain::FlexiChain{TKey}) where {TKey<:VarName}
     st = FlexiChains.last_sampler_state(chain)
-    if NChain == 1
+    if FlexiChains.nchains(chain) == 1
         st = only(st)
     end
     st === nothing && error(
@@ -98,13 +96,7 @@ function reevaluate(
         new_model = DynamicPPL.contextualize(model, new_ctx)
         DynamicPPL.evaluate!!(new_model, vi)
     end
-    return DD.DimMatrix(
-        retvals_and_varinfos,
-        (
-            DD.Dim{FlexiChains.ITER_DIM_NAME}(FlexiChains.iter_indices(chain)),
-            DD.Dim{FlexiChains.CHAIN_DIM_NAME}(FlexiChains.chain_indices(chain)),
-        ),
-    )
+    return FlexiChains._raw_to_user_data(chain, retvals_and_varinfos)
 end
 function reevaluate(
     model::DynamicPPL.Model,
@@ -142,17 +134,18 @@ function DynamicPPL.logprior(
 end
 
 function DynamicPPL.predict(
-    rng::Random.AbstractRNG,
-    model::DynamicPPL.Model,
-    chain::FlexiChain{<:VarName,NIter,NChain},
-)::FlexiChain{VarName,NIter,NChain} where {NIter,NChain}
+    rng::Random.AbstractRNG, model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+)::FlexiChain{VarName}
     param_dicts = map(reevaluate(rng, model, chain)) do (_, vi)
         # Dict{VarName}
         vn_dict = DynamicPPL.getacc(vi, Val(:ValuesAsInModel)).values
         # Dict{Parameter{VarName}}
         Dict(Parameter(vn) => val for (vn, val) in vn_dict)
     end
-    chain_params_only = FlexiChain{VarName,NIter,NChain}(
+    ni, nc = size(chain)
+    chain_params_only = FlexiChain{VarName}(
+        ni,
+        nc,
         param_dicts;
         iter_indices=FlexiChains.iter_indices(chain),
         chain_indices=FlexiChains.chain_indices(chain),
@@ -163,8 +156,8 @@ function DynamicPPL.predict(
     return merge(chain_params_only, chain_nonparams_only)
 end
 function DynamicPPL.predict(
-    model::DynamicPPL.Model, chain::FlexiChain{<:VarName,NIter,NChain}
-)::FlexiChain{VarName,NIter,NChain} where {NIter,NChain}
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+)::FlexiChain{VarName}
     return DynamicPPL.predict(Random.default_rng(), model, chain)
 end
 

@@ -342,15 +342,15 @@ for easier indexing into the result when only one statistic is computed. It is a
 The return type is a [`FlexiSummary`](@ref).
 """
 function collapse(
-    chain::FlexiChain{TKey,NIter,NChains},
+    chain::FlexiChain{TKey},
     funcs::AbstractVector;
     dims::Symbol=:both,
     warn::Bool=true,
     drop_stat_dim::Bool=false,
-) where {TKey,NIter,NChains}
+) where {TKey}
     data = Dict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
     names, funcs = _get_names_and_funcs(funcs)
-    expected_size = _get_expected_size(NIter, NChains, dims)
+    expected_size = _get_expected_size(niters(chain), nchains(chain), dims)
     # Not proud of this function, but it does what it needs to do... sigh.
     for (k, v) in chain._data
         try
@@ -595,6 +595,18 @@ For a full list of keyword arguments, please see the documentation for
 """
 @forward_stat_function_each MCMCDiagnosticTools.mcse
 
+"""
+    summarize(chain::FlexiChain)
+
+Compute a standard set of summary statistics for each key in the `chain`. The statistics include:
+
+- mean
+- standard deviation
+- Monte Carlo standard error
+- bulk effective sample size
+- tail effective sample size
+- R-hat diagnostic
+"""
 function summarize(chain::FlexiChain)
     return collapse(
         chain,

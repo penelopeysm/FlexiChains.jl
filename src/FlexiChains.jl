@@ -44,7 +44,7 @@ export VarName, @varname, VNChain, summarize
     d[Parameter(@varname(a))] = 1
     ds = fill(d, 10, 2)
     @compile_workload begin
-        fc = VNChain{10,2}(ds)
+        fc = VNChain(10, 2, ds)
         summarize(fc)
     end
 end
