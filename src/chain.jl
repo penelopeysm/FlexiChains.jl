@@ -116,8 +116,6 @@ end
 A struct to hold common kinds of metadata typically associated with a chain.
 """
 struct FlexiChainMetadata{
-    NIter,
-    NChain,
     TIIdx<:DDL.Lookup,
     TCIdx<:DDL.Lookup,
     Ttime<:AbstractVector{<:Union{Real,Missing}},
@@ -148,25 +146,25 @@ struct FlexiChainMetadata{
     """
     last_sampler_state::Tstate
 
-    function FlexiChainMetadata{NIter,NChains}(
+    function FlexiChainMetadata(
+        niter::Int,
+        nchains::Int,
         iter_indices::AbstractVector{<:Integer},
         chain_indices::AbstractVector{<:Integer},
         sampling_time::AbstractVector{<:Union{Real,Missing}},
         last_sampler_state::AbstractVector,
-    ) where {NIter,NChains}
+    )
         iter_indices_checked = _make_lookup(
-            _check_length(NIter, iter_indices, "iter_indices")
+            _check_length(niter, iter_indices, "iter_indices")
         )
         chain_indices_checked = _make_lookup(
-            _check_length(NChains, chain_indices, "chain_indices")
+            _check_length(nchains, chain_indices, "chain_indices")
         )
-        sampling_time_checked = _check_length(NChains, sampling_time, "sampling_time")
+        sampling_time_checked = _check_length(nchains, sampling_time, "sampling_time")
         last_sampler_state_checked = _check_length(
-            NChains, last_sampler_state, "last_sampler_state"
+            nchains, last_sampler_state, "last_sampler_state"
         )
         return new{
-            NIter,
-            NChains,
             typeof(iter_indices_checked),
             typeof(chain_indices_checked),
             typeof(sampling_time_checked),
@@ -182,8 +180,7 @@ end
 
 """
     struct FlexiChain{
-        TKey,NIter,NChains,
-        TMetadata<:NTuple{NChains,FlexiChainMetadata}
+        TKey,TMetadata<:NTuple{N,FlexiChainMetadata}
     } <: AbstractMCMC.AbstractChains
 
 An MCMC chain.
@@ -200,8 +197,7 @@ TODO: Document further.
 
 $(TYPEDFIELDS)
 """
-struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains}} <:
-       AbstractChains
+struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractChains
     """
     Internal per-iteration data for parameters and extra keys. To access the data
     in here, you should index into the chain.
@@ -219,12 +215,14 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
     _metadata::TMetadata
 
     @doc """
-        FlexiChain{TKey,NIter,NChains}(
+        FlexiChain{TKey}(
+            niters::Int,
+            nchains::Int,
             array_of_dicts::AbstractArray{<:AbstractDict,N};
-            iter_indices::AbstractVector{Int}=1:NIter,
-            chain_indices::AbstractVector{Int}=1:NChains,
-            sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, NChains),
-            last_sampler_state::AbstractVector=fill(missing, NChains),
+            iter_indices::AbstractVector{Int}=1:niters,
+            chain_indices::AbstractVector{Int}=1:nchains,
+            sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
+            last_sampler_state::AbstractVector=fill(missing, nchains),
         ) where {TKey,N}
 
     Construct a `FlexiChain` from a vector or matrix of dictionaries. Each dictionary
@@ -244,10 +242,10 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
     ## Metadata
 
     `iter_indices` and `chain_indices` can be used to specify the iteration and chain
-    indices, respectively. By default, these are `1:NIter` and `1:NChains`, but can be any
+    indices, respectively. By default, these are `1:niters` and `1:nchains`, but can be any
     vector of integers of the appropriate length. `sampling_time` and `last_sampler_state`
     are used to store metadata about each chain. They should be given as vectors of length
-    `NChains` (even if there is only one chain).
+    `nchains` (even if there is only one chain).
 
     ## Example usage
 
@@ -255,20 +253,22 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
     d = fill(
         Dict(Parameter(:x) => rand(), Extra("y") => rand()), 200, 3
     )
-    chn = FlexiChain{Symbol,200,3}(d)
+    chn = FlexiChain{Symbol}(200, 3, d)
     ```
     """
-    function FlexiChain{TKey,NIter,NChains}(
+    function FlexiChain{TKey}(
+        niters::Int,
+        nchains::Int,
         array_of_dicts::AbstractArray{<:AbstractDict};
-        iter_indices::AbstractVector{Int}=1:NIter,
-        chain_indices::AbstractVector{Int}=1:NChains,
-        sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, NChains),
-        last_sampler_state::AbstractVector=fill(missing, NChains),
-    ) where {TKey,NIter,NChains}
+        iter_indices::AbstractVector{Int}=1:niters,
+        chain_indices::AbstractVector{Int}=1:nchains,
+        sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
+        last_sampler_state::AbstractVector=fill(missing, nchains),
+    ) where {TKey}
         # Construct metadata. We do this early so that if any of the inputs have the
         # wrong length we get an error before doing any more work.
-        metadata = FlexiChainMetadata{NIter,NChains}(
-            iter_indices, chain_indices, sampling_time, last_sampler_state
+        metadata = FlexiChainMetadata(
+            niters, nchains, iter_indices, chain_indices, sampling_time, last_sampler_state
         )
 
         # Extract all unique keys from the dictionaries
@@ -289,19 +289,20 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
             # Extract the values for this key from all dictionaries
             values = map(d -> get(d, key, missing), array_of_dicts)
             # Store in the data dictionary
-            data[key] = _check_size(values, NIter, NChains; key_name=key)
+            data[key] = _check_size(values, niters, nchains; key_name=key)
         end
-
-        return new{TKey,NIter,NChains,typeof(metadata)}(data, metadata)
+        return new{TKey,typeof(metadata)}(data, metadata)
     end
 
     @doc """
-        FlexiChain{TKey,NIter,NChains}(
+        FlexiChain{TKey}(
+            niters::Int,
+            nchains::Int,
             dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}};
-            iter_indices::AbstractVector{Int}=1:NIter,
-            chain_indices::AbstractVector{Int}=1:NChains,
-            sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, NChains),
-            last_sampler_state::AbstractVector=fill(missing, NChains),
+            iter_indices::AbstractVector{Int}=1:niters,
+            chain_indices::AbstractVector{Int}=1:nchains,
+            sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
+            last_sampler_state::AbstractVector=fill(missing, nchains),
         ) where {TKey,N}
 
     Construct a `FlexiChain` from a dictionary of arrays.
@@ -321,10 +322,10 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
     ## Metadata
 
     `iter_indices` and `chain_indices` can be used to specify the iteration and chain
-    indices, respectively. By default, these are `1:NIter` and `1:NChains`, but can be any
+    indices, respectively. By default, these are `1:niters` and `1:nchains`, but can be any
     vector of integers of the appropriate length. `sampling_time` and `last_sampler_state`
     are used to store metadata about each chain. They should be given as vectors of length
-    `NChains` (even if there is only one chain).
+    `nchains` (even if there is only one chain).
 
     ## Example usage
 
@@ -333,20 +334,22 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
         Parameter(:x) => rand(200, 3),
         Extra("y") => rand(200, 3),
     )
-    chn = FlexiChain{Symbol,200,3}(d)
+    chn = FlexiChain{Symbol}(200, 3, d)
     ```
     """
-    function FlexiChain{TKey,NIter,NChains}(
+    function FlexiChain{TKey}(
+        niters::Int,
+        nchains::Int,
         dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any}};
-        iter_indices::AbstractVector{Int}=1:NIter,
-        chain_indices::AbstractVector{Int}=1:NChains,
-        sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, NChains),
-        last_sampler_state::AbstractVector=fill(missing, NChains),
-    ) where {TKey,NIter,NChains}
+        iter_indices::AbstractVector{Int}=1:niters,
+        chain_indices::AbstractVector{Int}=1:nchains,
+        sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
+        last_sampler_state::AbstractVector=fill(missing, nchains),
+    ) where {TKey}
         # Construct metadata. We do this early so that if any of the inputs have the
         # wrong length we get an error before doing any more work.
-        metadata = FlexiChainMetadata{NIter,NChains}(
-            iter_indices, chain_indices, sampling_time, last_sampler_state
+        metadata = FlexiChainMetadata(
+            niters, nchains, iter_indices, chain_indices, sampling_time, last_sampler_state
         )
 
         data = Dict{ParameterOrExtra{<:TKey},Matrix}()
@@ -357,10 +360,10 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
                 throw(ArgumentError(msg))
             end
             # Check size and store in dictionary
-            data[key] = _check_size(array, NIter, NChains; key_name=key)
+            data[key] = _check_size(array, niters, nchains; key_name=key)
         end
 
-        return new{TKey,NIter,NChains,typeof(metadata)}(data, metadata)
+        return new{TKey,typeof(metadata)}(data, metadata)
     end
 end
 
@@ -385,16 +388,18 @@ chain_indices(chain::FlexiChain)::DDL.Lookup = chain._metadata.chain_indices
 
 """
     renumber_iters(
-        chain::FlexiChain{TKey,NIter,NChain},
-        iter_indices::AbstractVector{<:Integer}=1:NIter
-    )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
+        chain::FlexiChain{TKey},
+        iter_indices::AbstractVector{<:Integer}=1:size(chain, 1)
+    )::FlexiChain{TKey} where {TKey}
 
 Return a copy of `chain` with the iteration indices replaced by `iter_indices`.
 """
 function renumber_iters(
-    chain::FlexiChain{TKey,NIter,NChain}, iter_indices::AbstractVector{<:Integer}=1:NIter
-)::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
-    return FlexiChain{TKey,NIter,NChain}(
+    chain::FlexiChain{TKey}, iter_indices::AbstractVector{<:Integer}=1:size(chain, 1)
+) where {TKey}
+    return FlexiChain{TKey}(
+        niters(chain),
+        nchains(chain),
         chain._data;
         iter_indices=iter_indices,
         chain_indices=chain_indices(chain),
@@ -405,17 +410,18 @@ end
 
 """
     renumber_chains(
-        chain::FlexiChain{TKey,NIter,NChains},
-        chain_indices::AbstractVector{<:Integer}=1:NChains
-    )::FlexiChain{TKey,NIter,NChains} where {TKey,NIter,NChains}
+        chain::FlexiChain{TKey},
+        chain_indices::AbstractVector{<:Integer}=1:nchains(chain)
+    )::FlexiChain{TKey} where {TKey}
 
 Return a copy of `chain` with the chain indices replaced by `chain_indices`.
 """
 function renumber_chains(
-    chain::FlexiChain{TKey,NIter,NChains},
-    chain_indices::AbstractVector{<:Integer}=1:NChains,
-)::FlexiChain{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    return FlexiChain{TKey,NIter,NChains}(
+    chain::FlexiChain{TKey}, chain_indices::AbstractVector{<:Integer}=1:nchains(chain)
+) where {TKey}
+    return FlexiChain{TKey}(
+        niters(chain),
+        nchains(chain),
         chain._data;
         iter_indices=iter_indices(chain),
         chain_indices=chain_indices,

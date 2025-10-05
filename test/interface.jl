@@ -16,7 +16,7 @@ using Test
             Dict(),
         ]
         for d in ds
-            chain = FlexiChain{Symbol,10,1}(fill(d, 10))
+            chain = FlexiChain{Symbol}(10, 1, fill(d, 10))
             display(chain)
         end
     end
@@ -36,8 +36,8 @@ using Test
 
     @testset "equality" begin
         d = Dict(Parameter(:a) => 1, Extra("hello") => 3.0)
-        chain1 = FlexiChain{Symbol,10,1}(fill(d, 10))
-        chain2 = FlexiChain{Symbol,10,1}(fill(d, 10))
+        chain1 = FlexiChain{Symbol}(10, 1, fill(d, 10))
+        chain2 = FlexiChain{Symbol}(10, 1, fill(d, 10))
         @test chain1 == chain2
     end
 
@@ -45,9 +45,9 @@ using Test
         N_iters, N_chains = 10, 2
         d = Dict(Parameter(:a) => 1, Parameter(:b) => 2, Extra("hello") => 3.0)
         dicts = fill(d, N_iters, N_chains)
-        chain = FlexiChain{Symbol,N_iters,N_chains}(dicts)
+        chain = FlexiChain{Symbol}(N_iters, N_chains, dicts)
         # size
-        @test chain isa FlexiChain{Symbol,N_iters,N_chains}
+        @test chain isa FlexiChain{Symbol}
         @test size(chain) == (N_iters, N_chains)
         @test size(chain, 1) == N_iters
         @test size(chain, 2) == N_chains
@@ -69,7 +69,7 @@ using Test
             Extra("world") => 4.0,
             Extra("key") => 5.0,
         )
-        chain = FlexiChain{Symbol,N_iters,1}(fill(d, N_iters))
+        chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
 
         @testset "parameters" begin
             @test Set(FlexiChains.parameters(chain)) == Set([:a, :b])
@@ -86,8 +86,8 @@ using Test
             dicts = fill(Dict(Parameter(:a) => 1), N_iters)
             # Inject some chaos with non-default iter_indices and chain_indices
             iter_range = 3:3:(N_iters * 3)
-            chain = FlexiChain{Symbol,N_iters,1}(
-                dicts; iter_indices=iter_range, chain_indices=[4]
+            chain = FlexiChain{Symbol}(
+                N_iters, 1, dicts; iter_indices=iter_range, chain_indices=[4]
             )
 
             @testset "without iter/chain indexing" begin
@@ -136,7 +136,7 @@ using Test
                 ),
                 N_iters,
             )
-            chain = FlexiChain{Shay,N_iters,1}(dicts)
+            chain = FlexiChain{Shay}(N_iters, 1, dicts)
 
             # Note that DimArrays compare equal to regular matrices with `==` if they have
             # the same contents, so these tests don't actually check that the types returned
@@ -170,7 +170,7 @@ using Test
             @testset "no ambiguity" begin
                 N_iters = 10
                 dicts = fill(Dict(Parameter("a") => 1, Parameter("b") => 2), N_iters)
-                chain = FlexiChain{String,N_iters,1}(dicts)
+                chain = FlexiChain{String}(N_iters, 1, dicts)
                 # This relies on there being a unique key that can be converted to the given
                 # Symbol
                 @test chain[:a] == fill(1, N_iters, 1)
@@ -186,7 +186,7 @@ using Test
                 # What happens if you have multiple keys that convert to the same Symbol?
                 N_iters = 10
                 dicts = fill(Dict(Parameter(@varname(a)) => 1, Extra("a") => 3.0), N_iters)
-                chain = FlexiChain{VarName,N_iters,1}(dicts)
+                chain = FlexiChain{VarName}(N_iters, 1, dicts)
 
                 # getindex with the full key should be fine
                 @test chain[Parameter(@varname(a))] == fill(1, N_iters, 1)
@@ -205,14 +205,15 @@ using Test
                 Dict(Parameter("a") => 1, Parameter("b") => 2, Extra("hello") => 3.0),
                 N_iters,
             )
-            chain = FlexiChain{String,N_iters,1}(dicts)
+            chain = FlexiChain{String}(N_iters, 1, dicts)
 
             @testset "No argument (should default to colon)" begin
                 c = chain[]
                 @test c == chain
                 @testset "with iter subsetting" begin
                     c2 = chain[iter=4:6]
-                    @test c2 isa FlexiChain{String,3,1}
+                    @test c2 isa FlexiChain{String}
+                    @test size(c2) == (3, 1)
                     @test c2[Parameter("a")] == fill(1, 3, 1)
                 end
             end
@@ -223,7 +224,8 @@ using Test
             @testset "AbstractVector{ParameterOrExtra{TKey}}" begin
                 keys = [Parameter("a"), Extra("hello")]
                 c = chain[keys]
-                @test c isa FlexiChain{String,N_iters,1}
+                @test c isa FlexiChain{String}
+                @test size(c) == (N_iters, 1)
                 @test c[Parameter("a")] == fill(1, N_iters, 1)
                 @test c[Extra("hello")] == fill(3.0, N_iters, 1)
                 @test !haskey(c, Parameter("b"))
@@ -238,7 +240,7 @@ using Test
                 Parameter(@varname(b)) => [2.0, 3.0],
                 Parameter(@varname(c)) => (x=4.0, y=5.0),
             )
-            chain = FlexiChain{VarName,N_iters,1}(fill(d, N_iters))
+            chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
 
             @testset "ordinary VarName" begin
                 @test chain[@varname(a)] == fill(1.0, N_iters, 1)
@@ -266,7 +268,7 @@ using Test
 
     @testset "extract dicts for single iter" begin
         N = 10
-        c = FlexiChain{Symbol,N,1}(Dict(Parameter(:a) => rand(N), Extra("c") => rand(N)))
+        c = FlexiChain{Symbol}(N, 1, Dict(Parameter(:a) => rand(N), Extra("c") => rand(N)))
 
         @testset "get_dict_from_iter" begin
             for i in 1:N
@@ -291,7 +293,7 @@ using Test
             struct Foo end
             N_iters = 10
             dict1 = Dict(Parameter(:a) => 1, Parameter(:b) => "no", Extra("foo") => 3.0)
-            chain1 = FlexiChain{Symbol,N_iters,1}(fill(dict1, N_iters))
+            chain1 = FlexiChain{Symbol}(N_iters, 1, fill(dict1, N_iters))
 
             dict2 = Dict(
                 Parameter(:c) => Foo(), Parameter(:b) => "yes", Extra("bar") => "cheese"
@@ -300,7 +302,9 @@ using Test
             ci = [4]
             sampling_time = [2.5]
             last_sampler_state = ["finished"]
-            chain2 = FlexiChain{Symbol,N_iters,1}(
+            chain2 = FlexiChain{Symbol}(
+                N_iters,
+                1,
                 fill(dict2, N_iters);
                 iter_indices=ii,
                 chain_indices=ci,
@@ -310,7 +314,9 @@ using Test
             chain3 = merge(chain1, chain2)
 
             @testset "values are taken from second chain" begin
-                expected_chain3 = FlexiChain{Symbol,N_iters,1}(
+                expected_chain3 = FlexiChain{Symbol}(
+                    N_iters,
+                    1,
                     fill(merge(dict1, dict2), N_iters);
                     iter_indices=ii,
                     chain_indices=ci,
@@ -345,27 +351,27 @@ using Test
         @testset "size mismatch" begin
             # Sizes are just incompatible
             dict1 = Dict(Parameter(:a) => 1)
-            chain1 = FlexiChain{Symbol,10,1}(fill(dict1, 10))
+            chain1 = FlexiChain{Symbol}(10, 1, fill(dict1, 10))
             dict2 = Dict(Parameter(:b) => 2.0)
-            chain2 = FlexiChain{Symbol,100,1}(fill(dict2, 100))
+            chain2 = FlexiChain{Symbol}(100, 1, fill(dict2, 100))
             @test_throws DimensionMismatch merge(chain1, chain2)
 
             # This is OK (vector combined with N*1 matrix)
             dict3 = Dict(Parameter(:c) => 3.0)
-            chain3 = FlexiChain{Symbol,10,1}(fill(dict3, 10, 1))
+            chain3 = FlexiChain{Symbol}(10, 1, fill(dict3, 10, 1))
             @test merge(chain1, chain3) isa FlexiChain{Symbol}
 
             # This is not OK
             dict4 = Dict(Parameter(:d) => 3.0)
-            chain4 = FlexiChain{Symbol,5,2}(fill(dict4, 5, 2))
+            chain4 = FlexiChain{Symbol}(5, 2, fill(dict4, 5, 2))
             @test_throws DimensionMismatch merge(chain1, chain4)
         end
 
         @testset "key type promotion" begin
             dict1 = Dict(Parameter(:a) => 1)
-            chain1 = FlexiChain{Symbol,10,1}(fill(dict1, 10))
+            chain1 = FlexiChain{Symbol}(10, 1, fill(dict1, 10))
             dict2 = Dict(Parameter("b") => "Hi")
-            chain2 = FlexiChain{String,10,1}(fill(dict2, 10))
+            chain2 = FlexiChain{String}(10, 1, fill(dict2, 10))
             @test_logs (:warn, r"different key types") merge(chain1, chain2)
             ch = merge(chain1, chain2)
             # Not sure why but `Base.promote_type(Symbol, String)` returns Any
@@ -381,7 +387,7 @@ using Test
         @testset "basic application" begin
             N_iters = 10
             d = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain = FlexiChain{Symbol,N_iters,1}(fill(d, N_iters))
+            chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
 
             subsetted1 = FlexiChains.subset(chain, [Parameter(:a)])
             @test typeof(subsetted1) == typeof(chain)
@@ -398,14 +404,14 @@ using Test
         @testset "key not present" begin
             N_iters = 10
             d = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain = FlexiChain{Symbol,N_iters,1}(fill(d, N_iters))
+            chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
             @test_throws KeyError FlexiChains.subset(chain, [Parameter(:x)])
         end
 
         @testset "subset parameters and extras" begin
             N_iters = 10
             d = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain = FlexiChain{Symbol,N_iters,1}(fill(d, N_iters))
+            chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
             @test FlexiChains.subset_parameters(chain) ==
                 FlexiChains.subset(chain, [Parameter(:a)])
             @test FlexiChains.subset_extras(chain) ==
@@ -417,12 +423,12 @@ using Test
         @testset "basic application" begin
             niters1 = 10
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain1 = FlexiChain{Symbol,niters1,1}(fill(d1, niters1))
+            chain1 = FlexiChain{Symbol}(niters1, 1, fill(d1, niters1))
             niters2 = 20
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
-            chain2 = FlexiChain{Symbol,niters2,1}(fill(d2, niters2))
+            chain2 = FlexiChain{Symbol}(niters2, 1, fill(d2, niters2))
             chain12 = vcat(chain1, chain2)
-            @test chain12 isa FlexiChain{Symbol,niters1 + niters2,1}
+            @test chain12 isa FlexiChain{Symbol}
             @test size(chain12) == (niters1 + niters2, 1)
             @test chain12[Parameter(:a)] == vcat(fill(1, niters1, 1), fill(2, niters2, 1))
             @test chain12[Extra("c")] ==
@@ -432,12 +438,12 @@ using Test
         @testset "handling indices" begin
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain1 = FlexiChain{Symbol,N_iters,1}(
-                fill(d1, N_iters); iter_indices=1:10, chain_indices=[1]
+            chain1 = FlexiChain{Symbol}(
+                N_iters, 1, fill(d1, N_iters); iter_indices=1:10, chain_indices=[1]
             )
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
-            chain2 = FlexiChain{Symbol,N_iters,1}(
-                fill(d2, N_iters); iter_indices=21:30, chain_indices=[2]
+            chain2 = FlexiChain{Symbol}(
+                N_iters, 1, fill(d2, N_iters); iter_indices=21:30, chain_indices=[2]
             )
 
             chain12 = vcat(chain1, chain2)
@@ -450,13 +456,13 @@ using Test
         @testset "metadata" begin
             niters1 = 10
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain1 = FlexiChain{Symbol,niters1,1}(
-                fill(d1, niters1); sampling_time=[1], last_sampler_state=["foo"]
+            chain1 = FlexiChain{Symbol}(
+                niters1, 1, fill(d1, niters1); sampling_time=[1], last_sampler_state=["foo"]
             )
             niters2 = 20
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
-            chain2 = FlexiChain{Symbol,niters2,1}(
-                fill(d2, niters2); sampling_time=[2], last_sampler_state=["bar"]
+            chain2 = FlexiChain{Symbol}(
+                niters2, 1, fill(d2, niters2); sampling_time=[2], last_sampler_state=["bar"]
             )
             chain12 = vcat(chain1, chain2)
 
@@ -468,17 +474,17 @@ using Test
 
         @testset "error on different number of chains" begin
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain1 = FlexiChain{Symbol,10,1}(fill(d1, 10, 1))
+            chain1 = FlexiChain{Symbol}(10, 1, fill(d1, 10, 1))
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
-            chain2 = FlexiChain{Symbol,10,2}(fill(d2, 10, 2))
+            chain2 = FlexiChain{Symbol}(10, 2, fill(d2, 10, 2))
             @test_throws DimensionMismatch vcat(chain1, chain2)
         end
 
         @testset "error on different key type" begin
             d1 = Dict(Parameter(:a) => 1)
-            chain1 = FlexiChain{Symbol,10,1}(fill(d1, 10))
+            chain1 = FlexiChain{Symbol}(10, 1, fill(d1, 10))
             d2 = Dict(Parameter("a") => 2)
-            chain2 = FlexiChain{String,10,1}(fill(d2, 10))
+            chain2 = FlexiChain{String}(10, 1, fill(d2, 10))
             @test_throws ArgumentError vcat(chain1, chain2)
         end
     end
@@ -487,11 +493,11 @@ using Test
         @testset "basic application" begin
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain1 = FlexiChain{Symbol,N_iters,1}(fill(d1, N_iters))
+            chain1 = FlexiChain{Symbol}(N_iters, 1, fill(d1, N_iters))
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
-            chain2 = FlexiChain{Symbol,N_iters,1}(fill(d2, N_iters))
+            chain2 = FlexiChain{Symbol}(N_iters, 1, fill(d2, N_iters))
             chain12 = hcat(chain1, chain2)
-            @test chain12 isa FlexiChain{Symbol,N_iters,2}
+            @test chain12 isa FlexiChain{Symbol}
             @test size(chain12) == (N_iters, 2)
             @test chain12[Parameter(:a)] == repeat([1 2], N_iters)
             @test chain12[Extra("c")] == repeat([3.0 "foo"], N_iters)
@@ -500,9 +506,9 @@ using Test
         @testset "handling indices" begin
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain1 = FlexiChain{Symbol,N_iters,1}(fill(d1, N_iters); iter_indices=1:10)
+            chain1 = FlexiChain{Symbol}(N_iters, 1, fill(d1, N_iters); iter_indices=1:10)
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
-            chain2 = FlexiChain{Symbol,N_iters,1}(fill(d2, N_iters); iter_indices=21:30)
+            chain2 = FlexiChain{Symbol}(N_iters, 1, fill(d2, N_iters); iter_indices=21:30)
 
             @test_logs (:warn, r"different iteration indices") hcat(chain1, chain2)
             chain12 = hcat(chain1, chain2)
@@ -513,15 +519,15 @@ using Test
         @testset "combination of metadata" begin
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1)
-            chain1 = FlexiChain{Symbol,N_iters,1}(
-                fill(d1, N_iters); sampling_time=[1], last_sampler_state=["foo"]
+            chain1 = FlexiChain{Symbol}(
+                N_iters, 1, fill(d1, N_iters); sampling_time=[1], last_sampler_state=["foo"]
             )
             d2 = Dict(Parameter(:a) => 2)
-            chain2 = FlexiChain{Symbol,N_iters,1}(
-                fill(d2, N_iters); sampling_time=[2], last_sampler_state=["bar"]
+            chain2 = FlexiChain{Symbol}(
+                N_iters, 1, fill(d2, N_iters); sampling_time=[2], last_sampler_state=["bar"]
             )
             chain12 = hcat(chain1, chain2)
-            @test chain12 isa FlexiChain{Symbol,N_iters,2}
+            @test chain12 isa FlexiChain{Symbol}
             @test size(chain12) == (N_iters, 2)
             @test chain12[Parameter(:a)] == repeat([1 2], N_iters)
             @test FlexiChains.sampling_time(chain12) == [1, 2]
@@ -531,13 +537,13 @@ using Test
         @testset "3 or more inputs" begin
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain1 = FlexiChain{Symbol,N_iters,1}(fill(d1, N_iters))
+            chain1 = FlexiChain{Symbol}(N_iters, 1, fill(d1, N_iters))
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
-            chain2 = FlexiChain{Symbol,N_iters,1}(fill(d2, N_iters))
+            chain2 = FlexiChain{Symbol}(N_iters, 1, fill(d2, N_iters))
             d3 = Dict(Parameter(:x) => 4, Extra("e") => :y)
-            chain3 = FlexiChain{Symbol,N_iters,1}(fill(d3, N_iters))
+            chain3 = FlexiChain{Symbol}(N_iters, 1, fill(d3, N_iters))
             chain123 = hcat(chain1, chain2, chain3)
-            @test chain123 isa FlexiChain{Symbol,N_iters,3}
+            @test chain123 isa FlexiChain{Symbol}
             @test size(chain123) == (N_iters, 3)
             # need isequal() rather than `==` to handle the `missing` values
             @test isequal(chain123[Parameter(:a)], repeat([1 2 missing], N_iters))
@@ -548,37 +554,37 @@ using Test
 
         @testset "stacking different numbers of chains" begin
             N_iters = 10
-            chain1 = FlexiChain{Symbol,N_iters,1}(fill(Dict(Parameter(:a) => 1), N_iters))
-            chain2 = FlexiChain{Symbol,N_iters,2}(
-                fill(Dict(Parameter(:a) => 3), N_iters, 2)
+            chain1 = FlexiChain{Symbol}(N_iters, 1, fill(Dict(Parameter(:a) => 1), N_iters))
+            chain2 = FlexiChain{Symbol}(
+                N_iters, 2, fill(Dict(Parameter(:a) => 3), N_iters, 2)
             )
             chain12 = hcat(chain1, chain2)
-            @test chain12 isa FlexiChain{Symbol,N_iters,3}
+            @test chain12 isa FlexiChain{Symbol}
             @test size(chain12) == (N_iters, 3)
             @test chain12[Parameter(:a)] == repeat([1 3 3], N_iters)
         end
 
         @testset "error on different number of iters" begin
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain1 = FlexiChain{Symbol,20,1}(fill(d1, 20))
+            chain1 = FlexiChain{Symbol}(20, 1, fill(d1, 20))
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
-            chain2 = FlexiChain{Symbol,10,1}(fill(d2, 10))
+            chain2 = FlexiChain{Symbol}(10, 1, fill(d2, 10))
             @test_throws DimensionMismatch hcat(chain1, chain2)
         end
 
         @testset "error on different key type" begin
             d1 = Dict(Parameter(:a) => 1)
-            chain1 = FlexiChain{Symbol,10,1}(fill(d1, 10))
+            chain1 = FlexiChain{Symbol}(10, 1, fill(d1, 10))
             d2 = Dict(Parameter("a") => 2)
-            chain2 = FlexiChain{String,10,1}(fill(d2, 10))
+            chain2 = FlexiChain{String}(10, 1, fill(d2, 10))
             @test_throws ArgumentError hcat(chain1, chain2)
         end
 
         @testset "different parameters in chains" begin
-            chain1 = FlexiChain{Symbol,10,1}(fill(Dict(Parameter(:a) => 1), 10))
-            chain2 = FlexiChain{Symbol,10,1}(fill(Dict(Parameter(:b) => 2), 10))
+            chain1 = FlexiChain{Symbol}(10, 1, fill(Dict(Parameter(:a) => 1), 10))
+            chain2 = FlexiChain{Symbol}(10, 1, fill(Dict(Parameter(:b) => 2), 10))
             chain12 = hcat(chain1, chain2)
-            @test chain12 isa FlexiChain{Symbol,10,2}
+            @test chain12 isa FlexiChain{Symbol}
             @test size(chain12) == (10, 2)
             # need isequal() rather than `==` to handle the `missing` values
             @test isequal(chain12[Parameter(:a)], repeat([1 missing], 10))
@@ -589,11 +595,11 @@ using Test
             # These methods make use of hcat. We just do a basic test
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain1 = FlexiChain{Symbol,N_iters,1}(fill(d1, N_iters))
+            chain1 = FlexiChain{Symbol}(N_iters, 1, fill(d1, N_iters))
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
-            chain2 = FlexiChain{Symbol,N_iters,1}(fill(d2, N_iters))
+            chain2 = FlexiChain{Symbol}(N_iters, 1, fill(d2, N_iters))
             d3 = Dict(Parameter(:x) => 4, Extra("e") => :y)
-            chain3 = FlexiChain{Symbol,N_iters,1}(fill(d3, N_iters))
+            chain3 = FlexiChain{Symbol}(N_iters, 1, fill(d3, N_iters))
             chain12 = hcat(chain1, chain2)
             @test isequal(AbstractMCMC.chainscat(chain1, chain2), chain12)
             @test isequal(AbstractMCMC.chainsstack([chain1, chain2]), chain12)

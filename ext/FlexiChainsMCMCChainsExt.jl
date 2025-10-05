@@ -8,10 +8,10 @@ using OrderedCollections: OrderedDict, OrderedSet
 # Conversion to MCMCChains #
 ############################
 
-function MCMCChains.Chains(vnchain::FlexiChain{<:VarName,NIter,NChain}) where {NIter,NChain}
+function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
+    ni, nc = size(vnchain)
     array_of_dicts = [
-        FlexiChains.get_parameter_dict_from_iter(vnchain, i, j) for i in 1:NIter,
-        j in 1:NChain
+        FlexiChains.get_parameter_dict_from_iter(vnchain, i, j) for i in 1:ni, j in 1:nc
     ]
     # Construct array of parameter names and array of values.
     # Most of this functionality is copied from _params_to_array in
@@ -35,19 +35,18 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName,NIter,NChain}) where {N
     end
     varnames = collect(names_set)
     values = [
-        get(split_dicts[i, j], key, missing) for i in 1:NIter, key in varnames,
-        j in 1:NChain
+        get(split_dicts[i, j], key, missing) for i in 1:ni, key in varnames, j in 1:nc
     ]
     varname_symbols = map(Symbol, varnames)
 
     # Handle non-parameter keys
     internal_keys = Symbol[]
-    internal_values = Array{Real,3}(undef, NIter, 0, NChain)
+    internal_values = Array{Real,3}(undef, ni, 0, nc)
     for k in FlexiChains.extras(vnchain)
         v = map(identity, vnchain[k])
         if eltype(v) <: Real
             push!(internal_keys, Symbol(k.name))
-            internal_values = hcat(internal_values, reshape(v, NIter, 1, NChain))
+            internal_values = hcat(internal_values, reshape(v, ni, 1, nc))
         else
             @warn "key $k skipped in MCMCChains conversion as it is not Real-valued"
         end

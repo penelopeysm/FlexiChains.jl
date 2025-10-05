@@ -40,7 +40,7 @@ function AbstractMCMC.bundle_samples(
     thinning::Int=1,
     _kwargs...,
 )::FlexiChain{VarName}
-    NIter = length(transitions)
+    niters = length(transitions)
     dicts = map(FlexiChains.to_varname_dict, transitions)
     # timings
     tm = stats === missing ? missing : stats.stop - stats.start
@@ -49,12 +49,14 @@ function AbstractMCMC.bundle_samples(
     # calculate iteration indices
     start = discard_initial + 1
     iter_indices = if thinning != 1
-        range(start; step=thinning, length=NIter)
+        range(start; step=thinning, length=niters)
     else
         # This returns UnitRange not StepRange -- a bit cleaner
-        start:(start + NIter - 1)
+        start:(start + niters - 1)
     end
-    return FlexiChain{VarName,NIter,1}(
+    return FlexiChain{VarName}(
+        niters,
+        1,
         dicts;
         iter_indices=iter_indices,
         # 1:1 gives nicer DimMatrix output than just [1]
