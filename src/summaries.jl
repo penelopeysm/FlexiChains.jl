@@ -402,7 +402,7 @@ end
 
 function _stat_docstring(func_name, short_name)
     return """
-    $(func_name)(chain::FlexiChain; dims::Symbol=:both, warn::Bool=true)
+    $(func_name)(chain::FlexiChain; dims::Symbol=:both, warn::Bool=true, kwargs...)
 
 Calculate the $(short_name) across all iterations and chains for each key in
 the `chain`. If the statistic cannot be computed for a key, that key is
@@ -481,7 +481,7 @@ macro forward_stat_function_each(func)
                 [(
                     Symbol($(esc(func))),
                     x -> reshape(
-                        map(c -> $(esc(func))(c; kwargs...), eachrow(x)),
+                        map(r -> $(esc(func))(r; kwargs...), eachrow(x)),
                         size(x, 1),
                         1,
                     ),
@@ -526,6 +526,52 @@ $(_stat_docstring("Base.sum", "sum"))
 $(_stat_docstring("Base.prod", "product"))
 """
 @forward_stat_function_dims Base.prod
+
+# Quantile is just different! Grr.
+"""
+    Statistics.quantile(chain::FlexiChain, p; dims::Symbol=:both, warn::Bool=true, kwargs...)
+
+Calculate the quantile across all iterations and chains for each key in the `chain`. If it
+cannot be computed for a key, that key is skipped and a warning is issued (which can be
+suppressed by setting `warn=false`).
+
+The `dims` keyword argument specifies which dimensions to collapse.
+- `:iter`: collapse the iteration dimension only
+- `:chain`: collapse the chain dimension only
+- `:both`: collapse both the iteration and chain dimensions (default)
+
+The argument `p` specifies the quantile to compute, and is forwarded to
+`Statistics.quantile`, along with any other keyword arguments.
+"""
+function Statistics.quantile(
+    chn::FlexiChain, p; dims::Symbol=:both, warn::Bool=true, kwargs...
+)
+    funcs = if dims == :both
+        # quantile only acts on a vector so we have to linearise the matrix x
+        [(:quantile, x -> Statistics.quantile(x[:], p; kwargs...))]
+    elseif dims == :iter
+        [(
+            :quantile,
+            x -> reshape(
+                map(c -> Statistics.quantile(c, p; kwargs...), eachcol(x)),
+                1,
+                size(x, 2),
+            ),
+        )]
+    elseif dims == :chain
+        [(
+            :quantile,
+            x -> reshape(
+                map(r -> Statistics.quantile(r, p; kwargs...), eachrow(x)),
+                size(x, 1),
+                1,
+            ),
+        )]
+    else
+        throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
+    end
+    return collapse(chn, funcs; dims=dims, warn=warn, drop_stat_dim=true)
+end
 
 """
 $(_stat_docstring("MCMCDiagnosticTools.ess", "effective sample size"))

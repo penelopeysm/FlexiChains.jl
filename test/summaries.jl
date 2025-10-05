@@ -2,7 +2,15 @@ module FCSummariesTests
 
 using DimensionalData: DimensionalData as DD
 using FlexiChains:
-    FlexiChains, FlexiChain, Parameter, ParameterOrExtra, Extra, VarName, @varname
+    FlexiChains,
+    FlexiChain,
+    Parameter,
+    ParameterOrExtra,
+    Extra,
+    VarName,
+    @varname,
+    summarize
+using MCMCDiagnosticTools
 using Logging: Warn
 using Statistics
 using Test
@@ -92,6 +100,33 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 end
             end
         end
+    end
+
+    @testset "other summary functions" begin
+        @test ess(chain) isa FlexiChains.FlexiSummary
+        @test ess(chain; dims=:iter) isa FlexiChains.FlexiSummary
+        @test ess(chain; dims=:chain) isa FlexiChains.FlexiSummary
+        @test ess(chain; kind=:tail) isa FlexiChains.FlexiSummary
+        @test ess(chain; dims=:iter, kind=:tail) isa FlexiChains.FlexiSummary
+        @test ess(chain; dims=:chain, kind=:tail) isa FlexiChains.FlexiSummary
+        @test rhat(chain) isa FlexiChains.FlexiSummary
+        @test rhat(chain; dims=:iter) isa FlexiChains.FlexiSummary
+        @test rhat(chain; dims=:chain) isa FlexiChains.FlexiSummary
+        @test mcse(chain) isa FlexiChains.FlexiSummary
+        @test mcse(chain; dims=:iter) isa FlexiChains.FlexiSummary
+        @test mcse(chain; dims=:chain) isa FlexiChains.FlexiSummary
+        @test quantile(chain, 0.5) isa FlexiChains.FlexiSummary
+        @test quantile(chain, 0.5; dims=:iter) isa FlexiChains.FlexiSummary
+        @test quantile(chain, 0.5; dims=:chain) isa FlexiChains.FlexiSummary
+        @test quantile(chain, [0.5, 0.9]) isa FlexiChains.FlexiSummary
+        @test quantile(chain, [0.5, 0.9]; dims=:iter) isa FlexiChains.FlexiSummary
+        @test quantile(chain, [0.5, 0.9]; dims=:chain) isa FlexiChains.FlexiSummary
+    end
+
+    @testset "summarize" begin
+        @test summarize(chain) isa FlexiChains.FlexiSummary
+        # Not sure what else we want to test here; all the individual functions are
+        # well-tested...
     end
 
     @testset "warn=false" begin
