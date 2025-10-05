@@ -14,7 +14,7 @@ Let's use a non-trivial model so that we can illustrate some features of FlexiCh
 
 ```@example 1
 using Turing
-using FlexiChains: VNChain
+using FlexiChains
 
 y = [28, 8, -3, 7, -1, 1, 18, 12]
 sigma = [15, 10, 16, 11, 9, 11, 10, 18]
@@ -57,7 +57,7 @@ chain[@varname(mu)]
     
     Indexing into a `FlexiChain` returns a [`DimensionalData.DimMatrix`](@extref DimensionalData DimArrays). This behaves exactly like a regular `Matrix`, but additionally carries extra information about its dimensions.
     
-    This allows you to keep track of what each dimension means, and also allows for more advanced indexing operations. The indexing behaviour of FlexiChains.jl is described in [the 'indexing' page](./indexing.md).
+    This allows you to keep track of what each dimension means, and also allows for more advanced indexing operations, which are described in [the 'indexing' page](./indexing.md).
 
 For vector-valued parameters like `theta`, this works in exactly the same way, except that you get a `DimMatrix` of vectors.
 
@@ -65,7 +65,7 @@ For vector-valued parameters like `theta`, this works in exactly the same way, e
 chain[@varname(theta)]
 ```
 
-Note that the samples are stored _not_ as a 3D array, bu rather a matrix of vectors.
+Note that the samples are stored _not_ as a 3D array, but rather a matrix of vectors.
 **This is probably the biggest difference between FlexiChains and MCMCChains.**
 MCMCChains by default will break vector-valued parameters into multiple scalar-valued parameters called `theta[1]`, `theta[2]`, etc., whereas FlexiChains keeps them together as they were defined in the model.
 
@@ -105,6 +105,15 @@ That is, if your model has `x ~ dist`, FlexiChains will let you access some fiel
     you cannot 'reconstruct' `x` from its component elements, because `x` does not exist as a single parameter in the model.
     (Or at least, you can't do it with FlexiChains.
     You can still call `chain[@varname(x[1])]` and `chain[@varname(x[2])]` and then perform `hcat` or similar to put them together yourself.)
+
+You can also use keyword arguments when indexing to specify which chains or iterations you are interested in.
+Note that when using square brackets to index, keyword arguments must be separated by commas, not semicolons!
+
+```@example 1
+chain[@varname(mu), iter=2:4, chain=1]
+```
+
+The indexing behaviour of FlexiChains is described fully on [the next page](./indexing.md).
 
 ### Other keys
 
