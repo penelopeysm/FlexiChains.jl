@@ -207,6 +207,20 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
     end
 
+    @testset "summarize when some functions fail" begin
+        x = randn(2)
+        d = Dict(Parameter(:x) => fill(x, 5, 2))
+        chain = FlexiChain{Symbol}(5, 2, d)
+        # Attempting to perform the summary here will result in some functions failing
+        # because they can't handle vector-valued data. For example, ESS will fail.
+        # We just want to check that summarize still works and returns the results for the
+        # functions that _do_ work.
+        sm = FlexiChains.summarize(chain)
+        @test haskey(sm, Parameter(:x))
+        @test isapprox(sm[:x, stat=DD.At(:mean)], x)
+        @test ismissing(sm[:x, stat=DD.At(:ess_bulk)])
+    end
+
     @testset "getindex on summaries" begin
         N_iters, N_chains = 10, 3
         xs = Matrix{Vector{Float64}}(undef, N_iters, N_chains)
