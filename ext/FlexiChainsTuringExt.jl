@@ -26,7 +26,6 @@ function FlexiChains.to_varname_dict(
     d[Extra(:logprior)] = transition.logprior
     d[Extra(:loglikelihood)] = transition.loglikelihood
     d[Extra(:lp)] = transition.logprior + transition.loglikelihood
-    @show d
     return d
 end
 

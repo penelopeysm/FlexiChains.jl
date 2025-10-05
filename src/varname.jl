@@ -136,7 +136,6 @@ function split_varnames(cs::ChainOrSummary{<:VarName})
         d = _get_raw_data(cs, Parameter(vn))
         for i in eachindex(d)
             vn_leaves = collect(AbstractPPL.varname_leaves(vn, d[i]))
-            @show vn_leaves
             union!(vns, vn_leaves)
         end
     end
