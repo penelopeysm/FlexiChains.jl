@@ -85,7 +85,7 @@ struct FlexiSummary{
 
     function FlexiSummary{TKey}(
         data::Dict{<:Any,<:AbstractArray{<:Any,3}},
-        # Note: These are NOT keyword arguments, they are mandatory
+        # Note: These are NOT keyword arguments, they are mandatory positional arguments
         iter_indices::TIIdx,
         chain_indices::TCIdx,
         stat_indices::TSIdx,
@@ -179,61 +179,53 @@ end
     _get_raw_data(summary::FlexiSummary{<:TKey}, key::ParameterOrExtra{<:TKey})
 
 Extract the raw data (i.e. an Array of samples) corresponding to a given key in the summary.
-Note that the dimension of the returned data depends on the number of collapsed dimensions
-in the `FlexiSummary`. If there are N non-collapsed dimensions, the returned data will be an
-N-dimensional array.
+The returned data is always a 3D array with dimensions (NIter, NChain, NStat).
 
 !!! important
     This function does not check if the key exists.
 """
 function _get_raw_data(
-    summary::FlexiSummary{<:TKey,TIIdx,TCIdx,TSIdx}, key::ParameterOrExtra{<:TKey}
-) where {TKey,TIIdx,TCIdx,TSIdx}
-    dims_to_drop = []
-    if TIIdx === Nothing
-        push!(dims_to_drop, 1)
-    end
-    if TCIdx === Nothing
-        push!(dims_to_drop, 2)
-    end
-    if TSIdx === Nothing
-        push!(dims_to_drop, 3)
-    end
-    return dropdims(summary._data[key]; dims=tuple(dims_to_drop...))
+    summary::FlexiSummary{<:TKey}, key::ParameterOrExtra{<:TKey}
+) where {TKey}
+    return summary._data[key]
 end
 
 """
     _raw_to_user_data(summary::FlexiSummary, data::AbstractArray)
 
-Convert `data`, which is a raw nD array of samples (where n is the number of non-collapsed
-dimensions), to either:
+Convert `data`, which is a raw 3D array of samples, to either:
 
-- a `DimensionalData.DimArray` using the indices stored in in the `FlexiSummary`, if n >= 1; or
-- a single value, if n == 0, i.e. all dimensions are collapsed.
+- a `DimensionalData.DimArray` using the indices stored in in the `FlexiSummary`, if there
+  are one or more non-collapsed dimensions; or
+- a single value, if all dimensions are collapsed.
 
 !!! important
     This function performs no checks to make sure that the lengths of the indices stored in
 the chain line up with the size of the matrix.
 """
 function _raw_to_user_data(
-    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}, arr::Array{T,N}
-) where {TKey,TIIdx,TCIdx,TSIdx,T,N}
-    dims = []
+    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}, arr::Array{T,3}
+) where {TKey,TIIdx,TCIdx,TSIdx,T}
+    lookups = []
+    dims_to_keep = []
     if TIIdx !== Nothing
-        push!(dims, DD.Dim{ITER_DIM_NAME}(iter_indices(fs)))
+        push!(dims_to_keep, 1)
+        push!(lookups, DD.Dim{ITER_DIM_NAME}(iter_indices(fs)))
     end
     if TCIdx !== Nothing
-        push!(dims, DD.Dim{CHAIN_DIM_NAME}(chain_indices(fs)))
+        push!(dims_to_keep, 2)
+        push!(lookups, DD.Dim{CHAIN_DIM_NAME}(chain_indices(fs)))
     end
     if TSIdx !== Nothing
-        push!(dims, DD.Dim{STAT_DIM_NAME}(stat_indices(fs)))
+        push!(dims_to_keep, 3)
+        push!(lookups, DD.Dim{STAT_DIM_NAME}(stat_indices(fs)))
     end
-    return if isempty(dims)
-        @assert N == 0
-        arr[]
+    dims_to_drop = tuple(setdiff(1:3, dims_to_keep)...)
+    dropped_arr = dropdims(arr; dims=dims_to_drop)
+    return if isempty(lookups)
+        dropped_arr[]
     else
-        @assert length(dims) == N
-        return DD.DimArray(arr, tuple(dims...))
+        return DD.DimArray(dropped_arr, tuple(lookups...))
     end
 end
 

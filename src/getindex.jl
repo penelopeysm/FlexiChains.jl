@@ -391,15 +391,15 @@ that the user wants to select.
 """
 function _get_multi_keys(
     ::Type{TKey}, all_keys::Base.KeySet, ::Colon
-)::Vector{ParameterOrExtra{TKey}} where {TKey}
+)::Vector{ParameterOrExtra{<:TKey}} where {TKey}
     # TODO: `all_keys` has too loose a type. See above. It's a Julia 1.10 issue.
     return collect(all_keys)
 end
 function _get_multi_keys(
     ::Type{TKey}, all_keys::Base.KeySet, keyvec::AbstractVector
-)::Vector{ParameterOrExtra{TKey}} where {TKey}
+)::Vector{ParameterOrExtra{<:TKey}} where {TKey}
     # TODO: `all_keys` has too loose a type. See above. It's a Julia 1.10 issue.
-    ks = ParameterOrExtra{TKey}[]
+    ks = ParameterOrExtra{<:TKey}[]
     for k in keyvec
         if k isa Symbol
             push!(ks, _extract_potential_symbol_key(TKey, all_keys, k))
@@ -526,12 +526,16 @@ function Base.getindex(
     chain=_UNSPECIFIED_KWARG,
     stat=_UNSPECIFIED_KWARG,
 ) where {TKey}
-    # TODO: Fix kwargs and stuff
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
+    # TODO: Figure out which indices we are using -- these refer to the actual 1-based
+    # indices, so that we can index into the original Matrix
     keys_to_include = _get_multi_keys(TKey, keys(fs), keyvec)
-    new_data = Dict{ParameterOrExtra{<:TKey},Any}()
+    new_data = Dict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
     for k in keys_to_include
-        new_data[k] = _get_raw_data(fs, k)[relevant_kwargs...]
+        # TODO: This doesn't work with the VarName method
+        new_data[k] = _get_raw_data(fs, k)
     end
-    return FlexiSummary{TKey}(new_data)
+    return FlexiSummary{TKey}(
+        new_data, iter_indices(fs), chain_indices(fs), stat_indices(fs)
+    )
 end
