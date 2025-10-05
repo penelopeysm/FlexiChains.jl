@@ -3,6 +3,7 @@ using Statistics: Statistics
 
 @public FlexiSummary, collapse
 
+const STAT_DIM_NAME = :stat
 function _make_categorical(v::AbstractVector{Symbol})
     return DD.Categorical(v; order=DD.Unordered())
 end
@@ -17,6 +18,15 @@ end
 
 A data structure containing summary statistics of a [`FlexiChain`](@ref).
 
+## Construction
+
+Calling summary functions such as `mean` or `std` on a `FlexiChain` will return a `FlexiSummary`.
+For more flexibility, you can use [`FlexiChains.collapse`](@ref) to apply one or more summary functions to a `FlexiChain`.
+
+Users should not need to construct `FlexiSummary` objects directly.
+
+## Indexing
+
 A `FlexiSummary{TKey}` can be indexed into using exactly the same techniques as a
 `FlexiChain{TKey}`. That is to say:
 
@@ -26,6 +36,40 @@ A `FlexiSummary{TKey}` can be indexed into using exactly the same techniques as 
 - with `Symbol` to find unambiguous matches
 - if `TKey<:VarName`, using `VarName` or sub-`VarName`s to additionally extract part of the
   data.
+
+The returned value will be either a `DimensionalData.DimArray` (if there are one or more
+non-collapsed dimensions), or a single value (if all dimensions are collapsed).
+
+If a `DimArray` is returned, the dimensions that you will see are: `:$(ITER_DIM_NAME)` (if the
+summary function was only applied over chains), `:$(CHAIN_DIM_NAME)` (same but for
+iterations), and `:$(STAT_DIM_NAME)` (typically seen when multiple summary functions were
+applied).
+
+# Extended help
+
+## Internal data layout
+
+A `FlexiSummary`, much like a `FlexiChain`, contains a mapping of keys to arrays of data.
+However, the dimensions of a `FlexiSummary` are substantially different. In particular:
+
+- The `:$(ITER_DIM_NAME)` and/or `:$(CHAIN_DIM_NAME)` dimensions may have been collapsed via
+  the act of calculating a summary over iterations or chains.
+- There is an additional, third, dimension: the _statistic_ dimension, represented by
+  `:$(STAT_DIM_NAME). This dimension records which statistic(s) have been calculated.
+- The `:$(STAT_DIM_NAME)` dimension may *also* have been collapsed. This can happen if
+  only one statistic was computed and `drop_stat_dim=true` was used when calling
+  [`FlexiChains.collapse`](@ref). The purpose of this is to avoid making the user deal with
+  a redundant singleton dimension when calling a function such as `mean(chain)`.
+
+Regardless of which dimensions have been collapsed, the internal data of a `FlexiSummary`
+**always** contains all three dimensions (some of which may have size 1).
+
+Information about which dimensions are collapsed is therefore not stored in the arrays.
+Instead, it is stored in the `_iter_indices`, `_chain_indices`, and `_stat_indices` fields
+of the `FlexiSummary`, as well as their types. If any of these are `nothing`, then that
+dimension has been collapsed.
+
+This information is later used in the `_get_raw_data` and `_raw_to_user_data` functions.
 """
 struct FlexiSummary{
     TKey,
@@ -59,13 +103,13 @@ struct FlexiSummary{
             TSIdx === Nothing ? 1 : length(stat_indices),
         )
         # Size verification (while marshalling into a Dict with the right type).
-        d = Dict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
+        d = Dict{ParameterOrExtra{<:TKey},Array{<:Any,3}}()
         for (k, v) in pairs(data)
             if size(v) != expected_size
                 msg = "got size $(size(v)) for key $k, expected $expected_size"
                 throw(DimensionMismatch(msg))
             end
-            d[k] = v
+            d[k] = collect(v)
         end
         return new{TKey,TIIdx,TCIdx,TSIdx}(d, iter_indices, chain_indices, stat_indices)
     end
@@ -130,7 +174,6 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
     return nothing
 end
 
-const STAT_DIM_NAME = :stat
 """
     _get_raw_data(summary::FlexiSummary{<:TKey}, key::ParameterOrExtra{<:TKey})
 
