@@ -172,17 +172,21 @@ It is therefore strongly recommended that you only split a chain up only when ne
 
 ### Overall summaries
 
-For a very quick summary of the chain, you can use `FlexiChains.summarize`:
+For a very quick summary of the chain, you can use `StatsBase.summarystats` (which FlexiChains reexports):
 
 ```@example 1
-using FlexiChains: FlexiChains
+using FlexiChains: summarystats
 
-FlexiChains.summarize(chain)
+summarystats(chain)
 ```
 
-!!! note "Name conflict"
-    
-    Right now, both MCMCChains and FlexiChains export their own versions of `summarize`. You may therefore have to prefix the function with the package name. This will hopefully be fixed in the near future, by declaring a single `summarize` function in AbstractMCMC and having both packages extend that.
+By default, `summarystats` will split `VarName`s up.
+This is done because summary statistics often only make sense for scalar-valued parameters, and users are unlikely to use a `FlexiSummary` to a performance-critical task.
+If you want to avoid this, you can set `split_varnames=false`:
+
+```@example 1
+summarystats(chain; split_varnames=false)
+```
 
 ### Individual summaries
 

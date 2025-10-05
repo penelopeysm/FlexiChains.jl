@@ -9,7 +9,7 @@ using FlexiChains:
     Extra,
     VarName,
     @varname,
-    summarize
+    summarystats
 using MCMCDiagnosticTools
 using Logging: Warn
 using Statistics
@@ -125,8 +125,8 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         @test quantile(chain, [0.5, 0.9]; dims=:chain) isa FlexiChains.FlexiSummary
     end
 
-    @testset "summarize" begin
-        @test summarize(chain) isa FlexiChains.FlexiSummary
+    @testset "summarystats" begin
+        @test summarystats(chain) isa FlexiChains.FlexiSummary
         # Not sure what else we want to test here; all the individual functions are
         # well-tested...
     end
@@ -207,15 +207,15 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
     end
 
-    @testset "summarize when some functions fail" begin
+    @testset "summarystats when some functions fail" begin
         x = randn(2)
         d = Dict(Parameter(:x) => fill(x, 5, 2))
         chain = FlexiChain{Symbol}(5, 2, d)
         # Attempting to perform the summary here will result in some functions failing
         # because they can't handle vector-valued data. For example, ESS will fail.
-        # We just want to check that summarize still works and returns the results for the
+        # We just want to check that summarystats still works and returns the results for the
         # functions that _do_ work.
-        sm = FlexiChains.summarize(chain)
+        sm = summarystats(chain)
         @test haskey(sm, Parameter(:x))
         @test isapprox(sm[:x, stat=DD.At(:mean)], x)
         @test ismissing(sm[:x, stat=DD.At(:ess_bulk)])
@@ -236,7 +236,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         )
 
         @testset "dims=:iter" begin
-            fs = mean(chain; dims=:iter)
+            fs = mean(chain; dims=:iter, split_varnames=false)
 
             @testset "VarName" begin
                 @test fs[@varname(x)] isa DD.DimVector
@@ -283,7 +283,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
 
         @testset "dims=:chain" begin
-            fs = mean(chain; dims=:chain)
+            fs = mean(chain; dims=:chain, split_varnames=false)
 
             @testset "VarName" begin
                 @test fs[@varname(x)] isa DD.DimVector
@@ -330,7 +330,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
 
         @testset "dims=:both" begin
-            fs = mean(chain)
+            fs = mean(chain; split_varnames=false)
 
             @testset "VarName" begin
                 @test fs[@varname(x)] isa Vector{Float64}
@@ -364,6 +364,19 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 @test_throws Exception fs[@varname(x.a)]
             end
         end
+
+        @testset "with split_varnames" begin
+            fs = mean(chain; dims=:iter)
+            for i in 1:10
+                @test haskey(fs, @varname(x[i]))
+                @test isapprox(
+                    fs[@varname(x[i])], dropdims(mean(getindex.(xs, i); dims=1); dims=1)
+                )
+            end
+            @test haskey(fs, @varname(y))
+            @test !haskey(fs, @varname(x))
+            @test fs[@varname(x[1])] isa DD.DimVector
+        end
     end
 
     @testset "kwarg handling for getindex" begin
@@ -376,7 +389,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
         @testset "iter and stat collapsed" begin
             # Test that attempting to index in with either `iter=...` or `stat=...` errors
-            fs = mean(chain; dims=:iter)
+            fs = mean(chain; dims=:iter, split_varnames=false)
             @test_throws ArgumentError FlexiChains._check_summary_kwargs(
                 fs, Colon(), Colon(), Colon()
             )

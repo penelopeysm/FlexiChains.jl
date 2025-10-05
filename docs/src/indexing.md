@@ -74,7 +74,7 @@ chn[[@varname(x[1]), @varname(x[2])]]
 ## Examples: summaries
 
 ```@example 1
-sm = FlexiChains.summarize(chn)
+sm = summarystats(chn)
 ```
 
 Notice how this summary no longer has `iter` or `chain` dimensions, because the summary statistics have been calculated over all iterations and chains.
@@ -87,21 +87,6 @@ sm[@varname(x), stat=At(:mean)]
 ```@example 1
 # All the chain indexing behaviour still works, e.g. sub-VarNames
 sm[@varname(x[1]), stat=At(:mean)]
-```
-
-Note that the bulk ESS cannot be computed for `x` because it is a vector-valued parameter.
-Thus, attempting to access it will yield a `missing` value.
-
-```@example 1
-sm[@varname(x), stat=At(:ess_bulk)]
-```
-
-To obtain it, you will first need to re-index the original chain to 'break up' the sub-`VarName`s before performing the summary:
-
-```@example 1
-chn2 = chn[[@varname(x[1]), @varname(x[2])]]
-sm2 = FlexiChains.summarize(chn2)
-sm2[@varname(x[1]), stat=At(:ess_bulk)], sm2[@varname(x[2]), stat=At(:ess_bulk)]
 ```
 
 If you only apply a single summary function, such as `mean`, then the `stat` dimension will be automatically collapsed for you; you won't need to again specify `At(:mean)` when indexing.
@@ -211,7 +196,7 @@ If you have performed the mean over a single dimension only, such as via `summar
 
 In general, the `stat` dimension is generally:
 
-- **not collapsed** if multiple summary functions were applied, e.g. via `summarize(chn)`;
+- **not collapsed** if multiple summary functions were applied, e.g. via `summarystats(chn)`;
 - **collapsed** if a single summary function was applied, e.g. via `mean(chn)`.
 
 Unlike the `iter` and `chain` dimensions, the `stat` dimension's indices are `Symbol`s instead of numbers.

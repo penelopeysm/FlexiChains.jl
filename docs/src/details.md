@@ -208,7 +208,7 @@ MCMCDiagnosticTools.mcse(::FlexiChains.FlexiChain; kwargs...)
 To calculate all of `mean`, `std`, `mcse`, bulk `ess`, tail `ess`, and `rhat` at once:
 
 ```@docs
-FlexiChains.summarize
+StatsBase.summarystats
 ```
 
 ### Indexing

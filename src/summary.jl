@@ -1,9 +1,10 @@
 using DimensionalData: DimensionalData as DD
 using Printf: @sprintf
 using Statistics: Statistics
+using StatsBase: StatsBase
 using MCMCDiagnosticTools: MCMCDiagnosticTools
 
-@public FlexiSummary, collapse, summarize
+@public FlexiSummary, collapse
 
 const STAT_DIM_NAME = :stat
 function _make_categorical(v::AbstractVector{Symbol})
@@ -191,7 +192,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
 
     # If both iter and chain dimensions have been collapsed, we can print in a 
     # DataFrame-like format.
-    if isnothing(ii) && isnothing(ci)
+    if isnothing(ii) && isnothing(ci) && !isempty(parameter_names)
         MAX_COL_WIDTH = 12 # absolute max
         header_col = [
             "param", map(p -> _truncate(repr(p), MAX_COL_WIDTH), parameter_names)...
@@ -458,7 +459,13 @@ end
 
 function _stat_docstring(func_name, short_name)
     return """
-    $(func_name)(chain::FlexiChain; dims::Symbol=:both, warn::Bool=true, kwargs...)
+    $(func_name)(
+        chain::FlexiChain{TKey};
+        dims::Symbol=:both,
+        warn::Bool=true,
+        split_varnames::Bool=(TKey<:VarName),
+        kwargs...
+    ) where {TKey}
 
 Calculate the $(short_name) across all iterations and chains for each key in
 the `chain`. If the statistic cannot be computed for a key, that key is
@@ -469,6 +476,10 @@ The `dims` keyword argument specifies which dimensions to collapse.
 - `:iter`: collapse the iteration dimension only
 - `:chain`: collapse the chain dimension only
 - `:both`: collapse both the iteration and chain dimensions (default)
+
+The `split_varnames` keyword argument, if `true`, will first split up `VarName`s in the
+chain such that each `VarName` corresponds to a single scalar value. This is only supported
+for chains with `TKey<:VarName`.
 
 Other keyword arguments are forwarded to `$(func_name)`.
 """
@@ -489,8 +500,20 @@ This is true of e.g. `Statistics.mean`, `Statistics.std`, `Base.sum`, etc.
 macro forward_stat_function_dims(func)
     quote
         function $(esc(func))(
-            chn::FlexiChain; dims::Symbol=:both, warn::Bool=true, kwargs...
-        )
+            chn::FlexiChain{TKey};
+            dims::Symbol=:both,
+            warn::Bool=true,
+            split_varnames::Bool=(TKey <: VarName),
+            kwargs...,
+        ) where {TKey}
+            if split_varnames
+                TKey <: VarName || throw(
+                    ArgumentError(
+                        "`split_varnames=true` is only supported for chains with `TKey<:VarName`",
+                    ),
+                )
+                chn = FlexiChains.split_varnames(chn)
+            end
             funcs = if dims == :both
                 [(Symbol($(esc(func))), x -> $(esc(func))(x; kwargs...))]
             elseif dims == :iter
@@ -520,8 +543,20 @@ row/column where necessary.
 macro forward_stat_function_each(func)
     quote
         function $(esc(func))(
-            chn::FlexiChain; dims::Symbol=:both, warn::Bool=true, kwargs...
-        )
+            chn::FlexiChain{TKey};
+            dims::Symbol=:both,
+            warn::Bool=true,
+            split_varnames::Bool=(TKey <: VarName),
+            kwargs...,
+        ) where {TKey}
+            if split_varnames
+                TKey <: VarName || throw(
+                    ArgumentError(
+                        "`split_varnames=true` is only supported for chains with `TKey<:VarName`",
+                    ),
+                )
+                chn = FlexiChains.split_varnames(chn)
+            end
             funcs = if dims == :both
                 [(Symbol($(esc(func))), x -> $(esc(func))(x; kwargs...))]
             elseif dims == :iter
@@ -585,7 +620,14 @@ $(_stat_docstring("Base.prod", "product"))
 
 # Quantile is just different! Grr.
 """
-    Statistics.quantile(chain::FlexiChain, p; dims::Symbol=:both, warn::Bool=true, kwargs...)
+    Statistics.quantile(
+        chain::FlexiChain{TKey},
+        p;
+        dims::Symbol=:both,
+        warn::Bool=true,
+        split_varnames::Bool=(TKey<:VarName),
+        kwargs...
+    ) where {TKey}
 
 Calculate the quantile across all iterations and chains for each key in the `chain`. If it
 cannot be computed for a key, that key is skipped and a warning is issued (which can be
@@ -600,8 +642,21 @@ The argument `p` specifies the quantile to compute, and is forwarded to
 `Statistics.quantile`, along with any other keyword arguments.
 """
 function Statistics.quantile(
-    chn::FlexiChain, p; dims::Symbol=:both, warn::Bool=true, kwargs...
-)
+    chn::FlexiChain{TKey},
+    p;
+    dims::Symbol=:both,
+    warn::Bool=true,
+    split_varnames::Bool=(TKey <: VarName),
+    kwargs...,
+) where {TKey}
+    if split_varnames
+        TKey <: VarName || throw(
+            ArgumentError(
+                "`split_varnames=true` is only supported for chains with `TKey<:VarName`",
+            ),
+        )
+        chn = FlexiChains.split_varnames(chn)
+    end
     funcs = if dims == :both
         # quantile only acts on a vector so we have to linearise the matrix x
         [(:quantile, x -> Statistics.quantile(x[:], p; kwargs...))]
@@ -652,7 +707,10 @@ For a full list of keyword arguments, please see the documentation for
 @forward_stat_function_each MCMCDiagnosticTools.mcse
 
 """
-    summarize(chain::FlexiChain)
+    StatsBase.summarystats(
+        chain::FlexiChain{TKey};
+        split_varnames::Bool=(TKey<:VarName)
+    ) where {TKey}
 
 Compute a standard set of summary statistics for each key in the `chain`. The statistics include:
 
@@ -662,19 +720,29 @@ Compute a standard set of summary statistics for each key in the `chain`. The st
 - bulk effective sample size
 - tail effective sample size
 - R-hat diagnostic
+
+The `split_varnames` keyword argument, if `true`, will first split up `VarName`s in the
+chain such that each `VarName` corresponds to a single scalar value. This is only supported
+for chains with `TKey<:VarName`.
 """
-function summarize(chain::FlexiChain)
-    return collapse(
-        chain,
-        [
-            (:mean, Statistics.mean),
-            (:std, Statistics.std),
-            (:mcse, MCMCDiagnosticTools.mcse),
-            (:ess_bulk, x -> MCMCDiagnosticTools.ess(x; kind=:bulk)),
-            (:ess_tail, x -> MCMCDiagnosticTools.ess(x; kind=:tail)),
-            (:rhat, MCMCDiagnosticTools.rhat),
-        ];
-        dims=:both,
-        warn=false,
-    )
+function StatsBase.summarystats(
+    chain::FlexiChain{TKey}, split_varnames::Bool=(TKey <: VarName)
+) where {TKey}
+    if split_varnames
+        TKey <: VarName || throw(
+            ArgumentError(
+                "`split_varnames=true` is only supported for chains with `TKey<:VarName`",
+            ),
+        )
+        chain = FlexiChains.split_varnames(chain)
+    end
+    _DEFAULT_SUMMARYSTAT_FUNCTIONS = [
+        (:mean, Statistics.mean),
+        (:std, Statistics.std),
+        (:mcse, MCMCDiagnosticTools.mcse),
+        (:ess_bulk, x -> MCMCDiagnosticTools.ess(x; kind=:bulk)),
+        (:ess_tail, x -> MCMCDiagnosticTools.ess(x; kind=:tail)),
+        (:rhat, MCMCDiagnosticTools.rhat),
+    ]
+    return collapse(chain, _DEFAULT_SUMMARYSTAT_FUNCTIONS; dims=:both, warn=false)
 end
