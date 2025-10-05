@@ -726,7 +726,7 @@ chain such that each `VarName` corresponds to a single scalar value. This is onl
 for chains with `TKey<:VarName`.
 """
 function StatsBase.summarystats(
-    chain::FlexiChain{TKey}, split_varnames::Bool=(TKey <: VarName)
+    chain::FlexiChain{TKey}; split_varnames::Bool=(TKey <: VarName)
 ) where {TKey}
     if split_varnames
         TKey <: VarName || throw(
