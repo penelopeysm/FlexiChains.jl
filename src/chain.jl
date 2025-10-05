@@ -1,9 +1,13 @@
 using AbstractMCMC: AbstractChains
+using DimensionalData: DimensionalData as DD
 using DimensionalData.Dimensions.Lookups: Lookups as DDL
 
 @public FlexiChain, Parameter, Extra, ParameterOrExtra
 @public iter_indices, chain_indices, renumber_iters, renumber_chains
 @public sampling_time, last_sampler_state
+
+const ITER_DIM_NAME = :iter
+const CHAIN_DIM_NAME = :chain
 
 """
     _make_lookup(AbstractRange)::DimensionalData.Lookup
@@ -32,6 +36,38 @@ function _make_lookup(v::AbstractVector{<:Integer})
         DDL.Points(),
         DDL.NoMetadata(),
     )
+end
+
+"""
+    _check_size(data::AbstractArray, iters::Int, chains::Int; key_name=nothing)::Matrix
+
+Check that `data` is either a size `(iters, chains)`, or if `chains==1` and `data` is a
+vector, check that it has length `iters. Convert it to a `Matrix` if it is not one.
+
+The `key_name` keyword argument is used only to provide a more informative error message.
+"""
+function _check_size(
+    data::AbstractMatrix{T}, iters::Int, chains::Int; key_name=nothing
+)::Matrix{T} where {T}
+    if size(data) != (iters, chains)
+        key_str = isnothing(key_name) ? "" : " for key $(key_name)"
+        msg = "expected matrix of size ($(iters), $(chains))$(key_str), but got $(size(data))."
+        throw(DimensionMismatch(msg))
+    end
+    return collect(data)
+end
+function _check_size(
+    data::AbstractVector{T}, iters::Int, chains::Int; key_name=nothing
+)::Matrix{T} where {T}
+    if chains != 1
+        throw(ArgumentError("expected chains=1 for vector input."))
+    end
+    if length(data) != iters
+        key_str = isnothing(key_name) ? "" : " for key $(key_name)"
+        msg = "expected vector of length $(iters)$(key_str), but got $(length(data))."
+        throw(DimensionMismatch(msg))
+    end
+    return reshape(collect(data), iters, 1)
 end
 
 """
@@ -253,7 +289,7 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
             # Extract the values for this key from all dictionaries
             values = map(d -> get(d, key, missing), array_of_dicts)
             # Store in the data dictionary
-            data[key] = check_size(values, NIter, NChains; key_name=key)
+            data[key] = _check_size(values, NIter, NChains; key_name=key)
         end
 
         return new{TKey,NIter,NChains,typeof(metadata)}(data, metadata)
@@ -321,7 +357,7 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
                 throw(ArgumentError(msg))
             end
             # Check size and store in dictionary
-            data[key] = check_size(array, NIter, NChains; key_name=key)
+            data[key] = _check_size(array, NIter, NChains; key_name=key)
         end
 
         return new{TKey,NIter,NChains,typeof(metadata)}(data, metadata)

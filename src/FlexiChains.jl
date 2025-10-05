@@ -22,7 +22,6 @@ macro public(ex)
     end
 end
 
-include("sizedmatrix.jl")
 include("chain.jl")
 include("summaries.jl")
 include("getindex.jl")

@@ -67,16 +67,6 @@ FlexiChains.niters
 FlexiChains.nchains
 ```
 
-To provide (runtime) checks that all arrays have the same size, FlexiChains uses `FlexiChains.SizedMatrix`, which carries its size as a type parameter (although the underlying storage still uses `Base.Array`).
-**Note that `SizedMatrix` is not public and is subject to breaking changes even in patch releases.**
-
-```@docs
-FlexiChains.SizedMatrix
-```
-
-The element type of these arrays is unconstrained.
-Different keys may map to arrays with different element types.
-
 ## Listing keys
 
 `keys()` will return all the keys in an unspecified order.
