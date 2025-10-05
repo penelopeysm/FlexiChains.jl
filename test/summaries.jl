@@ -392,6 +392,18 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             @test FlexiChains._check_summary_kwargs(
                 fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), FlexiChains._UNSPECIFIED_KWARG
             ) == (chain=Colon(), stat=Colon())
+            # check that we can use DD lookups for the stat dimension
+            @test fs[Parameter(@varname(x)), stat=DD.At(:mean)] isa Any
+            @test FlexiChains._check_summary_kwargs(
+                fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), DD.At(:mean)
+            ) == (chain=Colon(), stat=DD.At(:mean))
+            @test FlexiChains._check_summary_kwargs(
+                fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), DD.At(:mean)
+            ) == (chain=Colon(), stat=DD.At(:mean))
+            # check sub-varname too
+            @test fs[Parameter(@varname(x[1])), stat=DD.At(:mean)] ==
+                vec(mean(getindex.(xs, 1); dims=1))
+            # check with no kwargs too
             @test fs[Parameter(@varname(x))] isa Any
         end
     end
