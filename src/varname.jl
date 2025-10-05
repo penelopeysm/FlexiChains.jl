@@ -172,6 +172,13 @@ function Base.isless(opt1::ComposedFunction, opt2::Union{IndexLens,PropertyLens}
         return isless(opt1.outer, opt2)
     end
 end
+function Base.isless(opt1::ComposedFunction, opt2::ComposedFunction)
+    if isequal(opt1.outer, opt2)
+        return isless(opt1.inner, opt2.inner)
+    else
+        return isless(opt1.outer, opt2)
+    end
+end
 function Base.isless(vn1::VarName{sym1}, vn2::VarName{sym2}) where {sym1,sym2}
     if sym1 == sym2
         return isless(AbstractPPL.getoptic(vn1), AbstractPPL.getoptic(vn2))
