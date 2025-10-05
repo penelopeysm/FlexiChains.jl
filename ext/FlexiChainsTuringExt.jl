@@ -68,7 +68,7 @@ end
 
 using Turing: @model, sample, NUTS, Normal, MvNormal, I
 using Turing: AbstractMCMC, DynamicPPL
-using FlexiChains: VNChain
+using FlexiChains: VNChain, summarize
 @setup_workload begin
     @model function f()
         return x ~ Normal()
@@ -76,9 +76,10 @@ using FlexiChains: VNChain
     model, spl = f(), NUTS()
     transitions = sample(model, spl, 100; chain_type=Any, progress=false, verbose=false)
     @compile_workload begin
-        AbstractMCMC.bundle_samples(
+        chn = AbstractMCMC.bundle_samples(
             transitions, model, DynamicPPL.Sampler(spl), nothing, VNChain
         )
+        summarize(chn)
     end
 end
 
