@@ -34,15 +34,16 @@ chain[@varname(y[1])] # -> DimMatrix{Float64}
 Quick and dirty summary stats can be obtained with:
 
 ```julia
-summarystats(chain)              # mean, std, mcse, ess, rhat for all variables
+ss = summarystats(chain)         # mean, std, mcse, ess, rhat for all variables
+ss[@varname(x), stat=At(:mean)]  # -> Float64 (the mean of x)
 ```
 
 Or you can compute statistics directly with individual functions:
 
 ```julia
-mean(chain)                     # just the mean for all variables
-mean(chain)[@varname(x)]        # -> Float64
-mean(chain; dims=:iter)         # take the mean over iterations only
+mean(chain)              # just the mean for all variables
+mean(chain)[@varname(x)] # -> Float64
+mean(chain; dims=:iter)  # take the mean over iterations only
 ```
 
 Functions in Turing.jl which take chains as input, such as `returned`, `predict`, and `logjoint` should work out of the box with exactly the same behaviour as before.

@@ -185,14 +185,15 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
     extra_names = extras(summary)
     printstyled(io, "Extra keys       "; bold=true)
     if isempty(extra_names)
-        println(io, "(none)")
+        print(io, "(none)")
     else
-        println(io, join(map(e -> repr(e.name), extra_names), ", "))
+        print(io, join(map(e -> repr(e.name), extra_names), ", "))
     end
 
     # If both iter and chain dimensions have been collapsed, we can print in a 
     # DataFrame-like format.
     if isnothing(ii) && isnothing(ci) && !isempty(parameter_names)
+        println(io)
         MAX_COL_WIDTH = 12 # absolute max
         header_col = [
             "param", map(p -> _truncate(repr(p), MAX_COL_WIDTH), parameter_names)...
