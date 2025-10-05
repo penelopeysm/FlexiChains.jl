@@ -28,6 +28,8 @@ include("getindex.jl")
 include("interface.jl")
 
 # Convenience re-exports.
+using DimensionalData: At, Near, Contains, (..), Touches, Where, Not
+export At, Near, Contains, (..), Touches, Where, Not
 using Statistics: mean, median, std, var
 export mean, median, std, var
 using MCMCDiagnosticTools: ess
