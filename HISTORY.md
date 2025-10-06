@@ -11,6 +11,8 @@ The key type of the resulting chain will be `String`, since PosteriorDB stores k
 
 Fixed a bug where `hcat` and `vcat` would not preserve the order of keys in the resulting chain.
 
+Fixed a bug where `predict` and `returned` would not work with chains that had already been split up by `VarName`s.
+
 # 0.0.2
 
 There are **many** breaking changes to FlexiChains.jl's interface in this release.
