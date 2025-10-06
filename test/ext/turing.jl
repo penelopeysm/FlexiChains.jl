@@ -290,16 +290,22 @@ Turing.setprogress!(false)
     @testset "returned" begin
         @model function f()
             x ~ Normal()
-            return x + 1
+            y ~ MvNormal(zeros(2), I)
+            return x + y[1] + y[2]
         end
         model = f()
         chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
-        expected_rtnd = chn[:x] .+ 1
+        expected_rtnd = chn[@varname(x)] .+ chn[@varname(y[1])] .+ chn[@varname(y[2])]
+
         rtnd = returned(model, chn)
         @test isapprox(rtnd, expected_rtnd)
         @test rtnd isa DD.DimMatrix
         @test parent(parent(DD.dims(rtnd, :iter))) == FlexiChains.iter_indices(chn)
         @test parent(parent(DD.dims(rtnd, :chain))) == FlexiChains.chain_indices(chn)
+
+        split_chn = FlexiChains.split_varnames(chn)
+        split_rtnd = returned(model, split_chn)
+        @test split_rtnd == rtnd
     end
 
     @testset "predict" begin
