@@ -2,7 +2,7 @@ module FlexiChainsDynamicPPLExt
 
 using FlexiChains: FlexiChains, FlexiChain, VarName, Parameter, VNChain
 using DimensionalData: DimensionalData as DD
-using DynamicPPL: DynamicPPL
+using DynamicPPL: DynamicPPL, AbstractPPL
 using Random: Random
 
 ###############################
@@ -21,8 +21,8 @@ function DynamicPPL.tilde_assume(
     vi::DynamicPPL.AbstractVarInfo,
 )
     in_varinfo = haskey(vi, vn)
-    if haskey(ctx.values, vn)
-        x = ctx.values[vn] # essentially InitFromParams
+    if AbstractPPL.hasvalue(ctx.values, vn, dist)
+        x = AbstractPPL.getvalue(ctx.values, vn, dist) # essentially InitFromParams
     else
         x = rand(ctx.rng, dist) # essentially InitFromPrior
     end
