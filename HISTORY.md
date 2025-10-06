@@ -1,3 +1,9 @@
+# 0.0.3
+
+## Other changes
+
+Fixed a bug where `hcat` and `vcat` would not preserve the order of keys in the resulting chain.
+
 # 0.0.2
 
 There are **many** breaking changes to FlexiChains.jl's interface in this release.
