@@ -31,16 +31,16 @@ trace!(chn::FC.FlexiChain, params; kw...) = plot!(chn, params; kw..., seriestype
 """
 Main entry point for multiple-parameter plotting.
 """
-@recipe function _(
-    chn::FC.FlexiChain{T}, params::AbstractVector{<:FC.ParameterOrExtra{<:T}}
-) where {T}
+@recipe function _(chn::FC.FlexiChain{T}, params::Union{AbstractVector,Colon}) where {T}
+    # Figure out the keys to plot
+    keys_to_plot = FC._get_multi_keys(T, keys(chn), params)
     st = get(plotattributes, :seriestype, missing)
     # We can then use that to dispatch to the appropriate recipe.
     ncols = ismissing(st) ? 2 : 1
-    nrows = length(params)
+    nrows = length(keys_to_plot)
     layout := (nrows, ncols)
     size := (DEFAULT_WIDTH * ncols, DEFAULT_HEIGHT * nrows)
-    for (i, p) in enumerate(params)
+    for (i, p) in enumerate(keys_to_plot)
         if ismissing(st)
             left_margin := (5, :mm)
             bottom_margin := (5, :mm)
