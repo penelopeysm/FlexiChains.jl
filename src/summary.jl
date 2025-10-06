@@ -200,7 +200,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
 
         if isnothing(si)
             stat_cols = [[
-                "value",
+                "",
                 [
                     _truncate(_pretty_value(summary[param_name]), MAX_COL_WIDTH) for
                     param_name in parameter_names
