@@ -32,78 +32,90 @@ trace!(chn::FC.FlexiChain, params; kw...) = plot!(chn, params; kw..., seriestype
 ###############################
 
 """
-Main entry point when calling e.g. `plot(chain)`.
+Entry point for single-parameter plotting; simply wraps and sends it to the multi-parameter
+method.
+"""
+@recipe function _(chn::FC.FlexiChain, param)
+    return chn, [param]
+end
+"""
+Main entry point for multiple-parameter plotting.
 
-By default, plots all parameters in the chain.
+If parameters are unspecified, all parameters in the chain will be plotted. Note that
+this excludes non-parameter, `Extra` keys.
 
 `VarName` chains are additionally split up into constituent real-valued parameters by
 default, unless the `split_varnames=false` keyword argument is passed.
 """
-@recipe function _(chn::FC.FlexiChain)
-    return chn, FC.parameters(chn)
-end
-@recipe function _(chn::FC.FlexiChain{<:VarName}; split_varnames=true)
+@recipe function _(
+    chn::FC.FlexiChain{TKey},
+    params::Union{AbstractVector,Colon,Nothing}=nothing;
+    split_varnames=(TKey <: VarName),
+) where {TKey}
+    # Extract parameters.
+    keys_to_plot = if isnothing(params)
+        FC.Parameter.(FC.parameters(chn))
+    else
+        FC._get_multi_keys(TKey, keys(chn), params)
+    end
+    # Subset the chain to just those parameters. Ordinarily we wouldn't need to do this; we
+    # would just iterate over `keys_to_plot`. However, there are some subtle considerations
+    # when using VarName chains. See below for a full explanation.
+    chn = chn[keys_to_plot]
+    # Now, we split VarNames into real-valued parameters if requested.
     if split_varnames
+        TKey <: VarName || throw(
+            ArgumentError(
+                "`split_varnames=true` is only supported for chains with `TKey<:VarName`",
+            ),
+        )
         chn = FC.split_varnames(chn)
     end
-    return chn, FC.parameters(chn)
-end
-
-"""
-Main entry point for multiple-parameter plotting.
-"""
-@recipe function _(chn::FC.FlexiChain{T}, params::Union{AbstractVector,Colon}) where {T}
-    # Figure out the keys to plot
-    keys_to_plot = FC._get_multi_keys(T, keys(chn), params)
-    st = get(plotattributes, :seriestype, missing)
-    # We can then use that to dispatch to the appropriate recipe.
-    ncols = ismissing(st) ? 2 : 1
+    # Re-calculate which keys need to be plotted. Now, in the general case, `keys_to_plot`
+    # will _already_ be the same as `keys(chn)` because of the subsetting above. However, if
+    # it's a VarName chain and a VarName has been split up, it's possible that they may be
+    # different. For example, consider a chain with `@varname(x)` being a length-2 vector.
+    # If the user calls `plot(chn, [@varname(x)])`, then `keys_to_plot` will initially be
+    # `[@varname(x)]`. BUT this line is what allows us to reassign the value of
+    # `keys_to_plot` to be `[@varname(x[1]), @varname(x[2])]` after the split. If we didn't
+    # do this, it would error in mystifying ways.
+    keys_to_plot = collect(keys(chn))
+    # When the user calls `plot(chn[, params])` without specifying a `seriestype`, we
+    # default to showing a side-by-side trace and density/histogram for each parameter.
+    # Otherwise, if the user calls `trace`, `density`, `histogram`, etc. then there will be
+    # a `seriestype` set for us. In either case, we can then use `seriestype` to set up the
+    # layout, and dispatch to the appropriate recipe.
+    seriestype = get(plotattributes, :seriestype, :trace_and_density)
+    ncols = seriestype === :trace_and_density ? 2 : 1
     nrows = length(keys_to_plot)
     layout := (nrows, ncols)
     size := (DEFAULT_WIDTH * ncols, DEFAULT_HEIGHT * nrows)
-    for (i, p) in enumerate(keys_to_plot)
-        if ismissing(st)
+    for (i, k) in enumerate(keys_to_plot)
+        if seriestype === :trace_and_density
             left_margin := (5, :mm)
             bottom_margin := (5, :mm)
             @series begin
                 subplot := 2i - 1
-                FlexiChainTrace(chn, p)
+                FlexiChainTrace(chn, k)
             end
             @series begin
                 subplot := 2i
-                FlexiChainAutoDensity(chn, p)
+                FlexiChainAutoDensity(chn, k)
             end
         else
             @series begin
                 subplot := i
-                chn, p
+                if seriestype === :trace
+                    return FlexiChainTrace(chn, k)
+                elseif seriestype === :density
+                    return FlexiChainDensity(chn, k)
+                elseif seriestype === :hiseriestypeogram
+                    return FlexiChainHistogram(chn, k)
+                else
+                    return (chn, k, seriestype)
+                end
             end
         end
-    end
-end
-
-"""
-Main entry point for single-parameter plotting using RecipesBase methods (e.g. `plot`,
-`density`, `histogram`. The only thing this recipe does is to decide which custom
-type to dispatch to, based on the `seriestype` argument.
-"""
-@recipe function _(chn::FC.FlexiChain{T}, param::FC.ParameterOrExtra{<:T}) where {T}
-    key_to_plot = FC._get_multi_key(T, keys(chn), param)
-    # If the user calls `plot(chn, param)`, then `seriestype` will not be populated; we can set
-    # it to `traceplot` in that case. On the other hand, if the user calls (for example)
-    # `density(chn, param)`, then `seriestype` will be `:density`.
-    st = get(plotattributes, :seriestype, missing)
-    # We can then use that to dispatch to the appropriate recipe.
-    if ismissing(st)
-        return FlexiChainTraceAndAutoDensity(chn, key_to_plot)
-    elseif st === :trace
-        return FlexiChainTrace(chn, key_to_plot)
-    elseif st === :density
-        return FlexiChainDensity(chn, key_to_plot)
-    elseif st === :histogram
-        return FlexiChainHistogram(chn, key_to_plot)
-    else
-        return (chn, key_to_plot, st)
     end
 end
 
