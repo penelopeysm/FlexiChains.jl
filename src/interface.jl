@@ -121,8 +121,8 @@ function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1,T
     # TODO: This function has to access internal data, urk
     TValNew = Base.promote_type(eltype(valtype(c1._data)), eltype(valtype(c2._data)))
     # Merge the data dictionaries
-    d1 = Dict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c1._data)
-    d2 = Dict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c2._data)
+    d1 = OrderedDict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c1._data)
+    d2 = OrderedDict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c2._data)
     merged_data = merge(d1, d2)
     return FlexiChain{TKeyNew}(
         niters(c1),
@@ -314,8 +314,10 @@ function Base.vcat(
     if ci1 != ci2
         @warn "concatenating FlexiChains with different chain indices: got $(ci1) and $(ci2). The resulting chain will have the chain indices of the first chain."
     end
-    d = Dict{ParameterOrExtra{<:TKey},Matrix}()
-    for k in union(keys(c1), keys(c2))
+    d = OrderedDict{ParameterOrExtra{<:TKey},Matrix}()
+    allkeys = OrderedSet{ParameterOrExtra{<:TKey}}(keys(c1))
+    union!(allkeys, keys(c2))
+    for k in allkeys
         c1_data = if haskey(c1, k)
             _get_raw_data(c1, k)
         else
@@ -380,8 +382,10 @@ function Base.hcat(
         @warn "concatenating FlexiChains with different iteration indices: got $(ii1) and $(ii2). The resulting chain will have the iteration indices of the first chain."
     end
     # Build up the new data dictionary
-    d = Dict{ParameterOrExtra{<:TKey},Matrix}()
-    for k in union(keys(c1), keys(c2))
+    d = OrderedDict{ParameterOrExtra{<:TKey},Matrix}()
+    allkeys = OrderedSet{ParameterOrExtra{<:TKey}}(keys(c1))
+    union!(allkeys, keys(c2))
+    for k in allkeys
         c1_data = if haskey(c1, k)
             _get_raw_data(c1, k)
         else

@@ -1,3 +1,18 @@
+# 0.0.3
+
+## PosteriorDB.jl integration
+
+You can now load a reference posterior from PosteriorDB.jl into a FlexiChain using `FlexiChains.from_posteriordb_ref`.
+Please see the package documentation; an example is given there.
+The key type of the resulting chain will be `String`, since PosteriorDB stores key names as strings.
+(Unfortunately, there is no safe way to automatically convert these to `VarName` types.)
+
+## Other changes
+
+Fixed a bug where `hcat` and `vcat` would not preserve the order of keys in the resulting chain.
+
+Fixed a bug where `predict` and `returned` would not work with chains that had already been split up by `VarName`s.
+
 # 0.0.2
 
 There are **many** breaking changes to FlexiChains.jl's interface in this release.

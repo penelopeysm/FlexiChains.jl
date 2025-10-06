@@ -290,16 +290,22 @@ Turing.setprogress!(false)
     @testset "returned" begin
         @model function f()
             x ~ Normal()
-            return x + 1
+            y ~ MvNormal(zeros(2), I)
+            return x + y[1] + y[2]
         end
         model = f()
         chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
-        expected_rtnd = chn[:x] .+ 1
+        expected_rtnd = chn[@varname(x)] .+ chn[@varname(y[1])] .+ chn[@varname(y[2])]
+
         rtnd = returned(model, chn)
         @test isapprox(rtnd, expected_rtnd)
         @test rtnd isa DD.DimMatrix
         @test parent(parent(DD.dims(rtnd, :iter))) == FlexiChains.iter_indices(chn)
         @test parent(parent(DD.dims(rtnd, :chain))) == FlexiChains.chain_indices(chn)
+
+        split_chn = FlexiChains.split_varnames(chn)
+        split_rtnd = returned(model, split_chn)
+        @test split_rtnd == rtnd
     end
 
     @testset "predict" begin
@@ -355,10 +361,9 @@ Turing.setprogress!(false)
         end
 
         @testset "still works after chain has been split up" begin
-            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
             # I mean, just in case people want to do it......
             split_chn = FlexiChains.split_varnames(chn)
-            pdns = predict(Xoshiro(468), f(), split_chn)
+            pdns = predict(StableRNG(468), f(), split_chn)
             @test pdns[@varname(x)] == chn[@varname(x)]
             @test isapprox(mean(pdns[@varname(y)]), 2.0; atol=0.1)
         end
@@ -369,6 +374,15 @@ Turing.setprogress!(false)
             @test pdns1 == pdns2
             pdns3 = predict(Xoshiro(469), f(), chn)
             @test pdns1 != pdns3
+
+            @testset "and also with split chain" begin
+                split_chn = FlexiChains.split_varnames(chn)
+                pdns1 = predict(Xoshiro(468), f(), split_chn)
+                pdns2 = predict(Xoshiro(468), f(), split_chn)
+                @test pdns1 == pdns2
+                pdns3 = predict(Xoshiro(469), f(), split_chn)
+                @test pdns1 != pdns3
+            end
         end
     end
 

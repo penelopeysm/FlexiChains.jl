@@ -5,4 +5,5 @@ using Test: @testset
     include("summaries.jl")
     include("interface.jl")
     include("ext/turing.jl")
+    include("ext/posteriordb.jl")
 end

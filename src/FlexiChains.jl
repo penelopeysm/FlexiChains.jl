@@ -27,6 +27,10 @@ include("getindex.jl")
 include("interface.jl")
 include("varname.jl")
 
+# Extended in PosteriorDB extension
+function from_posteriordb_ref end
+@public from_posteriordb_ref
+
 # Convenience re-exports.
 using DimensionalData: At, Near, Contains, (..), Touches, Where, Not
 export At, Near, Contains, (..), Touches, Where, Not

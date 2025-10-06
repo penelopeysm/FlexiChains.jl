@@ -2,7 +2,8 @@ module FlexiChainsDynamicPPLExt
 
 using FlexiChains: FlexiChains, FlexiChain, VarName, Parameter, VNChain
 using DimensionalData: DimensionalData as DD
-using DynamicPPL: DynamicPPL
+using DynamicPPL: DynamicPPL, AbstractPPL
+using OrderedCollections: OrderedDict
 using Random: Random
 
 ###############################
@@ -21,8 +22,8 @@ function DynamicPPL.tilde_assume(
     vi::DynamicPPL.AbstractVarInfo,
 )
     in_varinfo = haskey(vi, vn)
-    if haskey(ctx.values, vn)
-        x = ctx.values[vn] # essentially InitFromParams
+    if AbstractPPL.hasvalue(ctx.values, vn, dist)
+        x = AbstractPPL.getvalue(ctx.values, vn, dist) # essentially InitFromParams
     else
         x = rand(ctx.rng, dist) # essentially InitFromPrior
     end
@@ -137,10 +138,10 @@ function DynamicPPL.predict(
     rng::Random.AbstractRNG, model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
 )::FlexiChain{VarName}
     param_dicts = map(reevaluate(rng, model, chain)) do (_, vi)
-        # Dict{VarName}
+        # OrderedDict{VarName}
         vn_dict = DynamicPPL.getacc(vi, Val(:ValuesAsInModel)).values
-        # Dict{Parameter{VarName}}
-        Dict(Parameter(vn) => val for (vn, val) in vn_dict)
+        # OrderedDict{Parameter{VarName}}
+        OrderedDict(Parameter(vn) => val for (vn, val) in vn_dict)
     end
     ni, nc = size(chain)
     chain_params_only = FlexiChain{VarName}(
