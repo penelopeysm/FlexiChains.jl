@@ -287,6 +287,31 @@ function _selectindices(lookup::Lookup, s)
 end
 
 """
+    _get_multi_key(
+        ::Type{TKey},
+        all_keys::Base.KeySet{ParameterOrExtra{TKey}},
+        k
+    )::ParameterOrExtra{TKey} where {TKey}
+
+Given a list of all keys and a user-specified `k` (which may be a `Symbol`, a `TKey` assumed
+to be a parameter, or directly a `ParameterOrExtra{TKey}`), identify the single
+`ParameterOrExtra{TKey}` that the user wants to select.
+"""
+function _get_multi_key(
+    ::Type{TKey}, all_keys::Base.KeySet, k
+)::ParameterOrExtra{<:TKey} where {TKey}
+    if k isa Symbol
+        return _extract_potential_symbol_key(TKey, all_keys, k)
+    elseif k isa ParameterOrExtra{<:TKey}
+        return k
+    elseif k isa TKey
+        return Parameter(k)
+    else
+        errmsg = "cannot index using keys of type $(typeof(k))"
+        throw(ArgumentError(errmsg))
+    end
+end
+"""
     _get_multi_keys(
         ::Type{TKey},
         all_keys::Base.KeySet{ParameterOrExtra{TKey}},
@@ -300,27 +325,16 @@ that the user wants to select.
 function _get_multi_keys(
     ::Type{TKey}, all_keys::Base.KeySet, ::Colon
 )::Vector{ParameterOrExtra{<:TKey}} where {TKey}
-    # TODO: `all_keys` has too loose a type. See above. It's a Julia 1.10 issue.
+    # TODO: `all_keys` has too loose a type.
+    # https://github.com/JuliaLang/julia/issues/59626jg
     return collect(all_keys)
 end
 function _get_multi_keys(
     ::Type{TKey}, all_keys::Base.KeySet, keyvec::AbstractVector
 )::Vector{ParameterOrExtra{<:TKey}} where {TKey}
-    # TODO: `all_keys` has too loose a type. See above. It's a Julia 1.10 issue.
-    ks = ParameterOrExtra{<:TKey}[]
-    for k in keyvec
-        if k isa Symbol
-            push!(ks, _extract_potential_symbol_key(TKey, all_keys, k))
-        elseif k isa ParameterOrExtra{<:TKey}
-            push!(ks, k)
-        elseif k isa TKey
-            push!(ks, Parameter(k))
-        else
-            errmsg = "cannot index using keys of type $(typeof(k))"
-            throw(ArgumentError(errmsg))
-        end
-    end
-    return ks
+    # TODO: `all_keys` has too loose a type.
+    # https://github.com/JuliaLang/julia/issues/59626jg
+    return map(k -> _get_multi_key(TKey, all_keys, k), keyvec)
 end
 function _get_indices_and_lookup(
     fcs::ChainOrSummary,

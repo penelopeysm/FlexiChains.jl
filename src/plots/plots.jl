@@ -1,4 +1,5 @@
 using FlexiChains: FlexiChains as FC
+using AbstractPPL: VarName
 using RecipesBase: @recipe, @userplot, @series, plot, plot!
 
 function _check_eltype(::AbstractArray{T}) where {T}
@@ -11,7 +12,7 @@ function _check_eltype(::AbstractArray{T}) where {T}
     end
 end
 
-const DEFAULT_WIDTH = 380
+const DEFAULT_WIDTH = 400
 const DEFAULT_HEIGHT = 250
 
 #########################
@@ -21,12 +22,32 @@ const DEFAULT_HEIGHT = 250
 # These have the same effect as doing `@userplot Trace`, but avoid cluttering the namespace
 # with an extra struct, plus macro obfuscation.
 # Note that these are later exported from FlexiChains.
+trace(chn::FC.FlexiChain; kw...) = plot(chn; kw..., seriestype=:trace)
+trace!(chn::FC.FlexiChain; kw...) = plot!(chn; kw..., seriestype=:trace)
 trace(chn::FC.FlexiChain, params; kw...) = plot(chn, params; kw..., seriestype=:trace)
 trace!(chn::FC.FlexiChain, params; kw...) = plot!(chn, params; kw..., seriestype=:trace)
 
 ###############################
 # The actual plotting recipes #
 ###############################
+
+"""
+Main entry point when calling e.g. `plot(chain)`.
+
+By default, plots all parameters in the chain.
+
+`VarName` chains are additionally split up into constituent real-valued parameters by
+default, unless the `split_varnames=false` keyword argument is passed.
+"""
+@recipe function _(chn::FC.FlexiChain)
+    return chn, FC.parameters(chn)
+end
+@recipe function _(chn::FC.FlexiChain{<:VarName}; split_varnames=true)
+    if split_varnames
+        chn = FC.split_varnames(chn)
+    end
+    return chn, FC.parameters(chn)
+end
 
 """
 Main entry point for multiple-parameter plotting.
@@ -67,21 +88,22 @@ Main entry point for single-parameter plotting using RecipesBase methods (e.g. `
 type to dispatch to, based on the `seriestype` argument.
 """
 @recipe function _(chn::FC.FlexiChain{T}, param::FC.ParameterOrExtra{<:T}) where {T}
+    key_to_plot = FC._get_multi_key(T, keys(chn), param)
     # If the user calls `plot(chn, param)`, then `seriestype` will not be populated; we can set
     # it to `traceplot` in that case. On the other hand, if the user calls (for example)
     # `density(chn, param)`, then `seriestype` will be `:density`.
     st = get(plotattributes, :seriestype, missing)
     # We can then use that to dispatch to the appropriate recipe.
     if ismissing(st)
-        return FlexiChainTraceAndAutoDensity(chn, param)
+        return FlexiChainTraceAndAutoDensity(chn, key_to_plot)
     elseif st === :trace
-        return FlexiChainTrace(chn, param)
+        return FlexiChainTrace(chn, key_to_plot)
     elseif st === :density
-        return FlexiChainDensity(chn, param)
+        return FlexiChainDensity(chn, key_to_plot)
     elseif st === :histogram
-        return FlexiChainHistogram(chn, param)
+        return FlexiChainHistogram(chn, key_to_plot)
     else
-        return (chn, param, st)
+        return (chn, key_to_plot, st)
     end
 end
 
