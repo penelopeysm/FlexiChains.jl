@@ -355,10 +355,9 @@ Turing.setprogress!(false)
         end
 
         @testset "still works after chain has been split up" begin
-            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
             # I mean, just in case people want to do it......
             split_chn = FlexiChains.split_varnames(chn)
-            pdns = predict(Xoshiro(468), f(), split_chn)
+            pdns = predict(StableRNG(468), f(), split_chn)
             @test pdns[@varname(x)] == chn[@varname(x)]
             @test isapprox(mean(pdns[@varname(y)]), 2.0; atol=0.1)
         end
