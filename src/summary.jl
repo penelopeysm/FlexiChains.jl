@@ -130,13 +130,15 @@ function stat_indices(
 end
 
 _pretty_value(x::Integer, ::Bool=false) = repr(x)
+_pretty_value(x::AbstractString, ::Bool=false) = x
+_pretty_value(x::Symbol, ::Bool=false) = String(x)
 function _pretty_value(x::AbstractFloat, short::Bool=false)
     return short ? @sprintf("%.1f", x) : @sprintf("%.4f", x)
 end
 function _pretty_value(x::AbstractVector, ::Bool=false)
     return "[" * join(map(x -> _pretty_value(x, true), x), ",") * "]"
 end
-# Fallback: just use show
+# Fallback: just use repr
 _pretty_value(x, ::Bool=false) = repr(x)
 _truncate(x::String, n::Int) = length(x) > n ? first(x, n - 1) * "…" : x
 
