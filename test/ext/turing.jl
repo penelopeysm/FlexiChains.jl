@@ -310,13 +310,15 @@ Turing.setprogress!(false)
 
     @testset "predict" begin
         @model function f()
+            # Inserting a vector-valued parameter lets us check behaviour when splitting up
+            # VarNames.
             m ~ MvNormal(zeros(2), I)
             x ~ Normal()
             return y ~ Normal(x)
         end
         model = f() | (; y=4.0)
-        # We sample larger numbers so that we have some confidence that
-        # the results weren't obtained by sheer luck.
+        # Sample larger numbers so that we have some confidence that the results weren't
+        # obtained by sheer luck.
         chn = sample(
             StableRNG(468),
             model,
@@ -328,11 +330,14 @@ Turing.setprogress!(false)
         )
         # Sanity check
         @test isapprox(mean(chn[@varname(x)]), 2.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(m[1])]), 0.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(m[2])]), 0.0; atol=0.1)
 
         @testset "chain values are actually used" begin
             pdns = predict(StableRNG(468), f(), chn)
             # Sanity check.
             @test pdns[@varname(x)] == chn[@varname(x)]
+            @test pdns[@varname(m)] == chn[@varname(m)]
             # Since the model was conditioned with y = 4.0, we should
             # expect that the chain's mean of x is approx 2.0.
             # So the posterior predictions for y should be centred on
@@ -341,7 +346,6 @@ Turing.setprogress!(false)
         end
 
         @testset "non-parameter keys are preserved" begin
-            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
             pdns = predict(f(), chn)
             # Check that the only new thing added was the prediction for y.
             @test only(setdiff(Set(keys(pdns)), Set(keys(chn)))) == Parameter(@varname(y))
@@ -350,7 +354,6 @@ Turing.setprogress!(false)
         end
 
         @testset "metadata is preserved" begin
-            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
             pdns = predict(f(), chn)
             @test FlexiChains.iter_indices(pdns) == FlexiChains.iter_indices(chn)
             @test FlexiChains.chain_indices(pdns) == FlexiChains.chain_indices(chn)
@@ -363,9 +366,11 @@ Turing.setprogress!(false)
         @testset "still works after chain has been split up" begin
             # I mean, just in case people want to do it......
             split_chn = FlexiChains.split_varnames(chn)
-            pdns = predict(StableRNG(468), f(), split_chn)
-            @test pdns[@varname(x)] == chn[@varname(x)]
-            @test isapprox(mean(pdns[@varname(y)]), 2.0; atol=0.1)
+            pdns_split = predict(Xoshiro(468), f(), split_chn)
+            pdns_orig = predict(Xoshiro(468), f(), chn)
+            for k in FlexiChains.parameters(pdns_split)
+                @test pdns_split[k] == pdns_orig[k]
+            end
         end
 
         @testset "rng is respected" begin
