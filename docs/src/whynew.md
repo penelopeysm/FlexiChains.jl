@@ -223,23 +223,28 @@ HMC samplers further include extra metadata such as `hamiltonian_energy`, and in
 As a user, you have no way of knowing what these names are, and you have to avoid using them in your model, which is quite unfair.
 
 FlexiChains circumvents this entirely since it stores these separately as `Parameter(@varname(lp))` and `Extra(:lp)`.
+To be precise, the log joint is stored as `Extra(:logjoint)`, so the point is that even if you had a parameter named `@varname(logjoint)` this woud still be fine.
 
 ```@example 1
-fchain = sample(Xoshiro(468), lp_model(), NUTS(), 100; chain_type=VNChain)
+@model function lj_model()
+    return logjoint ~ Normal()
+end
+
+fchain = sample(Xoshiro(468), lj_model(), NUTS(), 100; chain_type=VNChain)
 ```
 
-You will of course run into ambiguities if you simply attempt to index the chain with `[:lp]`, because both the `Parameter(@varname(lp))` and the `Extra(:lp)` exist.
+You will of course run into ambiguities if you simply attempt to index the chain with `[:logjoint]`, because both the `Parameter(@varname(logjoint))` and the `Extra(:logjoint)` exist.
 
 ```julia
-fchain[:lp]
+fchain[:logjoint]
 # This code block isn't run because it would throw the following error:
-# ArgumentError: multiple keys correspond to symbol :lp.
+# ArgumentError: multiple keys correspond to symbol :logjoint.
 ```
 
 but you can still access the value using the original value of the `Parameter`:
 
 ```@example 1
-fchain[@varname(lp)]
+fchain[@varname(logjoint)]
 ```
 
 and the corresponding metadata:
@@ -248,13 +253,13 @@ and the corresponding metadata:
 
 ```@example 1
 using FlexiChains: Extra
-fchain[Extra(:lp)]
+fchain[Extra(:logjoint)]
 ```
 
 and indeed we can check that these do align:
 
 ```@example 1
-logpdf.(Normal(), fchain[@varname(lp)]) ≈ fchain[Extra(:lp)]
+logpdf.(Normal(), fchain[@varname(logjoint)]) ≈ fchain[Extra(:logjoint)]
 ```
 
 TODO pretty-printing / summary stats

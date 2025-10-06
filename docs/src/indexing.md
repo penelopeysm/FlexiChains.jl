@@ -58,7 +58,7 @@ chn[@varname(x[1])]
 
 ```@example 1
 # You can specify a vector of parameters
-chn[[@varname(x[1]), :lp]]
+chn[[@varname(x[1]), :logjoint]]
 ```
 
 This last one returns a `FlexiChain` object, because multiple keys were specified.

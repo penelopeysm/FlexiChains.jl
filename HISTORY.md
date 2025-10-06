@@ -57,7 +57,10 @@ This prevents overspecialisation of methods and leads to improved performance.
 `FlexiChains.SizedMatrix` has been removed.
 All underlying data is stored as raw `Array`s (2D for `FlexiChain`, 3D for `FlexiSummary`).
 
-### Other fixes
+### Other things
+
+The log-joint probability when sampling with Turing.jl is now stored under the key `Extra(:logjoint)` rather than `Extra(:lp)`.
+This is simply to be more explicit about its meaning.
 
 The order of keys in a `FlexiChain` is now guaranteed (and is preserved by all operations on chains).
 If you want to construct a chain with a specific order of keys, you should ensure that the input data (either dict-of-arrays or array-of-dicts) can be iterated on to yield the keys in the desired order.

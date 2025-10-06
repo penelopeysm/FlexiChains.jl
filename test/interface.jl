@@ -2,6 +2,7 @@ module FCInterfaceTests
 
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, @varname, VarName
 using DimensionalData: DimensionalData as DD
+using OrderedCollections: OrderedDict
 using AbstractMCMC: AbstractMCMC
 using Test
 
@@ -43,7 +44,7 @@ using Test
 
     @testset "dictionary interface" begin
         N_iters, N_chains = 10, 2
-        d = Dict(Parameter(:a) => 1, Parameter(:b) => 2, Extra("hello") => 3.0)
+        d = OrderedDict(Parameter(:a) => 1, Extra("hello") => 3.0, Parameter(:b) => 2)
         dicts = fill(d, N_iters, N_chains)
         chain = FlexiChain{Symbol}(N_iters, N_chains, dicts)
         # size
@@ -54,7 +55,7 @@ using Test
         @test FlexiChains.niters(chain) == N_iters
         @test FlexiChains.nchains(chain) == N_chains
         # keys
-        @test Set(keys(chain)) == Set(keys(d))
+        @test collect(keys(chain)) == [Parameter(:a), Extra("hello"), Parameter(:b)]
         for k in keys(d)
             @test haskey(chain, k)
         end
@@ -62,7 +63,8 @@ using Test
 
     @testset "get key names" begin
         N_iters = 10
-        d = Dict(
+        # use OrderedDict when constructing so that we can also test order
+        d = OrderedDict(
             Parameter(:a) => 1,
             Parameter(:b) => 2,
             Extra("hello") => 3.0,
@@ -72,11 +74,11 @@ using Test
         chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
 
         @testset "parameters" begin
-            @test Set(FlexiChains.parameters(chain)) == Set([:a, :b])
+            @test FlexiChains.parameters(chain) == [:a, :b]
         end
         @testset "extras" begin
-            @test Set(FlexiChains.extras(chain)) ==
-                Set([Extra("hello"), Extra("world"), Extra("key")])
+            @test FlexiChains.extras(chain) ==
+                [Extra("hello"), Extra("world"), Extra("key")]
         end
     end
 
@@ -654,20 +656,21 @@ using Test
 
     @testset "split_varnames" begin
         N_iters = 10
-        d = Dict(
+        # use OrderedDict so that we can also test order
+        d = OrderedDict(
             Parameter(@varname(a)) => 1.0,
-            Parameter(@varname(b)) => [2.0, 3.0],
             Parameter(@varname(c)) => (x=4.0, y=5.0),
+            Parameter(@varname(b)) => [2.0, 3.0],
             Extra("hello") => 3.0,
         )
         chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
         chain2 = FlexiChains.split_varnames(chain)
-        @test Set(keys(chain2)) == Set([
+        @test collect(keys(chain2)) == ([
             Parameter(@varname(a)),
-            Parameter(@varname(b[1])),
-            Parameter(@varname(b[2])),
             Parameter(@varname(c.x)),
             Parameter(@varname(c.y)),
+            Parameter(@varname(b[1])),
+            Parameter(@varname(b[2])),
             Extra("hello"),
         ])
     end

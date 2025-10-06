@@ -98,6 +98,18 @@ Turing.setprogress!(false)
             end
         end
 
+        @testset "ordering of parameters follows that of model" begin
+            @model function f()
+                a ~ Normal()
+                x = zeros(2)
+                x .~ Normal()
+                return b ~ Normal()
+            end
+            chn = sample(f(), NUTS(), 10; chain_type=VNChain, verbose=false)
+            @test FlexiChains.parameters(chn) ==
+                [@varname(a), @varname(x[1]), @varname(x[2]), @varname(b)]
+        end
+
         @testset "underlying data is same as MCMCChains" begin
             chn_flexi = sample(
                 Xoshiro(468), model, NUTS(), 100; chain_type=VNChain, verbose=false
@@ -112,9 +124,11 @@ Turing.setprogress!(false)
             )
             @test vec(chn_flexi[@varname(s2)]) == vec(chn_mcmc[:s2])
             @test vec(chn_flexi[@varname(m)]) == vec(chn_mcmc[:m])
-            for lp_type in [:lp, :logprior, :loglikelihood]
+            for lp_type in [:logprior, :loglikelihood]
                 @test vec(chn_flexi[Extra(lp_type)]) == vec(chn_mcmc[lp_type])
             end
+            # logjoint is stored as different names
+            @test vec(chn_flexi[Extra(:logjoint)]) == vec(chn_mcmc[:lp])
         end
 
         @testset "with another sampler: $spl_name" for (spl_name, spl) in [

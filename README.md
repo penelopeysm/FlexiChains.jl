@@ -29,6 +29,7 @@ Data is returned as a `DimMatrix` from the [`DimensionalData.jl` package](https:
 chain[@varname(x)]    # -> DimMatrix{Float64}
 chain[@varname(y)]    # -> DimMatrix{Vector{Float64}}
 chain[@varname(y[1])] # -> DimMatrix{Float64}
+chain[:logjoint]      # -> DimMatrix{Float64} NOTE: not `:lp`
 ```
 
 Quick and dirty summary stats can be obtained with:

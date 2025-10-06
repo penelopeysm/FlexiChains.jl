@@ -2,6 +2,7 @@ module FCChainTests
 
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra
 using DimensionalData: val
+using OrderedCollections: OrderedDict
 using Test
 
 @testset verbose = true "chain.jl" begin
@@ -185,6 +186,32 @@ using Test
                     )
                 end
             end
+        end
+    end
+
+    @testset "key ordering of internal data" begin
+        # note that the ordering returned by keys(), parameters(), etc. is tested elsewhere
+        @testset "array-of-dict" begin
+            N_iters, N_chains = 10, 2
+            dicts = fill(
+                OrderedDict(Parameter(:b) => 1, Extra("hello") => 3, Parameter(:a) => 2),
+                N_iters,
+                N_chains,
+            )
+            chain = FlexiChain{Symbol}(N_iters, N_chains, dicts)
+            @test collect(keys(chain._data)) ==
+                [Parameter(:b), Extra("hello"), Parameter(:a)]
+        end
+        @testset "dict-of-array" begin
+            N_iters, N_chains = 10, 2
+            dicts = OrderedDict(
+                Parameter(:b) => fill(1, N_iters, N_chains),
+                Extra("hello") => fill(3, N_iters, N_chains),
+                Parameter(:a) => fill(2, N_iters, N_chains),
+            )
+            chain = FlexiChain{Symbol}(N_iters, N_chains, dicts)
+            @test collect(keys(chain._data)) ==
+                [Parameter(:b), Extra("hello"), Parameter(:a)]
         end
     end
 

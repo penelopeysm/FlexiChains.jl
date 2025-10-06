@@ -25,7 +25,7 @@ function FlexiChains.to_varname_dict(
     # add in the log probs
     d[Extra(:logprior)] = transition.logprior
     d[Extra(:loglikelihood)] = transition.loglikelihood
-    d[Extra(:lp)] = transition.logprior + transition.loglikelihood
+    d[Extra(:logjoint)] = transition.logprior + transition.loglikelihood
     return d
 end
 

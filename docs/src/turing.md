@@ -117,16 +117,19 @@ The indexing behaviour of FlexiChains is described fully on [the next page](./in
 ### Other keys
 
 In general Turing.jl tries to package up some extra metadata into the chain that may be helpful.
-For example, the log-joint probability of each sample is stored with the key `:lp`.
+For example, the log-joint probability of each sample is stored with the key `:logjoint`.
 To access non-parameter information like this in an unambiguous fashion, you should use the `Extra` wrapper.
 
 ```@example 1
 using FlexiChains: Extra
 
-chain[Extra(:lp)]
+chain[Extra(:logjoint)]
 ```
 
-If there is no ambiguity in the symbol `:lp`, then you can use a shortcut which is described in the next section.
+!!! warning
+    MCMCChains stores the log-joint probability as `:lp`. FlexiChains uses `:logjoint` instead, which is clearer. It is possible that MCMCChains may be changed to use `:logjoint` in the future, but for now this is another difference to be aware of.
+
+If there is no ambiguity in the symbol `:logjoint`, then you can use a shortcut which is described in the next section.
 
 ### Indexing by `Symbol`: a shortcut
 
@@ -146,13 +149,13 @@ chain[:mu] # parameter
     
     You cannot use `chain[Symbol("theta[1]")]` as a replacement for `chain[@varname(theta[1])]`.
 
-Likewise, we can omit wrapping `:lp` in `Extra(...)`:
+Likewise, we can omit wrapping `:logjoint` in `Extra(...)`:
 
 ```@example 1
-chain[:lp] # other key
+chain[:logjoint] # other key
 ```
 
-If there is any ambiguity present (for example if there is also a parameter named `@varname(lp)`), FlexiChains will throw an error.
+If there is any ambiguity present (for example if there is also a parameter named `@varname(logjoint)`), FlexiChains will throw an error.
 
 ## Splitting VarNames up
 
