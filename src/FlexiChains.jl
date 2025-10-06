@@ -26,6 +26,9 @@ include("summary.jl")
 include("getindex.jl")
 include("interface.jl")
 include("varname.jl")
+module Plots
+    include("plots/plots.jl")
+end
 
 # Extended in PosteriorDB extension
 function from_posteriordb_ref end
@@ -40,6 +43,8 @@ using StatsBase: summarystats
 export summarystats
 using MCMCDiagnosticTools: ess
 export ess, rhat, mcse
+using ..Plots: trace, trace!
+export trace, trace!
 # For maximum ease of use with Turing...
 const VNChain = FlexiChain{VarName}
 export VarName, @varname, VNChain, split_varnames
