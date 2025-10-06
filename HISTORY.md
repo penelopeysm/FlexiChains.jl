@@ -1,4 +1,4 @@
-## 0.0.2
+# 0.0.2
 
 There are **many** breaking changes to FlexiChains.jl's interface in this release.
 As the version number suggests, this is still a very early release of FlexiChains.jl, and the API is likely to change in future versions.
@@ -9,7 +9,7 @@ However, I would like to have some real-world battle testing before releasing 0.
 
 The main changes in 0.0.2 are:
 
-### DimensionalData.jl
+## DimensionalData.jl
 
 Indexing into a FlexiChain now returns `DimensionalData.DimArray` types.
 
@@ -21,7 +21,7 @@ User-facing changes:
 
 Indexing into a `FlexiSummary` also returns `DimArray`s, unless all dimensions have been collapsed, in which case it just returns the single value in the array.
 
-### Summaries
+## Summaries
 
 Summaries have been completely reworked.
 
@@ -39,7 +39,7 @@ There is only one return type, `FlexiSummary`, instead of the three different re
 Indexing behaviour for `FlexiSummary` has been thoroughly designed to be as intuitive, and as similar to `FlexiChain` indexing, as possible.
 Please see its docstring, as well as the built documentation, for more information.
 
-### Indexing
+## Indexing
 
 In light of the DimensionalData.jl integration, as well as the new `FlexiSummary` format, indexing into chains and summaries has also been completely overhauled.
 In particular, indexing can now be done with keyword arguments corresponding to the dimension names.
@@ -47,7 +47,7 @@ Furthermore, it is possible to provide a vector of keys to select multiple param
 
 Please see the documentation for more information: there is one whole page dedicated to the indexing behaviour of FlexiChains.jl.
 
-### Sizes as type parameters
+## Sizes as type parameters
 
 The sizes of the chain and iteration dimensions are no longer type parameters of `FlexiChain`.
 Instead of constructing a chain with `FlexiChain{TKey,NIter,NChains}(data)` you should now pass these as positional arguments, i.e., `FlexiChain{TKey}(NIter, NChains, data)`.
@@ -57,7 +57,7 @@ This prevents overspecialisation of methods and leads to improved performance.
 `FlexiChains.SizedMatrix` has been removed.
 All underlying data is stored as raw `Array`s (2D for `FlexiChain`, 3D for `FlexiSummary`).
 
-### Other things
+## Other things
 
 The log-joint probability when sampling with Turing.jl is now stored under the key `Extra(:logjoint)` rather than `Extra(:lp)`.
 This is simply to be more explicit about its meaning.
@@ -75,7 +75,7 @@ Small precompile workloads have been added to improve the time-to-first-chain an
 Various fixes have been applied to the behaviour of `hcat`, `vcat`, and `merge`.
 In particular `merge` now takes all metadata from the second argument (which mimics the behaviour of `merge` on base Julia types).
 
-## 0.0.1
+# 0.0.1
 
 This is the initial release of FlexiChains.jl.
 
