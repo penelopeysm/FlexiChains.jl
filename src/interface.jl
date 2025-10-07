@@ -113,15 +113,7 @@ end
 
 _EQUALITY_DOCSTRING_SUPPLEMENT = """
 !!! tip
-    If you want to only compare equality of the data, you can use the following construction:
-
-    ```julia
-    Set(keys(c1)) == Set(keys(c2))
-    all(k -> c1[k] == c2[k], keys(c1)) # or isequal
-    ```
-
-    Because `c1[k]` returns a `DimMatrix` labelled with `c1`'s iteration and chain indices, you should also be aware of the behaviour when comparing `DimMatrix` objects.
-    Specifically, if the indices are different, two matrices with the same values will not be equal under `==`, but will be under `isequal`.
+    If you want to only compare equality of the data, you can use [`has_same_data`](@ref).
 
 !!! danger
     Because `(==)` on `OrderedCollections.OrderedDict` does not check key order, two chains
