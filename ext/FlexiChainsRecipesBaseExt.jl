@@ -1,6 +1,11 @@
+module FlexiChainsRecipesBaseExt
+
 using FlexiChains: FlexiChains as FC
-using AbstractPPL: VarName
+using FlexiChains: VarName
 using RecipesBase: @recipe, @userplot, @series, plot, plot!
+
+const DEFAULT_WIDTH = 400
+const DEFAULT_HEIGHT = 250
 
 function _check_eltype(::AbstractArray{T}) where {T}
     if !(T <: Real)
@@ -12,24 +17,31 @@ function _check_eltype(::AbstractArray{T}) where {T}
     end
 end
 
-const DEFAULT_WIDTH = 400
-const DEFAULT_HEIGHT = 250
+##########################
+# `traceplot` extensions #
+##########################
 
-#########################
-# Convenience functions #
-#########################
+# TODO: I'm completely unsure how this can be extended to work with Makie. But okay for now.
 
-# These have the same effect as doing `@userplot Trace`, but avoid cluttering the namespace
-# with an extra struct, plus macro obfuscation.
-# Note that these are later exported from FlexiChains.
-trace(chn::FC.FlexiChain; kw...) = plot(chn; kw..., seriestype=:trace)
-trace!(chn::FC.FlexiChain; kw...) = plot!(chn; kw..., seriestype=:trace)
-trace(chn::FC.FlexiChain, params; kw...) = plot(chn, params; kw..., seriestype=:trace)
-trace!(chn::FC.FlexiChain, params; kw...) = plot!(chn, params; kw..., seriestype=:trace)
+const _TRACEPLOT_SERIESTYPE = :traceplot
+function FC.Plots.traceplot(chn::FC.FlexiChain; kwargs...)
+    return plot(chn; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
+end
+function FC.Plots.traceplot!(chn::FC.FlexiChain; kwargs...)
+    return plot!(chn; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
+end
+function FC.Plots.traceplot(chn::FC.FlexiChain, param_or_params; kwargs...)
+    return plot(chn, param_or_params; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
+end
+function FC.Plots.traceplot!(chn::FC.FlexiChain, param_or_params; kwargs...)
+    return plot!(chn, param_or_params; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
+end
 
 ###############################
 # The actual plotting recipes #
 ###############################
+
+const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 
 """
 Entry point for single-parameter plotting; simply wraps and sends it to the multi-parameter
@@ -81,19 +93,20 @@ default, unless the `split_varnames=false` keyword argument is passed.
     # do this, it would error in mystifying ways.
     keys_to_plot = collect(keys(chn))
     # When the user calls `plot(chn[, params])` without specifying a `seriestype`, we
-    # default to showing a side-by-side trace and density/histogram for each parameter.
-    # Otherwise, if the user calls `trace`, `density`, `histogram`, etc. then there will be
-    # a `seriestype` set for us. In either case, we can then use `seriestype` to set up the
+    # default to showing a side-by-side traceplot and density/histogram for each parameter.
+    # Otherwise, if the user calls `traceplot`, `density`, `histogram`, etc. then there will
+    # be a `seriestype` set for us. In either case, we can then use `seriestype` to set up
+    # the
     # layout, and dispatch to the appropriate recipe.
-    seriestype = get(plotattributes, :seriestype, :trace_and_density)
-    ncols = seriestype === :trace_and_density ? 2 : 1
+    seriestype = get(plotattributes, :seriestype, _TRACEPLOT_AND_DENSITY_SERIESTYPE)
+    ncols = seriestype === _TRACEPLOT_AND_DENSITY_SERIESTYPE ? 2 : 1
     nrows = length(keys_to_plot)
     layout := (nrows, ncols)
     size := (DEFAULT_WIDTH * ncols, DEFAULT_HEIGHT * nrows)
+    left_margin := (5, :mm)
+    bottom_margin := (5, :mm)
     for (i, k) in enumerate(keys_to_plot)
-        if seriestype === :trace_and_density
-            left_margin := (5, :mm)
-            bottom_margin := (5, :mm)
+        if seriestype === _TRACEPLOT_AND_DENSITY_SERIESTYPE
             @series begin
                 subplot := 2i - 1
                 FlexiChainTrace(chn, k)
@@ -105,11 +118,11 @@ default, unless the `split_varnames=false` keyword argument is passed.
         else
             @series begin
                 subplot := i
-                if seriestype === :trace
+                if seriestype === _TRACEPLOT_SERIESTYPE
                     return FlexiChainTrace(chn, k)
                 elseif seriestype === :density
                     return FlexiChainDensity(chn, k)
-                elseif seriestype === :hiseriestypeogram
+                elseif seriestype === :histogram
                     return FlexiChainHistogram(chn, k)
                 else
                     return (chn, k, seriestype)
@@ -251,3 +264,5 @@ end
     normalize --> :pdf
     return x
 end
+
+end # module

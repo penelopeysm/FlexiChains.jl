@@ -26,13 +26,15 @@ include("summary.jl")
 include("getindex.jl")
 include("interface.jl")
 include("varname.jl")
-module Plots
-    include("plots/plots.jl")
-end
+include("plots.jl")
 
-# Extended in PosteriorDB extension
+# Extended in PosteriorDB extension (but not exported)
 function from_posteriordb_ref end
 @public from_posteriordb_ref
+# Extended in RecipesBase extension (but not exported)
+using ..Plots: traceplot, traceplot!
+@public traceplot, traceplot!
+export traceplot, traceplot!
 
 # Convenience re-exports.
 using DimensionalData: At, Near, Contains, (..), Touches, Where, Not
@@ -43,8 +45,6 @@ using StatsBase: summarystats
 export summarystats
 using MCMCDiagnosticTools: ess
 export ess, rhat, mcse
-using ..Plots: trace, trace!
-export trace, trace!
 # For maximum ease of use with Turing...
 const VNChain = FlexiChain{VarName}
 export VarName, @varname, VNChain, split_varnames
