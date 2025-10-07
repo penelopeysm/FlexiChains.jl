@@ -5,7 +5,7 @@ However, it also contains some integrations with other packages.
 
 ## PosteriorDB.jl
 
-[Documentation for PosteriorDB.jl](@extref PosteriorDB PosteriorDB.jl)
+[Documentation for PosteriorDB.jl](@extref PosteriorDB :doc:`index`)
 
 If you have loaded a `PosteriorDB.ReferencePosterior`, you can transform it into a `FlexiChain` using [`FlexiChains.from_posteriordb_ref`](@ref):
 

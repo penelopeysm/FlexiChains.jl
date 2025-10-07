@@ -1,4 +1,4 @@
-# Indexing in FlexiChains.jl
+# Indexing
 
 A `FlexiChain` stores data in a  _rich_ format: that means that instead of just storing a raw matrix of data, it also includes information about the iteration numbers and chain numbers.
 Additionally, `FlexiSummary` objects also sometimes store information about which summary functions were applied (especially when there are multiple of these).
@@ -115,7 +115,7 @@ This positional argument can either be an object pointing to a single key, in wh
 To specify a single key, you can use:
 
 - a parameter name (e.g. for a `FlexiChain{T}`, an object of type `T`);
-- a `VarName` or sub-`VarName`, for a `VNChain`; or
+- a `VarName` or sub-`VarName`, for a `FlexiChain{VarName}` (i.e. `VNChain`);
 - a `FlexiChains.Extra` for non-parameter keys;
 - a `Symbol`, as long as it refers to an unambiguous key;
 - a `FlexiChains.Parameter` (this is mentioned for completeness; as a user you probably don't need to do this)
