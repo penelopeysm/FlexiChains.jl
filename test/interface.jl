@@ -40,6 +40,15 @@ using Test
         chain1 = FlexiChain{Symbol}(10, 1, fill(d, 10))
         chain2 = FlexiChain{Symbol}(10, 1, fill(d, 10))
         @test chain1 == chain2
+        @test isequal(chain1, chain2)
+        chain3 = FlexiChain{Symbol}(10, 1, fill(d, 10); iter_indices=21:30)
+        @test chain1 != chain3
+        @test !isequal(chain1, chain3)
+        dmiss = Dict(Parameter(:a) => missing)
+        chainmiss1 = FlexiChain{Symbol}(10, 1, fill(dmiss, 10))
+        chainmiss2 = FlexiChain{Symbol}(10, 1, fill(dmiss, 10))
+        @test ismissing(chainmiss1 == chainmiss2)
+        @test isequal(chainmiss1, chainmiss2)
     end
 
     @testset "dictionary interface" begin

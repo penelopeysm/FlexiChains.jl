@@ -119,7 +119,7 @@ A struct to hold common kinds of metadata typically associated with a chain.
 struct FlexiChainMetadata{
     TIIdx<:DDL.Lookup,
     TCIdx<:DDL.Lookup,
-    Ttime<:AbstractVector{<:Union{Real,Missing}},
+    Ttime<:AbstractVector{<:Union{Real,Nothing}},
     Tstate<:AbstractVector,
 }
     """
@@ -136,14 +136,14 @@ struct FlexiChainMetadata{
     """
     chain_indices::TCIdx
     """
-    The time taken to sample each chain (in seconds). This should be a vector of length `NChains`. If the time was not recorded for a chain, it will be `missing`.
+    The time taken to sample each chain (in seconds). This should be a vector of length `NChains`. If the time was not recorded for a chain, it will be `nothing`.
     """
     sampling_time::Ttime
     """
     The final state of the sampler used to generate each chain, if the `save_state=true`
     keyword argument was passed to `sample`. This can be used for resuming MCMC sampling.
     This should be a vector of length `NChains`. If the state was not saved for a chain, it
-    will be `missing`.
+    will be `nothing`.
     """
     last_sampler_state::Tstate
 
@@ -152,7 +152,7 @@ struct FlexiChainMetadata{
         nchains::Int,
         iter_indices::AbstractVector{<:Integer},
         chain_indices::AbstractVector{<:Integer},
-        sampling_time::AbstractVector{<:Union{Real,Missing}},
+        sampling_time::AbstractVector{<:Union{Real,Nothing}},
         last_sampler_state::AbstractVector,
     )
         iter_indices_checked = _make_lookup(
@@ -177,6 +177,18 @@ struct FlexiChainMetadata{
             last_sampler_state_checked,
         )
     end
+end
+function Base.:(==)(m1::FlexiChainMetadata, m2::FlexiChainMetadata)
+    return (m1.iter_indices == m2.iter_indices) &
+           (m1.chain_indices == m2.chain_indices) &
+           (m1.sampling_time == m2.sampling_time) &
+           (m1.last_sampler_state == m2.last_sampler_state)
+end
+function Base.isequal(m1::FlexiChainMetadata, m2::FlexiChainMetadata)
+    return isequal(m1.iter_indices, m2.iter_indices) &&
+           isequal(m1.chain_indices, m2.chain_indices) &&
+           isequal(m1.sampling_time, m2.sampling_time) &&
+           isequal(m1.last_sampler_state, m2.last_sampler_state)
 end
 
 """
@@ -220,8 +232,8 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractChains
             array_of_dicts::AbstractArray{<:AbstractDict,N};
             iter_indices::AbstractVector{Int}=1:niters,
             chain_indices::AbstractVector{Int}=1:nchains,
-            sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
-            last_sampler_state::AbstractVector=fill(missing, nchains),
+            sampling_time::AbstractVector{<:Union{Real,Nothing}}=fill(nothing, nchains),
+            last_sampler_state::AbstractVector=fill(nothing, nchains),
         ) where {TKey,N}
 
     Construct a `FlexiChain` from a vector or matrix of dictionaries. Each dictionary
@@ -261,8 +273,8 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractChains
         array_of_dicts::AbstractArray{<:AbstractDict};
         iter_indices::AbstractVector{Int}=1:niters,
         chain_indices::AbstractVector{Int}=1:nchains,
-        sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
-        last_sampler_state::AbstractVector=fill(missing, nchains),
+        sampling_time::AbstractVector{<:Union{Real,Nothing}}=fill(nothing, nchains),
+        last_sampler_state::AbstractVector=fill(nothing, nchains),
     ) where {TKey}
         # Construct metadata. We do this early so that if any of the inputs have the
         # wrong length we get an error before doing any more work.
@@ -300,8 +312,8 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractChains
             dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}};
             iter_indices::AbstractVector{Int}=1:niters,
             chain_indices::AbstractVector{Int}=1:nchains,
-            sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
-            last_sampler_state::AbstractVector=fill(missing, nchains),
+            sampling_time::AbstractVector{<:Union{Real,Nothing}}=fill(nothing, nchains),
+            last_sampler_state::AbstractVector=fill(nothing, nchains),
         ) where {TKey,N}
 
     Construct a `FlexiChain` from a dictionary of arrays.
@@ -342,8 +354,8 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractChains
         dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any}};
         iter_indices::AbstractVector{Int}=1:niters,
         chain_indices::AbstractVector{Int}=1:nchains,
-        sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
-        last_sampler_state::AbstractVector=fill(missing, nchains),
+        sampling_time::AbstractVector{<:Union{Real,Nothing}}=fill(nothing, nchains),
+        last_sampler_state::AbstractVector=fill(nothing, nchains),
     ) where {TKey}
         # Construct metadata. We do this early so that if any of the inputs have the
         # wrong length we get an error before doing any more work.
@@ -433,11 +445,11 @@ end
     sampling_time(chain::FlexiChain):Vector
 
 Return the time taken to sample the chain (in seconds). If the time was not recorded, this
-will be `missing`.
+will be `nothing`.
 
 Note that this always returns a vector with length equal to the number of chains.
 """
-sampling_time(chain::FlexiChain)::Vector{<:Union{Real,Missing}} =
+sampling_time(chain::FlexiChain)::Vector{<:Union{Real,Nothing}} =
     chain._metadata.sampling_time
 
 """
@@ -448,7 +460,7 @@ keyword argument was passed to `sample`. This can be used for resuming MCMC samp
 
 Note that this always returns a vector with length equal to the number of chains.
 
-If the state was not saved, this will be `missing` (or a vector thereof).
+If the state was not saved, this will be `nothing` (or a vector thereof).
 """
 function last_sampler_state(chain::FlexiChain)::Vector
     return chain._metadata.last_sampler_state

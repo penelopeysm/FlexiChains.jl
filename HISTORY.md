@@ -9,6 +9,11 @@ The key type of the resulting chain will be `String`, since PosteriorDB stores k
 
 ## Other changes
 
+Sampling states and sampling times are now `nothing` if not provided, rather than `missing`.
+
+Fixed equality comparisons on FlexiChain and FlexiSummary (previously only the data would be compared, not the metadata).
+`Base.:(==)` and `Base.isequal` now behave 'as expected'.
+
 Fixed a bug where `hcat` and `vcat` would not preserve the order of keys in the resulting chain.
 
 Fixed a bug where `predict` and `returned` would not work with chains that had already been split up by `VarName`s.
