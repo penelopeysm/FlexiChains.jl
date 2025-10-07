@@ -4,7 +4,7 @@ Flexible Markov chains.
 
 [**Documentation**](http://pysm.dev/FlexiChains.jl/)
 
-### Usage with Turing.jl
+### Usage
 
 `FlexiChain{T}` represents a chain that stores data for parameters of type `T`.
 `VNChain` is a alias for `FlexiChain{VarName}`, and is the appropriate type for storing Turing.jl's outputs.
@@ -17,9 +17,10 @@ using FlexiChains
 
 @model function f()
     x ~ Normal()
-    y ~ MvNormal(zeros(2), I)
+    y ~ Poisson(3.0)
+    z ~ MvNormal(zeros(2), I)
 end
-chain = sample(f(), NUTS(), 1000; chain_type=VNChain)
+chain = sample(f(), NUTS(), MCMCThreads(), 1000, 3; chain_type=VNChain)
 ```
 
 You can index into a `VNChain` using `VarName`s.
@@ -27,8 +28,9 @@ Data is returned as a `DimMatrix` from the [`DimensionalData.jl` package](https:
 
 ```julia
 chain[@varname(x)]    # -> DimMatrix{Float64}
-chain[@varname(y)]    # -> DimMatrix{Vector{Float64}}
-chain[@varname(y[1])] # -> DimMatrix{Float64}
+chain[@varname(y)]    # -> DimMatrix{Int}
+chain[@varname(z)]    # -> DimMatrix{Vector{Float64}}
+chain[@varname(z[1])] # -> DimMatrix{Float64}
 chain[:logjoint]      # -> DimMatrix{Float64} NOTE: not `:lp`
 ```
 
@@ -47,11 +49,16 @@ mean(chain)[@varname(x)] # -> Float64
 mean(chain; dims=:iter)  # take the mean over iterations only
 ```
 
-Functions in Turing.jl which take chains as input, such as `returned`, `predict`, and `logjoint` should work out of the box with exactly the same behaviour as before.
-If you find a function that does not work, please let me know by opening an issue.
+Visualisation with Plots.jl is supported:
 
-Because FlexiChains is in early development, it does not have feature parity with MCMCChains.
-In particular, **plotting is not yet implemented**: if you need this, you can convert a `VNChain` to `MCMCChains.Chains` using `MCMCChains.Chains(chain)` and then plot that.
+```julia
+using StatsPlots
+plot(chain)                    # trace + densities for all variables
+plot(chain, [@varname(z)])     # trace + density for z[1] and z[2] only
+plot(chain, pool_chains=true)  # combining samples from all chains
+```
+
+Finally, functions in Turing.jl which take chains as input, such as `returned`, `predict`, and `logjoint` should work out of the box with exactly the same behaviour as before.
 
 ### How is FlexiChains better?
 

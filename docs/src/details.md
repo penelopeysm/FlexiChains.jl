@@ -212,7 +212,7 @@ To calculate all of `mean`, `std`, `mcse`, bulk `ess`, tail `ess`, and `rhat` at
 StatsBase.summarystats
 ```
 
-### Indexing
+### `getindex`
 
 ```@docs
 Base.getindex(::FlexiChains.FlexiSummary{TKey}, key::FlexiChains.ParameterOrExtra{TKey}) where {TKey}
