@@ -72,7 +72,7 @@ function _check_size(
 end
 
 """
-    Parameter(name)
+    Parameter{T}(name::T)
 
 A named parameter in a `FlexiChain`. The name can be of any type, but all
 parameters in a `FlexiChain` must have the same type for their names.
@@ -177,6 +177,18 @@ struct FlexiChainMetadata{
             last_sampler_state_checked,
         )
     end
+end
+function Base.:(==)(m1::FlexiChainMetadata, m2::FlexiChainMetadata)
+    return (m1.iter_indices == m2.iter_indices) &
+           (m1.chain_indices == m2.chain_indices) &
+           (m1.sampling_time == m2.sampling_time) &
+           (m1.last_sampler_state == m2.last_sampler_state)
+end
+function Base.isequal(m1::FlexiChainMetadata, m2::FlexiChainMetadata)
+    return isequal(m1.iter_indices, m2.iter_indices) &&
+           isequal(m1.chain_indices, m2.chain_indices) &&
+           isequal(m1.sampling_time, m2.sampling_time) &&
+           isequal(m1.last_sampler_state, m2.last_sampler_state)
 end
 
 """
@@ -380,21 +392,22 @@ iter_indices(chain::FlexiChain)::DDL.Lookup = chain._metadata.iter_indices
 """
     chain_indices(chain::FlexiChain)::DimensionalData.Lookup
 
-The indices of each MCMC chain in the chain. This will pretty much always be `1:NChains`
-(unless the chain has been subsetted).
+The indices of each MCMC chain in the chain. This will pretty much always be
+`1:nchains(chain)` (unless the chain has been subsetted, or chain indices have been manually
+specified).
 """
 chain_indices(chain::FlexiChain)::DDL.Lookup = chain._metadata.chain_indices
 
 """
     renumber_iters(
         chain::FlexiChain{TKey},
-        iter_indices::AbstractVector{<:Integer}=1:size(chain, 1)
+        iter_indices::AbstractVector{<:Integer}=1:niters(chain)
     )::FlexiChain{TKey} where {TKey}
 
 Return a copy of `chain` with the iteration indices replaced by `iter_indices`.
 """
 function renumber_iters(
-    chain::FlexiChain{TKey}, iter_indices::AbstractVector{<:Integer}=1:size(chain, 1)
+    chain::FlexiChain{TKey}, iter_indices::AbstractVector{<:Integer}=1:niters(chain)
 ) where {TKey}
     return FlexiChain{TKey}(
         niters(chain),

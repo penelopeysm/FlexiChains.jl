@@ -117,12 +117,30 @@ struct FlexiSummary{
         return new{TKey,TIIdx,TCIdx,TSIdx}(d, iter_indices, chain_indices, stat_indices)
     end
 end
+"""
+    iter_indices(summary::FlexiSummary)::DimensionalData.Lookup
+
+The iteration indices, which are either the same as in the original chain, or `nothing` if
+the `$ITER_DIM_NAME` dimension has been collapsed.
+"""
 function iter_indices(fs::FlexiSummary{TKey,TIIdx})::TIIdx where {TKey,TIIdx}
     return fs._iter_indices
 end
+"""
+    chain_indices(summary::FlexiSummary)::DimensionalData.Lookup
+
+The chain indices, which are either the same as in the original chain, or `nothing` if the
+`$CHAIN_DIM_NAME` dimension has been collapsed.
+"""
 function chain_indices(fs::FlexiSummary{TKey,TIIdx,TCIdx})::TCIdx where {TKey,TIIdx,TCIdx}
     return fs._chain_indices
 end
+"""
+    stat_indices(summary::FlexiSummary)::DimensionalData.Lookup
+
+The indices for each statistic in the summary. This may be `nothing` if the `$STAT_DIM_NAME` 
+dimension has been collapsed.
+"""
 function stat_indices(
     fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}
 )::TSIdx where {TKey,TIIdx,TCIdx,TSIdx}

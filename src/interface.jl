@@ -1,31 +1,27 @@
 using DimensionalData: DimensionalData as DD
 
 @public niters, nchains
-@public subset, subset_parameters, subset_extras
-@public parameters, extras, extras_grouped
+@public has_same_data
+@public subset_parameters, subset_extras
+@public parameters, extras
 @public get_dict_from_iter, get_parameter_dict_from_iter
 @public to_varname_dict
 
 using AbstractMCMC: AbstractMCMC
 
 """
-    size(chain::FlexiChain{TKey}) where {TKey}
+    Base.size(chain::FlexiChain[, dim::Int])
 
-Returns `(niters, nchains)`.
+Returns `(niters, nchains)`, or `niters` or `nchains` if `dim=1` or `dim=2` is specified.
+
+!!! note "MCMCChains difference"
+    
+    MCMCChains returns a 3-tuple of `(niters, nkeys, nchains)` where `nkeys` is the total number of parameters. FlexiChains does not do this because the keys are not considered an axis of their own. If you want the total number of keys in a `FlexiChain`, you can use `length(keys(chain))`.
 """
 function Base.size(chain::FlexiChain)::Tuple{Int,Int}
     return (niters(chain), nchains(chain))
 end
-"""
-    size(chain::FlexiChain{TKey}, 1)
-
-Number of iterations in the `FlexiChain`. Equivalent to `niters(chain)`.
-
-    size(chain::FlexiChain{TKey}, 2)
-
-Number of chains in the `FlexiChain`. Equivalent to `nchains(chain)`.
-"""
-function Base.size(chain::FlexiChain{TKey}, dim::Int) where {TKey}
+function Base.size(chain::FlexiChain, dim::Int)::Int
     return if dim == 1
         niters(chain)
     elseif dim == 2
@@ -34,55 +30,232 @@ function Base.size(chain::FlexiChain{TKey}, dim::Int) where {TKey}
         throw(DimensionMismatch("Dimension $dim out of range for FlexiChain"))
     end
 end
+"""
+    Base.size(summary::FlexiSummary[, dim::Int])
+
+Returns `(niters, nchains, nstats)`, or `niters`, `nchains`, or `nstats` if `dim=1`,
+`dim=2`, or `dim=3` is specified. If any of the dimensions have been collapsed, the
+corresponding value will be 0.
+"""
+function Base.size(summary::FlexiSummary)::Tuple{Int,Int,Int}
+    return (niters(summary), nchains(summary), nstats(summary))
+end
+function Base.size(summary::FlexiSummary, dim::Int)::Int
+    return if dim == 1
+        niters(summary)
+    elseif dim == 2
+        nchains(summary)
+    elseif dim == 3
+        nstats(summary)
+    else
+        throw(DimensionMismatch("Dimension $dim out of range for FlexiSummary"))
+    end
+end
 
 """
-    niters(chain::FlexiChain)
+    FlexiChains.niters(chain::FlexiChain)
 
 The number of iterations in the `FlexiChain`. Equivalent to `size(chain, 1)`.
 """
 function niters(chain::FlexiChain)::Int
     return length(iter_indices(chain))
 end
+"""
+    FlexiChains.niters(summary::FlexiSummary)
+
+The number of iterations in the `FlexiSummary`. Equivalent to `size(summary, 1)`. Returns 0
+if the iteration dimension has been collapsed.
+"""
+function niters(summary::FlexiSummary)::Int
+    return if isnothing(iter_indices(summary))
+        0
+    else
+        length(iter_indices(summary))
+    end
+end
 
 """
-    nchains(chain::FlexiChain)
+    FlexiChains.nchains(chain::FlexiChain)
 
 The number of chains in the `FlexiChain`. Equivalent to `size(chain, 2)`.
 """
 function nchains(chain::FlexiChain)::Int
     return length(chain_indices(chain))
 end
+"""
+    FlexiChains.nchains(summary::FlexiSummary)
 
-function Base.:(==)(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2})::Bool where {TKey1,TKey2}
-    return TKey1 == TKey2 && size(c1) == size(c2) && c1._data == c2._data
-end
-
-function Base.isequal(
-    c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}
-)::Bool where {TKey1,TKey2}
-    return TKey1 == TKey2 && size(c1) == size(c2) && isequal(c1._data, c2._data)
+The number of chains in the `FlexiSummary`. Equivalent to `size(summary, 2)`. Returns 0 if
+the chain dimension has been collapsed.
+"""
+function nchains(summary::FlexiSummary)::Int
+    return if isnothing(chain_indices(summary))
+        0
+    else
+        length(chain_indices(summary))
+    end
 end
 
 """
-    keys(cs::ChainOrSummary)
+    FlexiChains.nstats(summary::FlexiSummary)
 
-Returns the keys of the `FlexiChain` (or summary thereof) as an iterable collection.
+The number of statistics in the `FlexiSummary`. Equivalent to `size(summary, 3)`. Returns 0
+if the statistics dimension has been collapsed (this means that there is a single statistic,
+but its name is not stored or displayed to the user).
+"""
+function nstats(summary::FlexiSummary)::Int
+    return if isnothing(stat_indices(summary))
+        0
+    else
+        length(stat_indices(summary))
+    end
+end
+
+_EQUALITY_DOCSTRING_SUPPLEMENT = """
+!!! tip
+    If you want to only compare equality of the data, you can use [`has_same_data`](@ref).
+
+!!! danger
+    Because `(==)` on `OrderedCollections.OrderedDict` does not check key order, two chains
+    with the same keys but in different orders will also be considered equal. If you think
+    this is a mistake, please see [this
+    issue](https://github.com/JuliaCollections/OrderedCollections.jl/issues/82).
+"""
+
+"""
+    Base.:(==)(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2})::Bool where {TKey1,TKey2}
+    Base.:(==)(c1::FlexiSummary{TKey1}, c2::FlexiSummary{TKey2})::Bool where {TKey1,TKey2}
+
+Equality operator for `FlexiChain`s and `FlexiSummary`s. Two chains (or summaries) are equal
+if they have the same key type, the same size, the same data for each key, and the same
+metadata (which includes dimensional indices, sampling time, and sampler states).
+
+If you only want to compare the data in a `FlexiChain`, you can use `Dict(Base.pairs(c1)) == Dict(Base.pairs(c2))`.
+
+!!! note
+    Because `missing == missing` returns `missing`, and `NaN == NaN` returns `false`, this
+    function will return `false` if there are any `missing` or `NaN` values in the chains,
+    even if they appear in the same positions. In this case, use `isequal(c1, c2)` instead.
+
+$(_EQUALITY_DOCSTRING_SUPPLEMENT)
+"""
+function Base.:(==)(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1,TKey2}
+    return (TKey1 == TKey2) &
+           (size(c1) == size(c2)) &
+           (c1._data == c2._data) &
+           (c1._metadata == c2._metadata)
+end
+function Base.:(==)(c1::FlexiSummary{TKey1}, c2::FlexiSummary{TKey2}) where {TKey1,TKey2}
+    return (TKey1 == TKey2) &
+           (size(c1) == size(c2)) &
+           (c1._data == c2._data) &
+           (c1._iter_indices == c2._iter_indices) &
+           (c1._chain_indices == c2._chain_indices) &
+           (c1._stat_indices == c2._stat_indices)
+end
+
+"""
+    Base.isequal(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2})::Bool where {TKey1,TKey2}
+    Base.isequal(c1::FlexiSummary{TKey1}, c2::FlexiSummary{TKey2})::Bool where {TKey1,TKey2}
+
+Equality operator for `FlexiChain`s that treats `missing` and `NaN` values as equal if they
+appear in the same positions.
+
+$(_EQUALITY_DOCSTRING_SUPPLEMENT)
+"""
+function Base.isequal(
+    c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}
+)::Bool where {TKey1,TKey2}
+    return TKey1 == TKey2 &&
+           size(c1) == size(c2) &&
+           isequal(c1._data, c2._data) &&
+           isequal(c1._metadata, c2._metadata)
+end
+function Base.isequal(
+    c1::FlexiSummary{TKey1}, c2::FlexiSummary{TKey2}
+)::Bool where {TKey1,TKey2}
+    return TKey1 == TKey2 &&
+           size(c1) == size(c2) &&
+           isequal(c1._data, c2._data) &&
+           isequal(c1._iter_indices, c2._iter_indices) &&
+           isequal(c1._chain_indices, c2._chain_indices) &&
+           isequal(c1._stat_indices, c2._stat_indices)
+end
+
+"""
+    FlexiChains.has_same_data(
+        c1::FlexiChain{TKey1},
+        c2::FlexiChain{TKey2};
+        strict=false
+    ) where {TKey1,TKey2}
+
+Check if two `FlexiChain`s have the same data, ignoring metadata such as sampling time,
+iteration indices, and chain indices.
+
+If `strict=true`, then `Base.:(==)` is used to compare the data, which propagates `missing`
+values and treats `NaN` values as unequal. If `strict=false` (the default), then
+`Base.isequal` is used, which treats `missing` and `NaN` values as equal to themselves.
+"""
+function has_same_data(
+    c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}; strict=false
+) where {TKey1,TKey2}
+    return if strict
+        (TKey1 == TKey2) & (size(c1) == size(c2)) & (c1._data == c2._data)
+    else
+        (TKey1 == TKey2) && (size(c1) == size(c2)) && isequal(c1._data, c2._data)
+    end
+end
+
+"""
+    Base.keys(cs::ChainOrSummary)
+
+Returns the keys of the `FlexiChain` (or summary thereof).
 """
 function Base.keys(cs::ChainOrSummary)
     return keys(cs._data)
 end
 
 """
-    haskey(cs::ChainOrSummary{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
-    haskey(cs::ChainOrSummary{TKey}, key::TKey) where {TKey}
+    Base.keytype(cs::ChainOrSummary{TKey})
+
+Returns `TKey`.
+"""
+Base.keytype(::ChainOrSummary{TKey}) where {TKey} = TKey
+
+"""
+    Base.haskey(cs::ChainOrSummary{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
 
 Returns `true` if the `FlexiChain` or summary contains the given key.
 """
 function Base.haskey(cs::ChainOrSummary{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey}
     return haskey(cs._data, key)
 end
+"""
+    Base.haskey(cs::ChainOrSummary{TKey}, key::TKey) where {TKey}
+
+Returns `true` if the `FlexiChain` or summary contains the given name as a parameter key.
+"""
 function Base.haskey(cs::ChainOrSummary{TKey}, key::TKey) where {TKey}
     return haskey(cs._data, Parameter(key))
+end
+
+"""
+    Base.values(cs::ChainOrSummary)
+
+Returns the values of the `FlexiChain` or `FlexiSummary`, i.e., the matrices obtained by
+indexing into the chain with each key.
+"""
+function Base.values(cs::ChainOrSummary)
+    return values(cs._data)
+end
+
+"""
+    Base.pairs(cs::ChainOrSummary)
+
+Returns an iterator over the key-value pairs of the `FlexiChain` or `FlexiSummary`.
+"""
+function Base.pairs(cs::ChainOrSummary)
+    return pairs(cs._data)
 end
 
 """
@@ -136,58 +309,21 @@ function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1,T
 end
 
 """
-    subset(
-        chain::FlexiChain{TKey},
-        keys::AbstractVector{<:ParameterOrExtra{<:TKey}}
-    )::FlexiChain{TKey} where {TKey}
+    subset_parameters(cs::ChainOrSummary)
 
-Create a new `FlexiChain` containing only the specified keys and the data corresponding to
-them. All metadata is preserved.
+Subset a chain or summary, retaining only the `Parameter` keys.
 """
-function subset(
-    chain::FlexiChain{TKey}, keys::AbstractVector{<:ParameterOrExtra{<:TKey}}
-)::FlexiChain{TKey} where {TKey}
-    d = empty(chain._data)
-    for k in keys
-        if haskey(chain._data, k)
-            d[k] = chain._data[k]
-        else
-            throw(KeyError(k))
-        end
-    end
-    return FlexiChain{TKey}(
-        niters(chain),
-        nchains(chain),
-        d;
-        iter_indices=FlexiChains.iter_indices(chain),
-        chain_indices=FlexiChains.chain_indices(chain),
-        sampling_time=FlexiChains.sampling_time(chain),
-        last_sampler_state=FlexiChains.last_sampler_state(chain),
-    )
+function subset_parameters(cs::ChainOrSummary)
+    return cs[Parameter.(parameters(cs))]
 end
 
 """
-    subset_parameters(chain::FlexiChain)
-
-Subset a chain, retaining only the `Parameter` keys.
-"""
-function subset_parameters(chain::FlexiChain{TKey})::FlexiChain{TKey} where {TKey}
-    return subset(chain, Parameter.(parameters(chain)))
-end
-
-"""
-    subset_parameters(chain::FlexiChain{TKey})
+    subset_extras(chain::FlexiChain)
 
 Subset a chain, retaining only the keys that are `Extra`s (i.e. not parameters).
 """
-function subset_extras(chain::FlexiChain{TKey})::FlexiChain{TKey} where {TKey}
-    v = Extra[]
-    for k in keys(chain)
-        if !(k isa Parameter)
-            push!(v, k)
-        end
-    end
-    return subset(chain, v)
+function subset_extras(cs::ChainOrSummary)
+    return cs[extras(cs)]
 end
 
 # Avoid printing the entire `Sampled` object if it's been constructed
