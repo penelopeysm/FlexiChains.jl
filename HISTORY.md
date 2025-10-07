@@ -14,10 +14,14 @@ Instead of using `subset(chn, keys)` you can now use `chn[keys]`.
 
 `FlexiChains.subset_parameters(chn)` and `FlexiChains.subset_extras(chn)` are still available.
 
-## Other changes
+## Equality
 
 Fixed equality comparisons on FlexiChain and FlexiSummary (previously only the data would be compared, not the metadata).
 `Base.:(==)` and `Base.isequal` now behave 'as expected'.
+
+A new function `FlexiChains.has_same_data(chn1, chn2; strict)` has been added to compare only the data of two chains.
+
+## Other changes
 
 Fixed a bug where `hcat` and `vcat` would not preserve the order of keys in the resulting chain.
 
