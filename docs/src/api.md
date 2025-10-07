@@ -26,6 +26,7 @@ Base.keytype(::FlexiChains.ChainOrSummary)
 ```@docs
 Base.:(==)(::FlexiChains.FlexiChain, ::FlexiChains.FlexiChain)
 Base.isequal(::FlexiChains.FlexiChain, ::FlexiChains.FlexiChain)
+FlexiChains.has_same_data(::FlexiChains.FlexiChain, ::FlexiChains.FlexiChain)
 ```
 
 ## Sizes
@@ -68,7 +69,7 @@ Base.values(::FlexiChains.ChainOrSummary)
 Base.pairs(::FlexiChains.ChainOrSummary)
 ```
 
-## Accessing data
+## Indexing by key
 
 For the public interface of `getindex`, please see [the Indexing page](@ref Indexing).
 

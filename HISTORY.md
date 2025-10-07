@@ -16,8 +16,6 @@ Instead of using `subset(chn, keys)` you can now use `chn[keys]`.
 
 ## Other changes
 
-Sampling states and sampling times are now `nothing` if not provided, rather than `missing`.
-
 Fixed equality comparisons on FlexiChain and FlexiSummary (previously only the data would be compared, not the metadata).
 `Base.:(==)` and `Base.isequal` now behave 'as expected'.
 

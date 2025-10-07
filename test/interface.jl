@@ -37,15 +37,28 @@ using Test
 
     @testset "equality" begin
         d = Dict(Parameter(:a) => 1, Extra("hello") => 3.0)
-        chain1 = FlexiChain{Symbol}(10, 1, fill(d, 10))
-        chain2 = FlexiChain{Symbol}(10, 1, fill(d, 10))
+        chain1 = FlexiChain{Symbol}(
+            10, 1, fill(d, 10); sampling_time=[2.5], last_sampler_state=["finished"]
+        )
+        chain2 = FlexiChain{Symbol}(
+            10, 1, fill(d, 10); sampling_time=[2.5], last_sampler_state=["finished"]
+        )
         @test chain1 == chain2
         @test isequal(chain1, chain2)
+        @test FlexiChains.has_same_data(chain1, chain2)
         # Different iter indices should make chains unequal
-        chain3 = FlexiChain{Symbol}(10, 1, fill(d, 10); iter_indices=21:30)
+        chain3 = FlexiChain{Symbol}(
+            10,
+            1,
+            fill(d, 10);
+            iter_indices=21:30,
+            sampling_time=[2.5],
+            last_sampler_state=["finished"],
+        )
         @test chain1 != chain3
         @test !isequal(chain1, chain3)
         # But if we compare the data it should be the same
+        @test FlexiChains.has_same_data(chain1, chain3)
         @test Set(keys(chain1)) == Set(keys(chain3))
         # Note that == on DimData also takes indices into account
         @test !all(k -> chain1[k] == chain3[k], keys(chain1))
@@ -53,10 +66,16 @@ using Test
         @test all(k -> isequal(chain1[k], chain3[k]), keys(chain1))
         # A final test case with missing
         dmiss = Dict(Parameter(:a) => missing)
-        chainmiss1 = FlexiChain{Symbol}(10, 1, fill(dmiss, 10))
-        chainmiss2 = FlexiChain{Symbol}(10, 1, fill(dmiss, 10))
+        chainmiss1 = FlexiChain{Symbol}(
+            10, 1, fill(dmiss, 10); sampling_time=[2.5], last_sampler_state=["finished"]
+        )
+        chainmiss2 = FlexiChain{Symbol}(
+            10, 1, fill(dmiss, 10); sampling_time=[2.5], last_sampler_state=["finished"]
+        )
         @test ismissing(chainmiss1 == chainmiss2)
         @test isequal(chainmiss1, chainmiss2)
+        @test FlexiChains.has_same_data(chainmiss1, chainmiss2)
+        @test ismissing(FlexiChains.has_same_data(chainmiss1, chainmiss2; strict=true))
     end
 
     @testset "dictionary interface" begin
@@ -229,8 +248,7 @@ using Test
             chain = FlexiChain{String}(N_iters, 1, dicts; iter_indices=2:2:(N_iters * 2))
 
             @testset "No argument (should default to colon)" begin
-                c = chain[]
-                @test c == chain
+                @test isequal(chain, chain[])
                 @testset "with iter subsetting" begin
                     # Ordinary indices
                     c2 = chain[iter=4:6]
@@ -245,8 +263,7 @@ using Test
                 end
             end
             @testset "Explicit colon" begin
-                c = chain[:]
-                @test c == chain
+                @test isequal(chain, chain[:])
             end
             @testset "AbstractVector{ParameterOrExtra{TKey}}" begin
                 keys = [Parameter("a"), Extra("hello")]
@@ -449,8 +466,8 @@ using Test
         N_iters = 10
         d = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
         chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
-        @test FlexiChains.subset_parameters(chain) == chain[[Parameter(:a)]]
-        @test FlexiChains.subset_extras(chain) == chain[[Extra("c")]]
+        @test isequal(FlexiChains.subset_parameters(chain), chain[[Parameter(:a)]])
+        @test isequal(FlexiChains.subset_extras(chain), chain[[Extra("c")]])
     end
 
     @testset "vcat" begin

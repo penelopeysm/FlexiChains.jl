@@ -47,11 +47,11 @@ Turing.setprogress!(false)
                 chn2 = sample(
                     Xoshiro(468), model, NUTS(), 100; chain_type=VNChain, verbose=false
                 )
-                @test chn1 == chn2
+                @test FlexiChains.has_same_data(chn1, chn2)
                 chn3 = sample(
                     Xoshiro(469), model, NUTS(), 100; chain_type=VNChain, verbose=false
                 )
-                @test chn1 != chn3
+                @test !FlexiChains.has_same_data(chn1, chn3)
             end
 
             @testset "single-chain with seed!" begin
@@ -59,7 +59,7 @@ Turing.setprogress!(false)
                 chn1 = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
                 Random.seed!(468)
                 chn2 = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
-                @test chn1 == chn2
+                @test FlexiChains.has_same_data(chn1, chn2)
             end
 
             @testset "multi-chain" begin
@@ -83,7 +83,7 @@ Turing.setprogress!(false)
                     chain_type=VNChain,
                     verbose=false,
                 )
-                @test chn1 == chn2
+                @test FlexiChains.has_same_data(chn1, chn2)
                 chn3 = sample(
                     Xoshiro(469),
                     model,
@@ -94,7 +94,7 @@ Turing.setprogress!(false)
                     chain_type=VNChain,
                     verbose=false,
                 )
-                @test chn1 != chn3
+                @test !FlexiChains.has_same_data(chn1, chn3)
             end
         end
 
@@ -376,17 +376,17 @@ Turing.setprogress!(false)
         @testset "rng is respected" begin
             pdns1 = predict(Xoshiro(468), f(), chn)
             pdns2 = predict(Xoshiro(468), f(), chn)
-            @test pdns1 == pdns2
+            @test FlexiChains.has_same_data(pdns1, pdns2)
             pdns3 = predict(Xoshiro(469), f(), chn)
-            @test pdns1 != pdns3
+            @test !FlexiChains.has_same_data(pdns1, pdns3)
 
             @testset "and also with split chain" begin
                 split_chn = FlexiChains.split_varnames(chn)
                 pdns1 = predict(Xoshiro(468), f(), split_chn)
                 pdns2 = predict(Xoshiro(468), f(), split_chn)
-                @test pdns1 == pdns2
+                @test FlexiChains.has_same_data(pdns1, pdns2)
                 pdns3 = predict(Xoshiro(469), f(), split_chn)
-                @test pdns1 != pdns3
+                @test !FlexiChains.has_same_data(pdns1, pdns3)
             end
         end
     end

@@ -1,8 +1,9 @@
 using DimensionalData: DimensionalData as DD
 
 @public niters, nchains
-@public subset, subset_parameters, subset_extras
-@public parameters, extras, extras_grouped
+@public has_same_data
+@public subset_parameters, subset_extras
+@public parameters, extras
 @public get_dict_from_iter, get_parameter_dict_from_iter
 @public to_varname_dict
 
@@ -187,6 +188,30 @@ function Base.isequal(
            isequal(c1._iter_indices, c2._iter_indices) &&
            isequal(c1._chain_indices, c2._chain_indices) &&
            isequal(c1._stat_indices, c2._stat_indices)
+end
+
+"""
+    FlexiChains.has_same_data(
+        c1::FlexiChain{TKey1},
+        c2::FlexiChain{TKey2};
+        strict=false
+    ) where {TKey1,TKey2}
+
+Check if two `FlexiChain`s have the same data, ignoring metadata such as sampling time,
+iteration indices, and chain indices.
+
+If `strict=true`, then `Base.:(==)` is used to compare the data, which propagates `missing`
+values and treats `NaN` values as unequal. If `strict=false` (the default), then
+`Base.isequal` is used, which treats `missing` and `NaN` values as equal to themselves.
+"""
+function has_same_data(
+    c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}; strict=false
+) where {TKey1,TKey2}
+    return if strict
+        (TKey1 == TKey2) & (size(c1) == size(c2)) & (c1._data == c2._data)
+    else
+        (TKey1 == TKey2) && (size(c1) == size(c2)) && isequal(c1._data, c2._data)
+    end
 end
 
 """
