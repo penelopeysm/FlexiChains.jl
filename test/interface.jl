@@ -41,9 +41,17 @@ using Test
         chain2 = FlexiChain{Symbol}(10, 1, fill(d, 10))
         @test chain1 == chain2
         @test isequal(chain1, chain2)
+        # Different iter indices should make chains unequal
         chain3 = FlexiChain{Symbol}(10, 1, fill(d, 10); iter_indices=21:30)
         @test chain1 != chain3
         @test !isequal(chain1, chain3)
+        # But if we compare the data it should be the same
+        @test Set(keys(chain1)) == Set(keys(chain3))
+        # Note that == on DimData also takes indices into account
+        @test !all(k -> chain1[k] == chain3[k], keys(chain1))
+        # But isequal doesn't.
+        @test all(k -> isequal(chain1[k], chain3[k]), keys(chain1))
+        # A final test case with missing
         dmiss = Dict(Parameter(:a) => missing)
         chainmiss1 = FlexiChain{Symbol}(10, 1, fill(dmiss, 10))
         chainmiss2 = FlexiChain{Symbol}(10, 1, fill(dmiss, 10))
@@ -437,40 +445,12 @@ using Test
         end
     end
 
-    @testset "keys subset: `subset`" begin
-        @testset "basic application" begin
-            N_iters = 10
-            d = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
-
-            subsetted1 = FlexiChains.subset(chain, [Parameter(:a)])
-            @test typeof(subsetted1) == typeof(chain)
-            @test size(subsetted1) == (N_iters, 1)
-            @test Set(keys(subsetted1)) == Set([Parameter(:a)])
-            @test subsetted1[:a] == chain[:a]
-
-            subsetted2 = FlexiChains.subset(chain, [Extra("c")])
-            @test typeof(subsetted2) == typeof(chain)
-            @test size(subsetted2) == (N_iters, 1)
-            @test Set(keys(subsetted2)) == Set([Extra("c")])
-        end
-
-        @testset "key not present" begin
-            N_iters = 10
-            d = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
-            @test_throws KeyError FlexiChains.subset(chain, [Parameter(:x)])
-        end
-
-        @testset "subset parameters and extras" begin
-            N_iters = 10
-            d = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
-            @test FlexiChains.subset_parameters(chain) ==
-                FlexiChains.subset(chain, [Parameter(:a)])
-            @test FlexiChains.subset_extras(chain) ==
-                FlexiChains.subset(chain, [Extra("c")])
-        end
+    @testset "subset parameters and extras" begin
+        N_iters = 10
+        d = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
+        chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
+        @test FlexiChains.subset_parameters(chain) == chain[[Parameter(:a)]]
+        @test FlexiChains.subset_extras(chain) == chain[[Extra("c")]]
     end
 
     @testset "vcat" begin
