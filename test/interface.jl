@@ -351,6 +351,9 @@ using Test
         c = FlexiChain{Symbol}(
             N, 1, OrderedDict(Parameter(:a) => rand(N), Extra("c") => rand(N))
         )
+        c2 = FlexiChain{Any}(
+            N, 1, OrderedDict(Parameter(:a) => rand(N), Parameter("a") => rand(N))
+        )
 
         @testset "values_at" begin
             for i in 1:N
@@ -366,6 +369,9 @@ using Test
                 d = FlexiChains.values_at(c, i, 1, ComponentArray{Real})
                 @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i], c=c[Extra("c")][i])
             end
+
+            @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, NamedTuple)
+            @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, ComponentArray)
         end
 
         @testset "parameters_at" begin
@@ -380,6 +386,9 @@ using Test
                 d = FlexiChains.parameters_at(c, i, 1, ComponentArray{Real})
                 @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i])
             end
+
+            @test_throws ArgumentError FlexiChains.parameters_at(c2, 1, 1, NamedTuple)
+            @test_throws ArgumentError FlexiChains.parameters_at(c2, 1, 1, ComponentArray)
         end
     end
 

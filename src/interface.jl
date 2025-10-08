@@ -585,6 +585,17 @@ a `DimensionalData.At` selector. The meaning of these is exactly the same as whe
 to iteration number 5 in the MCMC process.
 """
 
+_VALUES_PARAMETER_AT_WARNING = """
+!!! warning "Using `NamedTuple` or `ComponentArray`
+
+    This will throw an error if any key cannot be converted to a `Symbol`, or if there are
+    duplicate key names after conversion. If you have parameter names that convert to the
+    same `Symbol`, you can either use `OrderedDict`, subset the chain before calling this
+    function, or rename your parameters. Furthermore, please be aware that this is a lossy
+    conversion as it does not retain information about whether a key is a parameter or an
+    extra.
+"""
+
 """
     FlexiChains.values_at(
         chn::FlexiChain{TKey},
@@ -605,14 +616,9 @@ The output type can be specified with the `Tout` keyword argument. Possible opti
 - `Tout = NamedTuple`, or `Tout = ComponentArrays: attempts to convert every key name to a
   Symbol, which is used as the field name in the output `NamedTuple` or `ComponentArray`.
 
-!!! warning "Using `NamedTuple` or `ComponentArray`
+$(_VALUES_PARAMETER_AT_WARNING)
 
-    This will throw an error if any key cannot be converted to a `Symbol`, or if there are
-    duplicate key names after conversion. Furthermore, please be aware that this is a lossy
-    conversion as it does not retain information about whether a key is a parameter or an
-    extra.
-
-For order-sensitive output types, such as `OrderedDict`, The keys are returned in the same
+For order-sensitive output types, such as `OrderedDict`, the keys are returned in the same
 order as they are stored in the `FlexiChain`. This also corresponds to the order returned by
 `keys(chn)`.
 """
@@ -632,7 +638,15 @@ function values_at(
     chain::Union{Int,DD.At},
     ::Type{NamedTuple},
 ) where {TKey}
-    return NamedTuple(Symbol(k.name) => chn[k, iter=iter, chain=chain] for k in keys(chn))
+    # check for uniqueness of keys
+    ks = collect(Base.keys(chn))
+    N_expected = length(ks)
+    N_unique = length(Set(Symbol(k.name) for k in ks))
+    if N_expected != N_unique
+        errmsg = "key names could not be converted to unique symbols"
+        throw(ArgumentError(errmsg))
+    end
+    return NamedTuple(Symbol(k.name) => chn[k, iter=iter, chain=chain] for k in ks)
 end
 
 """
@@ -656,12 +670,7 @@ The output type can be specified with the `Tout` keyword argument. Possible opti
    to a Symbol, which is used as the field name in the output `NamedTuple` or
    `ComponentArray`.
 
-!!! warning "Using `NamedTuple` or `ComponentArray`
-
-    This will throw an error if any key cannot be converted to a `Symbol`, or if there are
-    duplicate key names after conversion. Furthermore, please be aware that this is a lossy
-    conversion as it does not retain information about whether a key is a parameter or an
-    extra.
+$(_VALUES_PARAMETER_AT_WARNING)
 
 For order-sensitive output types, such as `OrderedDict`, the parameters are returned in the
 same order as they are stored in the `FlexiChain`. This also corresponds to the order
@@ -683,8 +692,13 @@ function parameters_at(
     chain::Union{Int,DD.At},
     ::Type{NamedTuple},
 ) where {TKey}
-    return NamedTuple(
-        Symbol(k) => chn[Parameter(k), iter=iter, chain=chain] for
-        k in FlexiChains.parameters(chn)
-    )
+    # check for uniqueness of keys
+    ps = FlexiChains.parameters(chn)
+    N_expected = length(ps)
+    N_unique = length(Set(Symbol.(ps)))
+    if N_expected != N_unique
+        errmsg = "parameter names could not be converted to unique symbols"
+        throw(ArgumentError(errmsg))
+    end
+    return NamedTuple(Symbol(k) => chn[Parameter(k), iter=iter, chain=chain] for k in ps)
 end
