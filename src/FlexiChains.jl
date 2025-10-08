@@ -32,7 +32,7 @@ function from_posteriordb_ref end
 @public from_posteriordb_ref
 # Extended in RecipesBase extension
 include("plots.jl")
-@public traceplot, traceplot!, mixeddensity, mixeddensity!
+@public traceplot, traceplot!, mixeddensity, mixeddensity!, meanplot, meanplot!
 
 # Convenience re-exports.
 using DimensionalData: At, Near, Contains, (..), Touches, Where, Not

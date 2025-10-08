@@ -61,3 +61,27 @@ function mixeddensity end
 Same as `FlexiChains.mixeddensity`, but uses `plot!` instead of `plot`.
 """
 function mixeddensity! end
+
+"""
+    FlexiChains.meanplot(
+        chn::FlexiChain{TKey}[, param_or_params];
+        split_varname=(TKey <: VarName),
+        kwargs...
+    )
+
+Plot the running mean of the specified parameter(s) in the given `FlexiChain`.
+
+$(_PLOT_DOCSTRING_SUPPLEMENTARY("meanplot"))
+"""
+function meanplot end
+
+"""
+    FlexiChains.meanplot!(
+        chn::FlexiChain{TKey}[, param_or_params];
+        split_varname=(TKey <: VarName),
+        kwargs...
+    )
+
+Same as `FlexiChains.meanplot`, but uses `plot!` instead of `plot`.
+"""
+function meanplot! end

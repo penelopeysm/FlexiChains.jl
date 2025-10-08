@@ -28,6 +28,7 @@ end
 function FC.traceplot!(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
     return plot!(chn, param_or_params; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
 end
+
 const _MIXEDDENSITY_SERIESTYPE = :mixeddensity
 function FC.mixeddensity(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
     return plot(chn, param_or_params; kwargs..., seriestype=_MIXEDDENSITY_SERIESTYPE)
@@ -36,11 +37,19 @@ function FC.mixeddensity!(chn::FC.FlexiChain, param_or_params=nothing; kwargs...
     return plot!(chn, param_or_params; kwargs..., seriestype=_MIXEDDENSITY_SERIESTYPE)
 end
 
+const _MEANPLOT_SERIESTYPE = :meanplot
+function FC.meanplot(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
+    return plot(chn, param_or_params; kwargs..., seriestype=_MEANPLOT_SERIESTYPE)
+end
+function FC.meanplot!(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
+    return plot!(chn, param_or_params; kwargs..., seriestype=_MEANPLOT_SERIESTYPE)
+end
+
+const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
+
 ###############################
 # The actual plotting recipes #
 ###############################
-
-const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 
 """
 Entry point for single-parameter plotting; simply wraps and sends it to the multi-parameter
@@ -125,6 +134,8 @@ default, unless the `split_varnames=false` keyword argument is passed.
                     return FlexiChainDensity(chn, k)
                 elseif seriestype === :histogram
                     return FlexiChainHistogram(chn, k)
+                elseif seriestype === _MEANPLOT_SERIESTYPE
+                    return FlexiChainMean(chn, k)
                 else
                     return (chn, k, seriestype)
                 end
@@ -185,6 +196,41 @@ end
     # Set labels
     xguide --> "iteration number"
     yguide --> "value"
+    label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(t.chn)))
+    title --> t.param.name
+    return x, y
+end
+
+"""
+Plot of running mean.
+"""
+function runningmean(v::AbstractVector{<:Union{Real,Missing}})
+    y = similar(v, Float64)
+    n = 0
+    sum = zero(eltype(v))
+    for i in eachindex(v)
+        if !ismissing(v[i])
+            n += 1
+            sum += v[i]
+        end
+        y[i] = sum / n
+    end
+    return y
+end
+struct FlexiChainMean{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
+    chn::FC.FlexiChain{TKey}
+    param::Tp
+end
+@recipe function _(t::FlexiChainMean)
+    seriestype := :line
+    # Extract data
+    x = FC.iter_indices(t.chn)
+    data = FC._get_raw_data(t.chn, t.param)
+    y = mapslices(runningmean, data; dims=1)
+    _check_eltype(y)
+    # Set labels
+    xguide --> "iteration number"
+    yguide --> "mean"
     label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(t.chn)))
     title --> t.param.name
     return x, y
