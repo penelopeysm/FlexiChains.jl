@@ -111,9 +111,10 @@ function nstats(summary::FlexiSummary)::Int
     end
 end
 
-_EQUALITY_DOCSTRING_SUPPLEMENT = """
+_EQUALITY_DOCSTRING_SUPPLEMENT(strict) = """
 !!! tip
-    If you want to only compare equality of the data, you can use [`has_same_data`](@ref).
+    If you want to only compare equality of the data, you can use
+    [`FlexiChains.has_same_data`](@ref)`(c1, c2; strict=$(strict))`.
 
 !!! danger
     Because `(==)` on `OrderedCollections.OrderedDict` does not check key order, two chains
@@ -136,7 +137,7 @@ metadata (which includes dimensional indices, sampling time, and sampler states)
     chains, even if they appear in the same positions. To test for equality with such data,
     use `isequal(c1, c2)` instead.
 
-$(_EQUALITY_DOCSTRING_SUPPLEMENT)
+$(_EQUALITY_DOCSTRING_SUPPLEMENT(true))
 """
 function Base.:(==)(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1,TKey2}
     return (TKey1 == TKey2) &
@@ -160,7 +161,7 @@ end
 Equality operator for `FlexiChain`s that treats `missing` and `NaN` values as equal if they
 appear in the same positions.
 
-$(_EQUALITY_DOCSTRING_SUPPLEMENT)
+$(_EQUALITY_DOCSTRING_SUPPLEMENT(false))
 """
 function Base.isequal(
     c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}
