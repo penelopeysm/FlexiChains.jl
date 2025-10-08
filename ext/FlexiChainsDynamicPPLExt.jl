@@ -91,7 +91,7 @@ function reevaluate(
     vi = DynamicPPL.setaccs!!(vi, accs)
     tuples = Iterators.product(1:niters, 1:nchains)
     retvals_and_varinfos = map(tuples) do (i, j)
-        vals = FlexiChains.get_parameter_dict_from_iter(chain, i, j)
+        vals = FlexiChains.parameters_at(chain, i, j)
         # TODO: use InitFromParams when DPPL 0.38 is out
         new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(rng, vals))
         new_model = DynamicPPL.contextualize(model, new_ctx)

@@ -99,6 +99,13 @@ FlexiChains.subset_parameters
 FlexiChains.subset_extras
 ```
 
+## Extracting per-iteration samples
+
+```@docs
+FlexiChains.values_at
+FlexiChains.parameters_at
+```
+
 ## Splitting up VarNames
 
 ```@docs

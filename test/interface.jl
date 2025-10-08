@@ -1,5 +1,6 @@
 module FCInterfaceTests
 
+using ComponentArrays: ComponentArray
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, @varname, VarName
 using DimensionalData: DimensionalData as DD
 using OrderedCollections: OrderedDict
@@ -345,25 +346,49 @@ using Test
         end
     end
 
-    @testset "extract dicts for single iter" begin
+    @testset "values_at / parameters_at" begin
         N = 10
-        c = FlexiChain{Symbol}(N, 1, Dict(Parameter(:a) => rand(N), Extra("c") => rand(N)))
+        c = FlexiChain{Symbol}(
+            N, 1, OrderedDict(Parameter(:a) => rand(N), Extra("c") => rand(N))
+        )
+        c2 = FlexiChain{Any}(
+            N, 1, OrderedDict(Parameter(:a) => rand(N), Parameter("a") => rand(N))
+        )
 
-        @testset "get_dict_from_iter" begin
+        @testset "values_at" begin
             for i in 1:N
-                d = FlexiChains.get_dict_from_iter(c, i)
+                d = FlexiChains.values_at(c, i, 1)
+                @test d isa OrderedDict
                 @test length(d) == 2
                 @test d[Parameter(:a)] == c[Parameter(:a)][i]
                 @test d[Extra("c")] == c[Extra("c")][i]
+                d = FlexiChains.values_at(c, i, 1, NamedTuple)
+                @test d == (a=c[Parameter(:a)][i], c=c[Extra("c")][i])
+                d = FlexiChains.values_at(c, i, 1, ComponentArray)
+                @test d == ComponentArray(; a=c[Parameter(:a)][i], c=c[Extra("c")][i])
+                d = FlexiChains.values_at(c, i, 1, ComponentArray{Real})
+                @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i], c=c[Extra("c")][i])
             end
+
+            @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, NamedTuple)
+            @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, ComponentArray)
         end
 
-        @testset "get_parameter_dict_from_iter" begin
+        @testset "parameters_at" begin
             for i in 1:N
-                d = FlexiChains.get_parameter_dict_from_iter(c, i)
+                d = FlexiChains.parameters_at(c, i, 1)
                 @test length(d) == 1
                 @test d[:a] == c[Parameter(:a)][i]
+                d = FlexiChains.parameters_at(c, i, 1, NamedTuple)
+                @test d == (; a=c[Parameter(:a)][i])
+                d = FlexiChains.parameters_at(c, i, 1, ComponentArray)
+                @test d == ComponentArray(; a=c[Parameter(:a)][i])
+                d = FlexiChains.parameters_at(c, i, 1, ComponentArray{Real})
+                @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i])
             end
+
+            @test_throws ArgumentError FlexiChains.parameters_at(c2, 1, 1, NamedTuple)
+            @test_throws ArgumentError FlexiChains.parameters_at(c2, 1, 1, ComponentArray)
         end
     end
 
