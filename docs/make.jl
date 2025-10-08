@@ -11,6 +11,7 @@ links = InterLinks(
     "MCMCDiagnosticTools" => "https://turinglang.org/MCMCDiagnosticTools.jl/stable/",
     "PosteriorDB" => "https://sethaxen.github.io/PosteriorDB.jl/stable/",
     "Plots" => "https://docs.juliaplots.org/stable/",
+    "StatsBase" => "https://juliastats.org/StatsBase.jl/stable/",
 )
 
 FCPosteriorDBExt = Base.get_extension(FlexiChains, :FlexiChainsPosteriorDBExt)

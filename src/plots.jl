@@ -100,10 +100,10 @@ Plot the autocorrelation of the specified parameter(s) in the given `FlexiChain`
 The `lags` keyword argument can be used to specify which lags to plot. If `nothing` is
 passed (the default), this is set to the integers from 1 to `min(niters-1,
 round(Int,10*log10(niters)))` where `niters` is the number of iterations in the chain. This
-mimics the default behaviour of [`StatsBase.autocor`](@ref).
+mimics the default behaviour of [`StatsBase.autocor`](@extref).
 
 The `demean` keyword argument specifies whether to subtract the mean of the parameter before
-computing the autocorrelation, and is passed to [`StatsBase.autocor`](@ref).
+computing the autocorrelation, and is passed to [`StatsBase.autocor`](@extref).
 
 $(_PLOT_DOCSTRING_SUPPLEMENTARY("autocorplot"))
 """

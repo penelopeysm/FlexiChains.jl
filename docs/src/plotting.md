@@ -19,8 +19,9 @@ The following series types are supported for `FlexiChain` objects.
 | `:traceplot`             | `FlexiChains.traceplot()`                      | Trace plot of samples                                                                   |
 | `:histogram`             | `Plots.histogram()`                            | Histogram of samples                                                                    |
 | `:density`               | `Plots.density()`                              | Kernel density estimate of samples                                                      |
-| `:mixeddensity`          | `FlexiChains.mixeddensity()`                   | Density plot or histogram, depending on whether the parameter is continuous or discrete |
-| `:meanplot`              | `FlexiChains.meanplot()`                       | Running mean of samples                                                                 |
+| `:mixeddensity`          | [`FlexiChains.mixeddensity()`](@ref)           | Density plot or histogram, depending on whether the parameter is continuous or discrete |
+| `:meanplot`              | [`FlexiChains.meanplot()`](@ref)               | Running mean of samples                                                                 |
+| `:autocorplot`           | [`FlexiChains.autocorplot()`](@ref)            | Autocorrelation of samples                                                              |
 | `:traceplot_and_density` | `Plots.plot()` (with no `seriestype` argument) | Trace plot and mixed density side-by-side                                               |
 
 !!! note "Feature parity with MCMCChains.jl"
@@ -111,3 +112,12 @@ savefig("plot3.svg"); nothing # hide
 ```
 
 ![Trace and pooled density plots of the sampled chain](plot3.svg)
+
+## Docstrings
+
+```@docs
+FlexiChains.traceplot
+FlexiChains.meanplot
+FlexiChains.autocorplot
+FlexiChains.mixeddensity
+```
