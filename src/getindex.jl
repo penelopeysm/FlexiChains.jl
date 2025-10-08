@@ -435,8 +435,8 @@ function Base.getindex(
         new_data;
         iter_indices=new_iter_lookup,
         chain_indices=new_chain_lookup,
-        sampling_time=FlexiChains.sampling_time(fchain),
-        last_sampler_state=FlexiChains.last_sampler_state(fchain),
+        sampling_time=FlexiChains.sampling_time(fchain)[new_chain_indices],
+        last_sampler_state=FlexiChains.last_sampler_state(fchain)[new_chain_indices],
     )
 end
 function Base.getindex(
