@@ -27,7 +27,6 @@ makedocs(;
         "integrations.md",
         "api.md",
         "internals.md",
-        "whynew.md",
     ],
     checkdocs=:exports,
     doctest=false,

@@ -161,6 +161,18 @@ using Test
             end
         end
 
+        @testset "metadata is correctly constructed" begin
+            d = Dict(Parameter(:a) => 1, Extra("hello") => 3.0)
+            c = FlexiChain{Symbol}(
+                10, 3, fill(d, 10, 3); sampling_time=randn(3), last_sampler_state=randn(3)
+            )
+            cs = c[chain=2]
+            @test cs isa FlexiChain{Symbol}
+            @test FlexiChains.sampling_time(cs) == [FlexiChains.sampling_time(c)[2]]
+            @test FlexiChains.last_sampler_state(cs) ==
+                [FlexiChains.last_sampler_state(c)[2]]
+        end
+
         @testset "unambiguous: TKey and ParameterOrExtra{TKey}" begin
             struct Shay
                 T::String

@@ -1,8 +1,3 @@
-using AbstractMCMC: AbstractChains
-using DimensionalData: DimensionalData as DD
-using DimensionalData.Dimensions.Lookups: Lookups as DDL
-using OrderedCollections: OrderedDict, OrderedSet
-
 @public FlexiChain, Parameter, Extra, ParameterOrExtra
 @public iter_indices, chain_indices, renumber_iters, renumber_chains
 @public sampling_time, last_sampler_state
@@ -208,7 +203,7 @@ TODO: Document further.
 
 $(TYPEDFIELDS)
 """
-struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractChains
+struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractMCMC.AbstractChains
     """
     Internal per-iteration data for parameters and extra keys. To access the data
     in here, you should index into the chain.

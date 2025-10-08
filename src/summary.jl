@@ -1,4 +1,3 @@
-using DimensionalData: DimensionalData as DD
 using Printf: @sprintf
 using Statistics: Statistics
 using StatsBase: StatsBase

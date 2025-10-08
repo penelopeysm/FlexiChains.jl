@@ -281,11 +281,14 @@ The `pointwise_logdensity` family of functions is not yet implemented.
 
 ## Plotting
 
-Right now FlexiChains does not (yet) provide any functionality for plotting, although these are planned for the future.
-
-In the meantime, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using the `MCMCChains.Chains` constructor.
+FlexiChains contains a few recipes for plotting with StatsPlots.jl; please see [the Plotting page](./plotting.md) for full details.
 
 ```@example 1
-using MCMCChains
-mcmc = MCMCChains.Chains(chain)
+using StatsPlots
+
+# Or omit the second argument to plot all parameters.
+plot(chn, [@varname(mu), @varname(tau), @varname(theta[1])])
+savefig("plot_ex.svg"); nothing # hide
 ```
+
+![Trace and density plots for mu, tau, and theta1](plot_ex.svg)

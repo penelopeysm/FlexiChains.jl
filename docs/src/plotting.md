@@ -24,6 +24,9 @@ The following series types are supported for `FlexiChain` objects.
 | `:autocorplot`           | [`FlexiChains.autocorplot()`](@ref)            | Autocorrelation of samples                                                              |
 | `:traceplot_and_density` | `Plots.plot()` (with no `seriestype` argument) | Trace plot and mixed density side-by-side                                               |
 
+!!! warning "Identifier conflicts"
+    Please note that the identifiers `traceplot`, `meanplot`, `mixeddensity`, and `autocorplot` are also exported by MCMCChains.jl and [also currently re-exported by Turing.jl](https://github.com/TuringLang/Turing.jl/issues/2681). The FlexiChains versions are marked as public but not exported. To make sure you are using the FlexiChains versions, you must prefix them with the module name: `FlexiChains.traceplot(...)`. Otherwise, you may run into unexpected errors. 
+
 !!! note "Feature parity with MCMCChains.jl"
     There are still substantially fewer options than in MCMCChains.jl. Other plot types will be added over time, but in the meantime if you need features from MCMCChains, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using `MCMCChains.Chains(chn)`.
 
@@ -117,7 +120,44 @@ savefig("plot3.svg"); nothing # hide
 
 ```@docs
 FlexiChains.traceplot
+```
+
+```@example 1
+FlexiChains.traceplot(chn)
+savefig("traceplot.svg"); nothing # hide
+```
+
+![Trace plots of the sampled chain](traceplot.svg)
+
+```@docs
 FlexiChains.meanplot
+```
+
+```@example 1
+FlexiChains.meanplot(chn)
+savefig("meanplot.svg"); nothing # hide
+```
+
+![Running mean plots of the sampled chain](meanplot.svg)
+
+```@docs
 FlexiChains.autocorplot
+```
+
+```@example 1
+FlexiChains.autocorplot(chn)
+savefig("autocorplot.svg"); nothing # hide
+```
+
+![Autocorrelation plots of the sampled chain](autocorplot.svg)
+
+```@docs
 FlexiChains.mixeddensity
 ```
+
+```@example 1
+FlexiChains.mixeddensity(chn)
+savefig("mixeddensity.svg"); nothing # hide
+```
+
+![Mixed density plots of the sampled chain](mixeddensity.svg)
