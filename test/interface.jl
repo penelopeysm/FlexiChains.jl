@@ -1,5 +1,6 @@
 module FCInterfaceTests
 
+using ComponentArrays: ComponentArray
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, @varname, VarName
 using DimensionalData: DimensionalData as DD
 using OrderedCollections: OrderedDict
@@ -359,8 +360,11 @@ using Test
                 @test d[Parameter(:a)] == c[Parameter(:a)][i]
                 @test d[Extra("c")] == c[Extra("c")][i]
                 d = FlexiChains.values_at(c, i, 1, NamedTuple)
-                @test d isa NamedTuple
                 @test d == (a=c[Parameter(:a)][i], c=c[Extra("c")][i])
+                d = FlexiChains.values_at(c, i, 1, ComponentArray)
+                @test d == ComponentArray(; a=c[Parameter(:a)][i], c=c[Extra("c")][i])
+                d = FlexiChains.values_at(c, i, 1, ComponentArray{Real})
+                @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i], c=c[Extra("c")][i])
             end
         end
 
@@ -370,8 +374,11 @@ using Test
                 @test length(d) == 1
                 @test d[:a] == c[Parameter(:a)][i]
                 d = FlexiChains.parameters_at(c, i, 1, NamedTuple)
-                @test d isa NamedTuple
                 @test d == (; a=c[Parameter(:a)][i])
+                d = FlexiChains.parameters_at(c, i, 1, ComponentArray)
+                @test d == ComponentArray(; a=c[Parameter(:a)][i])
+                d = FlexiChains.parameters_at(c, i, 1, ComponentArray{Real})
+                @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i])
             end
         end
     end

@@ -602,10 +602,10 @@ To get only the parameter keys, use [`FlexiChains.parameters_at`](@ref).
 The output type can be specified with the `Tout` keyword argument. Possible options are:
 - `Tout <: AbstractDict`: returns a dictionary mapping `ParameterOrExtra{TKey}` to their
   values. This is the most faithful representation of the data in the chain.
-- `Tout = NamedTuple`: attempts to convert every key name to a Symbol, which is used as the
-  field name in the output `NamedTuple`.
+- `Tout = NamedTuple`, or `Tout = ComponentArrays: attempts to convert every key name to a
+  Symbol, which is used as the field name in the output `NamedTuple` or `ComponentArray`.
 
-!!! warning "Using `NamedTuple` as `Tout`"
+!!! warning "Using `NamedTuple` or `ComponentArray`
 
     This will throw an error if any key cannot be converted to a `Symbol`, or if there are
     duplicate key names after conversion. Furthermore, please be aware that this is a lossy
@@ -652,10 +652,11 @@ To get all keys (not just parameters), use [`FlexiChains.values_at`](@ref).
 
 The output type can be specified with the `Tout` keyword argument. Possible options are:
 - `Tout <: AbstractDict`: returns a dictionary mapping `TKey` to their values
-- `Tout = NamedTuple`: attempts to convert every parameter name to a Symbol, which is used
-  as the field name in the output `NamedTuple`.
+- `Tout = NamedTuple` or `Tout <: ComponentArray`: attempts to convert every parameter name
+   to a Symbol, which is used as the field name in the output `NamedTuple` or
+   `ComponentArray`.
 
-!!! warning "Using `NamedTuple` as `Tout`"
+!!! warning "Using `NamedTuple` or `ComponentArray`
 
     This will throw an error if any key cannot be converted to a `Symbol`, or if there are
     duplicate key names after conversion. Furthermore, please be aware that this is a lossy
