@@ -4,7 +4,7 @@ using DimensionalData: DimensionalData as DD
 @public has_same_data
 @public subset_parameters, subset_extras
 @public parameters, extras
-@public get_dict_from_iter, get_parameter_dict_from_iter
+@public values_at, parameters_at
 @public to_varname_dict
 
 using AbstractMCMC: AbstractMCMC
@@ -578,62 +578,112 @@ function AbstractMCMC.chainscat(
     return AbstractMCMC.chainscat(AbstractMCMC.chainscat(c1, c2), cs...)
 end
 
+_VALUES_PARAMETER_AT_DOCSTRING = """
+The desired `iter` and `chain` indices must be specified: they can either be an integer, or
+a `DimensionalData.At` selector. The meaning of these is exactly the same as when indexing:
+`iter=5` means the fifth row of the chain, whereas `iter=At(5)` means the row corresponding
+to iteration number 5 in the MCMC process.
 """
-    get_dict_from_iter(
-        chain::FlexiChain{TKey},
-        iteration_number::Int,
-        chain_number::Union{Int,Nothing}=nothing
-    )::OrderedDict{ParameterOrExtra{TKey},Any}
 
-Extract the dictionary mapping keys to their values in a single MCMC iteration.
-
-If `chain` only contains a single chain, then `chain_number` does not need to be
-specified.
-
-To get only the parameter keys, use `get_parameter_dict_from_iter`.
-
-The keys are returned in the same order as they are stored in the `FlexiChain`. This also
-corresponds to the order returned by `keys(chain)`.
 """
-function get_dict_from_iter(
-    chain::FlexiChain{TKey}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing
-)::OrderedDict{ParameterOrExtra{TKey},Any} where {TKey}
-    d = OrderedDict{ParameterOrExtra{TKey},Any}()
-    for k in keys(chain)
-        if chain_number === nothing
-            d[k] = chain[k][iteration_number]
-        else
-            d[k] = chain[k][iteration_number, chain_number]
-        end
-    end
-    return d
+    FlexiChains.values_at(
+        chn::FlexiChain{TKey},
+        iter::Union{Int,DD.At},
+        chain::Union{Int,DD.At},
+        Tout::Type{T}=OrderedDict
+    ) where {TKey,T}
+
+Extract all values from the chain corresponding to a single MCMC iteration.
+
+$(_VALUES_PARAMETER_AT_DOCSTRING)
+
+To get only the parameter keys, use [`FlexiChains.parameters_at`](@ref).
+
+The output type can be specified with the `Tout` keyword argument. Possible options are:
+- `Tout <: AbstractDict`: returns a dictionary mapping `ParameterOrExtra{TKey}` to their
+  values. This is the most faithful representation of the data in the chain.
+- `Tout = NamedTuple`: attempts to convert every key name to a Symbol, which is used as the
+  field name in the output `NamedTuple`.
+
+!!! warning "Using `NamedTuple` as `Tout`"
+
+    This will throw an error if any key cannot be converted to a `Symbol`, or if there are
+    duplicate key names after conversion. Furthermore, please be aware that this is a lossy
+    conversion as it does not retain information about whether a key is a parameter or an
+    extra.
+
+For order-sensitive output types, such as `OrderedDict`, The keys are returned in the same
+order as they are stored in the `FlexiChain`. This also corresponds to the order returned by
+`keys(chn)`.
+"""
+function values_at(
+    chn::FlexiChain{TKey},
+    iter::Union{Int,DD.At},
+    chain::Union{Int,DD.At},
+    Tout::Type{T}=OrderedDict,
+) where {TKey,T<:AbstractDict}
+    return Tout{ParameterOrExtra{TKey},Any}(
+        k => chn[k, iter=iter, chain=chain] for k in keys(chn)
+    )
+end
+function values_at(
+    chn::FlexiChain{TKey},
+    iter::Union{Int,DD.At},
+    chain::Union{Int,DD.At},
+    ::Type{NamedTuple},
+) where {TKey}
+    return NamedTuple(Symbol(k.name) => chn[k, iter=iter, chain=chain] for k in keys(chn))
 end
 
 """
-    get_parameter_dict_from_iter(
-        chain::FlexiChain{TKey},
-        iteration_number::Int,
-        chain_number::Union{Int,Nothing}=nothing
-    )::OrderedDict{TKey,Any} where {TKey}
+    FlexiChains.parameters_at(
+        chn::FlexiChain{TKey},
+        iter::Union{Int,DD.At},
+        chain::Union{Int,DD.At},
+        Tout::Type{T}=OrderedDict
+    ) where {TKey,T}
 
-Extract the dictionary corresponding to a single MCMC iteration, but with only
-the parameters.
+Extract all *parameter* values from the chain corresponding to a single MCMC iteration,
+discarding non-parameter (i.e. `Extra`) keys.
 
-To get all other non-parameter keys as well, use `get_dict_from_iter`.
+$(_VALUES_PARAMETER_AT_DOCSTRING)
 
-The parameters are returned in the same order as they are stored in the `FlexiChain`. This
-also corresponds to the order returned by `FlexiChains.parameters(chain)`.
+To get all keys (not just parameters), use [`FlexiChains.values_at`](@ref).
+
+The output type can be specified with the `Tout` keyword argument. Possible options are:
+- `Tout <: AbstractDict`: returns a dictionary mapping `TKey` to their values
+- `Tout = NamedTuple`: attempts to convert every parameter name to a Symbol, which is used
+  as the field name in the output `NamedTuple`.
+
+!!! warning "Using `NamedTuple` as `Tout`"
+
+    This will throw an error if any key cannot be converted to a `Symbol`, or if there are
+    duplicate key names after conversion. Furthermore, please be aware that this is a lossy
+    conversion as it does not retain information about whether a key is a parameter or an
+    extra.
+
+For order-sensitive output types, such as `OrderedDict`, the parameters are returned in the
+same order as they are stored in the `FlexiChain`. This also corresponds to the order
+returned by `FlexiChains.parameters(chn)`.
 """
-function get_parameter_dict_from_iter(
-    chain::FlexiChain{TKey}, iteration_number::Int, chain_number::Union{Int,Nothing}=nothing
-)::OrderedDict{TKey,Any} where {TKey}
-    d = OrderedDict{TKey,Any}()
-    for k in parameters(chain)
-        if chain_number === nothing
-            d[k] = chain[k][iteration_number]
-        else
-            d[k] = chain[k][iteration_number, chain_number]
-        end
-    end
-    return d
+function parameters_at(
+    chn::FlexiChain{TKey},
+    iter::Union{Int,DD.At},
+    chain::Union{Int,DD.At},
+    Tout::Type{T}=OrderedDict,
+) where {TKey,T<:AbstractDict}
+    return Tout{TKey,Any}(
+        k => chn[Parameter(k), iter=iter, chain=chain] for k in FlexiChains.parameters(chn)
+    )
+end
+function parameters_at(
+    chn::FlexiChain{TKey},
+    iter::Union{Int,DD.At},
+    chain::Union{Int,DD.At},
+    ::Type{NamedTuple},
+) where {TKey}
+    return NamedTuple(
+        Symbol(k) => chn[Parameter(k), iter=iter, chain=chain] for
+        k in FlexiChains.parameters(chn)
+    )
 end
