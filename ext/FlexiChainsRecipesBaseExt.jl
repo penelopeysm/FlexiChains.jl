@@ -58,7 +58,12 @@ function FC.autocorplot(
     kwargs...,
 )
     return plot(
-        chn, param_or_params; lags, demean, kwargs..., seriestype=_AUTOCORPLOT_SERIESTYPE
+        chn,
+        param_or_params;
+        lags=lags,
+        demean=demean,
+        kwargs...,
+        seriestype=_AUTOCORPLOT_SERIESTYPE,
     )
 end
 function FC.autocorplot!(
@@ -69,7 +74,12 @@ function FC.autocorplot!(
     kwargs...,
 )
     return plot!(
-        chn, param_or_params; lags, demean, kwargs..., seriestype=_AUTOCORPLOT_SERIESTYPE
+        chn,
+        param_or_params;
+        lags=lags,
+        demean=demean,
+        kwargs...,
+        seriestype=_AUTOCORPLOT_SERIESTYPE,
     )
 end
 
