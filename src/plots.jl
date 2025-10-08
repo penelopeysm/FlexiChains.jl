@@ -85,3 +85,37 @@ function meanplot end
 Same as `FlexiChains.meanplot`, but uses `plot!` instead of `plot`.
 """
 function meanplot! end
+
+"""
+    FlexiChains.autocorplot(
+        chn::FlexiChain{TKey}[, param_or_params];
+        lags=1:min(niters(chn)-1, round(Int,10*log10(niters(chn)))),
+        demean=true,
+        split_varname=(TKey <: VarName),
+        kwargs...
+    )
+
+Plot the autocorrelation of the specified parameter(s) in the given `FlexiChain`.
+
+The `lags` keyword argument can be used to specify which lags to plot. If `nothing` is
+passed (the default), this is set to the integers from 1 to `min(niters-1,
+round(Int,10*log10(niters)))` where `niters` is the number of iterations in the chain. This
+mimics the default behaviour of [`StatsBase.autocor`](@ref).
+
+The `demean` keyword argument specifies whether to subtract the mean of the parameter before
+computing the autocorrelation, and is passed to [`StatsBase.autocor`](@ref).
+
+$(_PLOT_DOCSTRING_SUPPLEMENTARY("autocorplot"))
+"""
+function autocorplot end
+
+"""
+    FlexiChains.autocorplot!(
+        chn::FlexiChain{TKey}[, param_or_params];
+        split_varname=(TKey <: VarName),
+        kwargs...
+    )
+
+Same as `FlexiChains.autocorplot`, but uses `plot!` instead of `plot`.
+"""
+function autocorplot! end

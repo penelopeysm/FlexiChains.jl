@@ -3,6 +3,7 @@ module FlexiChainsRecipesBaseExt
 using FlexiChains: FlexiChains as FC
 using FlexiChains: VarName
 using RecipesBase: @recipe, @userplot, @series, plot, plot!
+using StatsBase: StatsBase
 
 const DEFAULT_WIDTH = 400
 const DEFAULT_HEIGHT = 250
@@ -45,6 +46,33 @@ function FC.meanplot!(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
     return plot!(chn, param_or_params; kwargs..., seriestype=_MEANPLOT_SERIESTYPE)
 end
 
+const _AUTOCORPLOT_SERIESTYPE = :autocorplot
+function _default_lags(chn::FC.FlexiChain)
+    return 1:min(FC.niters(chn) - 1, round(Int, 10 * log10(FC.niters(chn))))
+end
+function FC.autocorplot(
+    chn::FC.FlexiChain,
+    param_or_params=nothing;
+    lags=_default_lags(chn),
+    demean=true,
+    kwargs...,
+)
+    return plot(
+        chn, param_or_params; lags, demean, kwargs..., seriestype=_AUTOCORPLOT_SERIESTYPE
+    )
+end
+function FC.autocorplot!(
+    chn::FC.FlexiChain,
+    param_or_params=nothing;
+    lags=_default_lags(chn),
+    demean=true,
+    kwargs...,
+)
+    return plot!(
+        chn, param_or_params; lags, demean, kwargs..., seriestype=_AUTOCORPLOT_SERIESTYPE
+    )
+end
+
 const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 
 ###############################
@@ -71,6 +99,8 @@ default, unless the `split_varnames=false` keyword argument is passed.
     chn::FC.FlexiChain{TKey},
     params::Union{AbstractVector,Colon,Nothing}=nothing;
     split_varnames=(TKey <: VarName),
+    lags=nothing,
+    demean=nothing,
 ) where {TKey}
     # Extract parameters.
     keys_to_plot = if isnothing(params)
@@ -136,6 +166,8 @@ default, unless the `split_varnames=false` keyword argument is passed.
                     return FlexiChainHistogram(chn, k)
                 elseif seriestype === _MEANPLOT_SERIESTYPE
                     return FlexiChainMean(chn, k)
+                elseif seriestype === _AUTOCORPLOT_SERIESTYPE
+                    return FlexiChainAutoCor(chn, k, lags, demean)
                 else
                     return (chn, k, seriestype)
                 end
@@ -231,6 +263,30 @@ end
     # Set labels
     xguide --> "iteration number"
     yguide --> "mean"
+    label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(t.chn)))
+    title --> t.param.name
+    return x, y
+end
+
+"""
+Plot of autocorrelation.
+"""
+struct FlexiChainAutoCor{TKey,Tp<:FC.ParameterOrExtra{<:TKey},Tl<:AbstractVector{Int}}
+    chn::FC.FlexiChain{TKey}
+    param::Tp
+    lags::Tl
+    demean::Bool
+end
+@recipe function _(t::FlexiChainAutoCor)
+    seriestype := :line
+    # Extract data
+    x = t.lags
+    data = FC._get_raw_data(t.chn, t.param)
+    y = StatsBase.autocor(data, t.lags; demean=t.demean)
+    _check_eltype(y)
+    # Set labels
+    xguide --> "lag"
+    yguide --> "autocorrelation"
     label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(t.chn)))
     title --> t.param.name
     return x, y

@@ -16,10 +16,11 @@ The following series types are supported for `FlexiChain` objects.
 
 | `seriestype=`            | Equivalent function                            | Description                                                                             |
 | -------------            | ---------------------                          | -------------                                                                           |
+| `:traceplot`             | `FlexiChains.traceplot()`                      | Trace plot of samples                                                                   |
 | `:histogram`             | `Plots.histogram()`                            | Histogram of samples                                                                    |
 | `:density`               | `Plots.density()`                              | Kernel density estimate of samples                                                      |
 | `:mixeddensity`          | `FlexiChains.mixeddensity()`                   | Density plot or histogram, depending on whether the parameter is continuous or discrete |
-| `:traceplot`             | `FlexiChains.traceplot()`                      | Trace plot of samples                                                                   |
+| `:meanplot`              | `FlexiChains.meanplot()`                       | Running mean of samples                                                                 |
 | `:traceplot_and_density` | `Plots.plot()` (with no `seriestype` argument) | Trace plot and mixed density side-by-side                                               |
 
 !!! note "Feature parity with MCMCChains.jl"
