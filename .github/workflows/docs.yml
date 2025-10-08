@@ -26,5 +26,8 @@ jobs:
         uses: TuringLang/actions/DocsDocumenter@main
         with:
           add-navbar: false
+        # Plots.jl works fine without this setting, but it does print an extra
+        # message 'GKS: cannot open display - headless operation mode active'
+        # so this just suppresses that message.
         env:
           GKSwstype: 100
