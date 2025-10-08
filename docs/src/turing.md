@@ -284,6 +284,8 @@ The `pointwise_logdensity` family of functions is not yet implemented.
 FlexiChains contains a few recipes for plotting with StatsPlots.jl; please see [the Plotting page](./plotting.md) for full details.
 
 ```@example 1
+using StatsPlots
+
 # Or omit the second argument to plot all parameters.
 plot(chn, [@varname(mu), @varname(tau), @varname(theta[1])])
 savefig("plot_ex.svg"); nothing # hide
