@@ -26,3 +26,5 @@ jobs:
         uses: TuringLang/actions/DocsDocumenter@main
         with:
           add-navbar: false
+        env:
+          GKSwstype: 100

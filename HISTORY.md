@@ -1,5 +1,11 @@
 # 0.0.3
 
+## Plotting
+
+(Some) plotting functionality has been added to FlexiChains!
+
+Please see [the plotting docs](https://pysm.dev/FlexiChains.jl/stable/plotting) for information.
+
 ## PosteriorDB.jl integration
 
 You can now load a reference posterior from PosteriorDB.jl into a FlexiChain using `FlexiChains.from_posteriordb_ref`.
@@ -20,6 +26,13 @@ Fixed equality comparisons on FlexiChain and FlexiSummary (previously only the d
 `Base.:(==)` and `Base.isequal` now behave 'as expected'.
 
 A new function `FlexiChains.has_same_data(chn1, chn2; strict)` has been added to compare only the data of two chains.
+
+## `values_at` and `parameters_at`
+
+These functions have been added to allow you to extract all values, or all parameters, at a specific iteration.
+These can be extracted either as `Dict`, `NamedTuple`, or `ComponentArray` (the latter will require you to load ComponentArrays.jl first).
+
+These functions replace what were previously called `get_dict_from_iter` and `get_parameter_from_at_iter`.
 
 ## Other changes
 
