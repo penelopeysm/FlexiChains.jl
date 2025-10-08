@@ -130,9 +130,6 @@ Equality operator for `FlexiChain`s and `FlexiSummary`s. Two chains (or summarie
 if they have the same key type, the same size, the same data for each key, and the same
 metadata (which includes dimensional indices, sampling time, and sampler states).
 
-If you only want to compare the data in a `FlexiChain`, you can use
-[`FlexiChains.has_same_data`](@ref).
-
 !!! note
     Because `missing == missing` returns `missing`, and `NaN == NaN` returns `false`, this
     function will not return `true` if there are any `missing` or `NaN` values in the
