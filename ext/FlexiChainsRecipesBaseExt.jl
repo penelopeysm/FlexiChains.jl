@@ -3,6 +3,7 @@ module FlexiChainsRecipesBaseExt
 using FlexiChains: FlexiChains as FC
 using FlexiChains: VarName
 using RecipesBase: @recipe, @userplot, @series, plot, plot!
+using StatsBase: StatsBase
 
 const DEFAULT_WIDTH = 400
 const DEFAULT_HEIGHT = 250
@@ -17,31 +18,66 @@ function _check_eltype(::AbstractArray{T}) where {T}
     end
 end
 
-##########################
-# `traceplot` extensions #
-##########################
-
-# TODO: I'm completely unsure how this can be extended to work with Makie. But okay for now.
+####################
+# custom functions #
+####################
 
 const _TRACEPLOT_SERIESTYPE = :traceplot
-function FC.Plots.traceplot(chn::FC.FlexiChain; kwargs...)
-    return plot(chn; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
-end
-function FC.Plots.traceplot!(chn::FC.FlexiChain; kwargs...)
-    return plot!(chn; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
-end
-function FC.Plots.traceplot(chn::FC.FlexiChain, param_or_params; kwargs...)
+function FC.traceplot(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
     return plot(chn, param_or_params; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
 end
-function FC.Plots.traceplot!(chn::FC.FlexiChain, param_or_params; kwargs...)
+function FC.traceplot!(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
     return plot!(chn, param_or_params; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
 end
+
+const _MIXEDDENSITY_SERIESTYPE = :mixeddensity
+function FC.mixeddensity(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
+    return plot(chn, param_or_params; kwargs..., seriestype=_MIXEDDENSITY_SERIESTYPE)
+end
+function FC.mixeddensity!(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
+    return plot!(chn, param_or_params; kwargs..., seriestype=_MIXEDDENSITY_SERIESTYPE)
+end
+
+const _MEANPLOT_SERIESTYPE = :meanplot
+function FC.meanplot(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
+    return plot(chn, param_or_params; kwargs..., seriestype=_MEANPLOT_SERIESTYPE)
+end
+function FC.meanplot!(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
+    return plot!(chn, param_or_params; kwargs..., seriestype=_MEANPLOT_SERIESTYPE)
+end
+
+const _AUTOCORPLOT_SERIESTYPE = :autocorplot
+function _default_lags(chn::FC.FlexiChain)
+    return 1:min(FC.niters(chn) - 1, round(Int, 10 * log10(FC.niters(chn))))
+end
+function FC.autocorplot(
+    chn::FC.FlexiChain,
+    param_or_params=nothing;
+    lags=_default_lags(chn),
+    demean=true,
+    kwargs...,
+)
+    return plot(
+        chn, param_or_params; lags, demean, kwargs..., seriestype=_AUTOCORPLOT_SERIESTYPE
+    )
+end
+function FC.autocorplot!(
+    chn::FC.FlexiChain,
+    param_or_params=nothing;
+    lags=_default_lags(chn),
+    demean=true,
+    kwargs...,
+)
+    return plot!(
+        chn, param_or_params; lags, demean, kwargs..., seriestype=_AUTOCORPLOT_SERIESTYPE
+    )
+end
+
+const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 
 ###############################
 # The actual plotting recipes #
 ###############################
-
-const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 
 """
 Entry point for single-parameter plotting; simply wraps and sends it to the multi-parameter
@@ -63,6 +99,8 @@ default, unless the `split_varnames=false` keyword argument is passed.
     chn::FC.FlexiChain{TKey},
     params::Union{AbstractVector,Colon,Nothing}=nothing;
     split_varnames=(TKey <: VarName),
+    lags=nothing,
+    demean=nothing,
 ) where {TKey}
     # Extract parameters.
     keys_to_plot = if isnothing(params)
@@ -113,17 +151,23 @@ default, unless the `split_varnames=false` keyword argument is passed.
             end
             @series begin
                 subplot := 2i
-                FlexiChainAutoDensity(chn, k)
+                FlexiChainMixedDensity(chn, k)
             end
         else
             @series begin
                 subplot := i
                 if seriestype === _TRACEPLOT_SERIESTYPE
                     return FlexiChainTrace(chn, k)
+                elseif seriestype === _MIXEDDENSITY_SERIESTYPE
+                    return FlexiChainMixedDensity(chn, k)
                 elseif seriestype === :density
                     return FlexiChainDensity(chn, k)
                 elseif seriestype === :histogram
                     return FlexiChainHistogram(chn, k)
+                elseif seriestype === _MEANPLOT_SERIESTYPE
+                    return FlexiChainMean(chn, k)
+                elseif seriestype === _AUTOCORPLOT_SERIESTYPE
+                    return FlexiChainAutoCor(chn, k, lags, demean)
                 else
                     return (chn, k, seriestype)
                 end
@@ -149,11 +193,11 @@ end
 """
 Plot a trace plot and a density/histogram plot side by side.
 """
-struct FlexiChainTraceAndAutoDensity{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
+struct FlexiChainTraceAndMixedDensity{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
     chn::FC.FlexiChain{TKey}
     param::Tp
 end
-@recipe function _(tad::FlexiChainTraceAndAutoDensity)
+@recipe function _(tad::FlexiChainTraceAndMixedDensity)
     layout := (1, 2)  # 1 row and 2 columns
     size := (DEFAULT_WIDTH * 2, DEFAULT_HEIGHT)
     left_margin := (5, :mm)
@@ -164,7 +208,7 @@ end
     end
     @series begin
         subplot := 2
-        FlexiChainAutoDensity(tad.chn, tad.param)
+        FlexiChainMixedDensity(tad.chn, tad.param)
     end
 end
 
@@ -190,14 +234,73 @@ end
 end
 
 """
-Detect whether data are discrete or continuous, and dispatch to the histogram and density
-methods respectively.
+Plot of running mean.
 """
-struct FlexiChainAutoDensity{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
+function runningmean(v::AbstractVector{<:Union{Real,Missing}})
+    y = similar(v, Float64)
+    n = 0
+    sum = zero(eltype(v))
+    for i in eachindex(v)
+        if !ismissing(v[i])
+            n += 1
+            sum += v[i]
+        end
+        y[i] = sum / n
+    end
+    return y
+end
+struct FlexiChainMean{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
     chn::FC.FlexiChain{TKey}
     param::Tp
 end
-@recipe function _(ad::FlexiChainAutoDensity)
+@recipe function _(t::FlexiChainMean)
+    seriestype := :line
+    # Extract data
+    x = FC.iter_indices(t.chn)
+    data = FC._get_raw_data(t.chn, t.param)
+    y = mapslices(runningmean, data; dims=1)
+    _check_eltype(y)
+    # Set labels
+    xguide --> "iteration number"
+    yguide --> "mean"
+    label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(t.chn)))
+    title --> t.param.name
+    return x, y
+end
+
+"""
+Plot of autocorrelation.
+"""
+struct FlexiChainAutoCor{TKey,Tp<:FC.ParameterOrExtra{<:TKey},Tl<:AbstractVector{Int}}
+    chn::FC.FlexiChain{TKey}
+    param::Tp
+    lags::Tl
+    demean::Bool
+end
+@recipe function _(t::FlexiChainAutoCor)
+    seriestype := :line
+    # Extract data
+    x = t.lags
+    data = FC._get_raw_data(t.chn, t.param)
+    y = StatsBase.autocor(data, t.lags; demean=t.demean)
+    _check_eltype(y)
+    # Set labels
+    xguide --> "lag"
+    yguide --> "autocorrelation"
+    label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(t.chn)))
+    title --> t.param.name
+    return x, y
+end
+
+"""
+Detect whether data are discrete or continuous, and dispatch to the histogram and density
+methods respectively.
+"""
+struct FlexiChainMixedDensity{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
+    chn::FC.FlexiChain{TKey}
+    param::Tp
+end
+@recipe function _(ad::FlexiChainMixedDensity)
     # Extract data
     raw = FC._get_raw_data(ad.chn, ad.param)
     _check_eltype(raw)

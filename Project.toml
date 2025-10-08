@@ -27,7 +27,7 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 FlexiChainsDynamicPPLExt = ["DynamicPPL", "Random", "DimensionalData", "OrderedCollections"]
 FlexiChainsMCMCChainsExt = ["MCMCChains", "OrderedCollections"]
 FlexiChainsPosteriorDBExt = ["PosteriorDB", "OrderedCollections"]
-FlexiChainsRecipesBaseExt = ["RecipesBase"]
+FlexiChainsRecipesBaseExt = ["RecipesBase", "StatsBase"]
 FlexiChainsTuringExt = ["Turing", "PrecompileTools", "OrderedCollections"]
 
 [compat]
