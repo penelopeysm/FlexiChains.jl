@@ -14,12 +14,13 @@ In fact, calling `histogram(...)` simply redirects to `plot(..., seriestype=:his
 
 The following series types are supported for `FlexiChain` objects.
 
-| `seriestype=`            | Equivalent function                            | Description                                                                                                  |
-| -------------            | ---------------------                          | -------------                                                                                                |
-| `:histogram`             | `Plots.histogram()`                            | Histogram of samples                                                                                         |
-| `:density`               | `Plots.density()`                              | Kernel density estimate of samples                                                                           |
-| `:traceplot`             | `FlexiChains.traceplot()`                      | Trace plot of samples                                                                                        |
-| `:traceplot_and_density` | `Plots.plot()` (with no `seriestype` argument) | Trace plot and density/histogram side-by-side (depending on whether the parameter is continuous or discrete) |
+| `seriestype=`            | Equivalent function                            | Description                                                                             |
+| -------------            | ---------------------                          | -------------                                                                           |
+| `:histogram`             | `Plots.histogram()`                            | Histogram of samples                                                                    |
+| `:density`               | `Plots.density()`                              | Kernel density estimate of samples                                                      |
+| `:mixeddensity`          | `FlexiChains.mixeddensity()`                   | Density plot or histogram, depending on whether the parameter is continuous or discrete |
+| `:traceplot`             | `FlexiChains.traceplot()`                      | Trace plot of samples                                                                   |
+| `:traceplot_and_density` | `Plots.plot()` (with no `seriestype` argument) | Trace plot and mixed density side-by-side                                               |
 
 !!! note "Feature parity with MCMCChains.jl"
     There are still substantially fewer options than in MCMCChains.jl. Other plot types will be added over time, but in the meantime if you need features from MCMCChains, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using `MCMCChains.Chains(chn)`.

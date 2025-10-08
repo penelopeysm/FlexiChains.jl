@@ -17,24 +17,23 @@ function _check_eltype(::AbstractArray{T}) where {T}
     end
 end
 
-##########################
-# `traceplot` extensions #
-##########################
-
-# TODO: I'm completely unsure how this can be extended to work with Makie. But okay for now.
+####################
+# custom functions #
+####################
 
 const _TRACEPLOT_SERIESTYPE = :traceplot
-function FC.Plots.traceplot(chn::FC.FlexiChain; kwargs...)
-    return plot(chn; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
-end
-function FC.Plots.traceplot!(chn::FC.FlexiChain; kwargs...)
-    return plot!(chn; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
-end
-function FC.Plots.traceplot(chn::FC.FlexiChain, param_or_params; kwargs...)
+function FC.traceplot(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
     return plot(chn, param_or_params; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
 end
-function FC.Plots.traceplot!(chn::FC.FlexiChain, param_or_params; kwargs...)
+function FC.traceplot!(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
     return plot!(chn, param_or_params; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
+end
+const _MIXEDDENSITY_SERIESTYPE = :mixeddensity
+function FC.mixeddensity(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
+    return plot(chn, param_or_params; kwargs..., seriestype=_MIXEDDENSITY_SERIESTYPE)
+end
+function FC.mixeddensity!(chn::FC.FlexiChain, param_or_params=nothing; kwargs...)
+    return plot!(chn, param_or_params; kwargs..., seriestype=_MIXEDDENSITY_SERIESTYPE)
 end
 
 ###############################
@@ -113,13 +112,15 @@ default, unless the `split_varnames=false` keyword argument is passed.
             end
             @series begin
                 subplot := 2i
-                FlexiChainAutoDensity(chn, k)
+                FlexiChainMixedDensity(chn, k)
             end
         else
             @series begin
                 subplot := i
                 if seriestype === _TRACEPLOT_SERIESTYPE
                     return FlexiChainTrace(chn, k)
+                elseif seriestype === _MIXEDDENSITY_SERIESTYPE
+                    return FlexiChainMixedDensity(chn, k)
                 elseif seriestype === :density
                     return FlexiChainDensity(chn, k)
                 elseif seriestype === :histogram
@@ -149,11 +150,11 @@ end
 """
 Plot a trace plot and a density/histogram plot side by side.
 """
-struct FlexiChainTraceAndAutoDensity{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
+struct FlexiChainTraceAndMixedDensity{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
     chn::FC.FlexiChain{TKey}
     param::Tp
 end
-@recipe function _(tad::FlexiChainTraceAndAutoDensity)
+@recipe function _(tad::FlexiChainTraceAndMixedDensity)
     layout := (1, 2)  # 1 row and 2 columns
     size := (DEFAULT_WIDTH * 2, DEFAULT_HEIGHT)
     left_margin := (5, :mm)
@@ -164,7 +165,7 @@ end
     end
     @series begin
         subplot := 2
-        FlexiChainAutoDensity(tad.chn, tad.param)
+        FlexiChainMixedDensity(tad.chn, tad.param)
     end
 end
 
@@ -193,11 +194,11 @@ end
 Detect whether data are discrete or continuous, and dispatch to the histogram and density
 methods respectively.
 """
-struct FlexiChainAutoDensity{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
+struct FlexiChainMixedDensity{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
     chn::FC.FlexiChain{TKey}
     param::Tp
 end
-@recipe function _(ad::FlexiChainAutoDensity)
+@recipe function _(ad::FlexiChainMixedDensity)
     # Extract data
     raw = FC._get_raw_data(ad.chn, ad.param)
     _check_eltype(raw)
