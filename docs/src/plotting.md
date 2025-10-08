@@ -151,7 +151,7 @@ savefig("autocorplot.svg"); nothing # hide
 
 ![Autocorrelation plots of the sampled chain](autocorplot.svg)
 
-```@example 1
+```@docs
 FlexiChains.mixeddensity
 ```
 
