@@ -1,5 +1,9 @@
 module FlexiChains
 
+using AbstractMCMC: AbstractMCMC
+using DimensionalData: DimensionalData as DD
+using DimensionalData.Dimensions.Lookups: Lookups as DDL
+using OrderedCollections: OrderedDict, OrderedSet
 using DocStringExtensions: TYPEDFIELDS
 using PrecompileTools: @setup_workload, @compile_workload
 
@@ -24,9 +28,29 @@ end
 include("chain.jl")
 include("summary.jl")
 include("getindex.jl")
-include("interface.jl")
+include("interface/equal.jl")
+include("interface/size.jl")
+include("interface/dict.jl")
+include("interface/show.jl")
+include("interface/cat.jl")
+include("interface/mergesubset.jl")
+include("interface/decomp.jl")
 include("varname.jl")
 
+# Overloaded in TuringExt.
+"""
+    to_varname_dict(transition)::AbstractDict{VarName,Any}
+
+Convert the _first output_ (i.e. the 'transition') of an AbstractMCMC sampler
+into a dictionary mapping `VarName`s to their corresponding values.
+
+If you are writing a custom sampler for Turing.jl and your sampler's
+implementation of `AbstractMCMC.step` returns anything _but_ a
+`Turing.Inference.Transition` as its first return value, then to use FlexiChains
+with your sampler, you will have to overload this function.
+"""
+function to_varname_dict end
+@public to_varname_dict
 # Extended in PosteriorDB extension (but not exported)
 function from_posteriordb_ref end
 @public from_posteriordb_ref

@@ -1,5 +1,3 @@
-using DimensionalData.Dimensions.Lookups: Lookup, Selector, selectindices
-
 const ChainOrSummary{TKey} = Union{FlexiChain{TKey},FlexiSummary{TKey}}
 
 const SUMMARY_GETINDEX_KWARGS = """
@@ -262,7 +260,7 @@ end
 ############################
 
 """
-    _selectindices(lookup::Lookup, s)
+    _selectindices(lookup::DimensionalData.Lookup, s)
 
 Helper function to determine the 1-based indices that the object `s` refers to in the
 context of `lookup`.
@@ -272,13 +270,13 @@ length of the returned indices is 1: in that case we have to return a singleton 
 rather than just that index.
 """
 _selectindices(::Nothing, ::Any) = Colon() # this happens with collapsed stat dimension
-_selectindices(::Lookup, ::Colon) = Colon()
-_selectindices(::Lookup, s::AbstractRange) = s
-_selectindices(::Lookup, i::Integer) = i:i # Nicer output than just [i]
-_selectindices(::Lookup, v::AbstractVector{<:Integer}) = v
-function _selectindices(lookup::Lookup, s)
+_selectindices(::DD.Lookup, ::Colon) = Colon()
+_selectindices(::DD.Lookup, s::AbstractRange) = s
+_selectindices(::DD.Lookup, i::Integer) = i:i # Nicer output than just [i]
+_selectindices(::DD.Lookup, v::AbstractVector{<:Integer}) = v
+function _selectindices(lookup::DD.Lookup, s)
     # This just handles all other types, including Selectors, sets, etc.
-    indices = selectindices(lookup, s)
+    indices = DDL.selectindices(lookup, s)
     return if length(indices) == 1
         indices:indices
     else
