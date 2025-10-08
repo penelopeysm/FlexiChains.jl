@@ -117,7 +117,44 @@ savefig("plot3.svg"); nothing # hide
 
 ```@docs
 FlexiChains.traceplot
+```
+
+```@example 1
+traceplot(chn)
+savefig("traceplot.svg"); nothing # hide
+```
+
+![Trace plots of the sampled chain](traceplot.svg)
+
+```@docs
 FlexiChains.meanplot
+```
+
+```@example 1
+meanplot(chn)
+savefig("meanplot.svg"); nothing # hide
+```
+
+![Running mean plots of the sampled chain](meanplot.svg)
+
+```@docs
 FlexiChains.autocorplot
+```
+
+```@example 1
+autocorplot(chn)
+savefig("autocorplot.svg"); nothing # hide
+```
+
+![Autocorrelation plots of the sampled chain](autocorplot.svg)
+
+```@example 1
 FlexiChains.mixeddensity
 ```
+
+```@example 1
+mixeddensity(chn)
+savefig("mixeddensity.svg"); nothing # hide
+```
+
+![Mixed density plots of the sampled chain](mixeddensity.svg)
