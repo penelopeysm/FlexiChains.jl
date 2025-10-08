@@ -123,19 +123,21 @@ _EQUALITY_DOCSTRING_SUPPLEMENT = """
 """
 
 """
-    Base.:(==)(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2})::Bool where {TKey1,TKey2}
-    Base.:(==)(c1::FlexiSummary{TKey1}, c2::FlexiSummary{TKey2})::Bool where {TKey1,TKey2}
+    Base.:(==)(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1,TKey2}
+    Base.:(==)(c1::FlexiSummary{TKey1}, c2::FlexiSummary{TKey2}) where {TKey1,TKey2}
 
 Equality operator for `FlexiChain`s and `FlexiSummary`s. Two chains (or summaries) are equal
 if they have the same key type, the same size, the same data for each key, and the same
 metadata (which includes dimensional indices, sampling time, and sampler states).
 
-If you only want to compare the data in a `FlexiChain`, you can use `Dict(Base.pairs(c1)) == Dict(Base.pairs(c2))`.
+If you only want to compare the data in a `FlexiChain`, you can use
+[`FlexiChains.has_same_data`](@ref).
 
 !!! note
     Because `missing == missing` returns `missing`, and `NaN == NaN` returns `false`, this
-    function will return `false` if there are any `missing` or `NaN` values in the chains,
-    even if they appear in the same positions. In this case, use `isequal(c1, c2)` instead.
+    function will not return `true` if there are any `missing` or `NaN` values in the
+    chains, even if they appear in the same positions. To test for equality with such data,
+    use `isequal(c1, c2)` instead.
 
 $(_EQUALITY_DOCSTRING_SUPPLEMENT)
 """
