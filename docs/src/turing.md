@@ -250,7 +250,7 @@ chn2 = sample(model, NUTS(), 10; chain_type=VNChain, resume_from=chn1)
 The chains can be combined using `vcat`:
 
 ```@example 1
-chn = vcat(chn1, chn2)
+combined_chn = vcat(chn1, chn2)
 ```
 
 !!! note "Multiple-chain sampling"
@@ -287,7 +287,7 @@ FlexiChains contains a few recipes for plotting with StatsPlots.jl; please see [
 using StatsPlots
 
 # Or omit the second argument to plot all parameters.
-plot(chn, [@varname(mu), @varname(tau), @varname(theta[1])])
+plot(chain, [@varname(mu), @varname(tau), @varname(theta[1])])
 savefig("plot_ex.svg"); nothing # hide
 ```
 
