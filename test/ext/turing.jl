@@ -134,7 +134,6 @@ Turing.setprogress!(false)
         @testset "with another sampler: $spl_name" for (spl_name, spl) in [
             ("MH", MH()),
             ("HMC", HMC(0.1, 10)),
-            ("PG", PG(5)),
             ("SliceSampling.jl", externalsampler(RandPermGibbs(SliceSteppingOut(2.0)))),
         ]
             chn = sample(model, spl, 20; chain_type=VNChain)

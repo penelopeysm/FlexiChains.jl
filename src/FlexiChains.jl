@@ -33,7 +33,6 @@ function from_posteriordb_ref end
 @public from_posteriordb_ref
 # Extended in RecipesBase extension (but not exported)
 using ..Plots: traceplot, traceplot!
-@public traceplot, traceplot!
 export traceplot, traceplot!
 
 # Convenience re-exports.
@@ -43,7 +42,7 @@ using Statistics: mean, median, std, var
 export mean, median, std, var
 using StatsBase: summarystats
 export summarystats
-using MCMCDiagnosticTools: ess
+using MCMCDiagnosticTools: ess, rhat, mcse
 export ess, rhat, mcse
 # For maximum ease of use with Turing...
 const VNChain = FlexiChain{VarName}
