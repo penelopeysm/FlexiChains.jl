@@ -523,6 +523,17 @@ using Test
                 vcat(fill(3.0, niters1, 1), fill("foo", niters2, 1))
         end
 
+        @testset "_smartcat" begin
+            @test FlexiChains._smartcat(1:10, 11:20) == 1:20
+            @test FlexiChains._smartcat(
+                FlexiChains._make_lookup(1:10), FlexiChains._make_lookup(11:20)
+            ) == FlexiChains._make_lookup(1:20)
+            @test FlexiChains._smartcat(2:2:10, 12:2:20) == 2:2:20
+            @test FlexiChains._smartcat(
+                FlexiChains._make_lookup(2:2:10), FlexiChains._make_lookup(12:2:20)
+            ) == FlexiChains._make_lookup(2:2:20)
+        end
+
         @testset "handling indices" begin
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
@@ -533,10 +544,8 @@ using Test
             chain2 = FlexiChain{Symbol}(
                 N_iters, 1, fill(d2, N_iters); iter_indices=21:30, chain_indices=[2]
             )
-
             chain12 = vcat(chain1, chain2)
-            @test FlexiChains.iter_indices(chain12) ==
-                vcat(FlexiChains.iter_indices(chain1), FlexiChains.iter_indices(chain2))
+            @test FlexiChains.iter_indices(chain12) == vcat(1:10, 31:40)
             @test_logs (:warn, r"different chain indices") vcat(chain1, chain2)
             @test FlexiChains.chain_indices(chain12) == FlexiChains.chain_indices(chain1)
         end

@@ -36,6 +36,9 @@ These functions replace what were previously called `get_dict_from_iter` and `ge
 
 ## Other changes
 
+`vcat` now attempts to very smartly concatenate the iteration indices from two chains.
+In any case, it should _always_ be that concatenating two chains will result in the iteration numbers of the second chain being higher than those of the first chain.
+
 Fixed a bug where `hcat` and `vcat` would not preserve the order of keys in the resulting chain.
 
 Fixed a bug where `predict` and `returned` would not work with chains that had already been split up by `VarName`s.
