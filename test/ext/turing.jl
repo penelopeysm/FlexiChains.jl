@@ -344,22 +344,48 @@ Turing.setprogress!(false)
             @test isapprox(mean(pdns[@varname(y)]), 2.0; atol=0.1)
         end
 
+        @testset "logp" begin
+            pdns = predict(f(), chn)
+            # Since we deconditioned `y`, there are no likelihood terms.
+            @test all(iszero, pdns[FlexiChains._LOGLIKELIHOOD_KEY])
+            # The logprior should be the same as that of the original chain, but 
+            # with an extra term for y ~ Normal(x)
+            chn_logprior = chn[FlexiChains._LOGPRIOR_KEY]
+            pdns_logprior = pdns[FlexiChains._LOGPRIOR_KEY]
+            expected_diff = logpdf.(Normal.(chn[@varname(x)]), pdns[@varname(y)])
+            @test isapprox(pdns_logprior, chn_logprior .+ expected_diff)
+            # Logjoint should be the same as logprior
+            @test pdns[FlexiChains._LOGJOINT_KEY] == pdns[FlexiChains._LOGPRIOR_KEY]
+        end
+
         @testset "non-parameter keys are preserved" begin
             pdns = predict(f(), chn)
+            display(chn)
+            display(pdns)
             # Check that the only new thing added was the prediction for y.
             @test only(setdiff(Set(keys(pdns)), Set(keys(chn)))) == Parameter(@varname(y))
             # Check that no other keys originally in `chn` were removed.
             @test isempty(setdiff(Set(keys(chn)), Set(keys(pdns))))
         end
 
-        @testset "metadata is preserved" begin
+        @testset "include_all=false" begin
+            pdns = predict(f(), chn; include_all=false)
+            # Check that the only parameter in the chain is the prediction for y.
+            @test only(Set(FlexiChains.parameters(pdns))) == @varname(y)
+        end
+
+        @testset "indices are preserved" begin
             pdns = predict(f(), chn)
             @test FlexiChains.iter_indices(pdns) == FlexiChains.iter_indices(chn)
             @test FlexiChains.chain_indices(pdns) == FlexiChains.chain_indices(chn)
-            @test isequal(FlexiChains.sampling_time(pdns), FlexiChains.sampling_time(chn))
-            @test isequal(
-                FlexiChains.last_sampler_state(pdns), FlexiChains.last_sampler_state(chn)
-            )
+        end
+
+        @testset "no sampling time and sampler state" begin
+            # it just doesn't really make sense for the predictions to carry those
+            # information
+            pdns = predict(f(), chn)
+            @test all(ismissing, FlexiChains.sampling_time(pdns))
+            @test all(ismissing, FlexiChains.last_sampler_state(pdns))
         end
 
         @testset "still works after chain has been split up" begin

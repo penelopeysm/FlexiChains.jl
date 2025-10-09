@@ -1,6 +1,6 @@
 module FlexiChainsDynamicPPLExt
 
-using FlexiChains: FlexiChains, FlexiChain, VarName, Parameter, VNChain
+using FlexiChains: FlexiChains, FlexiChain, VarName, Parameter, ParameterOrExtra, VNChain
 using DimensionalData: DimensionalData as DD
 using DynamicPPL: DynamicPPL, AbstractPPL
 using OrderedCollections: OrderedDict
@@ -135,31 +135,40 @@ function DynamicPPL.logprior(
 end
 
 function DynamicPPL.predict(
-    rng::Random.AbstractRNG, model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+    rng::Random.AbstractRNG,
+    model::DynamicPPL.Model,
+    chain::FlexiChain{<:VarName};
+    include_all::Bool=true,
 )::FlexiChain{VarName}
+    existing_parameters = Set(FlexiChains.parameters(chain))
     param_dicts = map(reevaluate(rng, model, chain)) do (_, vi)
-        # OrderedDict{VarName}
         vn_dict = DynamicPPL.getacc(vi, Val(:ValuesAsInModel)).values
-        # OrderedDict{Parameter{VarName}}
-        OrderedDict(Parameter(vn) => val for (vn, val) in vn_dict)
+        # ^ that is OrderedDict{VarName}
+        p_dict = OrderedDict{ParameterOrExtra{<:VarName},Any}(
+            Parameter(vn) => val for
+            (vn, val) in vn_dict if (include_all || !(vn in existing_parameters))
+        )
+        # Tack on the probabilities
+        p_dict[FlexiChains._LOGPRIOR_KEY] = DynamicPPL.getlogprior(vi)
+        p_dict[FlexiChains._LOGJOINT_KEY] = DynamicPPL.getlogjoint(vi)
+        p_dict[FlexiChains._LOGLIKELIHOOD_KEY] = DynamicPPL.getloglikelihood(vi)
+        p_dict
     end
     ni, nc = size(chain)
-    chain_params_only = FlexiChain{VarName}(
+    predictions_chain = FlexiChain{VarName}(
         ni,
         nc,
         param_dicts;
         iter_indices=FlexiChains.iter_indices(chain),
         chain_indices=FlexiChains.chain_indices(chain),
-        sampling_time=FlexiChains.sampling_time(chain),
-        last_sampler_state=FlexiChains.last_sampler_state(chain),
     )
-    chain_nonparams_only = FlexiChains.subset_extras(chain)
-    return merge(chain_params_only, chain_nonparams_only)
+    old_extras_chain = FlexiChains.subset_extras(chain)
+    return merge(old_extras_chain, predictions_chain)
 end
 function DynamicPPL.predict(
-    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}; include_all::Bool=true
 )::FlexiChain{VarName}
-    return DynamicPPL.predict(Random.default_rng(), model, chain)
+    return DynamicPPL.predict(Random.default_rng(), model, chain; include_all=include_all)
 end
 
 end # module FlexiChainsDynamicPPLExt
