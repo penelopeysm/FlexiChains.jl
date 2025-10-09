@@ -12,6 +12,7 @@ using FlexiChains:
     summarystats
 using MCMCDiagnosticTools
 using Logging: Warn
+using Serialization: serialize, deserialize
 using Statistics
 using Test
 
@@ -205,6 +206,16 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             display(median(chain; dims=:chain))
             display(std(chain; dims=:both))
         end
+    end
+
+    @testset "serialise" begin
+        fs = summarystats(chain)
+        fname = Base.Filesystem.tempname()
+        serialize(fname, fs)
+        fs2 = deserialize(fname)
+        @test isequal(fs, fs2)
+        # also test ordering of keys, since isequal doesn't check that
+        @test collect(keys(fs)) == collect(keys(fs2))
     end
 
     @testset "summarystats when some functions fail" begin
@@ -428,8 +439,10 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), DD.At(:mean)
             ) == (chain=Colon(), stat=DD.At(:mean))
             # check sub-varname too
-            @test fs[Parameter(@varname(x[1])), stat=DD.At(:mean)] ==
-                vec(mean(getindex.(xs, 1); dims=1))
+            @test isapprox(
+                fs[Parameter(@varname(x[1])), stat=DD.At(:mean)],
+                vec(mean(getindex.(xs, 1); dims=1)),
+            )
             # check with no kwargs too
             @test fs[Parameter(@varname(x))] isa Any
         end
