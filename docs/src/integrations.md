@@ -33,13 +33,13 @@ FlexiChains.from_posteriordb_ref
 
 Calling this an 'integration' is a bit of a stretch, because it simply works out of the box (no extra code needed), but it had to be documented somewhere...
 
-You can serialise and deserialise `FlexiChain` and `FlexiSummary` objects using the [Serialization.jl standard library](@extref julia Serialization).
+You can serialise and deserialise `FlexiChain` and `FlexiSummary` objects using the [Serialization.jl standard library](@extref Julia Serialization).
 
 ```@example serialization
 using FlexiChains, Turing, Serialization
 
 @model f() = x ~ Normal()
-chn = sample(model, NUTS(), MCMCThreads(), 100, 3; chain_type=VNChain)
+chn = sample(f(), NUTS(), MCMCThreads(), 100, 3; chain_type=VNChain)
 fname = "mychain"
 serialize(fname, chn)
 ```

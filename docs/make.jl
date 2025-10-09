@@ -14,7 +14,7 @@ links = InterLinks(
     "PosteriorDB" => "https://sethaxen.github.io/PosteriorDB.jl/stable/",
     "Plots" => "https://docs.juliaplots.org/stable/",
     "StatsBase" => "https://juliastats.org/StatsBase.jl/stable/",
-    "julia" => "https://docs.julialang.org/en/v1",
+    "Julia" => "https://docs.julialang.org/en/v1/",
 )
 
 FCPosteriorDBExt = Base.get_extension(FlexiChains, :FlexiChainsPosteriorDBExt)
