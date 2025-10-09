@@ -1,10 +1,9 @@
 @public values_at, parameters_at
 
 _VALUES_PARAMETER_AT_DOCSTRING = """
-The desired `iter` and `chain` indices must be specified: they can either be an integer, or
-a `DimensionalData.At` selector. The meaning of these is exactly the same as when indexing:
-`iter=5` means the fifth row of the chain, whereas `iter=At(5)` means the row corresponding
-to iteration number 5 in the MCMC process.
+The `iter` and `chain` arguments can be anything used to index into the respective
+dimensions of a `FlexiChain`, such as an integer, a range, or a DimensionalData.jl
+selector. If unspecified, all iterations or chains will be returned.
 """
 
 _VALUES_PARAMETER_AT_WARNING = """
@@ -21,12 +20,12 @@ _VALUES_PARAMETER_AT_WARNING = """
 """
     FlexiChains.values_at(
         chn::FlexiChain{TKey},
-        iter::Union{Int,DD.At},
-        chain::Union{Int,DD.At},
+        iter,
+        chain,
         Tout::Type{T}=OrderedDict
     ) where {TKey,T}
 
-Extract all values from the chain corresponding to a single MCMC iteration.
+Extract all values from the chain corresponding to a particular set of MCMC iterations(s).
 
 $(_VALUES_PARAMETER_AT_DOCSTRING)
 
@@ -112,8 +111,8 @@ end
         Tout::Type{T}=OrderedDict
     ) where {TKey,T}
 
-Extract all *parameter* values from the chain corresponding to a single MCMC iteration,
-discarding non-parameter (i.e. `Extra`) keys.
+Extract all *parameter* values from the chain corresponding to a particular set of MCMC
+iteration(s), discarding non-parameter (i.e. `Extra`) keys.
 
 $(_VALUES_PARAMETER_AT_DOCSTRING)
 
