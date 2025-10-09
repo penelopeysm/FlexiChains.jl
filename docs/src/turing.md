@@ -283,11 +283,14 @@ The `pointwise_logdensity` family of functions is not yet implemented.
 
 FlexiChains contains a few recipes for plotting with StatsPlots.jl; please see [the Plotting page](./plotting.md) for full details.
 
+When plotting a `VNChain`, array-valued parameters will automatically be split up into their individual components.
+In this example we plot only `tau` and `theta[1]` to save space, but if you were to plot `theta`, you would get eight separate plots for each element of `theta`.
+
 ```@example 1
 using StatsPlots
 
 # Or omit the second argument to plot all parameters.
-plot(chain, [@varname(mu), @varname(tau), @varname(theta[1])])
+plot(chain, [@varname(tau), @varname(theta[1])])
 savefig("plot_ex.svg"); nothing # hide
 ```
 
