@@ -3,7 +3,10 @@
 _VALUES_PARAMETER_AT_DOCSTRING = """
 The `iter` and `chain` arguments can be anything used to index into the respective
 dimensions of a `FlexiChain`, such as an integer, a range, or a DimensionalData.jl
-selector. If unspecified, all iterations or chains will be returned.
+selector.
+
+In particular, you can convert the entire chain into a `DimMatrix` of the desired output
+type by passing `:` for both arguments.
 """
 
 _VALUES_PARAMETER_AT_WARNING = """
