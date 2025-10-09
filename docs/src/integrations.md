@@ -39,7 +39,7 @@ You can serialise and deserialise `FlexiChain` and `FlexiSummary` objects using 
 using FlexiChains, Turing, Serialization
 
 @model f() = x ~ Normal()
-chn = sample(f(), NUTS(), MCMCThreads(), 100, 3; chain_type=VNChain, progress=false)
+chn = sample(f(), NUTS(), 100; chain_type=VNChain, progress=false)
 fname = "mychain"
 serialize(fname, chn)
 ```
@@ -52,9 +52,11 @@ isequal(chn, chn2)
 Note two things:
 
 1. If the serialisation and deserialisation steps are performed in different Julia sessions, you need to make sure that you have all necessary packages loaded in the second session.
-In particular, if you use `save_state=true`, then you should load Turing.jl before deserialising, because Turing provides the sampler state types.
+   In particular, if you use `save_state=true`, then you should load Turing.jl before deserialising, because Turing provides the sampler state types.
 
-2. If you are testing the integrity of (de)serialisation, you may find that `isequal()` on sampler state types may not return `true` even when the sampler states are the same. This is because Julia's default definition of equality for structs is based on object identity, not on field values. For example, the following returns `false` because `[1] !== [1]`.
+2. If you are testing the integrity of (de)serialisation, you may find that `isequal()` on sampler state types may not return `true` even when the sampler states are the same.
+   This is because Julia's default definition of equality for structs is based on object identity, not on field values.
+   For example, the following returns `false` because `[1] !== [1]`.
 
    ```@example serialization
    struct Foo{T}
