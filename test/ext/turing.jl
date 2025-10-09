@@ -6,6 +6,7 @@ using DynamicPPL: DynamicPPL
 using FlexiChains: FlexiChains, VNChain, Parameter, Extra
 using MCMCChains: MCMCChains
 using Random: Random, Xoshiro
+using Serialization: serialize, deserialize
 using SliceSampling: RandPermGibbs, SliceSteppingOut
 using StableRNGs: StableRNG
 using Test
@@ -37,6 +38,20 @@ Turing.setprogress!(false)
             )
             @test chn isa VNChain
             @test size(chn) == (100, 3)
+        end
+
+        @testset "serialisation" begin
+            chn = sample(
+                model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain, verbose=false
+            )
+            fname = Base.Filesystem.tempname()
+            serialize(fname, chn)
+            chn2 = deserialize(fname)
+            @test isequal(chn, chn2)
+            # also test ordering of keys, since isequal doesn't check that
+            @test collect(keys(chn)) == collect(keys(chn2))
+            # note that we can't test isequal(chn1, chn2) with save_state=true because the
+            # states don't compare equal :( that would need to be fixed upstream in Turing
         end
 
         @testset "rng is respected" begin

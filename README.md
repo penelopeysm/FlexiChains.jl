@@ -1,10 +1,10 @@
-## FlexiChains.jl
+# FlexiChains.jl
 
 Flexible Markov chains.
 
 [**Documentation**](http://pysm.dev/FlexiChains.jl/)
 
-### Usage
+## Usage
 
 `FlexiChain{T}` represents a chain that stores data for parameters of type `T`.
 `VNChain` is a alias for `FlexiChain{VarName}`, and is the appropriate type for storing Turing.jl's outputs.
@@ -55,12 +55,12 @@ Visualisation with Plots.jl is supported:
 using StatsPlots
 plot(chain)                    # trace + densities for all variables
 plot(chain, [@varname(z)])     # trace + density for z[1] and z[2] only
-plot(chain, pool_chains=true)  # combining samples from all chains
+plot(chain; pool_chains=true)  # combining samples from all chains
 ```
 
 Finally, functions in Turing.jl which take chains as input, such as `returned`, `predict`, and `logjoint` should work out of the box with exactly the same behaviour as before.
 
-### How is FlexiChains better?
+## Why use FlexiChains?
 
 Turing's default data type for Markov chains is [`MCMCChains.Chains`](https://turinglang.org/MCMCChains.jl/stable/).
 
