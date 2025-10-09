@@ -50,9 +50,9 @@ function values_at(
     chn::FlexiChain{TKey},
     iter::Union{Int,DD.At},
     chain::Union{Int,DD.At},
-    Tout::Type{T}=OrderedDict,
-) where {TKey,T<:AbstractDict}
-    return Tout{ParameterOrExtra{TKey},Any}(
+    ::Type{T}=OrderedDict,
+)::T{ParameterOrExtra{TKey},Any} where {TKey,T<:AbstractDict}
+    return T{ParameterOrExtra{TKey},Any}(
         k => chn[k, iter=iter, chain=chain] for k in keys(chn)
     )
 end
@@ -137,9 +137,9 @@ function parameters_at(
     chn::FlexiChain{TKey},
     iter::Union{Int,DD.At},
     chain::Union{Int,DD.At},
-    Tout::Type{T}=OrderedDict,
-) where {TKey,T<:AbstractDict}
-    return Tout{TKey,Any}(
+    ::Type{T}=OrderedDict,
+)::T{TKey,Any} where {TKey,T<:AbstractDict}
+    return T{TKey,Any}(
         k => chn[Parameter(k), iter=iter, chain=chain] for k in FlexiChains.parameters(chn)
     )
 end

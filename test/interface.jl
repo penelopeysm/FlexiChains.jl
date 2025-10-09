@@ -96,6 +96,19 @@ using Test
         for k in keys(d)
             @test haskey(chain, k)
         end
+        # values
+        @test collect(values(chain)) ==
+            [chain[Parameter(:a)], chain[Extra("hello")], chain[Parameter(:b)]]
+        @test collect(values(chain; parameters_only=true)) ==
+            [chain[Parameter(:a)], chain[Parameter(:b)]]
+        # pairs
+        @test collect(pairs(chain)) == [
+            Parameter(:a) => chain[Parameter(:a)],
+            Extra("hello") => chain[Extra("hello")],
+            Parameter(:b) => chain[Parameter(:b)],
+        ]
+        @test collect(pairs(chain; parameters_only=true)) ==
+            [:a => chain[Parameter(:a)], :b => chain[Parameter(:b)]]
     end
 
     @testset "get key names" begin
