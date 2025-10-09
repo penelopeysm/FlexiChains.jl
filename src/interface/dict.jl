@@ -4,6 +4,8 @@
     Base.keys(cs::ChainOrSummary)
 
 Returns the keys of the `FlexiChain` (or summary thereof).
+
+To obtain only the parameters, use [`FlexiChains.parameters`](@ref).
 """
 function Base.keys(cs::ChainOrSummary)
     return keys(cs._data)
@@ -34,22 +36,38 @@ function Base.haskey(cs::ChainOrSummary{TKey}, key::TKey) where {TKey}
 end
 
 """
-    Base.values(cs::ChainOrSummary)
+    Base.values(cs::ChainOrSummary; parameters_only::Bool=false)
 
 Returns the values of the `FlexiChain` or `FlexiSummary`, i.e., the matrices obtained by
 indexing into the chain with each key.
+
+If `parameters_only` is `true`, only the values corresponding to parameter keys are returned.
 """
-function Base.values(cs::ChainOrSummary)
-    return values(cs._data)
+function Base.values(cs::ChainOrSummary; parameters_only::Bool=false)
+    if parameters_only
+        return (cs[Parameter(k)] for k in parameters(cs))
+    else
+        return (cs[k] for k in keys(cs))
+    end
 end
 
 """
     Base.pairs(cs::ChainOrSummary)
 
 Returns an iterator over the key-value pairs of the `FlexiChain` or `FlexiSummary`.
+
+If `parameters_only` is `true`, only the values corresponding to parameter keys are returned.
+
+!!! tip
+    Note that this function allows you to decompose a `FlexiChain` into a dict-of-arrays,
+    e.g. with `OrderedDict(pairs(chain; parameters_only=...))`.
 """
-function Base.pairs(cs::ChainOrSummary)
-    return pairs(cs._data)
+function Base.pairs(cs::ChainOrSummary; parameters_only::Bool=false)
+    if parameters_only
+        return (k => cs[Parameter(k)] for k in parameters(cs))
+    else
+        return (k => cs[k] for k in keys(cs))
+    end
 end
 
 """
@@ -65,6 +83,14 @@ function parameters(cs::ChainOrSummary{TKey})::Vector{TKey} where {TKey}
         end
     end
     return parameter_names
+end
+"""
+    FlexiChains.has_parameter(cs::ChainOrSummary{TKey}, param::TKey) where {TKey}
+
+Returns `true` if the `FlexiChain` or summary contains the given parameter.
+"""
+function has_parameter(cs::ChainOrSummary{TKey}, key::TKey) where {TKey}
+    return haskey(cs, Parameter(key))
 end
 
 """
