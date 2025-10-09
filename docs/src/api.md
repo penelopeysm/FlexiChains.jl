@@ -112,4 +112,16 @@ FlexiChains.parameters_at
 FlexiChains.split_varnames
 ```
 
+## Integration with Turing.jl
+
+```@docs
+DynamicPPL.loadstate
+DynamicPPL.logprior
+DynamicPPL.loglikelihood
+DynamicPPL.logjoint
+DynamicPPL.returned
+DynamicPPL.predict
+MCMCChains.Chains
+```
+
 TODO: Summaries, plotting.

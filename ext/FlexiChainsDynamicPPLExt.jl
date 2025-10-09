@@ -53,15 +53,16 @@ end
 #     DELETE WHEN POSSIBLE    #
 ###############################
 
-function DynamicPPL.loadstate(chain::FlexiChain{TKey}) where {TKey<:VarName}
-    st = FlexiChains.last_sampler_state(chain)
-    if FlexiChains.nchains(chain) == 1
-        st = only(st)
-    end
-    st === nothing && error(
-        "attempted to resume sampling from a chain without a saved state; you must pass `save_state=true` when sampling the previous chain",
-    )
-    return st
+"""
+    DynamicPPL.loadstate(chain::FlexiChain{<:VarName})
+
+Extracts the last sampler state from a `FlexiChain`. This is the same function as 
+[`FlexiChains.last_sampler_state`](@ref).
+
+$(FlexiChains._INITIAL_STATE_DOCSTRING)
+"""
+function DynamicPPL.loadstate(chain::FlexiChain{<:VarName})
+    return FlexiChains.last_sampler_state(chain)
 end
 
 ###########################################
@@ -107,12 +108,24 @@ function reevaluate(
     return reevaluate(Random.default_rng(), model, chain, accs)
 end
 
+"""
+    DynamicPPL.returned(model::DynamicPPL.Model, chain::FlexiChain{<:VarName})
+
+Returns a `DimMatrix` of the model's return values, re-evaluated using the parameters in
+each iteration of the chain.
+"""
 function DynamicPPL.returned(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
 )::DD.DimMatrix
     return map(first, reevaluate(model, chain))
 end
 
+"""
+    DynamicPPL.logjoint(model::DynamicPPL.Model, chain::FlexiChain{<:VarName})
+
+Returns a `DimMatrix` of the log-joint probabilities, re-evaluated using the parameters at
+each iteration of the chain.
+"""
 function DynamicPPL.logjoint(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
 )::DD.DimMatrix
@@ -120,6 +133,12 @@ function DynamicPPL.logjoint(
     return map(DynamicPPL.getlogjoint ∘ last, reevaluate(model, chain, accs))
 end
 
+"""
+    DynamicPPL.loglikelihood(model::DynamicPPL.Model, chain::FlexiChain{<:VarName})
+
+Returns a `DimMatrix` of the log-likelihoods, re-evaluated using the parameters at each
+iteration of the chain.
+"""
 function DynamicPPL.loglikelihood(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
 )::DD.DimMatrix
@@ -127,6 +146,12 @@ function DynamicPPL.loglikelihood(
     return map(DynamicPPL.getloglikelihood ∘ last, reevaluate(model, chain, accs))
 end
 
+"""
+    DynamicPPL.logprior(model::DynamicPPL.Model, chain::FlexiChain{<:VarName})
+
+Returns a `DimMatrix` of the log-prior probabilities, re-evaluated using the parameters at
+each iteration of the chain.
+"""
 function DynamicPPL.logprior(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
 )::DD.DimMatrix
@@ -134,6 +159,29 @@ function DynamicPPL.logprior(
     return map(DynamicPPL.getlogprior ∘ last, reevaluate(model, chain, accs))
 end
 
+"""
+    DynamicPPL.predict(
+        [rng::Random.AbstractRNG,]
+        model::DynamicPPL.Model,
+        chain::FlexiChain{<:VarName};
+        include_all::Bool=true,
+    )
+
+Returns a new `FlexiChain` containing predictions for variables in the model, conditioned on
+the parameters in each iteration of the input `chain`.
+
+The returned `FlexiChain` by default will contain all the predicted variables, as well as the
+variables already present in the input `chain`. If you only want the predicted variables,
+set `include_all=false`.
+
+The returned chain will also contain log-probabilities corresponding to the re-evaluation of
+the model. In particular, the log probability for the newly predicted variables are
+now considered as prior terms. However, note that the log-prior of the returned chain will
+also contain the log-prior terms of the parameters already present in the input `chain`.
+Thus, if you want to obtain the log-probability of the predicted variables only, you can
+subtract the two log-prior terms. The `include_all` keyword argument has no effect on the
+log-probability fields.
+"""
 function DynamicPPL.predict(
     rng::Random.AbstractRNG,
     model::DynamicPPL.Model,

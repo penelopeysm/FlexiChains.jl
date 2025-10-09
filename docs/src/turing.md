@@ -243,8 +243,12 @@ or `dims=:chain` (although that is probably less useful).
 If you want to sample a fewer number of iterations first and then resume it later, you can use the following:
 
 ```@example 1
-chn1 = sample(model, NUTS(), 10; chain_type=VNChain, save_state=true)
-chn2 = sample(model, NUTS(), 10; chain_type=VNChain, resume_from=chn1)
+chn1 = sample(model, NUTS(), 10;
+    chain_type=VNChain, save_state=true
+)
+chn2 = sample(model, NUTS(), 10;
+    chain_type=VNChain, initial_state=only(FlexiChains.last_sampler_state(chn1))
+)
 ```
 
 The chains can be combined using `vcat`:
@@ -253,12 +257,8 @@ The chains can be combined using `vcat`:
 combined_chn = vcat(chn1, chn2)
 ```
 
-!!! note "Multiple-chain sampling"
+!!! note "The `initial_state` argument"
     
-    In general, the `resume_from` argument only works automatically if both the original and resumed sampling use the same number of chains.
-    That is, `chn1` and `chn2` must either both be invoked as `sample(model, spl, N)`, or both invoked as `sample(model, spl, MCMCThreads(), N, C)` with the same `C`.
-    
-    If you need more flexibility than this, then the `initial_state` keyword argument is recommended instead.
     When performing **single-chain sampling** with `sample(model, spl, N; initial_state=state)`, `initial_state` should be either `nothing` (to start a new chain) or the state to resume from.
     For **multiple-chain sampling** with `sample(model, spl, MCMCThreads(), N, C)`, `initial_state` should be a vector of length `C`, where `initial_state[i]` is the state to resume the `i`-th chain from (or `nothing` to start a new chain).
     

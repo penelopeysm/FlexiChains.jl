@@ -215,7 +215,7 @@ Turing.setprogress!(false)
                     10;
                     chain_type=VNChain,
                     verbose=false,
-                    resume_from=chn1,
+                    initial_state=only(FlexiChains.last_sampler_state(chn1)),
                 )
                 # check that it did reuse the previous state
                 xval = chn1[@varname(x)][end]
