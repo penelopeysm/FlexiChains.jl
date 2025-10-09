@@ -38,7 +38,8 @@ You can serialise and deserialise `FlexiChain` and `FlexiSummary` objects using 
 ```@example serialization
 using FlexiChains, Turing, Serialization
 
-chn = sample(model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain)
+@model f() = x ~ Normal()
+chn = sample(model, NUTS(), MCMCThreads(), 100, 3; chain_type=VNChain)
 fname = "mychain"
 serialize(fname, chn)
 ```
