@@ -1,4 +1,53 @@
 """
+    _smartcat(v1, v2)
+
+Attempt to 'cleverly' concatenate two vectors of integers, returning a vector of integers.
+This is used to concatenate the iteration indices of two `FlexiChain`s during `vcat`.
+
+Essentially, if the concatenation of the two vectors can be represented as a single
+`UnitRange` or `StepRange`, then we try to do so. Otherwise we will just fall back to
+returning a boring `Vector{Int}`.
+
+But most importantly, if `v1` and `v2` are each in ascending order, this function will
+guarantee that `_smartcat(v1, v2)` is also in ascending order.
+"""
+function _smartcat(v1::DDL.Sampled, v2::DDL.Sampled)
+    return _make_lookup(_smartcat(parent(v1), parent(v2)))
+end
+function _smartcat(v1::UnitRange, v2::StepRange)
+    return if v2.step == 1
+        _smartcat(v1, (v2.start):(v2.stop))
+    else
+        vcat(v1, maximum(v1) .+ v2)
+    end
+end
+function _smartcat(v1::StepRange, v2::UnitRange)
+    return if v1.step == 1
+        _smartcat((v1.start):(v1.stop), v2)
+    else
+        vcat(v1, maximum(v1) .+ v2)
+    end
+end
+function _smartcat(v1::StepRange, v2::StepRange)
+    return if v1.step == v2.step && v1.stop + v1.step == v2.start
+        (v1.start):(v1.step):(v2.stop)
+    else
+        vcat(v1, maximum(v1) .+ v2)
+    end
+end
+function _smartcat(v1::UnitRange, v2::UnitRange)
+    return if v1.stop + 1 == v2.start
+        (v1.start):(v2.stop)
+    else
+        vcat(v1, maximum(v1) .+ v2)
+    end
+end
+function _smartcat(v1::AbstractVector{<:Integer}, v2::AbstractVector{<:Integer})
+    # default
+    return vcat(v1, maximum(v1) .+ v2)
+end
+
+"""
     Base.vcat(cs...::FlexiChain{TKey}) where {TKey}
 
 Concatenate one or more `FlexiChain`s along the iteration dimension. Both `c1` and `c2` must
@@ -41,11 +90,12 @@ function Base.vcat(
         end
         d[k] = vcat(c1_data, c2_data)
     end
+    new_iter_indices = _smartcat(FlexiChains.iter_indices(c1), FlexiChains.iter_indices(c2))
     return FlexiChain{TKey}(
         niters(c1) + niters(c2),
         nchains(c1),
         d;
-        iter_indices=vcat(FlexiChains.iter_indices(c1), FlexiChains.iter_indices(c2)),
+        iter_indices=new_iter_indices,
         chain_indices=FlexiChains.chain_indices(c1),
         sampling_time=FlexiChains.sampling_time(c1) .+ FlexiChains.sampling_time(c2),
         last_sampler_state=FlexiChains.last_sampler_state(c2),
