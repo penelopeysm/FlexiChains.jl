@@ -268,19 +268,22 @@ context of `lookup`.
 This is very similar to `DimensionalData.selectindices` but with a special case for when the
 length of the returned indices is 1: in that case we have to return a singleton vector
 rather than just that index.
+
+Additionally return a boolean indicating whether the dimension should be collapsed (i.e., if
+`s` was a single integer, or `At(i)`).
 """
-_selectindices(::Nothing, ::Any) = Colon() # this happens with collapsed stat dimension
-_selectindices(::DD.Lookup, ::Colon) = Colon()
-_selectindices(::DD.Lookup, s::AbstractRange) = s
-_selectindices(::DD.Lookup, i::Integer) = i:i # Nicer output than just [i]
-_selectindices(::DD.Lookup, v::AbstractVector{<:Integer}) = v
+_selectindices(::Nothing, ::Any) = Colon(), false # this happens with collapsed stat dimension
+_selectindices(::DD.Lookup, ::Colon) = Colon(), false
+_selectindices(::DD.Lookup, s::AbstractRange) = s, false
+_selectindices(::DD.Lookup, i::Integer) = i:i, true # Nicer output than just [i]
+_selectindices(::DD.Lookup, v::AbstractVector{<:Integer}) = v, false
 function _selectindices(lookup::DD.Lookup, s)
     # This just handles all other types, including Selectors, sets, etc.
     indices = DDL.selectindices(lookup, s)
-    return if length(indices) == 1
-        indices:indices
+    return if indices isa Integer
+        indices:indices, true
     else
-        indices
+        indices, false
     end
 end
 
@@ -334,6 +337,29 @@ function _get_multi_keys(
     # https://github.com/JuliaLang/julia/issues/59626jg
     return map(k -> _get_multi_key(TKey, all_keys, k), keyvec)
 end
+
+"""
+    _get_indices_and_lookup(
+        fcs::ChainOrSummary,
+        indices_function::Union{
+            typeof(iter_indices),typeof(chain_indices),typeof(stat_indices)
+        },
+        index,
+    )
+
+Helper function that, given a `FlexiChain` or `FlexiSummary`, a function to retrieve
+the indices, and an object to select a subset of those indices, return:
+
+- the 1-based indices to use to index into the raw data
+- the actual indices (i.e. the output of `indices_function(fcs)`) that correspond to
+  those 1-based indices
+- whether the dimension should be collapsed (i.e., if `index` was a single integer,
+  or `At(i)`)
+
+Right now, `getindex` doesn't make use of the last return value. See
+https://github.com/penelopeysm/FlexiChains.jl/issues/51. However, `values_at` and
+`parameters_at` do make use of it.
+"""
 function _get_indices_and_lookup(
     fcs::ChainOrSummary,
     indices_function::Union{
@@ -343,10 +369,10 @@ function _get_indices_and_lookup(
 )
     old_lookup = indices_function(fcs)
     # handle collapsed stat dimension
-    isnothing(old_lookup) && return Colon(), nothing
-    new_indices = _selectindices(old_lookup, index)
+    isnothing(old_lookup) && return Colon(), nothing, true
+    new_indices, collapse = _selectindices(old_lookup, index)
     new_lookup = old_lookup[new_indices]
-    return new_indices, new_lookup
+    return new_indices, new_lookup, collapse
 end
 
 """
@@ -415,8 +441,10 @@ function Base.getindex(
 ) where {TKey}
     # Figure out which indices we are using -- these refer to the actual 1-based indices
     # that we use to index into the original Matrix
-    new_iter_indices, new_iter_lookup = _get_indices_and_lookup(fchain, iter_indices, iter)
-    new_chain_indices, new_chain_lookup = _get_indices_and_lookup(
+    new_iter_indices, new_iter_lookup, _ = _get_indices_and_lookup(
+        fchain, iter_indices, iter
+    )
+    new_chain_indices, new_chain_lookup, _ = _get_indices_and_lookup(
         fchain, chain_indices, chain
     )
     # Figure out which keys to include in the returned chain

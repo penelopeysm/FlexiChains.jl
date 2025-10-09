@@ -359,16 +359,13 @@ using Test
     end
 
     @testset "values_at / parameters_at" begin
-        N = 10
+        Ni, Nc = 10, 3
         c = FlexiChain{Symbol}(
-            N, 1, OrderedDict(Parameter(:a) => rand(N), Extra("c") => rand(N))
-        )
-        c2 = FlexiChain{Any}(
-            N, 1, OrderedDict(Parameter(:a) => rand(N), Parameter("a") => rand(N))
+            Ni, Nc, OrderedDict(Parameter(:a) => rand(Ni, Nc), Extra("c") => rand(Ni, Nc))
         )
 
         @testset "values_at" begin
-            for i in 1:N
+            for i in 1:Ni
                 d = FlexiChains.values_at(c, i, 1)
                 @test d isa OrderedDict
                 @test length(d) == 2
@@ -382,12 +379,37 @@ using Test
                 @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i], c=c[Extra("c")][i])
             end
 
-            @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, NamedTuple)
-            @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, ComponentArray)
+            @testset "with vectors of indices" begin
+                iters = 1:5
+                d = FlexiChains.values_at(c, iters, 1)
+                @test d isa
+                    DD.DimVector{<:OrderedDict{<:FlexiChains.ParameterOrExtra{Symbol}}}
+                for i in iters
+                    @test d[i] == FlexiChains.values_at(c, i, 1)
+                end
+                d = FlexiChains.values_at(c, iters, :)
+                @test d isa
+                    DD.DimMatrix{<:OrderedDict{<:FlexiChains.ParameterOrExtra{Symbol}}}
+                for i in iters, j in 1:Nc
+                    @test d[i, j] == FlexiChains.values_at(c, i, j)
+                end
+            end
+
+            @testset "ambiguous keys" begin
+                c2 = FlexiChain{Any}(
+                    Ni,
+                    Nc,
+                    OrderedDict(
+                        Parameter(:a) => rand(Ni, Nc), Parameter("a") => rand(Ni, Nc)
+                    ),
+                )
+                @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, NamedTuple)
+                @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, ComponentArray)
+            end
         end
 
         @testset "parameters_at" begin
-            for i in 1:N
+            for i in 1:Ni
                 d = FlexiChains.parameters_at(c, i, 1)
                 @test length(d) == 1
                 @test d[:a] == c[Parameter(:a)][i]
@@ -399,8 +421,33 @@ using Test
                 @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i])
             end
 
-            @test_throws ArgumentError FlexiChains.parameters_at(c2, 1, 1, NamedTuple)
-            @test_throws ArgumentError FlexiChains.parameters_at(c2, 1, 1, ComponentArray)
+            @testset "with vectors of indices" begin
+                iters = 1:5
+                d = FlexiChains.parameters_at(c, iters, 1)
+                @test d isa DD.DimVector{<:OrderedDict{Symbol}}
+                for i in iters
+                    @test d[i] == FlexiChains.parameters_at(c, i, 1)
+                end
+                d = FlexiChains.parameters_at(c, iters, :)
+                @test d isa DD.DimMatrix{<:OrderedDict{Symbol}}
+                for i in iters, j in 1:Nc
+                    @test d[i, j] == FlexiChains.parameters_at(c, i, j)
+                end
+            end
+
+            @testset "ambiguous keys" begin
+                c2 = FlexiChain{Any}(
+                    Ni,
+                    Nc,
+                    OrderedDict(
+                        Parameter(:a) => rand(Ni, Nc), Parameter("a") => rand(Ni, Nc)
+                    ),
+                )
+                @test_throws ArgumentError FlexiChains.parameters_at(c2, 1, 1, NamedTuple)
+                @test_throws ArgumentError FlexiChains.parameters_at(
+                    c2, 1, 1, ComponentArray
+                )
+            end
         end
     end
 
