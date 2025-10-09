@@ -27,9 +27,18 @@ Fixed equality comparisons on FlexiChain and FlexiSummary (previously only the d
 
 A new function `FlexiChains.has_same_data(chn1, chn2; strict)` has been added to compare only the data of two chains.
 
+## Improved dictionary interface
+
+On top of `Base.keys(chn)` and `FlexiChains.parameters(chn)`, the following functions have been added:
+
+- `Base.values(chn; parameters_only)`
+- `Base.pairs(chn; parameters_only)`
+
+to extract the matrices, or key-matrix pairs, from a chain. The boolean `parameters_only` can be used to restrict the output to only parameter keys.
+
 ## `values_at` and `parameters_at`
 
-These functions have been added to allow you to extract all values, or all parameters, at a specific iteration.
+These functions have been added to allow you to extract all values, or all parameters, at one or more iterations.
 These can be extracted either as `Dict`, `NamedTuple`, or `ComponentArray` (the latter will require you to load ComponentArrays.jl first).
 
 These functions replace what were previously called `get_dict_from_iter` and `get_parameter_from_at_iter`.
