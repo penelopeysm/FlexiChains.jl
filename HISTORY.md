@@ -45,6 +45,9 @@ These functions replace what were previously called `get_dict_from_iter` and `ge
 
 ## Other changes
 
+`DynamicPPL.predict` on a FlexiChain now takes the `include_all` keyword argument, which controls whether parameter values are also included in the returned chain.
+Please note that the default behaviour is different compared to MCMCChains.jl: FlexiChains by default uses `include_all=true`, whereas MCMCChains.jl uses `include_all=false`.
+
 `vcat` now attempts to very smartly concatenate the iteration indices from two chains.
 In any case, it should _always_ be that concatenating two chains will result in the iteration numbers of the second chain being higher than those of the first chain.
 
