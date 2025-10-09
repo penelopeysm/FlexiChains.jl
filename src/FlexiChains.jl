@@ -37,6 +37,10 @@ include("interface/mergesubset.jl")
 include("interface/decomp.jl")
 include("varname.jl")
 
+# These denote the 'special' keys that we use for Turing.jl return values
+const _LOGJOINT_KEY = Extra(:logjoint)
+const _LOGPRIOR_KEY = Extra(:logprior)
+const _LOGLIKELIHOOD_KEY = Extra(:loglikelihood)
 # Overloaded in TuringExt.
 """
     to_varname_dict(transition)::AbstractDict{VarName,Any}

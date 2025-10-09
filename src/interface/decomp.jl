@@ -10,7 +10,7 @@ type by passing `:` for both arguments.
 """
 
 _VALUES_PARAMETER_AT_WARNING = """
-!!! warning "Using `NamedTuple` or `ComponentArray`
+!!! warning "Using `NamedTuple` or `ComponentArray`"
 
     This will throw an error if any key cannot be converted to a `Symbol`, or if there are
     duplicate key names after conversion. If you have parameter names that convert to the

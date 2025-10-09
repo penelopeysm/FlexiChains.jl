@@ -8,6 +8,20 @@ using OrderedCollections: OrderedDict, OrderedSet
 # Conversion to MCMCChains #
 ############################
 
+"""
+    MCMCChains.Chains(chain::FlexiChain{<:VarName})
+
+Convert a `FlexiChain{<:VarName}` to an `MCMCChains.Chains` object.
+
+Array-valued VarNames are split up into their individual real-valued elements, much like the
+output that you get directly from sampling with Turing + MCMCChains.
+
+!!! note "Splitting VarNames"
+
+    If your only aim is to split VarNames, you can use [`FlexiChains.split_varnames`](@ref)
+    instead. The conversion to MCMCChains is only useful if you specifically want to use
+    functionality that is only available in MCMCChains.
+"""
 function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
     ni, nc = size(vnchain)
     array_of_dicts = [FlexiChains.parameters_at(vnchain, i, j) for i in 1:ni, j in 1:nc]
