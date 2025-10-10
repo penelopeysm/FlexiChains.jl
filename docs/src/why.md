@@ -1,4 +1,4 @@
-# Why use FlexiChains?
+# Why FlexiChains?
 
 If you are a Turing user (or developer!), you may well be asking why you should consider using FlexiChains.jl.
 
