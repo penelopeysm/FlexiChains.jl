@@ -33,6 +33,7 @@ makedocs(;
         "api.md",
         "internals.md",
         "why.md",
+        "whynot.md",
     ],
     checkdocs=:exports,
     warnonly=true,
