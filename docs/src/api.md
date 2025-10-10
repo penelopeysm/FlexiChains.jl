@@ -1,8 +1,5 @@
 # Public API
 
-!!! danger
-    This page is still a work in progress. Please check back later for updates.
-
 The types and functions documented on this page form part of FlexiChains's public API.
 
 On Julia 1.11 and later, these are marked with the `public` keyword (or are extensions of other packages' APIs).
@@ -124,4 +121,12 @@ DynamicPPL.predict
 MCMCChains.Chains
 ```
 
-TODO: Summaries, plotting.
+## Summaries
+
+!!! danger
+
+    TODO
+
+## Plotting
+
+The plotting interface is documented on the [plotting page](./plotting.md).

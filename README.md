@@ -64,7 +64,7 @@ Finally, functions in Turing.jl which take chains as input, such as `returned`, 
 
 Turing's default data type for Markov chains is [`MCMCChains.Chains`](https://turinglang.org/MCMCChains.jl/stable/).
 
-This entire package essentially came about because I think `MCMCChains.Chains` is a bad data structure.
+This entire package essentially came about because `MCMCChains.Chains` is, in my opinion, a bad data structure.
 
 Consider the following model:
 
@@ -98,3 +98,5 @@ This leads to several problems:
 FlexiChains solves all of these by making the mapping of parameters to values much more flexible (hence the name).
 Both keys and values can, in general, be of any type.
 This makes for a less compact representation of the data, but means that information about the chain is preserved much more faithfully.
+
+For more information, and some concrete examples of where FlexiChains does better, [please see the 'Why FlexiChains' documentation page](https://pysm.dev/FlexiChains.jl/stable/why/).
