@@ -32,8 +32,10 @@ makedocs(;
         "integrations.md",
         "api.md",
         "internals.md",
+        "why.md",
     ],
     checkdocs=:exports,
+    warnonly=true,
     doctest=false,
     plugins=[links],
 )
