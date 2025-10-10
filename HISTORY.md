@@ -43,6 +43,10 @@ These can be extracted either as `Dict`, `NamedTuple`, or `ComponentArray` (the 
 
 These functions replace what were previously called `get_dict_from_iter` and `get_parameter_from_at_iter`.
 
+## Renaming keys
+
+The `map_keys` and `map_parameters` functions have been introduced to allow you to rename keys in a chain if needed.
+
 ## Other changes
 
 `DynamicPPL.predict` on a FlexiChain now takes the `include_all` keyword argument, which controls whether parameter values are also included in the returned chain.
