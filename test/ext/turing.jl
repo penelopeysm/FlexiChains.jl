@@ -301,6 +301,45 @@ Turing.setprogress!(false)
         end
     end
 
+    @testset "pointwise logprobs" begin
+        @model function f(y)
+            x ~ Normal()
+            return y ~ Normal(x)
+        end
+        model = f(1.0)
+
+        chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+        xs = chn[@varname(x)]
+
+        @testset "logdensities" begin
+            pld = DynamicPPL.pointwise_logdensities(model, chn)
+            @test pld isa VNChain
+            @test FlexiChains.iter_indices(pld) == FlexiChains.iter_indices(chn)
+            @test FlexiChains.chain_indices(pld) == FlexiChains.chain_indices(chn)
+            @test length(keys(pld)) == 2
+            @test isapprox(pld[@varname(x)], logpdf.(Normal(), xs))
+            @test isapprox(pld[@varname(y)], logpdf.(Normal.(xs), 1.0))
+        end
+
+        @testset "loglikelihoods" begin
+            pld = DynamicPPL.pointwise_loglikelihoods(model, chn)
+            @test pld isa VNChain
+            @test FlexiChains.iter_indices(pld) == FlexiChains.iter_indices(chn)
+            @test FlexiChains.chain_indices(pld) == FlexiChains.chain_indices(chn)
+            @test length(keys(pld)) == 1
+            @test isapprox(pld[@varname(y)], logpdf.(Normal.(xs), 1.0))
+        end
+
+        @testset "logpriors" begin
+            pld = DynamicPPL.pointwise_prior_logdensities(model, chn)
+            @test pld isa VNChain
+            @test FlexiChains.iter_indices(pld) == FlexiChains.iter_indices(chn)
+            @test FlexiChains.chain_indices(pld) == FlexiChains.chain_indices(chn)
+            @test length(keys(pld)) == 1
+            @test isapprox(pld[@varname(x)], logpdf.(Normal(), xs))
+        end
+    end
+
     @testset "returned" begin
         @model function f()
             x ~ Normal()

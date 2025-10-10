@@ -219,4 +219,74 @@ function DynamicPPL.predict(
     return DynamicPPL.predict(Random.default_rng(), model, chain; include_all=include_all)
 end
 
+"""
+    DynamicPPL.pointwise_logdensities(
+        model::Model,
+        chain::FlexiChain{T},
+        ::Val{whichlogprob}=Val(:both),
+    )::FlexiChain{T} where {T<:VarName,whichlogprob}
+
+Calculate the log probability density associated with each variable in the model, for each
+iteration in the `FlexiChain`.
+
+The `whichlogprob` argument controls which log probabilities are calculated and stored. It can take the values `:prior`, `:likelihood`, or `:both` (the default).
+
+Returns a new `FlexiChain` with the same structure as the input `chain`, mapping the
+variables to their log probabilities.
+"""
+function DynamicPPL.pointwise_logdensities(
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}, ::Val{whichlogprob}=Val(:both)
+) where {whichlogprob}
+    AccType = DynamicPPL.PointwiseLogProbAccumulator{whichlogprob,VarName}
+    pld_dicts = map(reevaluate(model, chain, (AccType(),))) do (_, vi)
+        logps = DynamicPPL.getacc(vi, Val(DynamicPPL.accumulator_name(AccType))).logps
+        OrderedDict{ParameterOrExtra{<:VarName},Any}(
+            Parameter(vn) => only(val) for (vn, val) in logps
+        )
+    end
+    return FlexiChain{VarName}(
+        FlexiChains.niters(chain),
+        FlexiChains.nchains(chain),
+        pld_dicts;
+        iter_indices=FlexiChains.iter_indices(chain),
+        chain_indices=FlexiChains.chain_indices(chain),
+    )
+end
+
+"""
+    DynamicPPL.pointwise_loglikelihoods(
+        model::Model,
+        chain::FlexiChain{<:VarName},
+    )::FlexiChain{VarName} where
+
+Calculate the log likelihood associated with each observed variable in the model, for each
+iteration in the `FlexiChain`.
+
+Returns a new `FlexiChain` with the same structure as the input `chain`, mapping the
+observed variables to their log probabilities.
+"""
+function DynamicPPL.pointwise_loglikelihoods(
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+)
+    return DynamicPPL.pointwise_logdensities(model, chain, Val(:likelihood))
+end
+
+"""
+    DynamicPPL.pointwise_prior_logdensities(
+        model::Model,
+        chain::FlexiChain{<:VarName},
+    )::FlexiChain{VarName} where
+
+Calculate the log likelihood associated with each observed variable in the model, for each
+iteration in the `FlexiChain`.
+
+Returns a new `FlexiChain` with the same structure as the input `chain`, mapping the
+observed variables to their log probabilities.
+"""
+function DynamicPPL.pointwise_prior_logdensities(
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+)
+    return DynamicPPL.pointwise_logdensities(model, chain, Val(:prior))
+end
+
 end # module FlexiChainsDynamicPPLExt
