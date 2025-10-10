@@ -119,13 +119,16 @@ FlexiChains.split_varnames
 ## Integration with Turing.jl
 
 ```@docs
-DynamicPPL.loadstate
 DynamicPPL.logprior
 DynamicPPL.loglikelihood
 DynamicPPL.logjoint
 DynamicPPL.returned
 DynamicPPL.predict
+DynamicPPL.pointwise_logdensities
+DynamicPPL.pointwise_loglikelihoods
+DynamicPPL.pointwise_prior_logdensities
 MCMCChains.Chains
+DynamicPPL.loadstate
 ```
 
 ## Summaries

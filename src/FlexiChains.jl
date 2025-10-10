@@ -41,6 +41,11 @@ include("varname.jl")
 const _LOGJOINT_KEY = Extra(:logjoint)
 const _LOGPRIOR_KEY = Extra(:logprior)
 const _LOGLIKELIHOOD_KEY = Extra(:loglikelihood)
+# Used in DynamicPPLExt.
+struct PointwiseProb{T<:VarName}
+    varname::T
+end
+Base.show(io::IO, p::PointwiseProb) = print(io, "PointwiseProb(@varname($(p.varname)))")
 # Overloaded in TuringExt.
 """
     to_varname_dict(transition)::AbstractDict{VarName,Any}

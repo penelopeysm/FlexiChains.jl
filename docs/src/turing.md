@@ -271,13 +271,12 @@ combined_chn = vcat(chn1, chn2)
 ## Posterior predictions and friends
 
 The functions `predict`, `returned`, `logjoint`, `loglikelihood`, and `logprior` all work 'as expected' using FlexiChains with exactly the same signatures that you are used to.
-Please consult [the Turing.jl documentation](https://turinglang.org/Turing.jl/stable/api/#Predictions) for more details.
 
 ```@example 1
 returned(model, chain)
 ```
 
-The `pointwise_logdensity` family of functions is not yet implemented.
+`pointwise_logdensities`, `pointwise_loglikelihoods`, and `pointwise_prior_logdensities` are also supported, and will return a new FlexiChain containing the log-probabilities for each variable.
 
 ## Plotting
 
