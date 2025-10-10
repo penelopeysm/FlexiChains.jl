@@ -1,4 +1,4 @@
-# Why _not_ FlexiChains?
+# Why not FlexiChains?
 
 Since I wrote one whole page saying why you _should_ use FlexiChains, here are the counterarguments, or at least those I can think of.
 
