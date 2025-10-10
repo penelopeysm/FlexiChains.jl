@@ -47,6 +47,11 @@ These functions replace what were previously called `get_dict_from_iter` and `ge
 
 The `map_keys` and `map_parameters` functions have been introduced to allow you to rename keys in a chain if needed.
 
+## Pointwise log probabilities
+
+The set of DynamicPPL functions `pointwise_logdensities`, `pointwise_loglikelihoods`, and `pointwise_prior_logdensities` have been implemented for FlexiChains.
+Note that these methods on FlexiChains return a FlexiChain itself, and you are not allowed to specify the output key type: it is always VarName.
+
 ## Other changes
 
 `DynamicPPL.predict` on a FlexiChain now takes the `include_all` keyword argument, which controls whether parameter values are also included in the returned chain.
