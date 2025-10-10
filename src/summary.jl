@@ -311,6 +311,22 @@ function _raw_to_user_data(
     end
 end
 
+"""
+    _replace_data(summary::FlexiSummary, new_keytype, new_data)
+
+Construct a new `FlexiSummary` with the same indices as `summary`, but with `new_data`. Note
+that the key type of the resulting FlexiSummary must be specified, and must be consistent
+with `new_data`.
+
+!!! danger
+    Do not use this function unless you are very sure of what you are doing!
+"""
+function _replace_data(summary::FlexiSummary, ::Type{newkey}, new_data) where {newkey}
+    return FlexiSummary{newkey}(
+        new_data, iter_indices(summary), chain_indices(summary), stat_indices(summary)
+    )
+end
+
 function _get_names_and_funcs(names_or_funcs::AbstractVector)
     names = Symbol[]
     funcs = Function[]

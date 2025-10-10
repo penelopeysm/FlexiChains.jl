@@ -1,7 +1,8 @@
 module FCInterfaceTests
 
 using ComponentArrays: ComponentArray
-using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, @varname, VarName
+using FlexiChains:
+    FlexiChains, FlexiChain, Parameter, Extra, ParameterOrExtra, @varname, VarName
 using DimensionalData: DimensionalData as DD
 using OrderedCollections: OrderedDict
 using AbstractMCMC: AbstractMCMC
@@ -785,6 +786,78 @@ using Test
             Parameter(@varname(b[2])),
             Extra("hello"),
         ])
+    end
+
+    @testset "map_keys" begin
+        N_iters = 10
+        dicts = fill(
+            OrderedDict(Parameter(:a) => 1, Parameter(:b) => 2, Extra("hello") => 3.0),
+            N_iters,
+        )
+        chain = FlexiChain{Symbol}(N_iters, 1, dicts)
+
+        @testset "trivial identity mapping" begin
+            idchain = FlexiChains.map_keys(identity, chain)
+            @test idchain isa FlexiChain{Symbol}
+            @test isequal(chain, idchain)
+            @test collect(keys(idchain)) == collect(keys(chain))
+        end
+
+        @testset "a working mapping" begin
+            g(s::Parameter{Symbol}) = Parameter(String(s.name))
+            g(e::Extra) = Extra(Symbol(e.name))
+            gchain = FlexiChains.map_keys(g, chain)
+            @test gchain isa FlexiChain{String}
+            # this checks that the order of keys is preserved
+            @test collect(keys(gchain)) == [Parameter("a"), Parameter("b"), Extra(:hello)]
+            @test gchain[Parameter("a")] == chain[Parameter(:a)]
+            @test gchain[Parameter("b")] == chain[Parameter(:b)]
+            @test gchain[Extra(:hello)] == chain[Extra("hello")]
+        end
+
+        @testset "bad function output" begin
+            # Doesn't return a valid key
+            h(::Any) = 1
+            @test_throws ArgumentError FlexiChains.map_keys(h, chain)
+            # Returns duplicate keys
+            j(::Any) = Parameter(:hello)
+            @test_throws ArgumentError FlexiChains.map_keys(j, chain)
+        end
+    end
+
+    @testset "map_parameters" begin
+        N_iters = 10
+        dicts = fill(
+            OrderedDict(Parameter(:a) => 1, Parameter(:b) => 2, Extra("hello") => 3.0),
+            N_iters,
+        )
+        chain = FlexiChain{Symbol}(N_iters, 1, dicts)
+
+        @testset "trivial identity mapping" begin
+            idchain = FlexiChains.map_parameters(identity, chain)
+            @test idchain isa FlexiChain{Symbol}
+            @test isequal(chain, idchain)
+            @test collect(keys(idchain)) == collect(keys(chain))
+        end
+
+        @testset "a working mapping" begin
+            gchain = FlexiChains.map_parameters(String, chain)
+            @test gchain isa FlexiChain{String}
+            # this checks that the order of keys is preserved
+            @test collect(keys(gchain)) == [Parameter("a"), Parameter("b"), Extra("hello")]
+            @test gchain[Parameter("a")] == chain[Parameter(:a)]
+            @test gchain[Parameter("b")] == chain[Parameter(:b)]
+            @test gchain[Extra("hello")] == chain[Extra("hello")]
+        end
+
+        @testset "bad function output" begin
+            # Doesn't return a valid key
+            h(::Any) = 1
+            @test_throws ArgumentError FlexiChains.map_keys(h, chain)
+            # Returns duplicate keys
+            j(::Any) = Parameter(:hello)
+            @test_throws ArgumentError FlexiChains.map_keys(j, chain)
+        end
     end
 end
 

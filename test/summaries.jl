@@ -4,6 +4,7 @@ using DimensionalData: DimensionalData as DD
 using FlexiChains:
     FlexiChains,
     FlexiChain,
+    FlexiSummary,
     Parameter,
     ParameterOrExtra,
     Extra,
@@ -12,6 +13,7 @@ using FlexiChains:
     summarystats
 using MCMCDiagnosticTools
 using Logging: Warn
+using OrderedCollections: OrderedDict
 using Serialization: serialize, deserialize
 using Statistics
 using Test
@@ -106,28 +108,28 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
     end
 
     @testset "other summary functions" begin
-        @test ess(chain) isa FlexiChains.FlexiSummary
-        @test ess(chain; dims=:iter) isa FlexiChains.FlexiSummary
-        @test ess(chain; dims=:chain) isa FlexiChains.FlexiSummary
-        @test ess(chain; kind=:tail) isa FlexiChains.FlexiSummary
-        @test ess(chain; dims=:iter, kind=:tail) isa FlexiChains.FlexiSummary
-        @test ess(chain; dims=:chain, kind=:tail) isa FlexiChains.FlexiSummary
-        @test rhat(chain) isa FlexiChains.FlexiSummary
-        @test rhat(chain; dims=:iter) isa FlexiChains.FlexiSummary
-        @test rhat(chain; dims=:chain) isa FlexiChains.FlexiSummary
-        @test mcse(chain) isa FlexiChains.FlexiSummary
-        @test mcse(chain; dims=:iter) isa FlexiChains.FlexiSummary
-        @test mcse(chain; dims=:chain) isa FlexiChains.FlexiSummary
-        @test quantile(chain, 0.5) isa FlexiChains.FlexiSummary
-        @test quantile(chain, 0.5; dims=:iter) isa FlexiChains.FlexiSummary
-        @test quantile(chain, 0.5; dims=:chain) isa FlexiChains.FlexiSummary
-        @test quantile(chain, [0.5, 0.9]) isa FlexiChains.FlexiSummary
-        @test quantile(chain, [0.5, 0.9]; dims=:iter) isa FlexiChains.FlexiSummary
-        @test quantile(chain, [0.5, 0.9]; dims=:chain) isa FlexiChains.FlexiSummary
+        @test ess(chain) isa FlexiSummary
+        @test ess(chain; dims=:iter) isa FlexiSummary
+        @test ess(chain; dims=:chain) isa FlexiSummary
+        @test ess(chain; kind=:tail) isa FlexiSummary
+        @test ess(chain; dims=:iter, kind=:tail) isa FlexiSummary
+        @test ess(chain; dims=:chain, kind=:tail) isa FlexiSummary
+        @test rhat(chain) isa FlexiSummary
+        @test rhat(chain; dims=:iter) isa FlexiSummary
+        @test rhat(chain; dims=:chain) isa FlexiSummary
+        @test mcse(chain) isa FlexiSummary
+        @test mcse(chain; dims=:iter) isa FlexiSummary
+        @test mcse(chain; dims=:chain) isa FlexiSummary
+        @test quantile(chain, 0.5) isa FlexiSummary
+        @test quantile(chain, 0.5; dims=:iter) isa FlexiSummary
+        @test quantile(chain, 0.5; dims=:chain) isa FlexiSummary
+        @test quantile(chain, [0.5, 0.9]) isa FlexiSummary
+        @test quantile(chain, [0.5, 0.9]; dims=:iter) isa FlexiSummary
+        @test quantile(chain, [0.5, 0.9]; dims=:chain) isa FlexiSummary
     end
 
     @testset "summarystats" begin
-        @test summarystats(chain) isa FlexiChains.FlexiSummary
+        @test summarystats(chain) isa FlexiSummary
         # Not sure what else we want to test here; all the individual functions are
         # well-tested...
     end
@@ -277,7 +279,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
             @testset "vector of keys" begin
                 fs2 = fs[[Parameter(@varname(x)), Parameter(@varname(y))]]
-                @test fs2 isa FlexiChains.FlexiSummary
+                @test fs2 isa FlexiSummary
                 @test FlexiChains.iter_indices(fs2) == FlexiChains.iter_indices(fs)
                 @test FlexiChains.chain_indices(fs2) == FlexiChains.chain_indices(fs)
                 @test FlexiChains.stat_indices(fs2) == FlexiChains.stat_indices(fs)
@@ -324,7 +326,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
             @testset "vector of keys" begin
                 fs2 = fs[[Parameter(@varname(x)), Parameter(@varname(y))]]
-                @test fs2 isa FlexiChains.FlexiSummary
+                @test fs2 isa FlexiSummary
                 @test FlexiChains.iter_indices(fs2) == FlexiChains.iter_indices(fs)
                 @test FlexiChains.chain_indices(fs2) == FlexiChains.chain_indices(fs)
                 @test FlexiChains.stat_indices(fs2) == FlexiChains.stat_indices(fs)
@@ -360,7 +362,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
             @testset "vector of keys" begin
                 fs2 = fs[[Parameter(@varname(x)), Parameter(@varname(y))]]
-                @test fs2 isa FlexiChains.FlexiSummary
+                @test fs2 isa FlexiSummary
                 @test FlexiChains.iter_indices(fs2) == FlexiChains.iter_indices(fs)
                 @test FlexiChains.chain_indices(fs2) == FlexiChains.chain_indices(fs)
                 @test FlexiChains.stat_indices(fs2) == FlexiChains.stat_indices(fs)
@@ -445,6 +447,85 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             )
             # check with no kwargs too
             @test fs[Parameter(@varname(x))] isa Any
+        end
+    end
+
+    @testset "map_keys" begin
+        dicts = fill(
+            OrderedDict(
+                Parameter(:a) => randn(10, 3),
+                Parameter(:b) => randn(10, 3),
+                Extra("hello") => randn(10, 3),
+            ),
+            10,
+            3,
+        )
+        chain = FlexiChain{Symbol}(10, 3, dicts)
+        smy = FlexiChains.summarystats(chain)
+
+        @testset "trivial identity mapping" begin
+            idsmy = FlexiChains.map_keys(identity, smy)
+            @test idsmy isa FlexiSummary{Symbol}
+            @test isequal(smy, idsmy)
+            @test collect(keys(idsmy)) == collect(keys(smy))
+        end
+
+        @testset "a working mapping" begin
+            g(s::Parameter{Symbol}) = Parameter(String(s.name))
+            g(e::Extra) = Extra(Symbol(e.name))
+            gsmy = FlexiChains.map_keys(g, smy)
+            @test gsmy isa FlexiSummary{String}
+            # this checks that the order of keys is preserved
+            @test collect(keys(gsmy)) == [Parameter("a"), Parameter("b"), Extra(:hello)]
+            @test isequal(gsmy[Parameter("a")], smy[Parameter(:a)])
+            @test isequal(gsmy[Parameter("b")], smy[Parameter(:b)])
+            @test isequal(gsmy[Extra(:hello)], smy[Extra("hello")])
+        end
+
+        @testset "bad function output" begin
+            # Doesn't return a valid key
+            h(::Any) = 1
+            @test_throws ArgumentError FlexiChains.map_keys(h, smy)
+            # Returns duplicate keys
+            j(::Any) = Parameter(:hello)
+            @test_throws ArgumentError FlexiChains.map_keys(j, smy)
+        end
+    end
+
+    @testset "map_parameters" begin
+        dicts = fill(
+            OrderedDict(
+                Parameter(:a) => randn(10, 3),
+                Parameter(:b) => randn(10, 3),
+                Extra("hello") => randn(10, 3),
+            ),
+            10,
+            3,
+        )
+        chain = FlexiChain{Symbol}(10, 3, dicts)
+        smy = FlexiChains.summarystats(chain)
+
+        @testset "trivial identity mapping" begin
+            idsmy = FlexiChains.map_parameters(identity, smy)
+            @test idsmy isa FlexiSummary{Symbol}
+            @test isequal(smy, idsmy)
+            @test collect(keys(idsmy)) == collect(keys(smy))
+        end
+
+        @testset "a working mapping" begin
+            gsmy = FlexiChains.map_parameters(String, smy)
+            @test gsmy isa FlexiSummary{String}
+            # this checks that the order of keys is preserved
+            @test collect(keys(gsmy)) == [Parameter("a"), Parameter("b"), Extra("hello")]
+            @test isequal(gsmy[Parameter("a")], smy[Parameter(:a)])
+            @test isequal(gsmy[Parameter("b")], smy[Parameter(:b)])
+            @test isequal(gsmy[Extra("hello")], smy[Extra("hello")])
+        end
+
+        @testset "bad function output" begin
+            # Returns duplicate keys
+            j(::Any) = 1
+            @test_throws ArgumentError FlexiChains.map_parameters(j, smy)
         end
     end
 end
