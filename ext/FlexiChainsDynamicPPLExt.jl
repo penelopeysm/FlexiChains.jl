@@ -245,7 +245,11 @@ function DynamicPPL.pointwise_logdensities(
         )
     end
     return FlexiChain{VarName}(
-        FlexiChains.niters(chain), FlexiChains.nchains(chain), pld_dicts
+        FlexiChains.niters(chain),
+        FlexiChains.nchains(chain),
+        pld_dicts;
+        iter_indices=FlexiChains.iter_indices(chain),
+        chain_indices=FlexiChains.chain_indices(chain),
     )
 end
 
