@@ -509,3 +509,25 @@ function _raw_to_user_data(chain::FlexiChain, mat::Matrix)
         ),
     )
 end
+
+"""
+    _replace_data(chain::FlexiChain, new_keytype, new_data)
+
+Construct a new `FlexiChain` with the same metadata as `chain`, but with `new_data`. Note
+that the key type of the resulting FlexiChain must be specified, and must be consistent with
+`new_data`.
+
+!!! danger
+    Do not use this function unless you are very sure of what you are doing!
+"""
+function _replace_data(chain::FlexiChain, ::Type{newkey}, new_data) where {newkey}
+    return FlexiChain{newkey}(
+        niters(chain),
+        nchains(chain),
+        new_data;
+        iter_indices=iter_indices(chain),
+        chain_indices=chain_indices(chain),
+        sampling_time=sampling_time(chain),
+        last_sampler_state=last_sampler_state(chain),
+    )
+end

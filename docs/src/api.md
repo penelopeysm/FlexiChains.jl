@@ -70,6 +70,13 @@ Base.pairs(::FlexiChains.ChainOrSummary)
 
 For the public interface of `getindex`, please see [the Indexing page](@ref Indexing).
 
+## Renaming keys
+
+```@docs
+FlexiChains.map_keys
+FlexiChains.map_parameters
+```
+
 ## Accessing metadata
 
 Chains additionally store some metadata:

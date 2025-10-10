@@ -1,4 +1,5 @@
-@public parameters, extras
+@public parameters, extras, has_parameter
+@public map_keys, map_parameters
 
 """
     Base.keys(cs::ChainOrSummary)
@@ -71,7 +72,7 @@ function Base.pairs(cs::ChainOrSummary; parameters_only::Bool=false)
 end
 
 """
-    parameters(cs::ChainOrSummary{TKey}) where {TKey}
+    FlexiChains.parameters(cs::ChainOrSummary{TKey}) where {TKey}
 
 Returns a vector of parameter names in the `FlexiChain` or summary thereof.
 """
@@ -94,7 +95,7 @@ function has_parameter(cs::ChainOrSummary{TKey}, key::TKey) where {TKey}
 end
 
 """
-    extras(cs::ChainOrSummary)
+    FlexiChains.extras(cs::ChainOrSummary)
 
 Returns a vector of non-parameter names in the `FlexiChain` or summary thereof.
 """
@@ -106,4 +107,81 @@ function extras(cs::ChainOrSummary)::Vector{Extra}
         end
     end
     return other_key_names
+end
+
+"""
+Figure out the new key type for a FlexiChain or FlexiSummary after mapping keys with `f`.
+"""
+function _get_new_keytype(f, ks::Base.KeySet)
+    # This is surprisingly hard!
+    all_keys = collect(ks)
+    seen = Set()
+    for k in all_keys
+        new_key = f(k)
+        if !(new_key isa ParameterOrExtra)
+        end
+        if new_key in seen
+            throw(
+                ArgumentError(
+                    "function `f` must return unique keys; got duplicates of `$new_key`"
+                ),
+            )
+        else
+            push!(seen, new_key)
+        end
+    end
+    new_params = filter(k -> k isa Parameter, collect(seen))
+    new_param_names = map(p -> p.name, new_params)
+    return if isempty(new_param_names)
+        Any
+    else
+        eltype(new_param_names)
+    end
+end
+
+"""
+    FlexiChains.map_keys(f, cs::ChainOrSummary{T})::ChainOrSummary{S} where {T,S}
+
+Rename the keys of a `FlexiChain` or `FlexiSummary` by applying the function `f` to each key.
+
+`f` must have the signature `f(::ParameterOrExtra{<:T}) -> ParameterOrExtra{<:S}`. It must return a unique key for each input key.
+
+"""
+function map_keys(f, cs::ChainOrSummary)
+    new_keytype = _get_new_keytype(f, keys(cs))
+    N = cs isa FlexiChain ? 2 : 3
+    new_data = OrderedDict{ParameterOrExtra{<:new_keytype},Array{<:Any,N}}(
+        f(k) => v for (k, v) in pairs(cs._data)
+    )
+    return _replace_data(cs, new_keytype, new_data)
+end
+
+"""
+    FlexiChains.map_parameters(f, cs::ChainOrSummary{T})::ChainOrSummary{S} where {T,S}
+
+Rename the parameters of a `FlexiChain` or `FlexiSummary` by applying the function `f` to each parameter name.
+
+`f` must have the signature `f(::T) -> S`. It must return a unique parameter for each input parameter.
+"""
+function map_parameters(f, cs::ChainOrSummary)
+    seen = Set()
+    for p in parameters(cs)
+        newp = f(p)
+        if newp in seen
+            throw(
+                ArgumentError(
+                    "function `f` must return unique parameter names; got duplicates of `$newp`",
+                ),
+            )
+        else
+            push!(seen, newp)
+        end
+    end
+    new_keytype = eltype(map(identity, collect(seen)))
+    wrapper_f = k -> k isa Parameter ? Parameter(f(k.name)) : k
+    N = cs isa FlexiChain ? 2 : 3
+    new_data = OrderedDict{ParameterOrExtra{<:new_keytype},Array{<:Any,N}}(
+        wrapper_f(k) => v for (k, v) in pairs(cs._data)
+    )
+    return _replace_data(cs, new_keytype, new_data)
 end
