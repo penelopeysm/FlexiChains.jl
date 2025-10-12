@@ -108,26 +108,6 @@ Same as `FlexiChains.autocorplot`, but uses `plot!` instead of `plot`.
 """
 function autocorplot! end
 
-"""
-    FlexiChains.mtraceplot(
-        chn::FlexiChain{TKey}[, param_or_params];
-        kwargs...
-    )
-
-Same as `FlexiChains.traceplot` but for Makie.jl.
-"""
-function mtraceplot end
-
-"""
-    FlexiChains.mtraceplot!(
-        chn::FlexiChain{TKey}[, param_or_params];
-        kwargs...
-    )
-
-Same as `FlexiChains.mtraceplot`, but uses `plot!` instead of `plot`.
-"""
-function mtraceplot! end
-
 ###########################################################
 # Utility functions for plotting (shared across backends) #
 ###########################################################

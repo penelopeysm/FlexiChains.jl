@@ -63,7 +63,7 @@ default, unless the `split_varnames=false` keyword argument is passed.
 """
 @recipe function _(
     chn::FC.FlexiChain{TKey},
-    param_or_params=FC.Parameter.(FC.parameters(chn)),
+    param_or_params=FC.Parameter.(FC.parameters(chn));
     lags=nothing,
     demean=nothing,
 ) where {TKey}
