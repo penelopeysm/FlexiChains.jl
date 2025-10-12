@@ -173,29 +173,55 @@ function check_eltype_is_real(::AbstractArray{T}) where {T}
     end
 end
 
+struct FlexiChainTrace{TKey,Tp<:ParameterOrExtra{<:TKey}}
+    chn::FlexiChain{TKey}
+    param::Tp
+end
+
+struct FlexiChainHistogram{TKey,Tp<:ParameterOrExtra{<:TKey}}
+    chn::FlexiChain{TKey}
+    param::Tp
+end
+
+function runningmean(v::AbstractVector{<:Union{Real,Missing}})
+    y = similar(v, Float64)
+    n = 0
+    sum = zero(eltype(v))
+    for i in eachindex(v)
+        if !ismissing(v[i])
+            n += 1
+            sum += v[i]
+        end
+        y[i] = sum / n
+    end
+    return y
+end
+struct FlexiChainMean{TKey,Tp<:ParameterOrExtra{<:TKey}}
+    chn::FlexiChain{TKey}
+    param::Tp
+end
+
 """
 Calculate default lags for autocorrelation plots. This is directly taken from StatsBase.jl.
 """
 function default_lags(chn::FlexiChain)
     return 1:min(niters(chn) - 1, round(Int, 10 * log10(niters(chn))))
 end
+struct FlexiChainAutoCor{TKey,Tp<:ParameterOrExtra{<:TKey},Tl<:AbstractVector{Int}}
+    chn::FlexiChain{TKey}
+    param::Tp
+    lags::Tl
+    demean::Bool
+end
 
-"""
-Struct to dispatch on when making a standard MCMC trace plot.
-"""
-struct FlexiChainTrace{TKey,Tp<:ParameterOrExtra{<:TKey}}
+struct FlexiChainMixedDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
 end
 
-"""
-Histogram for discrete data. The `pool_chains` parameter indicates whether to plot each
-chain separately (`false`)`, or to combine all chains into a single histogram (`true`).
-"""
-struct FlexiChainHistogram{TKey,Tp<:ParameterOrExtra{<:TKey}}
+struct FlexiChainDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
-    pool_chains::Bool
 end
 
-end # module
+end # module PlotUtils

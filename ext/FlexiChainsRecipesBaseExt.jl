@@ -89,7 +89,7 @@ default, unless the `split_varnames=false` keyword argument is passed.
             end
             @series begin
                 subplot := 2i
-                FlexiChainMixedDensity(chn, k)
+                FC.PlotUtils.FlexiChainMixedDensity(chn, k)
             end
         else
             @series begin
@@ -97,15 +97,15 @@ default, unless the `split_varnames=false` keyword argument is passed.
                 if seriestype === _TRACEPLOT_SERIESTYPE
                     return FC.PlotUtils.FlexiChainTrace(chn, k)
                 elseif seriestype === _MIXEDDENSITY_SERIESTYPE
-                    return FlexiChainMixedDensity(chn, k)
+                    return FC.PlotUtils.FlexiChainMixedDensity(chn, k)
                 elseif seriestype === :density
-                    return FlexiChainDensity(chn, k)
+                    return FC.PlotUtils.FlexiChainDensity(chn, k)
                 elseif seriestype === :histogram
-                    return FlexiChainHistogram(chn, k)
+                    return FC.PlotUtils.FlexiChainHistogram(chn, k)
                 elseif seriestype === _MEANPLOT_SERIESTYPE
-                    return FlexiChainMean(chn, k)
+                    return FC.PlotUtils.FlexiChainMean(chn, k)
                 elseif seriestype === _AUTOCORPLOT_SERIESTYPE
-                    return FlexiChainAutoCor(chn, k, lags, demean)
+                    return FC.PlotUtils.FlexiChainAutoCor(chn, k, lags, demean)
                 else
                     return (chn, k, seriestype)
                 end
@@ -146,7 +146,7 @@ end
     end
     @series begin
         subplot := 2
-        FlexiChainMixedDensity(tad.chn, tad.param)
+        FC.PlotUtils.FlexiChainMixedDensity(tad.chn, tad.param)
     end
 end
 
@@ -167,29 +167,12 @@ end
 """
 Plot of running mean.
 """
-function runningmean(v::AbstractVector{<:Union{Real,Missing}})
-    y = similar(v, Float64)
-    n = 0
-    sum = zero(eltype(v))
-    for i in eachindex(v)
-        if !ismissing(v[i])
-            n += 1
-            sum += v[i]
-        end
-        y[i] = sum / n
-    end
-    return y
-end
-struct FlexiChainMean{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
-    chn::FC.FlexiChain{TKey}
-    param::Tp
-end
-@recipe function _(t::FlexiChainMean)
+@recipe function _(t::FC.PlotUtils.FlexiChainMean)
     seriestype := :line
     # Extract data
     x = FC.iter_indices(t.chn)
     data = FC._get_raw_data(t.chn, t.param)
-    y = mapslices(runningmean, data; dims=1)
+    y = mapslices(FC.PlotUtils.runningmean, data; dims=1)
     FC.PlotUtils.check_eltype_is_real(y)
     # Set labels
     xguide --> "iteration number"
@@ -202,13 +185,7 @@ end
 """
 Plot of autocorrelation.
 """
-struct FlexiChainAutoCor{TKey,Tp<:FC.ParameterOrExtra{<:TKey},Tl<:AbstractVector{Int}}
-    chn::FC.FlexiChain{TKey}
-    param::Tp
-    lags::Tl
-    demean::Bool
-end
-@recipe function _(t::FlexiChainAutoCor)
+@recipe function _(t::FC.PlotUtils.FlexiChainAutoCor)
     seriestype := :line
     # Extract data
     x = t.lags
@@ -227,19 +204,15 @@ end
 Detect whether data are discrete or continuous, and dispatch to the histogram and density
 methods respectively.
 """
-struct FlexiChainMixedDensity{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
-    chn::FC.FlexiChain{TKey}
-    param::Tp
-end
-@recipe function _(ad::FlexiChainMixedDensity)
+@recipe function _(ad::FC.PlotUtils.FlexiChainMixedDensity)
     # Extract data
     raw = FC._get_raw_data(ad.chn, ad.param)
     FC.PlotUtils.check_eltype_is_real(raw)
     # Detect if it's discrete or continuous. This is a bit of a hack!
     if eltype(raw) <: Integer
-        return FlexiChainHistogram(ad.chn, ad.param)
+        return FC.PlotUtils.FlexiChainHistogram(ad.chn, ad.param)
     else
-        return FlexiChainDensity(ad.chn, ad.param)
+        return FC.PlotUtils.FlexiChainDensity(ad.chn, ad.param)
     end
 end
 
@@ -248,11 +221,7 @@ Density plot for continuous data. The `pool_chains` keyword argument indicates w
 plot each chain separately (`false`)`, or to combine all chains into a single density
 estimate (`true`).
 """
-struct FlexiChainDensity{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
-    chn::FC.FlexiChain{TKey}
-    param::Tp
-end
-@recipe function _(d::FlexiChainDensity; pool_chains=false)
+@recipe function _(d::FC.PlotUtils.FlexiChainDensity; pool_chains=false)
     seriestype := :density
     # Extract data
     x = FC.iter_indices(d.chn)
@@ -275,11 +244,7 @@ end
 Histogram for discrete data. The `pool_chains` keyword argument indicates whether to plot
 each chain separately (`false`)`, or to combine all chains into a single histogram (`true`).
 """
-struct FlexiChainHistogram{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
-    chn::FC.FlexiChain{TKey}
-    param::Tp
-end
-@recipe function _(h::FlexiChainHistogram; pool_chains=false)
+@recipe function _(h::FC.PlotUtils.FlexiChainHistogram; pool_chains=false)
     seriestype := :histogram
     # Extract data
     raw = FC._get_raw_data(h.chn, h.param)
