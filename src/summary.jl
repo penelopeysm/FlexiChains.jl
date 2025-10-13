@@ -597,20 +597,12 @@ macro forward_stat_function_each(func)
             elseif dims == :iter
                 [(
                     Symbol($(esc(func))),
-                    x -> reshape(
-                        map(c -> $(esc(func))(c; kwargs...), eachcol(x)),
-                        1,
-                        size(x, 2),
-                    ),
+                    x -> mapslices(c -> $(esc(func))(c; kwargs...), x; dims=1),
                 )]
             elseif dims == :chain
                 [(
                     Symbol($(esc(func))),
-                    x -> reshape(
-                        map(r -> $(esc(func))(r; kwargs...), eachrow(x)),
-                        size(x, 1),
-                        1,
-                    ),
+                    x -> mapslices(r -> $(esc(func))(r; kwargs...), x; dims=2),
                 )]
             else
                 throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
@@ -696,23 +688,9 @@ function Statistics.quantile(
         # quantile only acts on a vector so we have to linearise the matrix x
         [(:quantile, x -> Statistics.quantile(x[:], p; kwargs...))]
     elseif dims == :iter
-        [(
-            :quantile,
-            x -> reshape(
-                map(c -> Statistics.quantile(c, p; kwargs...), eachcol(x)),
-                1,
-                size(x, 2),
-            ),
-        )]
+        [(:quantile, x -> mapslices(c -> Statistics.quantile(c, p; kwargs...), x; dims=1))]
     elseif dims == :chain
-        [(
-            :quantile,
-            x -> reshape(
-                map(r -> Statistics.quantile(r, p; kwargs...), eachrow(x)),
-                size(x, 1),
-                1,
-            ),
-        )]
+        [(:quantile, x -> mapslices(r -> Statistics.quantile(r, p; kwargs...), x; dims=2))]
     else
         throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
     end
