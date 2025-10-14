@@ -30,15 +30,24 @@ chain = sample(model, NUTS(), 5; chain_type=VNChain)
     
     We only run 5 MCMC iterations here to keep the output in the following sections small.
 
+## Key types
+
+First, notice in the printout above that a `FlexiChain` stores 'parameters' and 'extra keys' separately.
+Parameters correspond to random variables of the model you sampled from, whereas other keys are extra data associated with the samples drawn (for example, the log-joint probability of each sample).
+
+In FlexiChains, these are wrapped in the [`FlexiChains.Parameter`](@ref) and [`FlexiChains.Extra`](@ref) types respectively.
+Thus, the parameter `mu` is really stored as `Parameter(@varname(mu))`, and the log-joint probability is `Extra(:logjoint)`.
+
+For a `FlexiChain{T}`, all `Parameter` keys must wrap objects that subtype `T`.
+`Extra`s on the other hand can wrap anything.
+
 ## Accessing data
 
-First, notice in the printout above that a `FlexiChain` stores 'parameters' and 'other keys' separately.
-Parameters correspond to random variables of the model you sampled from, whereas other keys are extra data associated with the samples drawn (for example, the log-joint probability of each sample).
-Each of these are accessed in a slightly different way.
+FlexiChains provides multiple different ways to access the data for a given key.
 
 ### Parameters
 
-To access parameters, the _most correct_ way is to use `VarName`s to index into the chain.
+To access parameters, the recommended way is to use `VarName`s to index into the chain.
 `VarName` is a data structure [defined in AbstractPPL.jl](https://turinglang.org/AbstractPPL.jl/stable/api/#AbstractPPL.VarName), and is what Turing.jl uses to represent the name of a random variable (appearing on the left-hand side of a tilde-statement).
 
 `VarName`s are most easily constructed by applying the `@varname` macro to the name of the variable that you want to access.
@@ -47,6 +56,10 @@ For example, this directly gives us the value of `mu` in each iteration as a pla
 ```@example 1
 chain[@varname(mu)]
 ```
+
+!!! note "`Parameter`"
+
+    When looking up a parameter, you do not need to wrap the `VarName` in `FlexiChains.Parameter(...)`: this will be automatically done for you.
 
 !!! note "DimMatrix"
     
@@ -139,7 +152,7 @@ chain[:mu] # parameter
 
 !!! note "What does unambiguous mean?"
     
-    In this case, because the only parameter `p` for which `Symbol(p) == :mu` is `@varname(mu)`, we can safely identify `@varname(mu)` as the parameter that we want.
+    In this case, because the only key `k` for which `Symbol(k.name) == :mu` is `Parameter(@varname(mu))`, we can safely identify `Parameter(@varname(mu))` as the key that we want. If this chain also had an extra key called `Extra(:mu)`, then this would be ambiguous, and FlexiChains would throw an error.
 
 !!! note "No sub-varnames"
     
@@ -150,8 +163,6 @@ Likewise, we can omit wrapping `:logjoint` in `Extra(...)`:
 ```@example 1
 chain[:logjoint] # other key
 ```
-
-If there is any ambiguity present (for example if there is also a parameter named `@varname(logjoint)`), FlexiChains will throw an error.
 
 ## Splitting VarNames up
 
