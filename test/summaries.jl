@@ -207,6 +207,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             display(mean(chain; dims=:iter))
             display(median(chain; dims=:chain))
             display(std(chain; dims=:both))
+            display(summarystats(chain))
         end
     end
 

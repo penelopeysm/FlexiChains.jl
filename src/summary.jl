@@ -163,27 +163,49 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
     maybe_s(x) = x == 1 ? "" : "s"
     printstyled(io, "FlexiSummary"; bold=true)
     ii = iter_indices(summary)
+    ci = chain_indices(summary)
+    si = stat_indices(summary)
+
+    headers = String[]
+    if !isnothing(ii)
+        push!(headers, "$(length(ii)) iteration$(maybe_s(length(ii)))")
+    end
+    if !isnothing(ci)
+        push!(headers, "$(length(ci)) chain$(maybe_s(length(ci)))")
+    end
+    if !isnothing(si)
+        push!(headers, "$(length(si)) statistic$(maybe_s(length(si)))")
+    end
+    if !isempty(headers)
+        printstyled(io, " ($(join(headers, ", ")))"; bold=true)
+    end
+    println(io)
+
     color_counter = 1
     if !isnothing(ii)
-        printstyled(io, " | $(length(ii)) iterations ("; bold=true)
-        printstyled(io, "$(_show_range(ii))"; color=DD.dimcolor(color_counter), bold=true)
-        color_counter += 1
-        printstyled(io, ")"; bold=true)
-    end
-    ci = chain_indices(summary)
-    if !isnothing(ci)
-        printstyled(io, " | $(length(ci)) iterations ("; bold=true)
-        printstyled(io, "$(_show_range(ci))"; color=DD.dimcolor(color_counter), bold=true)
-        color_counter += 1
-        printstyled(io, ")"; bold=true)
-    end
-    si = summary._stat_indices
-    if !isnothing(si)
-        printstyled(io, " | $(length(si)) statistic$(maybe_s(length(si))) ("; bold=true)
         printstyled(
-            io, "$(join(parent(si), ", "))"; color=DD.dimcolor(color_counter), bold=true
+            io,
+            "$(DD.dimsymbol(color_counter)) iter=$(_show_range(ii))";
+            color=DD.dimcolor(color_counter),
         )
-        printstyled(io, ")"; bold=true)
+        color_counter += 1
+    end
+    if !isnothing(ci)
+        color_counter > 1 && print(io, " | ")
+        printstyled(
+            io,
+            "$(DD.dimsymbol(color_counter)) chain=$(_show_range(ci))";
+            color=DD.dimcolor(color_counter),
+        )
+        color_counter += 1
+    end
+    if !isnothing(si)
+        color_counter > 1 && print(io, " | ")
+        printstyled(
+            io,
+            "$(DD.dimsymbol(color_counter)) stat=$(_show_range(si))";
+            color=DD.dimcolor(color_counter),
+        )
     end
     println(io)
     println(io)
@@ -205,7 +227,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
     if isempty(extra_names)
         print(io, "(none)")
     else
-        print(io, join(map(e -> repr(e.name), extra_names), ", "))
+        print(io, join(map(e -> _pretty_value(e.name), extra_names), ", "))
     end
 
     # If both iter and chain dimensions have been collapsed, we can print in a 
@@ -214,7 +236,8 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
         println(io)
         MAX_COL_WIDTH = 12 # absolute max
         header_col = [
-            "param", map(p -> _truncate(repr(p), MAX_COL_WIDTH), parameter_names)...
+            "param",
+            map(p -> _truncate(_pretty_value(p), MAX_COL_WIDTH), parameter_names)...,
         ]
 
         if isnothing(si)
