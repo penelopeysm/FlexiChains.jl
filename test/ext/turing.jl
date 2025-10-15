@@ -270,6 +270,21 @@ Turing.setprogress!(false)
         end
     end
 
+    @testset "summaries on chains from Turing" begin
+        @model function f()
+            x ~ Normal()
+            y ~ Poisson()
+            return z ~ MvNormal(zeros(2), I)
+        end
+        model = f()
+        chn = sample(model, MH(), 100; chain_type=VNChain)
+        ss = FlexiChains.summarystats(chn)
+        @test ss isa FlexiChains.FlexiSummary
+        @test Set(FlexiChains.parameters(ss)) ==
+            Set([@varname(x), @varname(y), @varname(z[1]), @varname(z[2])])
+        display(ss)
+    end
+
     @testset "logp(model, chain)" begin
         @model function f()
             x ~ Normal()

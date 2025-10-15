@@ -1,7 +1,8 @@
 # Indexing
 
 A `FlexiChain` stores data in a  _rich_ format: that means that instead of just storing a raw matrix of data, it also includes information about the iteration numbers and chain numbers.
-Additionally, `FlexiSummary` objects also sometimes store information about which summary functions were applied (especially when there are multiple of these).
+
+Additionally, `FlexiSummary` objects (which you get when performing any kind of summarisation on a chain, e.g. with [`summarystats`](@ref)) also sometimes store information about which summary functions were applied (especially when there are multiple of these).
 
 This information is used when constructing the `DimensionalData.DimArray` outputs that you see when indexing into a `FlexiChain` or `FlexiSummary` object.
 But, on top of this, it also allows you to more surgically index into these objects using this information.
@@ -65,13 +66,16 @@ This last one returns a `FlexiChain` object, because multiple keys were specifie
 The data that we didn't care for, such as `@varname(x[2])`, are simply dropped.
 
 Notice that this also gives us a way to 'flatten' a `FlexiChain` object such that all of its keys point to scalar values.
-We just need to find a full set of sub-`VarName`s:
+We just need to find a full set of sub-`VarName`s, like the following.
+In practice you don't need to construct this set yourself: the [`split_varnames`](@ref) function will do this for you.
 
 ```@example 1
 chn[[@varname(x[1]), @varname(x[2])]]
 ```
 
 ## Examples: summaries
+
+Calling any summary function such as `mean`, `std`, or `summarystats` on a `FlexiChain` object will return a `FlexiSummary` object.
 
 ```@example 1
 sm = summarystats(chn)
@@ -82,11 +86,13 @@ Notice two things:
 1. This summary no longer has `iter` or `chain` dimensions, because the summary statistics have been calculated over all iterations and chains. However, it has a `stat` dimension, which we will need to use when accessing the data.
 2. The variable `x` has been broken up for you into its components `x[1]` and `x[2]`.
 
+Indexing is very similar as for chains, but there is an additional `stat` dimension which lets you specify which summary statistic you want to access.
+
 ```@example 1
 sm[@varname(x[1]), stat=At(:mean)]
 ```
 
-If you only apply a single summary function, such as `mean`, then the `stat` dimension will be automatically collapsed for you; you won't need to again specify `At(:mean)` when indexing.
+If only a single summary function was applied, e.g. via `mean(chn)`, then the `stat` dimension will be automatically collapsed for you; you won't need to again specify `At(:mean)` when indexing.
 
 ```@example 1
 sm_mean = mean(chn)
@@ -117,7 +123,7 @@ To specify a single key, you can use:
 - a parameter name (e.g. for a `FlexiChain{T}`, an object of type `T`);
 - a `VarName` or sub-`VarName`, for a `FlexiChain{VarName}` (i.e. `VNChain`);
 - a `FlexiChains.Extra` for non-parameter keys;
-- a `Symbol`, as long as it refers to an unambiguous key;
+- a `Symbol`, as long as it [refers to an unambiguous key](@ref Indexing-by-Symbol:-a-shortcut);
 - a `FlexiChains.Parameter` (this is mentioned for completeness; as a user you probably don't need to do this)
 
 On the other hand, you could specify multiple keys via:
