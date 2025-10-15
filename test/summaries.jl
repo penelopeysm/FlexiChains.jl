@@ -45,8 +45,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
     @testset "collapse" begin
         @testset for func in ENABLED_SUMMARY_FUNCS
             @testset "dims=:iter" begin
-                name_and_func = (Symbol(func), x -> func(x; dims=1))
-                fs = FlexiChains.collapse(chain, [name_and_func]; dims=:iter)
+                fs = FlexiChains.collapse(chain, [func]; dims=:iter)
                 @test fs[:a] isa DD.DimMatrix
                 @test parent(parent(DD.dims(fs[:a], :chain))) ==
                     FlexiChains.chain_indices(chain) ==
@@ -60,14 +59,13 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 else
                     # the key "actuallyString" should be skipped
                     @test_logs (:warn, r"\"actuallyString\"") FlexiChains.collapse(
-                        chain, [name_and_func]; dims=:iter
+                        chain, [func]; dims=:iter
                     )
                 end
             end
 
             @testset "dims=:chain" begin
-                name_and_func = (Symbol(func), x -> func(x; dims=2))
-                fs = FlexiChains.collapse(chain, [name_and_func]; dims=:chain)
+                fs = FlexiChains.collapse(chain, [func]; dims=:chain)
                 @test fs[:a] isa DD.DimMatrix
                 @test parent(parent(DD.dims(fs[:a], :iter))) ==
                     FlexiChains.iter_indices(chain) ==
@@ -82,7 +80,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 else
                     # the key "actuallyString" should be skipped
                     @test_logs (:warn, r"\"actuallyString\"") FlexiChains.collapse(
-                        chain, [name_and_func]; dims=:chain
+                        chain, [func]; dims=:chain
                     )
                 end
             end
@@ -144,9 +142,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
     @testset "drop_stat_dim=true" begin
         @testset "iter" begin
-            fs = FlexiChains.collapse(
-                chain, [(:mean, x -> mean(x; dims=1))]; dims=:iter, drop_stat_dim=true
-            )
+            fs = FlexiChains.collapse(chain, [mean]; dims=:iter, drop_stat_dim=true)
             @test fs[:a] isa DD.DimVector
             @test parent(parent(DD.dims(fs[:a], :chain))) ==
                 FlexiChains.chain_indices(chain) ==
@@ -155,9 +151,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
 
         @testset "chain" begin
-            fs = FlexiChains.collapse(
-                chain, [(:mean, x -> mean(x; dims=2))]; dims=:chain, drop_stat_dim=true
-            )
+            fs = FlexiChains.collapse(chain, [mean]; dims=:chain, drop_stat_dim=true)
             @test fs[:a] isa DD.DimVector
             @test parent(parent(DD.dims(fs[:a], :iter))) ==
                 FlexiChains.iter_indices(chain) ==
@@ -421,7 +415,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
         @testset "iter collapsed only" begin
             # Test that attempting to index in with `iter=...` errors, but `stat=...` works
-            fs = FlexiChains.collapse(chain, [(:mean, x -> mean(x; dims=1))]; dims=:iter)
+            fs = FlexiChains.collapse(chain, [mean]; dims=:iter)
             @test_throws ArgumentError FlexiChains._check_summary_kwargs(
                 fs, Colon(), Colon(), Colon()
             )
