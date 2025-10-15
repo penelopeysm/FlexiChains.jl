@@ -93,7 +93,9 @@ savefig("plot1.svg"); nothing # hide
 ![Trace and density plots of the sampled chain](plot1.svg)
 
 Notice that `Extra` keys, like the log probabilities, are not plotted by default.
-If you want to plot specific parameter(s), you can specify them as the second positional argument:
+If you want to plot specific parameter(s), you can specify them as the second positional argument.
+In general, the second argument can be _anything_ that you can index into a chain with.
+This means a symbol, a parameter, a `FlexiChains.Extra`, a sub-VarName, or a vector thereof:
 
 ```@example 1
 plot(chn, [@varname(x), :logjoint])
@@ -101,9 +103,6 @@ savefig("plot2.svg"); nothing # hide
 ```
 
 ![Trace and density plots of x and the logjoint](plot2.svg)
-
-In general, the second argument can be _anything_ that you can index into a chain with.
-This means a symbol, a parameter, a `FlexiChains.Extra`, a sub-VarName, or a vector thereof.
 
 While the density plots above are useful for comparing whether the chains have mixed well, the overlapping histograms are harder to make sense of.
 You can combine the histograms by setting `pool_chains=true`.
