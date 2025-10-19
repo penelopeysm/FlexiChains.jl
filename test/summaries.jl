@@ -435,7 +435,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
         @testset "iter collapsed only" begin
             # Test that attempting to index in with `iter=...` errors, but `stat=...` works
-            fs = FlexiChains.collapse(chain, [mean]; dims=:iter)
+            fs = FlexiChains.collapse(chain, [mean]; dims=:iter, split_varnames=false)
             @test_throws ArgumentError FlexiChains._check_summary_kwargs(
                 fs, Colon(), Colon(), Colon()
             )
