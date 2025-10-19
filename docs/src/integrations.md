@@ -29,6 +29,21 @@ summarystats(chn)
 FlexiChains.from_posteriordb_ref
 ```
 
+## PosteriorStats.jl
+
+[Documentation for PosteriorStats.jl](@extref PosteriorStats :doc:`index`)
+
+PosteriorStats.jl provides the `hdi` and `eti` functions for computing highest density
+intervals and equal-tailed intervals, respectively.
+These are overloaded for `FlexiChain` objects in much the same way as `Statistics.mean`, `Statistics.std`, etc. (see [the Summarising page](@ref "Individual statistics") for more information).
+
+Note however that you will need to import PosteriorStats.jl explicitly to use these functions (as they are implemented in an extension rather than the main package).
+
+```@docs
+PosteriorStats.hdi(::FlexiChains.FlexiChain; kwargs...)
+PosteriorStats.eti(::FlexiChains.FlexiChain; kwargs...)
+```
+
 ## Serialization.jl
 
 Calling this an 'integration' is a bit of a stretch, because it simply works out of the box (no extra code needed), but it had to be documented somewhere...

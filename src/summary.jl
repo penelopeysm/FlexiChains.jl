@@ -452,16 +452,23 @@ If the `drop_stat_dim` keyword argument is `true` and only one function is provi
 `funcs`, then the resulting `FlexiSummary` will have the `stat` dimension dropped. This allows
 for easier indexing into the result when only one statistic is computed. It is an error to set
 `drop_stat_dim=true` when more than one function is provided.
-
-The return type is a [`FlexiSummary`](@ref).
 """
 function collapse(
     chain::FlexiChain{TKey},
     funcs::AbstractVector;
     dims::Symbol=:both,
     warn::Bool=true,
+    split_varnames::Bool=(TKey <: VarName),
     drop_stat_dim::Bool=false,
 ) where {TKey}
+    if split_varnames
+        TKey <: VarName || throw(
+            ArgumentError(
+                "`split_varnames=true` is only supported for chains with `TKey<:VarName`",
+            ),
+        )
+        chain = FlexiChains.split_varnames(chain)
+    end
     data = OrderedDict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
     names, funcs = _get_names_and_funcs(funcs)
     expected_size = _get_expected_size(niters(chain), nchains(chain), dims)
@@ -535,16 +542,16 @@ the `chain`. If the statistic cannot be computed for a key, that key is
 skipped and a warning is issued (which can be suppressed by setting
 `warn=false`).
 
-The `dims` keyword argument specifies which dimensions to collapse.
-- `:iter`: collapse the iteration dimension only
-- `:chain`: collapse the chain dimension only
-- `:both`: collapse both the iteration and chain dimensions (default)
+The `dims` keyword argument specifies which dimensions to collapse. The default value
+of `:both` collapses both the iteration and chain dimensions. Other valid values are
+`:iter` or `:chain`, which respectively collapse only the iteration or chain dimension.
 
 The `split_varnames` keyword argument, if `true`, will first split up `VarName`s in the
 chain such that each `VarName` corresponds to a single scalar value. This is only supported
 for chains with `TKey<:VarName`.
 
-Other keyword arguments are forwarded to `$(func_name)`.
+Other keyword arguments are forwarded to [`$(func_name)`](@extref); please see its
+documentation for details of supported keyword arguments.
 """
 end
 
@@ -562,18 +569,11 @@ macro _forward_stat(func)
             split_varnames::Bool=(TKey <: VarName),
             kwargs...,
         ) where {TKey}
-            if split_varnames
-                TKey <: VarName || throw(
-                    ArgumentError(
-                        "`split_varnames=true` is only supported for chains with `TKey<:VarName`",
-                    ),
-                )
-                chn = FlexiChains.split_varnames(chn)
-            end
             return collapse(
                 chn,
                 [(Symbol($(esc(func))), x -> $(esc(func))(x; kwargs...))];
                 dims=dims,
+                split_varnames=split_varnames,
                 warn=warn,
                 drop_stat_dim=true,
             )
@@ -615,23 +615,14 @@ $(_stat_docstring("Base.prod", "product"))
 @_forward_stat Base.prod
 """
 $(_stat_docstring("MCMCDiagnosticTools.ess", "effective sample size"))
-
-For a full list of keyword arguments, please see the documentation for
-[`MCMCDiagnosticTools.ess`](@extref).
 """
 @_forward_stat MCMCDiagnosticTools.ess
 """
 $(_stat_docstring("MCMCDiagnosticTools.rhat", "R-hat diagnostic"))
-
-For a full list of keyword arguments, please see the documentation for
-[`MCMCDiagnosticTools.rhat`](@extref).
 """
 @_forward_stat MCMCDiagnosticTools.rhat
 """
 $(_stat_docstring("MCMCDiagnosticTools.mcse", "Monte Carlo standard error"))
-
-For a full list of keyword arguments, please see the documentation for
-[`MCMCDiagnosticTools.mcse`](@extref).
 """
 @_forward_stat MCMCDiagnosticTools.mcse
 """
@@ -682,14 +673,6 @@ function Statistics.quantile(
     split_varnames::Bool=(TKey <: VarName),
     kwargs...,
 ) where {TKey}
-    if split_varnames
-        TKey <: VarName || throw(
-            ArgumentError(
-                "`split_varnames=true` is only supported for chains with `TKey<:VarName`",
-            ),
-        )
-        chn = FlexiChains.split_varnames(chn)
-    end
     funcs = if dims == :both
         # quantile only acts on a vector so we have to linearise the matrix x
         [(:quantile, x -> Statistics.quantile(x[:], p; kwargs...))]
@@ -700,7 +683,9 @@ function Statistics.quantile(
     else
         throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
     end
-    return collapse(chn, funcs; dims=dims, warn=warn, drop_stat_dim=true)
+    return collapse(
+        chn, funcs; dims=dims, split_varnames=split_varnames, warn=warn, drop_stat_dim=true
+    )
 end
 
 """
@@ -732,14 +717,6 @@ resulting `FlexiSummary`, and a warning issued. The warning can be suppressed by
 function StatsBase.summarystats(
     chain::FlexiChain{TKey}; split_varnames::Bool=(TKey <: VarName), warn::Bool=true
 ) where {TKey}
-    if split_varnames
-        TKey <: VarName || throw(
-            ArgumentError(
-                "`split_varnames=true` is only supported for chains with `TKey<:VarName`",
-            ),
-        )
-        chain = FlexiChains.split_varnames(chain)
-    end
     _DEFAULT_SUMMARYSTAT_FUNCTIONS = [
         (:mean, Statistics.mean),
         (:std, Statistics.std),
@@ -751,5 +728,11 @@ function StatsBase.summarystats(
         (:q50, x -> Statistics.quantile(x, 0.50)),
         (:q95, x -> Statistics.quantile(x, 0.95)),
     ]
-    return collapse(chain, _DEFAULT_SUMMARYSTAT_FUNCTIONS; dims=:both, warn=warn)
+    return collapse(
+        chain,
+        _DEFAULT_SUMMARYSTAT_FUNCTIONS;
+        dims=:both,
+        split_varnames=split_varnames,
+        warn=warn,
+    )
 end
