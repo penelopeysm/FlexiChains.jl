@@ -706,24 +706,31 @@ end
 """
     StatsBase.summarystats(
         chain::FlexiChain{TKey};
-        split_varnames::Bool=(TKey<:VarName)
+        split_varnames::Bool=(TKey<:VarName),
+        warn::Bool=false,
     ) where {TKey}
 
 Compute a standard set of summary statistics for each key in the `chain`. The statistics include:
 
-- mean
-- standard deviation
-- Monte Carlo standard error
-- bulk effective sample size
+- mean (using [`Statistics.mean`](@extref))
+- standard deviation ([`Statistics.std`](@extref))
+- Monte Carlo standard error ([`MCMCDiagnosticTools.mcse`](@extref))
+- bulk effective sample size ([`MCMCDiagnosticTools.ess`](@extref))
 - tail effective sample size
-- R-hat diagnostic
+- R-hat diagnostic ([`MCMCDiagnosticTools.rhat`](@extref))
+- 5th, 50th (median), and 95th percentiles ([`Statistics.quantile`](@extref))
 
 The `split_varnames` keyword argument, if `true`, will first split up `VarName`s in the
 chain such that each `VarName` corresponds to a single scalar value. This is only supported
 for chains with `TKey<:VarName`.
+
+If any of the statistics cannot be computed for a key, a `missing` value is returned. If
+_none_ of the statistics can be computed for a key, that key will be dropped from the
+resulting `FlexiSummary`, and a warning issued. The warning can be suppressed by setting
+`warn=false`.
 """
 function StatsBase.summarystats(
-    chain::FlexiChain{TKey}; split_varnames::Bool=(TKey <: VarName)
+    chain::FlexiChain{TKey}; split_varnames::Bool=(TKey <: VarName), warn::Bool=true
 ) where {TKey}
     if split_varnames
         TKey <: VarName || throw(
@@ -744,5 +751,5 @@ function StatsBase.summarystats(
         (:q50, x -> Statistics.quantile(x, 0.50)),
         (:q95, x -> Statistics.quantile(x, 0.95)),
     ]
-    return collapse(chain, _DEFAULT_SUMMARYSTAT_FUNCTIONS; dims=:both, warn=false)
+    return collapse(chain, _DEFAULT_SUMMARYSTAT_FUNCTIONS; dims=:both, warn=warn)
 end

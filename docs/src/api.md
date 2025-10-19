@@ -133,9 +133,7 @@ DynamicPPL.loadstate
 
 ## Summaries
 
-!!! danger
-
-    TODO
+The summaries interface is documented on the [summarising page](./summarising.md).
 
 ## Plotting
 
