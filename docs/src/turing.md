@@ -57,9 +57,9 @@ For example, this directly gives us the value of `mu` in each iteration as a pla
 chain[@varname(mu)]
 ```
 
-!!! note "`Parameter`"
+!!! note "Wrapping in Parameter and Extra"
 
-    When looking up a parameter, you do not need to wrap the `VarName` in `FlexiChains.Parameter(...)`: this will be automatically done for you.
+    When looking up a parameter, you do not need to wrap the `VarName` in `FlexiChains.Parameter(...)`: this will be automatically done for you. But `Extra` keys always need to be wrapped.
 
 !!! note "DimMatrix"
     
@@ -74,10 +74,16 @@ chain[@varname(theta)]
 ```
 
 Note that the samples are stored _not_ as a 3D array, but rather a matrix of vectors.
-**This is probably the biggest difference between FlexiChains and MCMCChains.**
+
+!!! tip "I really wanted it as a 3D array..."
+
+    You can use `stack(chain[@varname(theta)])` to get an 8 × 5 × 1 array (8 elements of `theta`, 5 iterations, 1 chain), and also `permutedims` if you'd rather swap the order of the dimensions.
+
+In any case, **this is probably the biggest difference between FlexiChains and MCMCChains.**
 MCMCChains by default will break vector-valued parameters into multiple scalar-valued parameters called `theta[1]`, `theta[2]`, etc., whereas FlexiChains keeps them together as they were defined in the model.
 
-If you want to obtain only the first element of `theta`, you can index into it with the corresponding `VarName`:
+If you want to obtain only the first element of `theta`, you don't need to manipulate the `DimMatrix`.
+You can just index into the chain with the corresponding `VarName`:
 
 ```@example 1
 chain[@varname(theta[1])]
@@ -115,13 +121,13 @@ That is, if your model has `x ~ dist`, FlexiChains will let you access some fiel
     You can still call `chain[@varname(x[1])]` and `chain[@varname(x[2])]` and then perform `hcat` or similar to put them together yourself.)
 
 You can also use keyword arguments when indexing to specify which chains or iterations you are interested in.
-Note that when using square brackets to index, keyword arguments must be separated by commas, not semicolons!
+Note that when using square brackets to index, keyword arguments must be separated from positional arguments by a comma, not a semicolon!
 
 ```@example 1
 chain[@varname(mu), iter=2:4, chain=1]
 ```
 
-The indexing behaviour of FlexiChains is described fully on [the next page](./indexing.md).
+The indexing behaviour of FlexiChains is described fully on [the Indexing page](./indexing.md).
 
 ### Other keys
 
@@ -164,20 +170,6 @@ Likewise, we can omit wrapping `:logjoint` in `Extra(...)`:
 chain[:logjoint] # other key
 ```
 
-## Splitting VarNames up
-
-The way that FlexiChains keeps vector-valued parameters together can make it more difficult to perform subsequent analyses, such as summarising or plotting.
-Therefore, to 'break up' parameters into their constituent sub-`VarName`s, you can use `FlexiChains.split_varnames`:
-
-```@example 1
-split_varnames(chain)
-```
-
-Do note that this is a lossy conversion.
-There is no way to un-split the chain!
-Furthermore, while functions like `predict` will still work with a split chain, there will be substantial performance regressions.
-It is therefore strongly recommended that you only split a chain up only when necessary, and never earlier than that.
-
 ## Summary statistics
 
 ### Overall summaries
@@ -190,6 +182,9 @@ using FlexiChains: summarystats
 summarystats(chain)
 ```
 
+!!! note
+    The large number of NaN's and Inf's here are just because of the very short chain length. On a real chain you would get proper statistics.
+
 By default, `summarystats` will split `VarName`s up.
 This is done because summary statistics often only make sense for scalar-valued parameters, and users are unlikely to use a `FlexiSummary` to a performance-critical task.
 If you want to avoid this, you can set `split_varnames=false`:
@@ -197,6 +192,9 @@ If you want to avoid this, you can set `split_varnames=false`:
 ```@example 1
 summarystats(chain; split_varnames=false)
 ```
+
+Notice how many of the statistics for `theta` are now `missing`.
+This is because statistics like the quantiles cannot be meaningfully calculated for vector-valued parameters.
 
 ### Individual summaries
 
@@ -215,23 +213,9 @@ You can index into a `FlexiSummary` in exactly the same ways as a `FlexiChain`.
 mn[@varname(mu)]
 ```
 
-Out of the box, FlexiChains provides:
-
-  - `Statistics.mean`
-  - `Statistics.median`
-  - `Statistics.std`
-  - `Statistics.var`
-  - `Statistics.quantile`
-  - `Base.minimum`
-  - `Base.maximum`
-  - `Base.sum`
-  - `Base.prod`
-  - `MCMCDiagnosticTools.ess`
-  - `MCMCDiagnosticTools.rhat`
-  - `MCMCDiagnosticTools.mcse`
-
-These functions can all be applied to a `FlexiChain` with their usual signatures (for example, `quantile` will require a second argument).
-Keyword arguments of the original functions are also supported, for example `ess(chain; kind=:tail)` returns the tail ESS.
+Out of the box, FlexiChains provides many commonly used summary functions, such as `Statistics.mean` and `Statistics.std` (a full list is given in [the Summarising page](./summarising.md)).
+These functions can all be applied to a `FlexiChain` with their usual signatures (for example, `Statistics.quantile` will require a second argument).
+Keyword arguments of the original functions are also supported, for example `MCMCDiagnosticTools.ess(chain; kind=:tail)` returns the tail ESS.
 
 !!! note "Other summary functions"
     

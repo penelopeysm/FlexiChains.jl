@@ -410,11 +410,8 @@ The `dims` keyword argument specifies which dimensions to collapse. By default, 
 `:both`, which collapses both the iteration and chain dimensions. Other valid values are
 `:iter` or `:chain`, which respectively collapse only the iteration or chain dimension.
 
-**The functions in `funcs` must have the following behaviour:**
- - they must map a vector to a single value;
- - their output must not be dependent on the order of the inputs.
-
-For example, both `Statistics.mean` and `Statistics.std` satisfy these properties:
+**The functions in `funcs` must map a vector to a single value.** For example, both
+`Statistics.mean` and `Statistics.std` satisfy this:
 
 ```julia
 using FlexiChains: collapse
@@ -430,6 +427,9 @@ to each column or row as appropriate. No adjustment to the functions is necessar
 collapse(chn, [mean, std]; dims=:iter)
 collapse(chn, [mean, std]; dims=:chain)
 ```
+
+For `dims=:both`, the function is applied to all the samples stacked together as a single
+vector.
 
 Sometimes, for more complicated functions like `quantile`, you have to pass an anonymous
 function (such as `x -> quantile(x, 0.05)` or a closure (such as `Base.Fix2(quantile,
