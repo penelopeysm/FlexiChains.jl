@@ -37,7 +37,6 @@ makedocs(;
         "plotting.md",
         "integrations.md",
         "api.md",
-        "internals.md",
         "why.md",
         "whynot.md",
     ],

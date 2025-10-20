@@ -18,6 +18,18 @@ You can also use `Base.keytype`:
 Base.keytype(::FlexiChains.ChainOrSummary)
 ```
 
+If you ever need to construct a `FlexiChain` from scratch, there are exactly two ways to do so.
+One is to pass an array of dictionaries (i.e., one dictionary per iteration); the other is to pass a dictionary of arrays (i.e., the values for each key are already grouped together).
+
+```@docs
+FlexiChains.FlexiChain{TKey}(data)
+```
+
+Note that, although the dictionaries themselves may have loose types, the key type of the `FlexiChain` must be specified (and the keys of the dictionaries will be checked against this).
+
+`FlexiSummary` objects should always be constructed by summarising a `FlexiChain`.
+If for some reason you need to construct one from scratch, please refer to the source code (and do let me know, so that I can make this part of the public API).
+
 ## Equality
 
 ```@docs
