@@ -11,11 +11,13 @@ using FlexiChains:
     VarName,
     @varname,
     summarystats
-using MCMCDiagnosticTools
 using Logging: Warn
+using MCMCDiagnosticTools: ess, rhat, mcse
 using OrderedCollections: OrderedDict
+using PosteriorStats: hdi, eti
 using Serialization: serialize, deserialize
 using Statistics
+using StatsBase: geomean, harmmean, mad, iqr
 using Test
 
 const ENABLED_SUMMARY_FUNCS = [mean, median, minimum, maximum, std, var, sum, prod]
@@ -59,7 +61,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 else
                     # the key "actuallyString" should be skipped
                     @test_logs (:warn, r"\"actuallyString\"") FlexiChains.collapse(
-                        chain, [func]; dims=:iter
+                        chain, [func]; dims=:iter, warn=true
                     )
                 end
             end
@@ -80,7 +82,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 else
                     # the key "actuallyString" should be skipped
                     @test_logs (:warn, r"\"actuallyString\"") FlexiChains.collapse(
-                        chain, [func]; dims=:chain
+                        chain, [func]; dims=:chain, warn=true
                     )
                 end
             end
@@ -98,7 +100,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 else
                     # the key "actuallyString" should be skipped
                     @test_logs (:warn, r"\"actuallyString\"") FlexiChains.collapse(
-                        chain, [func]; dims=:both
+                        chain, [func]; dims=:both, warn=true
                     )
                 end
             end
@@ -106,6 +108,18 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
     end
 
     @testset "other summary functions" begin
+        @test geomean(chain) isa FlexiSummary
+        @test geomean(chain; dims=:iter) isa FlexiSummary
+        @test geomean(chain; dims=:chain) isa FlexiSummary
+        @test harmmean(chain) isa FlexiSummary
+        @test harmmean(chain; dims=:iter) isa FlexiSummary
+        @test harmmean(chain; dims=:chain) isa FlexiSummary
+        @test mad(chain) isa FlexiSummary
+        @test mad(chain; dims=:iter) isa FlexiSummary
+        @test mad(chain; dims=:chain) isa FlexiSummary
+        @test iqr(chain) isa FlexiSummary
+        @test iqr(chain; dims=:iter) isa FlexiSummary
+        @test iqr(chain; dims=:chain) isa FlexiSummary
         @test ess(chain) isa FlexiSummary
         @test ess(chain; dims=:iter) isa FlexiSummary
         @test ess(chain; dims=:chain) isa FlexiSummary
@@ -118,6 +132,12 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         @test mcse(chain) isa FlexiSummary
         @test mcse(chain; dims=:iter) isa FlexiSummary
         @test mcse(chain; dims=:chain) isa FlexiSummary
+        @test hdi(chain) isa FlexiSummary
+        @test hdi(chain; dims=:iter) isa FlexiSummary
+        @test hdi(chain; dims=:chain) isa FlexiSummary
+        @test eti(chain) isa FlexiSummary
+        @test eti(chain; dims=:iter) isa FlexiSummary
+        @test eti(chain; dims=:chain) isa FlexiSummary
         @test quantile(chain, 0.5) isa FlexiSummary
         @test quantile(chain, 0.5; dims=:iter) isa FlexiSummary
         @test quantile(chain, 0.5; dims=:chain) isa FlexiSummary
@@ -415,7 +435,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
         @testset "iter collapsed only" begin
             # Test that attempting to index in with `iter=...` errors, but `stat=...` works
-            fs = FlexiChains.collapse(chain, [mean]; dims=:iter)
+            fs = FlexiChains.collapse(chain, [mean]; dims=:iter, split_varnames=false)
             @test_throws ArgumentError FlexiChains._check_summary_kwargs(
                 fs, Colon(), Colon(), Colon()
             )

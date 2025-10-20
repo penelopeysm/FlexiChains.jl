@@ -1,3 +1,12 @@
+# 0.0.4
+
+## Summaries
+
+- There is now [a dedicated page in the documentation for summaries](https://pysm.dev/FlexiChains.jl/stable/summarising).
+- `StatsBase.mad`, `Statistics.quantile`, `StatsBase.geomean`, `StatsBase.harmmean`, and `StatsBase.iqr` have been implemented.
+- `PosteriorStats.hdi` and `PosteriorStats.eti` have been implemented in an extension.
+- The signature of functions passed to `FlexiChains.collapse` has been simplified. It used to be that the signature would differ depending on whether you were collapsing over iterations, chains, or both. Now all the function needs to do is to collapse a vector to a single value (regardless of which dimensions are being collapsed over).
+
 # 0.0.3
 
 ## Plotting

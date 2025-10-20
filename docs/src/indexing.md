@@ -92,6 +92,9 @@ Indexing is very similar as for chains, but there is an additional `stat` dimens
 sm[@varname(x[1]), stat=At(:mean)]
 ```
 
+!!! note "At()"
+    Notice that we need `stat=At(:mean)` rather than just `stat=:mean`. This seems a bit verbose, but is actually perfectly consistent with DimensionalData.jl's behaviour: `stat=1` means the first statistic, and `stat=At(:f)` means the statistic with the named index `:f`.
+
 If only a single summary function was applied, e.g. via `mean(chn)`, then the `stat` dimension will be automatically collapsed for you; you won't need to again specify `At(:mean)` when indexing.
 
 ```@example 1
