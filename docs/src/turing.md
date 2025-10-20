@@ -213,7 +213,7 @@ You can index into a `FlexiSummary` in exactly the same ways as a `FlexiChain`.
 mn[@varname(mu)]
 ```
 
-Out of the box, FlexiChains provides many commonly used summary functions, such as `Statistics.mean` and `Statistics.std` (a full list is given in [the summarising page](./summarising.md)).
+Out of the box, FlexiChains provides many commonly used summary functions, such as `Statistics.mean` and `Statistics.std` (a full list is given in [the Summarising page](./summarising.md)).
 These functions can all be applied to a `FlexiChain` with their usual signatures (for example, `Statistics.quantile` will require a second argument).
 Keyword arguments of the original functions are also supported, for example `MCMCDiagnosticTools.ess(chain; kind=:tail)` returns the tail ESS.
 
