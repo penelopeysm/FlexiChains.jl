@@ -74,7 +74,12 @@ chain[@varname(theta)]
 ```
 
 Note that the samples are stored _not_ as a 3D array, but rather a matrix of vectors.
-**This is probably the biggest difference between FlexiChains and MCMCChains.**
+
+!!! note "I really wanted it as a 3D array..."
+
+    You can use `stack(chain[@varname(theta)])` to get an `8 × 5 × 1` array (8 elements of `theta`, 5 iterations, 1 chain), and also `permutedims` if you don't like that ordering.
+
+In any case, **this is probably the biggest difference between FlexiChains and MCMCChains.**
 MCMCChains by default will break vector-valued parameters into multiple scalar-valued parameters called `theta[1]`, `theta[2]`, etc., whereas FlexiChains keeps them together as they were defined in the model.
 
 If you want to obtain only the first element of `theta`, you can index into it with the corresponding `VarName`:
