@@ -1,4 +1,6 @@
-# 0.0.4
+# 0.1.0
+
+FlexiChains now has what I consider to be a reasonably stable core set of functionality, so I'm willing to release 0.1.0.
 
 ## Summaries
 
