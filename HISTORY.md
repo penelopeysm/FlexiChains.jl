@@ -1,3 +1,7 @@
+# 0.1.2
+
+Added compatibility with DynamicPPL@0.38 and Turing@0.41.
+
 # 0.1.1
 
 Added extra methods to handle parameters which are `DimArray`-valued: instead of returning a `DimArray` of `DimArrays`, indexing with such a parameter now returns a stacked `DimArray`.

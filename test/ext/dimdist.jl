@@ -1,5 +1,10 @@
 module FlexiChainsDimensionalDistributionsTests
 
+# Because DimensionalDistributions isn't yet registered, we need to manually add it as a dep
+# (instead of using [sources] in Project.toml, since that fails on 1.10).
+using Pkg
+Pkg.add(; url="https://github.com/sethaxen/DimensionalDistributions.jl")
+
 using DimensionalData: DimensionalData as DD
 using FlexiChains
 using Turing
