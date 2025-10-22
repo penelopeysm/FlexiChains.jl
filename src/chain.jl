@@ -489,6 +489,12 @@ function _get_raw_data(
     return chain._data[key]
 end
 
+function _default_dims(chain::FlexiChain)
+    return (
+        DD.Dim{ITER_DIM_NAME}(iter_indices(chain)),
+        DD.Dim{CHAIN_DIM_NAME}(chain_indices(chain)),
+    )
+end
 """
     _raw_to_user_data(chain::FlexiChain, data::Matrix)
 
@@ -501,27 +507,15 @@ indexing into a `FlexiChain`.
 the chain line up with the size of the matrix.
 """
 function _raw_to_user_data(chain::FlexiChain, mat::Matrix)
-    return DD.DimMatrix(
-        mat,
-        (
-            DD.Dim{ITER_DIM_NAME}(iter_indices(chain)),
-            DD.Dim{CHAIN_DIM_NAME}(chain_indices(chain)),
-        ),
-    )
+    return DD.DimMatrix(mat, _default_dims(chain))
 end
 function _raw_to_user_data(
-    chain::FlexiChain, mat_of_dimarr::Matrix{<:DD.DimArray{<:Any,N}}
-) where {N}
-    dimmat_of_dimarr = DD.DimMatrix(
-        mat_of_dimarr,
-        (
-            DD.Dim{ITER_DIM_NAME}(iter_indices(chain)),
-            DD.Dim{CHAIN_DIM_NAME}(chain_indices(chain)),
-        ),
-    )
+    chain::FlexiChain, mat_of_dimarr::Matrix{<:DD.DimArray{<:Any,Ndims}}
+) where {Ndims}
+    dimmat_of_dimarr = DD.DimMatrix(mat_of_dimarr, _default_dims(chain))
     # This stacked matrix will have the iter and chain dims at the end.
     stacked_dimarr = stack(dimmat_of_dimarr)
-    return permutedims(stacked_dimarr, (N + 1, N + 2, 1:N...))
+    return permutedims(stacked_dimarr, (Ndims + 1, Ndims + 2, 1:Ndims...))
 end
 
 """
