@@ -6,18 +6,6 @@ using DynamicPPL: DynamicPPL, AbstractPPL
 using OrderedCollections: OrderedDict
 using Random: Random
 
-"""
-    DynamicPPL.loadstate(chain::FlexiChain{<:VarName})
-
-Extracts the last sampler state from a `FlexiChain`. This is the same function as 
-[`FlexiChains.last_sampler_state`](@ref).
-
-$(FlexiChains._INITIAL_STATE_DOCSTRING)
-"""
-function DynamicPPL.loadstate(chain::FlexiChain{<:VarName})
-    return FlexiChains.last_sampler_state(chain)
-end
-
 ###########################################
 # DynamicPPL: predict, returned, logjoint #
 ###########################################
