@@ -509,6 +509,20 @@ function _raw_to_user_data(chain::FlexiChain, mat::Matrix)
         ),
     )
 end
+function _raw_to_user_data(
+    chain::FlexiChain, mat_of_dimarr::Matrix{<:DD.DimArray{<:Any,N}}
+) where {N}
+    dimmat_of_dimarr = DD.DimMatrix(
+        mat_of_dimarr,
+        (
+            DD.Dim{ITER_DIM_NAME}(iter_indices(chain)),
+            DD.Dim{CHAIN_DIM_NAME}(chain_indices(chain)),
+        ),
+    )
+    # This stacked matrix will have the iter and chain dims at the end.
+    stacked_dimarr = stack(dimmat_of_dimarr)
+    return permutedims(stacked_dimarr, (N + 1, N + 2, 1:N...))
+end
 
 """
     _replace_data(chain::FlexiChain, new_keytype, new_data)
