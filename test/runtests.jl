@@ -6,4 +6,5 @@ using Test: @testset
     include("interface.jl")
     include("ext/turing.jl")
     include("ext/posteriordb.jl")
+    include("ext/dimdist.jl")
 end

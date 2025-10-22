@@ -407,7 +407,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
 
         @testset "DimArray element type" begin
-            dimarr = rand(X([:a, :b, :c]), Y(100.0:50:200.0))
+            dimarr = rand(DD.X([:a, :b, :c]), DD.Y(100.0:50:200.0))
             Niters, Nchains = 100, 3
             d = Dict(Parameter(:a) => fill(dimarr, Niters, Nchains))
             chain = FlexiChain{Symbol}(Niters, Nchains, d)
@@ -425,7 +425,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 mean_a = m[:a]
                 @test mean_a isa DD.DimArray{Float64,3}
                 @test size(mean_a) == (Nchains, 3, 3)
-                @test parent(DD.val(DD.dims(returned_as), :chain)) ==
+                @test parent(DD.val(DD.dims(mean_a), :chain)) ==
                     FlexiChains.chain_indices(m)
                 @test DD.dims(mean_a)[2:3] == DD.dims(dimarr)[:]
             end
@@ -435,17 +435,16 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 mean_a = m[:a]
                 @test mean_a isa DD.DimArray{Float64,3}
                 @test size(mean_a) == (Niters, 3, 3)
-                @test parent(DD.val(DD.dims(returned_as), :iter)) ==
-                    FlexiChains.iter_indices(m)
+                @test parent(DD.val(DD.dims(mean_a), :iter)) == FlexiChains.iter_indices(m)
                 @test DD.dims(mean_a)[2:3] == DD.dims(dimarr)[:]
             end
 
             @testset "with multiple statistics" begin
                 ms = FlexiChains.collapse(chain, [mean, std]; dims=:iter)
-                summary_a = ms[:a, stat=At(:mean)]
+                summary_a = ms[:a, stat=DD.At(:mean)]
                 @test summary_a isa DD.DimArray{Float64,3}
                 @test size(summary_a) == (Nchains, 3, 3)
-                @test parent(DD.val(DD.dims(returned_as), :chain)) ==
+                @test parent(DD.val(DD.dims(summary_a), :chain)) ==
                     FlexiChains.chain_indices(ms)
                 @test DD.dims(summary_a)[2:3] == DD.dims(dimarr)[:]
             end

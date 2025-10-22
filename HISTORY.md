@@ -1,3 +1,7 @@
+# 0.1.1
+
+Added extra methods to handle parameters which are `DimArray`-valued: instead of returning a `DimArray` of `DimArrays`, indexing with such a parameter now returns a stacked `DimArray`.
+
 # 0.1.0
 
 FlexiChains now has what I consider to be a reasonably stable core set of functionality, so I'm willing to release 0.1.0.

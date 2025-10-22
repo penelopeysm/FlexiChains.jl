@@ -372,7 +372,7 @@ using Test
         end
 
         @testset "DimArray element type" begin
-            dimarr = rand(X([:a, :b, :c]), Y(100.0:50:200.0))
+            dimarr = rand(DD.X([:a, :b, :c]), DD.Y(100.0:50:200.0))
             Niters, Nchains = 100, 3
             d = Dict(Parameter(:a) => fill(dimarr, Niters, Nchains))
             chain = FlexiChain{Symbol}(Niters, Nchains, d)

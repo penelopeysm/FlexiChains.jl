@@ -337,7 +337,7 @@ function _raw_to_user_data(
         # Scalar value; dropped_arr will be a 0-dimensional array
         dropped_arr[]
     else
-        return DD.DimArray(dropped_arr, tuple(new_dims...))
+        DD.DimArray(dropped_arr, tuple(new_dims...))
     end
 end
 function _raw_to_user_data(
