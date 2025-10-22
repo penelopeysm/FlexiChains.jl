@@ -295,6 +295,26 @@ function _get_raw_data(
     return summary._data[key]
 end
 
+function _get_summary_dims(
+    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}
+) where {TKey,TIIdx,TCIdx,TSIdx}
+    new_dims = DD.Dim[]
+    dims_to_keep = Int[]
+    if TIIdx !== Nothing
+        push!(dims_to_keep, 1)
+        push!(new_dims, DD.Dim{ITER_DIM_NAME}(iter_indices(fs)))
+    end
+    if TCIdx !== Nothing
+        push!(dims_to_keep, 2)
+        push!(new_dims, DD.Dim{CHAIN_DIM_NAME}(chain_indices(fs)))
+    end
+    if TSIdx !== Nothing
+        push!(dims_to_keep, 3)
+        push!(new_dims, DD.Dim{STAT_DIM_NAME}(stat_indices(fs)))
+    end
+    dim_indices_to_drop = tuple(setdiff(1:3, dims_to_keep)...)
+    return new_dims, dim_indices_to_drop
+end
 """
     _raw_to_user_data(summary::FlexiSummary, data::AbstractArray)
 
@@ -311,26 +331,28 @@ the chain line up with the size of the matrix.
 function _raw_to_user_data(
     fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}, arr::Array{T,3}
 ) where {TKey,TIIdx,TCIdx,TSIdx,T}
-    lookups = []
-    dims_to_keep = []
-    if TIIdx !== Nothing
-        push!(dims_to_keep, 1)
-        push!(lookups, DD.Dim{ITER_DIM_NAME}(iter_indices(fs)))
-    end
-    if TCIdx !== Nothing
-        push!(dims_to_keep, 2)
-        push!(lookups, DD.Dim{CHAIN_DIM_NAME}(chain_indices(fs)))
-    end
-    if TSIdx !== Nothing
-        push!(dims_to_keep, 3)
-        push!(lookups, DD.Dim{STAT_DIM_NAME}(stat_indices(fs)))
-    end
-    dims_to_drop = tuple(setdiff(1:3, dims_to_keep)...)
-    dropped_arr = dropdims(arr; dims=dims_to_drop)
-    return if isempty(lookups)
+    new_dims, dim_indices_to_drop = _get_summary_dims(fs)
+    dropped_arr = dropdims(arr; dims=dim_indices_to_drop)
+    return if isempty(new_dims)
+        # Scalar value; dropped_arr will be a 0-dimensional array
         dropped_arr[]
     else
-        return DD.DimArray(dropped_arr, tuple(lookups...))
+        DD.DimArray(dropped_arr, tuple(new_dims...))
+    end
+end
+function _raw_to_user_data(
+    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}, arr::Array{<:DD.DimArray{<:Any,Ndims},3}
+) where {TKey,TIIdx,TCIdx,TSIdx,Ndims}
+    new_dims, dim_indices_to_drop = _get_summary_dims(fs)
+    dropped_arr = dropdims(arr; dims=dim_indices_to_drop)
+    return if isempty(new_dims)
+        dropped_arr[]
+    else
+        n_new_dims = length(new_dims) # between 1 and 3, iter/chain/stat
+        arr_of_arr = DD.DimArray(dropped_arr, tuple(new_dims...))
+        stacked_arr = stack(arr_of_arr)
+        # iter/chain/stat will be the final dimensions. We want them to be the first
+        return permutedims(stacked_arr, ((Ndims + 1):(Ndims + n_new_dims)..., (1:Ndims)...))
     end
 end
 

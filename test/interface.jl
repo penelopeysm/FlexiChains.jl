@@ -370,6 +370,23 @@ using Test
                 @test_throws KeyError chn[@varname(a[3]), chain=1]
             end
         end
+
+        @testset "DimArray element type" begin
+            dimarr = rand(DD.X([:a, :b, :c]), DD.Y(100.0:50:200.0))
+            Niters, Nchains = 100, 3
+            d = Dict(Parameter(:a) => fill(dimarr, Niters, Nchains))
+            chain = FlexiChain{Symbol}(Niters, Nchains, d)
+            returned_as = chain[:a]
+            @test returned_as isa DD.DimArray{Float64,4}
+            @test size(returned_as) == (Niters, Nchains, 3, 3)
+            @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter},DD.Dim{:chain},DD.X,DD.Y}
+            @test parent(DD.val(DD.dims(returned_as), :iter)) ==
+                FlexiChains.iter_indices(chain)
+            @test parent(DD.val(DD.dims(returned_as), :chain)) ==
+                FlexiChains.chain_indices(chain)
+            @test parent(DD.val(DD.dims(returned_as), :X)) == [:a, :b, :c]
+            @test parent(DD.val(DD.dims(returned_as), :Y)) == collect(100.0:50:200.0)
+        end
     end
 
     @testset "values_at / parameters_at" begin

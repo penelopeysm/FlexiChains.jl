@@ -29,7 +29,7 @@ Data is returned as a `DimMatrix` from the [`DimensionalData.jl` package](https:
 ```julia
 chain[@varname(x)]    # -> DimMatrix{Float64}
 chain[@varname(y)]    # -> DimMatrix{Int}
-chain[@varname(z)]    # -> DimMatrix{Vector{Float64}}
+chain[@varname(z)]    # -> DimMatrix{Vector{Float64}}; but see also DimensionalDistributions.jl
 chain[@varname(z[1])] # -> DimMatrix{Float64}
 chain[:logjoint]      # -> DimMatrix{Float64} NOTE: not `:lp`
 ```

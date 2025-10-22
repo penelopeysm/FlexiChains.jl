@@ -75,7 +75,7 @@ iterations or chains from the data corresponding to the given `key`.
 function Base.getindex(
     fchain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}; iter=Colon(), chain=Colon()
 ) where {TKey}
-    return _raw_to_user_data(fchain, _get_raw_data(fchain, key))[iter, chain]
+    return _raw_to_user_data(fchain, _get_raw_data(fchain, key))[iter=iter, chain=chain]
 end
 """
     Base.getindex(

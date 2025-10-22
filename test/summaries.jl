@@ -405,6 +405,50 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             @test !haskey(fs, @varname(x))
             @test fs[@varname(x[1])] isa DD.DimVector
         end
+
+        @testset "DimArray element type" begin
+            dimarr = rand(DD.X([:a, :b, :c]), DD.Y(100.0:50:200.0))
+            Niters, Nchains = 100, 3
+            d = Dict(Parameter(:a) => fill(dimarr, Niters, Nchains))
+            chain = FlexiChain{Symbol}(Niters, Nchains, d)
+
+            @testset "dims=:both" begin
+                m = mean(chain)
+                mean_a = m[:a]
+                @test mean_a isa DD.DimMatrix{Float64}
+                @test size(mean_a) == (3, 3)
+                @test DD.dims(mean_a) == DD.dims(dimarr)
+            end
+
+            @testset "dims=:iter" begin
+                m = mean(chain; dims=:iter)
+                mean_a = m[:a]
+                @test mean_a isa DD.DimArray{Float64,3}
+                @test size(mean_a) == (Nchains, 3, 3)
+                @test parent(DD.val(DD.dims(mean_a), :chain)) ==
+                    FlexiChains.chain_indices(m)
+                @test DD.dims(mean_a)[2:3] == DD.dims(dimarr)[:]
+            end
+
+            @testset "dims=:chain" begin
+                m = mean(chain; dims=:chain)
+                mean_a = m[:a]
+                @test mean_a isa DD.DimArray{Float64,3}
+                @test size(mean_a) == (Niters, 3, 3)
+                @test parent(DD.val(DD.dims(mean_a), :iter)) == FlexiChains.iter_indices(m)
+                @test DD.dims(mean_a)[2:3] == DD.dims(dimarr)[:]
+            end
+
+            @testset "with multiple statistics" begin
+                ms = FlexiChains.collapse(chain, [mean, std]; dims=:iter)
+                summary_a = ms[:a, stat=DD.At(:mean)]
+                @test summary_a isa DD.DimArray{Float64,3}
+                @test size(summary_a) == (Nchains, 3, 3)
+                @test parent(DD.val(DD.dims(summary_a), :chain)) ==
+                    FlexiChains.chain_indices(ms)
+                @test DD.dims(summary_a)[2:3] == DD.dims(dimarr)[:]
+            end
+        end
     end
 
     @testset "kwarg handling for getindex" begin
