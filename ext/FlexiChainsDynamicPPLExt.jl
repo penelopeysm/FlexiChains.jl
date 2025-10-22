@@ -175,7 +175,7 @@ variables to their log probabilities.
 function DynamicPPL.pointwise_logdensities(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}, ::Val{whichlogprob}=Val(:both)
 ) where {whichlogprob}
-    AccType = DynamicPPL.PointwiseLogProbAccumulator{whichlogprob,VarName}
+    AccType = DynamicPPL.PointwiseLogProbAccumulator{whichlogprob}
     pld_dicts = map(reevaluate(model, chain, (AccType(),))) do (_, vi)
         logps = DynamicPPL.getacc(vi, Val(DynamicPPL.accumulator_name(AccType))).logps
         OrderedDict{ParameterOrExtra{<:VarName},Any}(
