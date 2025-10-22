@@ -196,18 +196,12 @@ Turing.setprogress!(false)
             model = f()
 
             # This sampler does nothing (it just stays at the existing state)
-            struct StaticSampler <: Turing.Inference.InferenceAlgorithm end
-            function DynamicPPL.initialstep(
-                rng, model, ::DynamicPPL.Sampler{<:StaticSampler}, vi; kwargs...
-            )
-                return Turing.Inference.Transition(model, vi, nothing), vi
+            struct StaticSampler <: AbstractMCMC.AbstractSampler end
+            function AbstractMCMC.step(rng, model, ::StaticSampler; kwargs...)
+                return error("This should not be called, because we're using initial_state")
             end
             function AbstractMCMC.step(
-                rng,
-                model,
-                ::DynamicPPL.Sampler{<:StaticSampler},
-                vi::DynamicPPL.AbstractVarInfo;
-                kwargs...,
+                rng, model, ::StaticSampler, vi::DynamicPPL.AbstractVarInfo; kwargs...
             )
                 return Turing.Inference.Transition(model, vi, nothing), vi
             end
@@ -261,7 +255,7 @@ Turing.setprogress!(false)
                     3;
                     chain_type=VNChain,
                     verbose=false,
-                    resume_from=chn1,
+                    initial_state=FlexiChains.last_sampler_state(chn1),
                 )
                 # check that it did reuse the previous state
                 xval = chn1[@varname(x)][end, :]

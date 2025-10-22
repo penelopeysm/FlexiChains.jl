@@ -98,9 +98,7 @@ using FlexiChains: VNChain, summarystats
     model, spl = f(), NUTS()
     transitions = sample(model, spl, 10; chain_type=Any, progress=false, verbose=false)
     @compile_workload begin
-        chn = AbstractMCMC.bundle_samples(
-            transitions, model, DynamicPPL.Sampler(spl), nothing, VNChain
-        )
+        chn = AbstractMCMC.bundle_samples(transitions, model, spl, nothing, VNChain)
         summarystats(chn)
     end
 end
