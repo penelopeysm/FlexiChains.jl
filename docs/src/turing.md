@@ -30,15 +30,24 @@ chain = sample(model, NUTS(), 5; chain_type=VNChain)
     
     We only run 5 MCMC iterations here to keep the output in the following sections small.
 
+## Key types
+
+First, notice in the printout above that a `FlexiChain` stores 'parameters' and 'extra keys' separately.
+Parameters correspond to random variables of the model you sampled from, whereas other keys are extra data associated with the samples drawn (for example, the log-joint probability of each sample).
+
+In FlexiChains, these are wrapped in the [`FlexiChains.Parameter`](@ref) and [`FlexiChains.Extra`](@ref) types respectively.
+Thus, the parameter `mu` is really stored as `Parameter(@varname(mu))`, and the log-joint probability is `Extra(:logjoint)`.
+
+For a `FlexiChain{T}`, all `Parameter` keys must wrap objects that subtype `T`.
+`Extra`s on the other hand can wrap anything.
+
 ## Accessing data
 
-First, notice in the printout above that a `FlexiChain` stores 'parameters' and 'other keys' separately.
-Parameters correspond to random variables of the model you sampled from, whereas other keys are extra data associated with the samples drawn (for example, the log-joint probability of each sample).
-Each of these are accessed in a slightly different way.
+FlexiChains provides multiple different ways to access the data for a given key.
 
 ### Parameters
 
-To access parameters, the _most correct_ way is to use `VarName`s to index into the chain.
+To access parameters, the recommended way is to use `VarName`s to index into the chain.
 `VarName` is a data structure [defined in AbstractPPL.jl](https://turinglang.org/AbstractPPL.jl/stable/api/#AbstractPPL.VarName), and is what Turing.jl uses to represent the name of a random variable (appearing on the left-hand side of a tilde-statement).
 
 `VarName`s are most easily constructed by applying the `@varname` macro to the name of the variable that you want to access.
@@ -47,6 +56,10 @@ For example, this directly gives us the value of `mu` in each iteration as a pla
 ```@example 1
 chain[@varname(mu)]
 ```
+
+!!! note "Wrapping in Parameter and Extra"
+
+    When looking up a parameter, you do not need to wrap the `VarName` in `FlexiChains.Parameter(...)`: this will be automatically done for you. But `Extra` keys always need to be wrapped.
 
 !!! note "DimMatrix"
     
@@ -60,11 +73,14 @@ For vector-valued parameters like `theta`, this works in exactly the same way, e
 chain[@varname(theta)]
 ```
 
-Note that the samples are stored _not_ as a 3D array, but rather a matrix of vectors.
 **This is probably the biggest difference between FlexiChains and MCMCChains.**
 MCMCChains by default will break vector-valued parameters into multiple scalar-valued parameters called `theta[1]`, `theta[2]`, etc., whereas FlexiChains keeps them together as they were defined in the model.
 
-If you want to obtain only the first element of `theta`, you can index into it with the corresponding `VarName`:
+!!! tip "If you want a 3D array..."
+    If you want to access `theta` as a 3D array of shape `(num_iterations, num_chains, vector_length)`, you can manually perform `stack` and `permutedims`. But even better, you can use a distribution that returns `DimVector`s: in this case FlexiChains will automatically convert `theta` as a 3D array for you! Please see [the DimensionalDistributions.jl integration](@ref DimensionalDistributions.jl) for the details.
+
+If you want to obtain only the first element of `theta`, you don't need to manipulate the `DimMatrix`.
+You can just index into the chain with the corresponding `VarName`:
 
 ```@example 1
 chain[@varname(theta[1])]
@@ -102,13 +118,13 @@ That is, if your model has `x ~ dist`, FlexiChains will let you access some fiel
     You can still call `chain[@varname(x[1])]` and `chain[@varname(x[2])]` and then perform `hcat` or similar to put them together yourself.)
 
 You can also use keyword arguments when indexing to specify which chains or iterations you are interested in.
-Note that when using square brackets to index, keyword arguments must be separated by commas, not semicolons!
+Note that when using square brackets to index, keyword arguments must be separated from positional arguments by a comma, not a semicolon!
 
 ```@example 1
 chain[@varname(mu), iter=2:4, chain=1]
 ```
 
-The indexing behaviour of FlexiChains is described fully on [the next page](./indexing.md).
+The indexing behaviour of FlexiChains is described fully on [the Indexing page](./indexing.md).
 
 ### Other keys
 
@@ -139,7 +155,7 @@ chain[:mu] # parameter
 
 !!! note "What does unambiguous mean?"
     
-    In this case, because the only parameter `p` for which `Symbol(p) == :mu` is `@varname(mu)`, we can safely identify `@varname(mu)` as the parameter that we want.
+    In this case, because the only key `k` for which `Symbol(k.name) == :mu` is `Parameter(@varname(mu))`, we can safely identify `Parameter(@varname(mu))` as the key that we want. If this chain also had an extra key called `Extra(:mu)`, then this would be ambiguous, and FlexiChains would throw an error.
 
 !!! note "No sub-varnames"
     
@@ -150,22 +166,6 @@ Likewise, we can omit wrapping `:logjoint` in `Extra(...)`:
 ```@example 1
 chain[:logjoint] # other key
 ```
-
-If there is any ambiguity present (for example if there is also a parameter named `@varname(logjoint)`), FlexiChains will throw an error.
-
-## Splitting VarNames up
-
-The way that FlexiChains keeps vector-valued parameters together can make it more difficult to perform subsequent analyses, such as summarising or plotting.
-Therefore, to 'break up' parameters into their constituent sub-`VarName`s, you can use `FlexiChains.split_varnames`:
-
-```@example 1
-split_varnames(chain)
-```
-
-Do note that this is a lossy conversion.
-There is no way to un-split the chain!
-Furthermore, while functions like `predict` will still work with a split chain, there will be substantial performance regressions.
-It is therefore strongly recommended that you only split a chain up only when necessary, and never earlier than that.
 
 ## Summary statistics
 
@@ -179,6 +179,9 @@ using FlexiChains: summarystats
 summarystats(chain)
 ```
 
+!!! note
+    The large number of NaN's and Inf's here are just because of the very short chain length. On a real chain you would get proper statistics.
+
 By default, `summarystats` will split `VarName`s up.
 This is done because summary statistics often only make sense for scalar-valued parameters, and users are unlikely to use a `FlexiSummary` to a performance-critical task.
 If you want to avoid this, you can set `split_varnames=false`:
@@ -186,6 +189,9 @@ If you want to avoid this, you can set `split_varnames=false`:
 ```@example 1
 summarystats(chain; split_varnames=false)
 ```
+
+Notice how many of the statistics for `theta` are now `missing`.
+This is because statistics like the quantiles cannot be meaningfully calculated for vector-valued parameters.
 
 ### Individual summaries
 
@@ -204,23 +210,9 @@ You can index into a `FlexiSummary` in exactly the same ways as a `FlexiChain`.
 mn[@varname(mu)]
 ```
 
-Out of the box, FlexiChains provides:
-
-  - `Statistics.mean`
-  - `Statistics.median`
-  - `Statistics.std`
-  - `Statistics.var`
-  - `Statistics.quantile`
-  - `Base.minimum`
-  - `Base.maximum`
-  - `Base.sum`
-  - `Base.prod`
-  - `MCMCDiagnosticTools.ess`
-  - `MCMCDiagnosticTools.rhat`
-  - `MCMCDiagnosticTools.mcse`
-
-These functions can all be applied to a `FlexiChain` with their usual signatures (for example, `quantile` will require a second argument).
-Keyword arguments of the original functions are also supported, for example `ess(chain; kind=:tail)` returns the tail ESS.
+Out of the box, FlexiChains provides many commonly used summary functions, such as `Statistics.mean` and `Statistics.std` (a full list is given in [the Summarising page](./summarising.md)).
+These functions can all be applied to a `FlexiChain` with their usual signatures (for example, `Statistics.quantile` will require a second argument).
+Keyword arguments of the original functions are also supported, for example `MCMCDiagnosticTools.ess(chain; kind=:tail)` returns the tail ESS.
 
 !!! note "Other summary functions"
     

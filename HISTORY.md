@@ -1,3 +1,22 @@
+# 0.1.2
+
+Added compatibility with DynamicPPL@0.38 and Turing@0.41.
+
+# 0.1.1
+
+Added extra methods to handle parameters which are `DimArray`-valued: instead of returning a `DimArray` of `DimArrays`, indexing with such a parameter now returns a stacked `DimArray`.
+
+# 0.1.0
+
+FlexiChains now has what I consider to be a reasonably stable core set of functionality, so I'm willing to release 0.1.0.
+
+## Summaries
+
+- There is now [a dedicated page in the documentation for summaries](https://pysm.dev/FlexiChains.jl/stable/summarising).
+- `StatsBase.mad`, `Statistics.quantile`, `StatsBase.geomean`, `StatsBase.harmmean`, and `StatsBase.iqr` have been implemented.
+- `PosteriorStats.hdi` and `PosteriorStats.eti` have been implemented in an extension.
+- The signature of functions passed to `FlexiChains.collapse` has been simplified. It used to be that the signature would differ depending on whether you were collapsing over iterations, chains, or both. Now all the function needs to do is to collapse a vector to a single value (regardless of which dimensions are being collapsed over).
+
 # 0.0.3
 
 ## Plotting

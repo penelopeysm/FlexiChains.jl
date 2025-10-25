@@ -213,3 +213,19 @@ As you will have noticed, FlexiChains uses DimensionalData.jl to return informat
 That means that you can [use all the selectors from DimensionalData.jl](./indexing.md) to extract exactly what you want.
 Don't want to use those?
 No problem; good old 1-based indices work fine too.
+
+## If you're a Turing developer...
+
+I suppose I am somewhat qualified to comment on this...
+There are a number of places in TuringLang where the unfaithful data structure of MCMCChains leads to hacky workarounds.
+Most of them centre around the difficulty of reconstructing vectors `x` from its flattened components `x[1]`, `x[2]`, and so on.
+
+For example, [AbstractPPLDistributionsExt](https://github.com/TuringLang/AbstractPPL.jl/blob/v0.13.5/ext/AbstractPPLDistributionsExt.jl) exists _solely_ for this reason.
+(None of us are particularly happy about this: see [this PR](https://github.com/TuringLang/AbstractPPL.jl/pull/125).)
+The methods defined here allow you to check whether a dictionary like `Dict(@varname(x[1]) => 1.0, @varname(x[2]) => 2.0)` can be reconstructed into a vector-valued parameter `x`, _given_ that `x` is drawn from `MvNormal(zeros(2), I)`.
+This is precisely because we can only obtain the former dictionary from MCMCChains, but when evaluating a model we need the latter.
+
+On top of that, MCMCChains doesn't store the keys as `VarName`s: it stores them as `Symbol`s.
+That means that any time we need to retrieve the original `VarName`s, we need to use a secret dictionary that is stored inside `chain.info`.
+This is [automatically included when sampling using Turing](https://github.com/TuringLang/Turing.jl/blob/cabe73fd07b3ddb37b51f6c0c9db66891e179f3c/src/mcmc/Inference.jl#L351-L353), but it makes it somewhat frustrating to test MCMCChains-related functionality in isolation.
+In general, though, this is a very fragile solution and relies on Turing 'just happening' to do the right thing.

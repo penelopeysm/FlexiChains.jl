@@ -7,7 +7,6 @@ using FlexiChains: FlexiChains, VNChain, Parameter, Extra
 using MCMCChains: MCMCChains
 using Random: Random, Xoshiro
 using Serialization: serialize, deserialize
-using SliceSampling: RandPermGibbs, SliceSteppingOut
 using StableRNGs: StableRNG
 using Test
 using Turing
@@ -146,11 +145,8 @@ Turing.setprogress!(false)
             @test vec(chn_flexi[Extra(:logjoint)]) == vec(chn_mcmc[:lp])
         end
 
-        @testset "with another sampler: $spl_name" for (spl_name, spl) in [
-            ("MH", MH()),
-            ("HMC", HMC(0.1, 10)),
-            ("SliceSampling.jl", externalsampler(RandPermGibbs(SliceSteppingOut(2.0)))),
-        ]
+        @testset "with another sampler: $spl_name" for (spl_name, spl) in
+                                                       [("MH", MH()), ("HMC", HMC(0.1, 10))]
             chn = sample(model, spl, 20; chain_type=VNChain)
             @test chn isa VNChain
             @test size(chn) == (20, 1)
@@ -160,7 +156,13 @@ Turing.setprogress!(false)
             # Set up the sampler itself.
             struct S <: AbstractMCMC.AbstractSampler end
             struct Tn end
-            AbstractMCMC.step(rng, model, ::S, state=nothing; kwargs...) = (Tn(), nothing)
+            AbstractMCMC.step(
+                rng::Random.AbstractRNG,
+                model::DynamicPPL.Model,
+                ::S,
+                state=nothing;
+                kwargs...,
+            ) = (Tn(), nothing)
             # Get it to work with FlexiChains
             FlexiChains.to_varname_dict(::Tn) =
                 Dict(Parameter(@varname(x)) => 1, Extra(:b) => "hi")
@@ -191,23 +193,19 @@ Turing.setprogress!(false)
             end
         end
 
-        @testset "save_state and resume_from" begin
+        @testset "save_state and initial_state" begin
             @model f() = x ~ Normal()
             model = f()
 
             # This sampler does nothing (it just stays at the existing state)
-            struct StaticSampler <: Turing.Inference.InferenceAlgorithm end
-            function DynamicPPL.initialstep(
-                rng, model, ::DynamicPPL.Sampler{<:StaticSampler}, vi; kwargs...
+            struct StaticSampler <: AbstractMCMC.AbstractSampler end
+            function Turing.Inference.initialstep(
+                rng, model, ::StaticSampler, vi; kwargs...
             )
                 return Turing.Inference.Transition(model, vi, nothing), vi
             end
             function AbstractMCMC.step(
-                rng,
-                model,
-                ::DynamicPPL.Sampler{<:StaticSampler},
-                vi::DynamicPPL.AbstractVarInfo;
-                kwargs...,
+                rng, model, ::StaticSampler, vi::DynamicPPL.AbstractVarInfo; kwargs...
             )
                 return Turing.Inference.Transition(model, vi, nothing), vi
             end
@@ -261,13 +259,28 @@ Turing.setprogress!(false)
                     3;
                     chain_type=VNChain,
                     verbose=false,
-                    resume_from=chn1,
+                    initial_state=FlexiChains.last_sampler_state(chn1),
                 )
                 # check that it did reuse the previous state
                 xval = chn1[@varname(x)][end, :]
                 @test all(i -> chn2[@varname(x)][i, :] == xval, 1:10)
             end
         end
+    end
+
+    @testset "summaries on chains from Turing" begin
+        @model function f()
+            x ~ Normal()
+            y ~ Poisson()
+            return z ~ MvNormal(zeros(2), I)
+        end
+        model = f()
+        chn = sample(model, MH(), 100; chain_type=VNChain)
+        ss = FlexiChains.summarystats(chn)
+        @test ss isa FlexiChains.FlexiSummary
+        @test Set(FlexiChains.parameters(ss)) ==
+            Set([@varname(x), @varname(y), @varname(z[1]), @varname(z[2])])
+        display(ss)
     end
 
     @testset "logp(model, chain)" begin

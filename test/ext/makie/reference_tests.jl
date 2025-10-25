@@ -22,7 +22,7 @@ reftest("two hists") do
 end
 
 reftest("legend position right") do
-    fig = hist(chns, ["A", "B"], legend_position = :right, colormap = :viridis)
+    fig = hist(chns, ["A", "B"]; legend_position=:right, colormap=:viridis)
     return fig
 end
 
@@ -42,7 +42,7 @@ reftest("two autocorplots") do
 end
 
 reftest("autocorplots lags") do
-    fig = autocorplot(chns; lags = 0:5:100)
+    fig = autocorplot(chns; lags=0:5:100)
     return fig
 end
 
@@ -52,13 +52,13 @@ reftest("two meanplots") do
 end
 
 reftest("violin") do
-    fig = violin(chns, orientation = :horizontal)
+    fig = violin(chns; orientation=:horizontal)
     return fig
 end
 
 reftest("violin link x") do
     chns = testchains()
-    fig = violin(chns, link_x = true, orientation = :horizontal)
+    fig = violin(chns; link_x=true, orientation=:horizontal)
     return fig
 end
 
@@ -69,44 +69,44 @@ reftest("violin vertical") do
 end
 
 reftest("plot vanilla") do
-    chns = testchains(continuous_samples(p = 2))
+    chns = testchains(continuous_samples(; p=2))
     fig = plot(chns)
     return fig
 end
 
 reftest("plot custom colors") do
-    chns = testchains(continuous_samples(p = 2))
-    fig = plot(chns; color = first(Makie.to_colormap(:tab20), 10))
+    chns = testchains(continuous_samples(; p=2))
+    fig = plot(chns; color=first(Makie.to_colormap(:tab20), 10))
     return fig
 end
 
 reftest("plot two banks") do
-    chns = testchains(continuous_samples(p = 2, c = 6))
+    chns = testchains(continuous_samples(; p=2, c=6))
     fig = plot(chns)
     return fig
 end
 
 reftest("plot many chains") do
-    chns = testchains(continuous_samples(p = 2, c = 8))
+    chns = testchains(continuous_samples(; p=2, c=8))
     fig = plot(chns)
     return fig
 end
 
 reftest("plot mixed densities") do
-    a = Real[discrete_samples() continuous_samples(p = 1)]
+    a = Real[discrete_samples() continuous_samples(; p=1)]
     chns = testchains(a)
     fig = plot(chns)
     return fig
 end
 
 reftest("plot custom funs") do
-    chns = testchains(continuous_samples(p = 2, c = 6))
+    chns = testchains(continuous_samples(; p=2, c=6))
     fig = plot(chns, trankplot!, chainshist!, meanplot!)
     return fig
 end
 
 reftest("plot custom funs and colors") do
-    chns = testchains(continuous_samples(p = 2, c = 6))
+    chns = testchains(continuous_samples(; p=2, c=6))
     color = first(Makie.to_colormap(:tab20), 10)
     funs = [trankplot!, chainshist!, meanplot!]
     fig = plot(chns, funs...; color)

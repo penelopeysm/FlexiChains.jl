@@ -8,25 +8,28 @@ function _show_range(s::AbstractVector)
         return string(s)
     end
 end
+function _show_range(s::AbstractVector{<:Symbol})
+    return "[" * join(string.(s), ", ") * "]"
+end
 
 function Base.show(io::IO, ::MIME"text/plain", chain::FlexiChain{TKey}) where {TKey}
     maybe_s(x) = x == 1 ? "" : "s"
     ni, nc = size(chain)
-    printstyled(io, "FlexiChain | $ni iteration$(maybe_s(ni)) ("; bold=true)
+    printstyled(
+        io, "FlexiChain ($ni iteration$(maybe_s(ni)), $nc chain$(maybe_s(nc)))\n"; bold=true
+    )
     printstyled(
         io,
-        "$(_show_range(FlexiChains.iter_indices(chain)))";
+        "$(DD.dimsymbol(1)) iter=$(_show_range(FlexiChains.iter_indices(chain)))";
         color=DD.dimcolor(1),
-        bold=true,
     )
-    printstyled(io, ") | $nc chain$(maybe_s(nc)) ("; bold=true)
+    print(io, " | ")
     printstyled(
         io,
-        "$(_show_range(FlexiChains.chain_indices(chain)))";
+        "$(DD.dimsymbol(2)) chain=$(_show_range(FlexiChains.chain_indices(chain)))";
         color=DD.dimcolor(2),
-        bold=true,
     )
-    printstyled(io, ")\n"; bold=true)
+    println(io, "\n")
     # Print parameter names
     parameter_names = parameters(chain)
     printstyled(io, "Parameter type   "; bold=true)

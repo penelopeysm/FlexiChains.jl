@@ -15,23 +15,23 @@ chainsdensity(chains[:, :B, :])
 ```
 """
 @recipe(ChainsDensity) do scene
-    Attributes(
-        color = :default,
-        colormap = :default,
-        strokewidth = 1.0,
-        alpha = 0.4,
-    )
+    Attributes(; color=:default, colormap=:default, strokewidth=1.0, alpha=0.4)
 end
 
 function Makie.plot!(cd::ChainsDensity{<:Tuple{<:AbstractMatrix}})
     mat = cd[1]
-    color = get_colors(size(mat[], 2); color = cd.color[], colormap = cd.colormap[])
-    
+    color = get_colors(size(mat[], 2); color=cd.color[], colormap=cd.colormap[])
+
     for (i, ys) in enumerate(eachcol(mat[]))
-        density!(cd, ys; color = (color[i], cd.alpha[]),
-                 strokecolor = color[i], strokewidth = cd.strokewidth[])
+        density!(
+            cd,
+            ys;
+            color=(color[i], cd.alpha[]),
+            strokecolor=color[i],
+            strokewidth=cd.strokewidth[],
+        )
     end
-    
+
     return cd
 end
 
@@ -53,15 +53,23 @@ chains = Chains(randn(300, 3, 3), [:A, :B, :C])
 density(chains)
 ```
 """
-function Makie.density(chains::Chains, parameters; figure = nothing, color = :default,
-    colormap = :default, strokewidth = 1.0, alpha = 0.4, link_x = false, legend_position = :bottom)
-
+function Makie.density(
+    chains::Chains,
+    parameters;
+    figure=nothing,
+    color=:default,
+    colormap=:default,
+    strokewidth=1.0,
+    alpha=0.4,
+    link_x=false,
+    legend_position=:bottom,
+)
     if !(figure isa Figure)
-        figure = Figure(size = autosize(chains[:, parameters, :]))
+        figure = Figure(; size=autosize(chains[:, parameters, :]))
     end
 
     for (i, parameter) in enumerate(parameters)
-        ax = Axis(figure[i, 1], ylabel = string(parameter))
+        ax = Axis(figure[i, 1]; ylabel=string(parameter))
         chainsdensity!(chains[:, parameter, :]; color, colormap, strokewidth, alpha)
         islast = length(parameters) == i
         setaxisdecorations!(ax, islast, "Parameter estimate", link_x)

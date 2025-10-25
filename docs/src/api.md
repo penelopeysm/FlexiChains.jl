@@ -18,6 +18,18 @@ You can also use `Base.keytype`:
 Base.keytype(::FlexiChains.ChainOrSummary)
 ```
 
+If you ever need to construct a `FlexiChain` from scratch, there are exactly two ways to do so.
+One is to pass an array of dictionaries (i.e., one dictionary per iteration); the other is to pass a dictionary of arrays (i.e., the values for each key are already grouped together).
+
+```@docs
+FlexiChains.FlexiChain{TKey}(data)
+```
+
+Note that, although the dictionaries themselves may have loose types, the key type of the `FlexiChain` must be specified (and the keys of the dictionaries will be checked against this).
+
+`FlexiSummary` objects should always be constructed by summarising a `FlexiChain`.
+If for some reason you need to construct one from scratch, please refer to the source code (and do let me know, so that I can make this part of the public API).
+
 ## Equality
 
 ```@docs
@@ -112,9 +124,21 @@ FlexiChains.parameters_at
 
 ## Splitting up VarNames
 
+The way that FlexiChains keeps vector-valued parameters together can make it more difficult to perform subsequent analyses, such as summarising or plotting.
+Therefore, the summary and plotting interfaces will automatically split up vector-valued parameters into their individual components for you.
+This is accomplished using this function:
+
 ```@docs
 FlexiChains.split_varnames
 ```
+
+Do note that this is a lossy conversion.
+There is no way to un-split the chain!
+Furthermore, while functions like `predict` will still work with a split chain, there will be substantial performance regressions.
+It is therefore strongly recommended that you only split a chain up only when necessary, and never earlier than that.
+
+There should really be little reason why you would need to call this function directly: just let the summary and plotting interfaces handle it for you.
+If you have a genuine use case, please get in touch as I'd be interested to hear about it.
 
 ## Integration with Turing.jl
 
@@ -128,14 +152,12 @@ DynamicPPL.pointwise_logdensities
 DynamicPPL.pointwise_loglikelihoods
 DynamicPPL.pointwise_prior_logdensities
 MCMCChains.Chains
-DynamicPPL.loadstate
+Turing.loadstate
 ```
 
 ## Summaries
 
-!!! danger
-
-    TODO
+The summaries interface is documented on the [summarising page](./summarising.md).
 
 ## Plotting
 

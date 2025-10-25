@@ -73,10 +73,10 @@ include("plots.jl")
 # Convenience re-exports.
 using DimensionalData: At, Near, Contains, (..), Touches, Where, Not
 export At, Near, Contains, (..), Touches, Where, Not
-using Statistics: mean, median, std, var
-export mean, median, std, var
-using StatsBase: summarystats
-export summarystats
+using Statistics: mean, median, std, var, quantile
+export mean, median, std, var, quantile
+using StatsBase: summarystats, mad
+export summarystats, mad
 using MCMCDiagnosticTools: ess, rhat, mcse
 export ess, rhat, mcse
 # For maximum ease of use with Turing...

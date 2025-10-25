@@ -6,65 +6,6 @@ using DynamicPPL: DynamicPPL, AbstractPPL
 using OrderedCollections: OrderedDict
 using Random: Random
 
-###############################
-# DynamicPPL 0.38 compat shim #
-#     DELETE WHEN POSSIBLE    #
-###############################
-struct InitContext{R<:Random.AbstractRNG,D<:AbstractDict} <: DynamicPPL.AbstractContext
-    rng::R
-    values::D
-end
-DynamicPPL.NodeTrait(::InitContext) = DynamicPPL.IsLeaf()
-function DynamicPPL.tilde_assume(
-    ctx::InitContext,
-    dist::DynamicPPL.Distribution,
-    vn::DynamicPPL.VarName,
-    vi::DynamicPPL.AbstractVarInfo,
-)
-    in_varinfo = haskey(vi, vn)
-    if AbstractPPL.hasvalue(ctx.values, vn, dist)
-        x = AbstractPPL.getvalue(ctx.values, vn, dist) # essentially InitFromParams
-    else
-        x = rand(ctx.rng, dist) # essentially InitFromPrior
-    end
-    insert_transformed_value =
-        in_varinfo ? DynamicPPL.istrans(vi, vn) : DynamicPPL.istrans(vi)
-    f = if insert_transformed_value
-        DynamicPPL.link_transform(dist)
-    else
-        identity
-    end
-    y, logjac = DynamicPPL.with_logabsdet_jacobian(f, x)
-    if in_varinfo
-        vi = DynamicPPL.setindex!!(vi, y, vn)
-    else
-        vi = DynamicPPL.push!!(vi, vn, y, dist)
-    end
-    insert_transformed_value && DynamicPPL.settrans!!(vi, true, vn)
-    vi = DynamicPPL.accumulate_assume!!(vi, x, logjac, vn, dist)
-    return x, vi
-end
-function DynamicPPL.tilde_observe!!(::InitContext, right, left, vn, vi)
-    return DynamicPPL.tilde_observe!!(DynamicPPL.DefaultContext(), right, left, vn, vi)
-end
-###############################
-#             END             #
-# DynamicPPL 0.38 compat shim #
-#     DELETE WHEN POSSIBLE    #
-###############################
-
-"""
-    DynamicPPL.loadstate(chain::FlexiChain{<:VarName})
-
-Extracts the last sampler state from a `FlexiChain`. This is the same function as 
-[`FlexiChains.last_sampler_state`](@ref).
-
-$(FlexiChains._INITIAL_STATE_DOCSTRING)
-"""
-function DynamicPPL.loadstate(chain::FlexiChain{<:VarName})
-    return FlexiChains.last_sampler_state(chain)
-end
-
 ###########################################
 # DynamicPPL: predict, returned, logjoint #
 ###########################################
@@ -93,10 +34,7 @@ function reevaluate(
     tuples = Iterators.product(1:niters, 1:nchains)
     retvals_and_varinfos = map(tuples) do (i, j)
         vals = FlexiChains.parameters_at(chain, i, j)
-        # TODO: use InitFromParams when DPPL 0.38 is out
-        new_ctx = DynamicPPL.setleafcontext(model.context, InitContext(rng, vals))
-        new_model = DynamicPPL.contextualize(model, new_ctx)
-        DynamicPPL.evaluate!!(new_model, vi)
+        DynamicPPL.init!!(rng, model, vi, DynamicPPL.InitFromParams(vals))
     end
     return FlexiChains._raw_to_user_data(chain, retvals_and_varinfos)
 end
@@ -237,7 +175,7 @@ variables to their log probabilities.
 function DynamicPPL.pointwise_logdensities(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}, ::Val{whichlogprob}=Val(:both)
 ) where {whichlogprob}
-    AccType = DynamicPPL.PointwiseLogProbAccumulator{whichlogprob,VarName}
+    AccType = DynamicPPL.PointwiseLogProbAccumulator{whichlogprob}
     pld_dicts = map(reevaluate(model, chain, (AccType(),))) do (_, vi)
         logps = DynamicPPL.getacc(vi, Val(DynamicPPL.accumulator_name(AccType))).logps
         OrderedDict{ParameterOrExtra{<:VarName},Any}(

@@ -17,21 +17,15 @@ trankplot(chains)
 ```
 """
 @recipe(TrankPlot) do scene
-    Attributes(
-        color = :default,
-        colormap = :default,
-        linewidth = 1.5,
-        bins = 20,
-        alpha = 1.0,
-    )
+    Attributes(; color=:default, colormap=:default, linewidth=1.5, bins=20, alpha=1.0)
 end
 
 function Makie.plot!(tp::TrankPlot{<:Tuple{<:AbstractMatrix}})
     mat = tp[1]
-    color = get_colors(size(mat[], 2); color = tp.color[], colormap = tp.colormap[])
+    color = get_colors(size(mat[], 2); color=tp.color[], colormap=tp.colormap[])
 
     binmat = lift((m, bins) -> bin_chain(m; bins), mat, tp.bins)
-    
+
     xs = lift(mat, tp.bins) do m, length
         r = range(1, size(m, 1); length)
         padx!(r, centers(r))
@@ -39,45 +33,52 @@ function Makie.plot!(tp::TrankPlot{<:Tuple{<:AbstractMatrix}})
 
     for (i, col) in enumerate(eachcol(to_value(binmat))) # FIXME interactivity?
         ys = pady!(collect(col))
-        stairs!(tp, xs, ys; step = :center, color = (color[i], tp.alpha[]))
+        stairs!(tp, xs, ys; step=:center, color=(color[i], tp.alpha[]))
     end
-    
+
     return tp
 end
 
-function trankplot(chains::Chains, parameters; figure = nothing, color = :default,
-    colormap = :default, linewidth = 1.5, bins = 20, alpha = 1.0)
-    
+function trankplot(
+    chains::Chains,
+    parameters;
+    figure=nothing,
+    color=:default,
+    colormap=:default,
+    linewidth=1.5,
+    bins=20,
+    alpha=1.0,
+)
     if !(figure isa Figure)
-        figure = Figure(size = autosize(chains[:, parameters, :]))
+        figure = Figure(; size=autosize(chains[:, parameters, :]))
     end
 
     for (i, parameter) in enumerate(parameters)
-        ax = Axis(figure[i, 1], ylabel = string(parameter))
+        ax = Axis(figure[i, 1]; ylabel=string(parameter))
         trankplot!(chains[:, parameter, :]; color, colormap, linewidth, bins, alpha)
-    
+
         hideydecorations!(ax; label=false)
         if i < length(parameters)
             hidexdecorations!(ax; grid=false)
         else
             ax.xlabel = "Iteration"
-        end    
+        end
     end
 
     colors = get_colors(size(chains[:, parameters, :], 3); color, colormap)
     chainslegend(figure, chains[:, parameters, :], colors)
-    
+
     return figure
 end
 
 trankplot(chains::Chains; kwargs...) = trankplot(chains, names(chains); kwargs...)
 
 # Create a matrix of binned sample ranks for a single parameter iteration × chain matrix.
-function bin_chain(mat::AbstractMatrix; bins = 20)
+function bin_chain(mat::AbstractMatrix; bins=20)
     # Rank samples and create bins into which the ranks will be grouped
     ranks = denserank(mat)
-    rank_range = range(extrema(ranks)..., length = bins)
-    
+    rank_range = range(extrema(ranks)...; length=bins)
+
     # Assign the ranks to the correct bin
     out = zeros(Int, bins - 1, size(ranks, 2))
     for (i, col) in enumerate(eachcol(ranks))

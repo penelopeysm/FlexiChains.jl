@@ -4,7 +4,7 @@ Flexible Markov chains.
 
 [**Documentation**](http://pysm.dev/FlexiChains.jl/)
 
-## Usage
+## Quickstart
 
 `FlexiChain{T}` represents a chain that stores data for parameters of type `T`.
 `VNChain` is a alias for `FlexiChain{VarName}`, and is the appropriate type for storing Turing.jl's outputs.
@@ -29,7 +29,7 @@ Data is returned as a `DimMatrix` from the [`DimensionalData.jl` package](https:
 ```julia
 chain[@varname(x)]    # -> DimMatrix{Float64}
 chain[@varname(y)]    # -> DimMatrix{Int}
-chain[@varname(z)]    # -> DimMatrix{Vector{Float64}}
+chain[@varname(z)]    # -> DimMatrix{Vector{Float64}}; but see also DimensionalDistributions.jl
 chain[@varname(z[1])] # -> DimMatrix{Float64}
 chain[:logjoint]      # -> DimMatrix{Float64} NOTE: not `:lp`
 ```
@@ -59,6 +59,9 @@ plot(chain; pool_chains=true)  # combining samples from all chains
 ```
 
 Finally, functions in Turing.jl which take chains as input, such as `returned`, `predict`, and `logjoint` should work out of the box with exactly the same behaviour as before.
+
+The [online documentation](https://pysm.dev/FlexiChains.jl) contains much more detail about FlexiChains and its interface.
+Please do check it out!
 
 ## Why use FlexiChains?
 

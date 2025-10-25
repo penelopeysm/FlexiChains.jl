@@ -1,17 +1,19 @@
 sdim(i) = v -> map(x -> x[i], v)
 
 function get_colors(n; color=:default, colormap=:default, threshold=7)
-    all(!=(:default), [color, colormap]) && error("Specify only one of `color` or `colormap`.")
+    all(!=(:default), [color, colormap]) &&
+        error("Specify only one of `color` or `colormap`.")
 
     if colormap != :default
         cm = Makie.to_colormap(colormap)
-        idx = round.(Int, collect(range(1, length(cm), length=n)))
+        idx = round.(Int, collect(range(1, length(cm); length=n)))
         return cm[idx]
     end
 
     if n > threshold && color == :default
-        cm = colormap == :default ? Makie.to_colormap(:viridis) : Makie.to_colormap(colormap)
-        idx = round.(Int, collect(range(1, length(cm), length=n)))
+        cm =
+            colormap == :default ? Makie.to_colormap(:viridis) : Makie.to_colormap(colormap)
+        idx = round.(Int, collect(range(1, length(cm); length=n)))
         return cm[idx]
     end
 
@@ -31,21 +33,27 @@ function get_colors_kwargs(chains, kwargs)
     return get_colors(size(chains, 3))
 end
 
-function chainslegend(fig, chains, colors; legend_position = :bottom, per_bank = 5)
+function chainslegend(fig, chains, colors; legend_position=:bottom, per_bank=5)
     nchains = size(chains, 3)
     nrows, ncols = size(fig.layout)
     banks = nbanks(chains; per_bank)
 
     elems = [PolyElement(; color) for color in colors]
     labels = string.(1:nchains)
-    
+
     if legend_position == :bottom
         colpos = ncols > 1 ? range(1, ncols) : 1
-        Legend(fig[nrows + 1, colpos], elems, labels, "Chain",
-            orientation=:horizontal, nbanks = banks)
+        Legend(
+            fig[nrows + 1, colpos],
+            elems,
+            labels,
+            "Chain";
+            orientation=:horizontal,
+            nbanks=banks,
+        )
     elseif legend_position == :right
         rowpos = nrows > 1 ? range(1, nrows) : 1
-        Legend(fig[rowpos, ncols + 1], elems, labels, "Chain", nbanks = banks)
+        Legend(fig[rowpos, ncols + 1], elems, labels, "Chain"; nbanks=banks)
     else
         error("Unsupported legend position: $legend_position, pick `:right` or `:bottom`.")
     end
@@ -89,7 +97,7 @@ function _xlabel(f)
 end
 
 function setaxisdecorations!(ax, islast, xlabel, link_x)
-    hideydecorations!(ax; label = false)
+    hideydecorations!(ax; label=false)
 
     if islast
         ax.xlabel = xlabel
@@ -97,8 +105,8 @@ function setaxisdecorations!(ax, islast, xlabel, link_x)
     end
 
     if link_x
-        hidexdecorations!(ax; grid = false)
+        hidexdecorations!(ax; grid=false)
     else
-        hidexdecorations!(ax; grid = false, ticklabels = false, ticks = false)
+        hidexdecorations!(ax; grid=false, ticklabels=false, ticks=false)
     end
 end

@@ -1,5 +1,5 @@
 function Makie.convert_arguments(::Type{<:Violin}, m::MCMCChains.AxisMatrix)
-    xs = repeat(axes(m, 2), inner = size(m, 1))
+    xs = repeat(axes(m, 2); inner=size(m, 1))
     ys = vec(m)
     return (xs, ys)
 end
@@ -24,7 +24,7 @@ violin(chains)
 ```
 """
 function Makie.violin(chains::Chains, parameters; kwargs...)
-    fig = Figure(size = autosize(chains[:, parameters, :]))
+    fig = Figure(; size=autosize(chains[:, parameters, :]))
     violin!(chains, parameters; kwargs...)
     return fig
 end
@@ -34,46 +34,46 @@ end
 # so there will be integration problems with `plot(chains, funs...)` (once that happens)
 # The rest require a color vector which has length == size(chains, 1)
 # Here it is size(chains, 1) * size(chains, 2)
-function Makie.violin!(chains::Chains, parameters; color = :default, link_x = false, kwargs...)
+function Makie.violin!(chains::Chains, parameters; color=:default, link_x=false, kwargs...)
     fig = current_figure()
 
     for (i, parameter) in enumerate(parameters)
-        ax = Axis(fig[i, 1], ylabel = string(parameter))
-        ax2 = Axis(fig[i, 1], ylabel = "Parameter estimate", yaxisposition = :right)
-        
+        ax = Axis(fig[i, 1]; ylabel=string(parameter))
+        ax2 = Axis(fig[i, 1]; ylabel="Parameter estimate", yaxisposition=:right)
+
         if color == :default
-            color = get_colors(size(chains, 3); color) 
+            color = get_colors(size(chains, 3); color)
         end
 
-        color_per_value = repeat(first(color, size(chains, 3)), inner = size(chains, 1))
-        
-        plt = violin!(chains[:, parameter, :]; color = color_per_value, kwargs...)
-        
-        hideydecorations!(ax; label = false)
+        color_per_value = repeat(first(color, size(chains, 3)); inner=size(chains, 1))
+
+        plt = violin!(chains[:, parameter, :]; color=color_per_value, kwargs...)
+
+        hideydecorations!(ax; label=false)
         hidexdecorations!(ax)
 
         orientation = to_value(Attributes(plt)[:orientation])
-        
+
         if orientation == :horizontal
             ax2.ylabel = "Chain"
-            hideydecorations!(ax2, label = false, ticklabels = false, ticks = false)
-            
+            hideydecorations!(ax2; label=false, ticklabels=false, ticks=false)
+
             if length(parameters) == i
                 ax2.xlabel = "Parameter estimate"
                 continue
             end
-            
+
             if link_x
-                [hidexdecorations!(a; grid = false) for a in [ax, ax2]]
+                [hidexdecorations!(a; grid=false) for a in [ax, ax2]]
             else
-                hidexdecorations!(ax; grid = false, ticklabels = false, ticks = false)
+                hidexdecorations!(ax; grid=false, ticklabels=false, ticks=false)
             end
-            
+
             continue
         end
-        
+
         if length(parameters) == i
-            hidexdecorations!(ax2; label = false, ticklabels = false, ticks = false)
+            hidexdecorations!(ax2; label=false, ticklabels=false, ticks=false)
             ax2.xlabel = "Chain"
         else
             hidexdecorations!(ax2)

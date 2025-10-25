@@ -19,30 +19,42 @@ ridgeline(chains)
 ```
 """
 @recipe(RidgeLine) do scene
-    Attributes(
-        color = first(Makie.wong_colors()),
-        strokewidth = 1.0, 
-        strokecolor = first(Makie.wong_colors()),
-        alpha = 0.4,
+    Attributes(;
+        color=first(Makie.wong_colors()),
+        strokewidth=1.0,
+        strokecolor=first(Makie.wong_colors()),
+        alpha=0.4,
     )
 end
 
 function Makie.plot!(rl::RidgeLine{<:Tuple{<:AbstractVector{<:AbstractVector}}})
     vectors = rl[1]
     for (i, vector) in enumerate(reverse(vectors[]))
-        density!(rl, vector, offset = i/2, color = (rl.color[], rl.alpha[]), 
-                 strokecolor = rl.strokecolor[], strokewidth = rl.strokewidth)
+        density!(
+            rl,
+            vector;
+            offset=i / 2,
+            color=(rl.color[], rl.alpha[]),
+            strokecolor=rl.strokecolor[],
+            strokewidth=rl.strokewidth,
+        )
     end
     return rl
 end
 
-function ridgeline(chn::Chains, parameters; figure = nothing, color = first(Makie.wong_colors()),
-    strokewidth = 1, strokecolor = first(Makie.wong_colors()), alpha = 0.4)
-    
+function ridgeline(
+    chn::Chains,
+    parameters;
+    figure=nothing,
+    color=first(Makie.wong_colors()),
+    strokewidth=1,
+    strokecolor=first(Makie.wong_colors()),
+    alpha=0.4,
+)
     samples = [vec(chn[:, parameter, :]) for parameter in parameters]
 
     if !(figure isa Figure)
-        figure = Figure(size = (400, min(150 * length(parameters), 2000)))
+        figure = Figure(; size=(400, min(150 * length(parameters), 2000)))
     end
 
     ax = Axis(figure[1, 1])

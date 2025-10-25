@@ -34,17 +34,24 @@ chains = Chains(randn(300, 3, 3), [:A, :B, :C])
 plot(chains)
 ```
 """
-function Makie.plot(chains::Chains, parameters; figure = nothing, link_x = false, 
-    color = :default, colormap = :default, legend_position = :bottom)
+function Makie.plot(
+    chains::Chains,
+    parameters;
+    figure=nothing,
+    link_x=false,
+    color=:default,
+    colormap=:default,
+    legend_position=:bottom,
+)
     sub_chains = chains[:, parameters, :]
-    
+
     _, nparams, nchains = size(sub_chains)
-    
+
     if !(figure isa Figure)
-        figure = Figure(size = autosize(sub_chains; ncols = 2))
+        figure = Figure(; size=autosize(sub_chains; ncols=2))
     end
-    
-    for i in 1:nparams * 2
+
+    for i in 1:(nparams * 2)
         coord = fldmod1(i, 2)
         param_idx = first(coord)
 
@@ -56,8 +63,8 @@ function Makie.plot(chains::Chains, parameters; figure = nothing, link_x = false
             traceplot!(mat; color)
             ax.ylabel = string(parameters[param_idx])
         end
-        
-        hideydecorations!(ax; label = false)
+
+        hideydecorations!(ax; label=false)
 
         if param_idx == nparams
             ax.xlabel = iszero(i % 2) ? "Parameter estimate" : "Iteration"
@@ -65,9 +72,9 @@ function Makie.plot(chains::Chains, parameters; figure = nothing, link_x = false
         end
 
         if link_x
-            hidexdecorations!(ax; grid = false)
+            hidexdecorations!(ax; grid=false)
         else
-            hidexdecorations!(ax; grid = false, ticklabels = false, ticks = false)
+            hidexdecorations!(ax; grid=false, ticklabels=false, ticks=false)
         end
     end
 
@@ -78,14 +85,21 @@ function Makie.plot(chains::Chains, parameters; figure = nothing, link_x = false
         axes = [only(contents(figure[i, 2])) for i in 1:nparams]
         linkxaxes!(axes...)
     end
-    
+
     return figure
 end
 
 Makie.plot(chains::Chains; kwargs...) = plot(chains, names(chains); kwargs...)
 
-function Makie.plot(chains::Chains, parameters, funs::Vararg{Function,N}; figure = nothing, 
-    link_x = false, legend_position = :bottom, kwargs...) where N
+function Makie.plot(
+    chains::Chains,
+    parameters,
+    funs::Vararg{Function,N};
+    figure=nothing,
+    link_x=false,
+    legend_position=:bottom,
+    kwargs...,
+) where {N}
     for f_i in string.(funs)
         endswith(f_i, "!") ||
             error("All functions must be mutating. Got `$(f_i)`, pass `$(f_i)!` instead.")
@@ -96,28 +110,28 @@ function Makie.plot(chains::Chains, parameters, funs::Vararg{Function,N}; figure
     _, nparams, nchains = size(sub_chains[:, parameters, :])
 
     xlabels = _xlabel(funs)
-    
+
     if !(figure isa Figure)
-        figure = Figure(size = autosize(sub_chains[:, parameters, :]; ncols = N))
+        figure = Figure(; size=autosize(sub_chains[:, parameters, :]; ncols=N))
     end
-    
-    for i in 1:nparams * N
+
+    for i in 1:(nparams * N)
         coord = fldmod1(i, N)
         param_idx = first(coord)
 
         mat = sub_chains[:, param_idx, :]
         ax = Axis(figure[coord...])
-        
+
         if i % N == 1
             ax.ylabel = string(parameters[param_idx])
         end
-        hideydecorations!(ax; label = false)
+        hideydecorations!(ax; label=false)
 
         if param_idx < nparams
             if link_x
-                hidexdecorations!(ax; grid = false)
+                hidexdecorations!(ax; grid=false)
             else
-                hidexdecorations!(ax; grid = false, ticklabels = false, ticks = false)
+                hidexdecorations!(ax; grid=false, ticklabels=false, ticks=false)
             end
         end
 
@@ -144,10 +158,10 @@ function Makie.plot(chains::Chains, parameters, funs::Vararg{Function,N}; figure
         axes = [only(contents(figure[i, 2])) for i in 1:nparams]
         linkxaxes!(axes...)
     end
-    
+
     return figure
 end
 
-function Makie.plot(chains::Chains, funs::Vararg{Function,N}; kwargs...) where N
+function Makie.plot(chains::Chains, funs::Vararg{Function,N}; kwargs...) where {N}
     return Makie.plot(chains, names(chains), funs...; kwargs...)
 end

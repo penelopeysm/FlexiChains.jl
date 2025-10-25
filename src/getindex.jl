@@ -34,6 +34,14 @@ function _check_summary_kwargs(fs::FlexiSummary, iter, chain, stat)
         stat === _UNSPECIFIED_KWARG || throw(ArgumentError(err_msg(:stat)))
     else
         new_stat = stat === _UNSPECIFIED_KWARG ? Colon() : stat
+        # common error: indexing with `stat=:mean` instead of `stat=At(:mean)`. Ordinarily,
+        # we should like to catch this with an error hint. Unfortunately, this throws an
+        # ArgumentError and that doesn't call Base.Experimental.show_error_hints, so
+        # although it's possible to define error hints, they never get displayed to the
+        # user. So we have to catch it here.
+        if new_stat isa Symbol
+            @warn "indexing with `stat=:$stat` will (most likely) error; you probably want to use `stat=At(:$stat)` instead."
+        end
         kwargs = merge(kwargs, (stat=new_stat,))
     end
     return kwargs
@@ -67,7 +75,7 @@ iterations or chains from the data corresponding to the given `key`.
 function Base.getindex(
     fchain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}; iter=Colon(), chain=Colon()
 ) where {TKey}
-    return _raw_to_user_data(fchain, _get_raw_data(fchain, key))[iter, chain]
+    return _raw_to_user_data(fchain, _get_raw_data(fchain, key))[iter=iter, chain=chain]
 end
 """
     Base.getindex(
