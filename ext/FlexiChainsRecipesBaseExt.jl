@@ -72,15 +72,19 @@ default, unless the `split_varnames=false` keyword argument is passed.
     # default to showing a side-by-side traceplot and density/histogram for each parameter.
     # Otherwise, if the user calls `traceplot`, `density`, `histogram`, etc. then there will
     # be a `seriestype` set for us. In either case, we can then use `seriestype` to set up
-    # the
-    # layout, and dispatch to the appropriate recipe.
+    # the layout, and dispatch to the appropriate recipe.
     seriestype = get(plotattributes, :seriestype, _TRACEPLOT_AND_DENSITY_SERIESTYPE)
-    ncols = seriestype === _TRACEPLOT_AND_DENSITY_SERIESTYPE ? 2 : 1
-    nrows = length(keys_to_plot)
-    layout := (nrows, ncols)
-    size := (FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows)
-    left_margin := DEFAULT_MARGIN
-    bottom_margin := DEFAULT_MARGIN
+    # Determine number of rows / columns in layout
+    nplottypes = seriestype === _TRACEPLOT_AND_DENSITY_SERIESTYPE ? 2 : 1
+    nkeys = length(keys_to_plot)
+    given_layout = get(plotattributes, :layout, (nkeys, nplottypes))
+    layout --> given_layout
+    nrows, ncols = given_layout
+    # Determine plot size
+    size --> (FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows)
+    left_margin --> DEFAULT_MARGIN
+    bottom_margin --> DEFAULT_MARGIN
+    # Do the individual plots!
     for (i, k) in enumerate(keys_to_plot)
         if seriestype === _TRACEPLOT_AND_DENSITY_SERIESTYPE
             @series begin

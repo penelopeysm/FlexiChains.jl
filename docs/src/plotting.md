@@ -60,6 +60,8 @@ plotfunc(
   !!! note
       Plots.jl will error when attempting to plot vector-valued parameters, so there is no real reason to disable `split_varnames`, unless you are developing new plot types.
 
+- Other keyword arguments are passed through to the underlying Plots.jl functions. If you find one that does not work as intended, please open an issue.
+
 ## Gallery
 
 Here, we demonstrate the plotting features with a typical chain sampled from a Turing model.
