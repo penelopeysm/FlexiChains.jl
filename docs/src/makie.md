@@ -84,7 +84,7 @@ Makie.density(chn; layout=(2, 2), alpha=0.7)
 Trace plots (with a rather ugly colour scheme):
 
 ```@example 1
-FlexiChains.mtraceplot(chn; layout=(2, 2), colors=[(:red, 0.6), (:blue, 0.6), (:green, 0.6)])
+FlexiChains.mtraceplot(chn; layout=(2, 2), color=[(:red, 0.6), (:blue, 0.6), (:green, 0.6)])
 ```
 
 ## Docstrings
