@@ -272,7 +272,8 @@ returned(model, chain)
 
 ## Plotting
 
-FlexiChains contains a few recipes for plotting with StatsPlots.jl; please see [the Plotting page](./plotting.md) for full details.
+FlexiChains contains a few recipes for plotting with Plots.jl and Makie.jl; please see the respective docs pages for more details ([Plots.jl](./plots.md), [Makie.jl](./makie.md)).
+Here we demonstrate usage with Plots.jl.
 
 When plotting a `VNChain`, array-valued parameters will automatically be split up into their individual components.
 In this example we plot only `tau` and `theta[1]` to save space, but if you were to plot `theta`, you would get eight separate plots for each element of `theta`.

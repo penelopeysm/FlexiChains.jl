@@ -1,67 +1,68 @@
 """
-    chainsdensity(matrix)
-
-Plots the density of the samples for an iteration × chain `matrix`.
-
-## Attributes
-WIP
-
-## Example
-
-```julia
-using CairoMakie, ChainsMakie, MCMCChains
-chains = Chains(randn(300, 3, 3), [:A, :B, :C])
-chainsdensity(chains[:, :B, :])
-```
+This handles plotting onto a full Figure.
 """
-@recipe(ChainsDensity) do scene
-    Attributes(; color=:default, colormap=:default, strokewidth=1.0, alpha=0.4)
-end
-
-function Makie.plot!(cd::ChainsDensity{<:Tuple{<:AbstractMatrix}})
-    mat = cd[1]
-    color = get_colors(size(mat[], 2); color=cd.color[], colormap=cd.colormap[])
-
-    for (i, ys) in enumerate(eachcol(mat[]))
-        density!(
-            cd,
-            ys;
-            color=(color[i], cd.alpha[]),
-            strokecolor=color[i],
-            strokewidth=cd.strokewidth[],
+function Makie.density(
+    chn::FC.FlexiChain,
+    param_or_params=FC.Parameter.(FC.parameters(chn));
+    pool_chains::Bool=false,
+    figure=(;),
+    axis=(;),
+    kwargs...,
+)
+    keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
+    isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
+    nrows, ncols = length(keys_to_plot), 1
+    figure = Makie.Figure(;
+        size=(FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
+        figure...,
+    )
+    a, p = nothing, nothing
+    for (i, k) in enumerate(keys_to_plot)
+        a, p = Makie.density!(
+            Makie.Axis(figure[i, 1]; _default_density_axis(k)..., axis...),
+            FC.PlotUtils.FlexiChainDensity(chn, k, pool_chains);
+            kwargs...,
         )
     end
-
-    return cd
+    return Makie.FigureAxisPlot(figure, a, p)
 end
 
-function Makie.density(
-    chains::FC.FlexiChain,
-    parameters;
-    figure=nothing,
-    color=:default,
-    colormap=:default,
-    strokewidth=1.0,
-    alpha=0.4,
-    link_x=false,
-    legend_position=:bottom,
+"""
+This handles plotting onto a single Axis.
+"""
+function Makie.density(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
+    # TODO: Error if there is already something at the grid position?
+    # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96
+    k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
+    return Makie.density!(
+        Makie.Axis(grid; _default_density_axis(k)..., axis...), chn, param; kwargs...
+    )
+end
+function Makie.density!(
+    ax::Makie.Axis, chn::FC.FlexiChain, param; pool_chains::Bool=false, kwargs...
 )
-    @show parameters
-    if !(figure isa Figure)
-        figure = Figure(; size=autosize(chains[:, parameters, :]))
-    end
-
-    for (i, parameter) in enumerate(parameters)
-        ax = Axis(figure[i, 1]; ylabel=string(parameter))
-        chainsdensity!(chains[:, parameter, :]; color, colormap, strokewidth, alpha)
-        islast = length(parameters) == i
-        setaxisdecorations!(ax, islast, "Parameter estimate", link_x)
-    end
-
-    colors = get_colors(size(chains[:, parameters, :], 3); color, colormap)
-    chainslegend(figure, chains[:, parameters, :], colors; legend_position)
-
-    return figure
+    k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
+    a, p = Makie.density!(
+        ax, FC.PlotUtils.FlexiChainDensity(chn, k, pool_chains); kwargs...
+    )
+    return Makie.AxisPlot(a, p)
+end
+function Makie.density!(chn::FC.FlexiChain, param; kwargs...)
+    return Makie.density!(Makie.current_axis(), chn, param; kwargs...)
 end
 
-Makie.density(chains::Chains; kwargs...) = density(chains, names(chains); kwargs...)
+"""
+This is the actual workhorse function that does the density plotting.
+"""
+function Makie.density!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainDensity; kwargs...)
+    y = FC._get_raw_data(d.chn, d.param)
+    if d.pool_chains
+        p = Makie.density!(ax, vec(y); label="pooled", kwargs...)
+    else
+        labels = permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
+        for (label, datacol) in zip(labels, eachcol(y))
+            p = Makie.density!(ax, datacol; label=label, kwargs...)
+        end
+    end
+    return Makie.AxisPlot(ax, p)
+end

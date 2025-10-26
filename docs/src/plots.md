@@ -1,10 +1,7 @@
-# Plotting
+# Plotting: Plots.jl
 
 FlexiChains defines a few plot recipes which allows you to use [the Plots.jl ecosystem](@extref Plots :doc:`index`) to visualise chains.
 In particular, you will want to import StatsPlots.jl.
-
-!!! note "Other backends"
-    Integration with (at least) Makie.jl is planned, but not yet implemented.
 
 ## Plot types
 

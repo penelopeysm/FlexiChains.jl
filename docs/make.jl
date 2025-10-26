@@ -8,6 +8,7 @@ using PosteriorDB: PosteriorDB
 using PosteriorStats: PosteriorStats
 using DynamicPPL: DynamicPPL
 using MCMCChains: MCMCChains
+using Turing: Turing
 
 links = InterLinks(
     "DimensionalData" => "https://rafaqz.github.io/DimensionalData.jl/stable/",
@@ -34,7 +35,8 @@ makedocs(;
         "turing.md",
         "summarising.md",
         "indexing.md",
-        "plotting.md",
+        "plots.md",
+        "makie.md",
         "integrations.md",
         "api.md",
         "why.md",

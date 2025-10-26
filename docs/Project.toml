@@ -1,5 +1,6 @@
 [deps]
 Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Chairmarks = "0ca39b1e-fe0b-4e98-acfc-b1656634c4de"
 DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
 DimensionalDistributions = "2d8b4b49-4cda-4573-8194-25db521b04c9"
