@@ -17,6 +17,7 @@ function get_colors(n; color=:default, colormap=:default, threshold=7)
         return cm[idx]
     end
 
+    @show kwargs
     colors = first(color == :default ? Makie.wong_colors() : color, n)
     n > length(colors) && error("Specify at least as many colors as there are chains.")
     return colors

@@ -62,11 +62,11 @@ this excludes non-parameter, `Extra` keys.
 default, unless the `split_varnames=false` keyword argument is passed.
 """
 @recipe function _(
-    chn::FC.FlexiChain{TKey},
+    chn::FC.FlexiChain,
     param_or_params=FC.Parameter.(FC.parameters(chn));
     lags=nothing,
     demean=nothing,
-) where {TKey}
+)
     keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
     # When the user calls `plot(chn[, params])` without specifying a `seriestype`, we
     # default to showing a side-by-side traceplot and density/histogram for each parameter.

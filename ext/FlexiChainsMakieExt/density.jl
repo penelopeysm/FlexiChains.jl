@@ -35,26 +35,8 @@ function Makie.plot!(cd::ChainsDensity{<:Tuple{<:AbstractMatrix}})
     return cd
 end
 
-# Type piracy, I own neither `density` nor `Chains`?
-"""
-    density(chains)
-    density(chains, parameters)
-
-Plots the density of the samples for each chain and parameter.
-
-## Attributes
-WIP
-
-## Example
-
-```julia
-using CairoMakie, ChainsMakie, MCMCChains
-chains = Chains(randn(300, 3, 3), [:A, :B, :C])
-density(chains)
-```
-"""
 function Makie.density(
-    chains::Chains,
+    chains::FC.FlexiChain,
     parameters;
     figure=nothing,
     color=:default,
@@ -64,6 +46,7 @@ function Makie.density(
     link_x=false,
     legend_position=:bottom,
 )
+    @show parameters
     if !(figure isa Figure)
         figure = Figure(; size=autosize(chains[:, parameters, :]))
     end
