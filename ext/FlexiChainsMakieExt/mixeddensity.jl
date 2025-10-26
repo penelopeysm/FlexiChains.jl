@@ -54,7 +54,7 @@ end
 """
 This handles plotting onto a single Axis.
 """
-function FC.mtraceplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
+function FC.mmixeddensity(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96
     k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
