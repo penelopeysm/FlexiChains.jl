@@ -39,6 +39,7 @@ makedocs(;
         "turing.md",
         "summarising.md",
         "indexing.md",
+        "plotting.md",
         "plots.md",
         "makie.md",
         "integrations.md",
