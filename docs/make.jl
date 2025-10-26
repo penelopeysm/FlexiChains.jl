@@ -1,7 +1,8 @@
 using Documenter
 using DocumenterInterLinks
 using FlexiChains
-using CairoMakie: CairoMakie
+using CairoMakie: CairoMakie, Makie
+using StatsPlots: Plots
 using Statistics: Statistics
 using StatsBase: StatsBase
 using MCMCDiagnosticTools: MCMCDiagnosticTools

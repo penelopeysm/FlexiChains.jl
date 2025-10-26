@@ -2,11 +2,11 @@
 
 Plotting functionality with Makie.jl is currently in a very early stage of development, so there are fewer plots.
 However, there is some custom code to generate (e.g.) shared legends, which leads to perhaps slightly nicer plots than for Plots.jl.
-The Makie integration in FlexiChains builds on, and further develops, of [the (unreleased) ChainsMakie.jl package](https://simonsteiger.github.io/ChainsMakie.jl/dev/).
+Many parts of the Makie integration in FlexiChains are heavily lifted from [the (unreleased) ChainsMakie.jl package](https://simonsteiger.github.io/ChainsMakie.jl/dev/).
 
 ## General interface
 
-For all functions `plotfunc` shown below, you can use the following invocation:
+For all functions `plotfunc` shown in the table of [the plotting page](./plotting.md), you can use the following invocation:
 
 1. Generate an entire `Makie.Figure`. This automatically generates a complete plot for you, including a legend.
 
@@ -101,8 +101,16 @@ FlexiChains.mtraceplot(chn, [@varname(x), @varname(y)];
     legend_position=:right,
     color=[(:red, 0.6), (:blue, 0.6), (:green, 0.6)],
 )
+Makie.save("traceplot_makie.png", ans.figure); # hide
 ```
+
+![Trace plots of the sampled chain, with a red/blue/green colour scheme](density_makie.png)
 
 ## Docstrings
 
-Under construction.
+Note that these are only the functions which FlexiChains defines: a number of Makie.jl's actual functions (like `hist` and `density`) also work with `FlexiChain` objects, as described in the table above, but their docstrings are not included here.
+
+```@docs
+FlexiChains.mtraceplot
+FlexiChains.mmixeddensity
+```

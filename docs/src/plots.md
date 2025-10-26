@@ -108,6 +108,8 @@ savefig("plot3.svg"); nothing # hide
 
 ## Docstrings
 
+Note that these are only the functions which FlexiChains defines: a number of Plots.jl's actual functions (like `histogram` and `density`) also work with `FlexiChain` objects, as described in the table above, but their docstrings are not included here.
+
 ```@docs
 FlexiChains.traceplot
 ```
