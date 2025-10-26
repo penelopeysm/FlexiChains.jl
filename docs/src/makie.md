@@ -4,9 +4,6 @@ Plotting functionality with Makie.jl is currently in a very early stage of devel
 
 ## General interface
 
-FlexiChains's plotting interface tries to stay very close in spirit to the way Makie works.
-If you find any inconsistencies, please do open an issue; I'm not very experienced with Makie.
-
 For each function `plotfunc` shown below, you can use the following invocations:
 
 1. Generate an entire `Makie.Figure`. The `figure` and `axis` arguments (which can be, e.g., `NamedTuple`s) allow you to pass extra options to the `Figure` and `Axis` constructors.

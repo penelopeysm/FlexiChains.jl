@@ -1,6 +1,7 @@
 using Documenter
 using DocumenterInterLinks
 using FlexiChains
+using CairoMakie: CairoMakie
 using Statistics: Statistics
 using StatsBase: StatsBase
 using MCMCDiagnosticTools: MCMCDiagnosticTools
@@ -20,16 +21,19 @@ links = InterLinks(
     "Julia" => "https://docs.julialang.org/en/v1/",
 )
 
-FCPosteriorDBExt = Base.get_extension(FlexiChains, :FlexiChainsPosteriorDBExt)
-FCPosteriorStatsExt = Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsExt)
-FCDynamicPPLExt = Base.get_extension(FlexiChains, :FlexiChainsDynamicPPLExt)
-FCMCMCChainsExt = Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt)
+modules = [
+    FlexiChains,
+    Base.get_extension(FlexiChains, :FlexiChainsPosteriorDBExt),
+    Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsExt),
+    Base.get_extension(FlexiChains, :FlexiChainsDynamicPPLExt),
+    Base.get_extension(FlexiChains, :FlexiChainsMakieExt),
+    Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt),
+    Base.get_extension(FlexiChains, :FlexiChainsTuringExt),
+]
 
 makedocs(;
     sitename="FlexiChains.jl",
-    modules=[
-        FlexiChains, FCPosteriorDBExt, FCPosteriorStatsExt, FCDynamicPPLExt, FCMCMCChainsExt
-    ],
+    modules=modules,
     pages=[
         "index.md",
         "turing.md",

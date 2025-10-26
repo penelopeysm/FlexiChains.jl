@@ -161,4 +161,4 @@ The summaries interface is documented on the [summarising page](./summarising.md
 
 ## Plotting
 
-The plotting interface is documented on the respective pages for [Plots.jl](./plots.md) and [Makie.jl](./makie.md).
+The plotting interface is documented on the [plotting pages](./plotting.md).

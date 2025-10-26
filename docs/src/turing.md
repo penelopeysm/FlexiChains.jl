@@ -272,7 +272,7 @@ returned(model, chain)
 
 ## Plotting
 
-FlexiChains contains a few recipes for plotting with Plots.jl and Makie.jl; please see the respective docs pages for more details ([Plots.jl](./plots.md), [Makie.jl](./makie.md)).
+FlexiChains contains a few recipes for plotting with Plots.jl and Makie.jl; please see the [plotting pages](./plotting.md) for more details.
 Here we demonstrate usage with Plots.jl.
 
 When plotting a `VNChain`, array-valued parameters will automatically be split up into their individual components.
