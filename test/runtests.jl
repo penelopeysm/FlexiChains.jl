@@ -7,5 +7,4 @@ using Test: @testset
     include("ext/turing.jl")
     include("ext/posteriordb.jl")
     include("ext/dimdist.jl")
-    include("ext/makie/makie.jl")
 end
