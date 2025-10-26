@@ -37,10 +37,11 @@ function Makie.density(
             kwargs...,
         )
     end
-    # Extract the colors used in the last axis
-    colors = map(p -> p.color[], a.scene.plots)
-    # Don't create a legend if chains were pooled
-    pool_chains || maybe_add_legend(figure, chn, colors, legend_position; legend...)
+    if pool_chains
+        # Extract the colors used in the last axis
+        colors = map(p -> p.color[], a.scene.plots)
+        maybe_add_legend(figure, chn, colors, legend_position; legend...)
+    end
     return Makie.FigureAxisPlot(figure, a, p)
 end
 

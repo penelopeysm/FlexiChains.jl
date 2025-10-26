@@ -6,9 +6,21 @@ The Makie integration in FlexiChains builds on, and further develops, of [the (u
 
 ## General interface
 
-For each function `plotfunc` shown below, you can use the following invocations:
+For all functions `plotfunc` shown below, you can use the following invocation:
 
 1. Generate an entire `Makie.Figure`. This automatically generates a complete plot for you, including a legend.
+
+   ```julia
+   plotfunc(
+       chn[, param_or_params];
+       figure=(;), axis=(;), legend=(;),
+       legend_position=:bottom,
+       kwargs...
+   )
+   ```
+
+   `param_or_params` can be anything used to index into a chain (single parameters are also accepted).
+   If not specified, all parameters in the chain will be plotted.
 
    There are special keyword arguments:
 
@@ -22,37 +34,24 @@ For each function `plotfunc` shown below, you can use the following invocations:
 
    Other keyword arguments (`kwargs...`) are passed to the plotting function used internally (e.g., `lines!`, `scatter!`, etc.).
 
-   ```julia
-   plotfunc(
-       chn[, param_or_params];
-       figure=(;), axis=(;), legend=(;),
-       legend_position=:bottom,
-       kwargs...
-   )
-   ```
+For functions which create only a single plot per parameter (e.g. `density`, or `mtraceplot`), the following options are also available.
+The intention is to allow you to build more complex figures using these as building blocks:
 
-2. Plot a single parameter onto an existing `Makie.Axis` object. If `ax` is not specified, uses the current axis.
+2. Plot a single parameter onto an existing `Makie.Axis` object: this uses the 'mutating' version with an exclamation mark.
 
-   Colours are handled the same way as above.
+   If `ax` is not specified, uses the current axis. Colours are handled the same way as above. `param` must be a single parameter.
 
    ```julia
    plotfunc!([ax, ]chn, param; kwargs...)
    ```
 
-3. Plot a single parameter onto a Makie grid position. This constructs a `Makie.Axis` for you, and as before you can pass options via the `axis` keyword argument.
-
-   Colours are handled the same way as above.
+3. Plot a single parameter onto a Makie grid position. This constructs a `Makie.Axis` for you, and as before you can pass options via the `axis` keyword argument. Colours are handled the same way as above. `param` must be a single parameter.
 
    ```julia
    f = Figure()
    gp = f[1, 1]
    plotfunc!(gp, chn, param; axis=(;), kwargs...)
    ```
-
-When plotting multiple parameters (invocation (1)), `param_or_params` can be anything used to index into a chain (single parameters are also accepted).
-If not specified, all parameters in the chain will be plotted.
-
-When plotting single parameters, `param` must be a single parameter.
 
 ## Gallery
 
@@ -75,16 +74,33 @@ chn = sample(
 )
 ```
 
+Standard plot:
+
+```@example 1
+Makie.plot(chn)
+Makie.save("standard_makie.png", ans.figure); # hide
+```
+
+![Trace and density plots of the sampled chain](standard_makie.png)
+
 Plot density estimates of all parameters:
 
 ```@example 1
-Makie.density(chn; layout=(2, 2), alpha=0.7)
+Makie.density(chn;
+    layout=(2, 2), alpha=0.7
+)
+Makie.save("density_makie.png", ans.figure); # hide
 ```
 
-Trace plots (with a rather ugly colour scheme):
+![Density plots of the sampled chain, with a 2x2 layout](density_makie.png)
+
+Trace plots for just two parameters (with a rather ugly colour scheme):
 
 ```@example 1
-FlexiChains.mtraceplot(chn; layout=(2, 2), color=[(:red, 0.6), (:blue, 0.6), (:green, 0.6)])
+FlexiChains.mtraceplot(chn, [@varname(x), @varname(y)];
+    legend_position=:right,
+    color=[(:red, 0.6), (:blue, 0.6), (:green, 0.6)],
+)
 ```
 
 ## Docstrings

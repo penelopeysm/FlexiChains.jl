@@ -94,5 +94,6 @@ end
 
 include("FlexiChainsMakieExt/density.jl")
 include("FlexiChainsMakieExt/traceplot.jl")
+include("FlexiChainsMakieExt/plot.jl")
 
 end
