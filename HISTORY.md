@@ -1,3 +1,7 @@
+# 0.1.3
+
+Allow passing `layout` and `size` arguments to Plots.jl.
+
 # 0.1.2
 
 Added compatibility with DynamicPPL@0.38 and Turing@0.41.
