@@ -1,3 +1,8 @@
+# 0.1.4
+
+Added some plotting methods with Makie.jl!
+Please see [the docs](https://pysm.dev/FlexiChains.jl/stable/plotting) for more information on what's available and how to use it.
+
 # 0.1.3
 
 Allow passing `layout` and `size` arguments to Plots.jl.
