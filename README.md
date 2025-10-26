@@ -49,10 +49,10 @@ mean(chain)[@varname(x)] # -> Float64
 mean(chain; dims=:iter)  # take the mean over iterations only
 ```
 
-Visualisation with Plots.jl is supported:
+Visualisation with Plots.jl and Makie.jl is supported:
 
 ```julia
-using StatsPlots
+using StatsPlots  # or CairoMakie
 plot(chain)                    # trace + densities for all variables
 plot(chain, [@varname(z)])     # trace + density for z[1] and z[2] only
 plot(chain; pool_chains=true)  # combining samples from all chains
