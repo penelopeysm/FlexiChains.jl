@@ -35,7 +35,6 @@ The above plotting functions should be called with the following signature:
 plotfunc(
     chn[, param_or_params];
     pool_chains::Bool=false,
-    split_varnames::Bool=(chn isa FlexiChain{<:VarName}),
     kwargs...
 )
 ```
@@ -49,13 +48,6 @@ plotfunc(
 
 - If `pool_chains=true`, then samples from all chains are concatenated before plotting densities or histograms.
   Otherwise, each chain is plotted separately.
-
-- `split_varnames` is only applicable if the chain key type is a VarName (as would be obtained from Turing).
-  It controls whether vector-valued parameters are split into their individual components.
-  For example, if `z` is a 2-dimensional parameter, then setting `split_varnames=true` will plot `z[1]` and `z[2]` separately.
-
-  !!! note
-      Plots.jl will error when attempting to plot vector-valued parameters, so there is no real reason to disable `split_varnames`, unless you are developing new plot types.
 
 - Other keyword arguments are passed through to the underlying Plots.jl functions. If you find one that does not work as intended, please open an issue.
 

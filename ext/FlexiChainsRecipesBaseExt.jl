@@ -55,11 +55,9 @@ const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 """
 Main entry point for plotting.
 
-If parameters are unspecified, all parameters in the chain will be plotted. Note that
-this excludes non-parameter, `Extra` keys.
-
-`VarName` chains are additionally split up into constituent real-valued parameters by
-default, unless the `split_varnames=false` keyword argument is passed.
+If parameters are unspecified, all parameters in the chain will be plotted. Note that this
+excludes non-parameter, `Extra` keys. `VarName` chains are additionally split up into
+constituent real-valued parameters by default.
 """
 @recipe function _(
     chn::FC.FlexiChain,
