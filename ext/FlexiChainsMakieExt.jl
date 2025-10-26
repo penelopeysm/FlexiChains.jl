@@ -93,6 +93,8 @@ function determine_color_kwargs(nchains::Int, kwargs::NamedTuple)::Vector{NamedT
 end
 
 include("FlexiChainsMakieExt/density.jl")
+include("FlexiChainsMakieExt/hist.jl")
+include("FlexiChainsMakieExt/mixeddensity.jl")
 include("FlexiChainsMakieExt/traceplot.jl")
 include("FlexiChainsMakieExt/plot.jl")
 

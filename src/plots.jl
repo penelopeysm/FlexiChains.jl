@@ -136,6 +136,27 @@ Mutating version of `mtraceplot`, for use with existing Makie.Axis objects.
 """
 function mtraceplot! end
 
+"""
+    FlexiChains.mmixeddensity(
+        chn::FlexiChain{TKey}[, param_or_params];
+        kwargs...
+    )
+
+Create a mixed density plot of the specified parameter(s) in the given `FlexiChain` using
+Makie.jl: if the parameter is continuous-valued, a density plot is created; if
+discrete-valued, a histogram is created.
+
+$(_PARAM_DOCSTRING("mmixeddensity"))
+"""
+function mmixeddensity end
+
+"""
+    FlexiChains.mmixeddensity!
+
+Mutating version of `mmixeddensity`, for use with existing Makie.Axis objects.
+"""
+function mmixeddensity! end
+
 ###########################################################
 # Utility functions for plotting (shared across backends) #
 ###########################################################

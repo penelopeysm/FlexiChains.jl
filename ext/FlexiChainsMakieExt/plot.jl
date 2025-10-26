@@ -33,9 +33,9 @@ function Makie.plot(
                 kwargs...,
             )
         else
-            a, p = Makie.density!(
+            a, p = FlexiChains.mmixeddensity!(
                 Makie.Axis(figure[row, col]; _default_density_axis(k)..., axis...),
-                FC.PlotUtils.FlexiChainDensity(chn, k, pool_chains);
+                FC.PlotUtils.FlexiChainMixedDensity(chn, k, pool_chains);
                 kwargs...,
             )
         end
