@@ -2,7 +2,7 @@
 
 Plotting functionality with Makie.jl is currently in a very early stage of development, so there are fewer plots.
 However, there is some custom code to generate (e.g.) shared legends, which leads to perhaps slightly nicer plots than for Plots.jl.
-This work builds on top of [the (unreleased) ChainsMakie.jl package](https://simonsteiger.github.io/ChainsMakie.jl/dev/).
+The Makie integration in FlexiChains builds on, and further develops, of [the (unreleased) ChainsMakie.jl package](https://simonsteiger.github.io/ChainsMakie.jl/dev/).
 
 ## General interface
 
