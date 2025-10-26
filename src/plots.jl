@@ -181,6 +181,7 @@ end
 struct FlexiChainHistogram{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
+    pool_chains::Bool
 end
 
 function runningmean(v::AbstractVector{<:Union{Real,Missing}})
@@ -217,11 +218,13 @@ end
 struct FlexiChainMixedDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
+    pool_chains::Bool
 end
 
 struct FlexiChainDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
+    pool_chains::Bool
 end
 
 end # module PlotUtils
