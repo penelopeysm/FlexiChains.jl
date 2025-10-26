@@ -55,18 +55,17 @@ const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 """
 Main entry point for plotting.
 
-If parameters are unspecified, all parameters in the chain will be plotted. Note that
-this excludes non-parameter, `Extra` keys.
-
-`VarName` chains are additionally split up into constituent real-valued parameters by
-default, unless the `split_varnames=false` keyword argument is passed.
+If parameters are unspecified, all parameters in the chain will be plotted. Note that this
+excludes non-parameter, `Extra` keys. `VarName` chains are additionally split up into
+constituent real-valued parameters by default.
 """
 @recipe function _(
-    chn::FC.FlexiChain{TKey},
+    chn::FC.FlexiChain,
     param_or_params=FC.Parameter.(FC.parameters(chn));
     lags=nothing,
     demean=nothing,
-) where {TKey}
+    pool_chains=false,
+)
     keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
     # When the user calls `plot(chn[, params])` without specifying a `seriestype`, we
     # default to showing a side-by-side traceplot and density/histogram for each parameter.
@@ -93,7 +92,7 @@ default, unless the `split_varnames=false` keyword argument is passed.
             end
             @series begin
                 subplot := 2i
-                FC.PlotUtils.FlexiChainMixedDensity(chn, k)
+                FC.PlotUtils.FlexiChainMixedDensity(chn, k, pool_chains)
             end
         else
             @series begin
@@ -101,11 +100,11 @@ default, unless the `split_varnames=false` keyword argument is passed.
                 if seriestype === _TRACEPLOT_SERIESTYPE
                     return FC.PlotUtils.FlexiChainTrace(chn, k)
                 elseif seriestype === _MIXEDDENSITY_SERIESTYPE
-                    return FC.PlotUtils.FlexiChainMixedDensity(chn, k)
+                    return FC.PlotUtils.FlexiChainMixedDensity(chn, k, pool_chains)
                 elseif seriestype === :density
-                    return FC.PlotUtils.FlexiChainDensity(chn, k)
+                    return FC.PlotUtils.FlexiChainDensity(chn, k, pool_chains)
                 elseif seriestype === :histogram
-                    return FC.PlotUtils.FlexiChainHistogram(chn, k)
+                    return FC.PlotUtils.FlexiChainHistogram(chn, k, pool_chains)
                 elseif seriestype === _MEANPLOT_SERIESTYPE
                     return FC.PlotUtils.FlexiChainMean(chn, k)
                 elseif seriestype === _AUTOCORPLOT_SERIESTYPE
@@ -214,28 +213,26 @@ methods respectively.
     FC.PlotUtils.check_eltype_is_real(raw)
     # Detect if it's discrete or continuous. This is a bit of a hack!
     if eltype(raw) <: Integer
-        return FC.PlotUtils.FlexiChainHistogram(ad.chn, ad.param)
+        return FC.PlotUtils.FlexiChainHistogram(ad.chn, ad.param, ad.pool_chains)
     else
-        return FC.PlotUtils.FlexiChainDensity(ad.chn, ad.param)
+        return FC.PlotUtils.FlexiChainDensity(ad.chn, ad.param, ad.pool_chains)
     end
 end
 
 """
-Density plot for continuous data. The `pool_chains` keyword argument indicates whether to
-plot each chain separately (`false`)`, or to combine all chains into a single density
-estimate (`true`).
+Density plot for continuous data.
 """
-@recipe function _(d::FC.PlotUtils.FlexiChainDensity; pool_chains=false)
+@recipe function _(d::FC.PlotUtils.FlexiChainDensity)
     seriestype := :density
     # Extract data
     x = FC.iter_indices(d.chn)
     raw = FC._get_raw_data(d.chn, d.param)
-    y = pool_chains ? vec(raw) : raw
+    y = d.pool_chains ? vec(raw) : raw
     FC.PlotUtils.check_eltype_is_real(y)
     # Set labels
     xguide --> "value"
     yguide --> "density"
-    if pool_chains
+    if d.pool_chains
         label --> "pooled"
     else
         label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
@@ -245,19 +242,18 @@ estimate (`true`).
 end
 
 """
-Histogram for discrete data. The `pool_chains` keyword argument indicates whether to plot
-each chain separately (`false`)`, or to combine all chains into a single histogram (`true`).
+Histogram for discrete data.
 """
-@recipe function _(h::FC.PlotUtils.FlexiChainHistogram; pool_chains=false)
+@recipe function _(h::FC.PlotUtils.FlexiChainHistogram)
     seriestype := :histogram
     # Extract data
     raw = FC._get_raw_data(h.chn, h.param)
-    x = pool_chains ? vec(raw) : raw
+    x = h.pool_chains ? vec(raw) : raw
     FC.PlotUtils.check_eltype_is_real(x)
     # Set labels
     xguide --> "value"
     yguide --> "probability"
-    if pool_chains
+    if h.pool_chains
         label --> "pooled"
     else
         label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(h.chn)))

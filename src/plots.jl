@@ -1,22 +1,25 @@
-function _PLOTS_DOCSTRING_SUPPLEMENTARY(funcname)
+function _PARAM_DOCSTRING(funcname)
     return """
 If no parameters are specified, this will plot all parameters in the chain. Note that
 non-parameter, i.e. `Extra`, keys are excluded by default. If you want to plot _all_ keys,
 you can explicitly pass all keys with `$(funcname)(chn, :)`.
-
-Keyword arguments are forwarded to Plots.jl's functions.
 """
 end
 
+######################
+# Plots.jl overloads #
+######################
 """
     FlexiChains.traceplot(
         chn::FlexiChain{TKey}[, param_or_params];
         kwargs...
     )
 
-Create a trace plot of the specified parameter(s) in the given `FlexiChain`.
+Create a trace plot of the specified parameter(s) in the given `FlexiChain` using Plots.jl.
 
-$(_PLOTS_DOCSTRING_SUPPLEMENTARY("traceplot"))
+$(_PARAM_DOCSTRING("traceplot"))
+
+Keyword arguments are forwarded to Plots.jl's functions.
 """
 function traceplot end
 
@@ -37,10 +40,10 @@ function traceplot! end
     )
 
 Create either a density plot, or a histogram, of the specified parameter(s) in the given
-`FlexiChain`. Continuous-valued parameters are plotted using density plots, discrete-valued
-parameters with histograms.
+`FlexiChain` using Plots.jl. Continuous-valued parameters are plotted using density plots,
+discrete-valued parameters with histograms.
 
-$(_PLOTS_DOCSTRING_SUPPLEMENTARY("mixeddensity"))
+$(_PARAM_DOCSTRING("mixeddensity"))
 """
 function mixeddensity end
 
@@ -60,9 +63,10 @@ function mixeddensity! end
         kwargs...
     )
 
-Plot the running mean of the specified parameter(s) in the given `FlexiChain`.
+Plot the running mean of the specified parameter(s) in the given `FlexiChain` using
+Plots.jl.
 
-$(_PLOTS_DOCSTRING_SUPPLEMENTARY("meanplot"))
+$(_PARAM_DOCSTRING("meanplot"))
 """
 function meanplot end
 
@@ -84,7 +88,8 @@ function meanplot! end
         kwargs...
     )
 
-Plot the autocorrelation of the specified parameter(s) in the given `FlexiChain`.
+Plot the autocorrelation of the specified parameter(s) in the given `FlexiChain` using
+Plots.jl.
 
 The `lags` keyword argument can be used to specify which lags to plot. If `nothing` is
 passed (the default), this is set to the integers from 1 to `min(niters-1,
@@ -94,7 +99,7 @@ mimics the default behaviour of [`StatsBase.autocor`](@extref).
 The `demean` keyword argument specifies whether to subtract the mean of the parameter before
 computing the autocorrelation, and is passed to [`StatsBase.autocor`](@extref).
 
-$(_PLOTS_DOCSTRING_SUPPLEMENTARY("autocorplot"))
+$(_PARAM_DOCSTRING("autocorplot"))
 """
 function autocorplot end
 
@@ -107,6 +112,50 @@ function autocorplot end
 Same as `FlexiChains.autocorplot`, but uses `plot!` instead of `plot`.
 """
 function autocorplot! end
+
+###################
+# Makie overloads #
+###################
+
+"""
+    FlexiChains.mtraceplot(
+        chn::FlexiChain{TKey}[, param_or_params];
+        kwargs...
+    )
+
+Create a trace plot of the specified parameter(s) in the given `FlexiChain` using Makie.jl.
+
+$(_PARAM_DOCSTRING("mtraceplot"))
+"""
+function mtraceplot end
+
+"""
+    FlexiChains.mtraceplot!
+
+Mutating version of `mtraceplot`, for use with existing Makie.Axis objects.
+"""
+function mtraceplot! end
+
+"""
+    FlexiChains.mmixeddensity(
+        chn::FlexiChain{TKey}[, param_or_params];
+        kwargs...
+    )
+
+Create a mixed density plot of the specified parameter(s) in the given `FlexiChain` using
+Makie.jl: if the parameter is continuous-valued, a density plot is created; if
+discrete-valued, a histogram is created.
+
+$(_PARAM_DOCSTRING("mmixeddensity"))
+"""
+function mmixeddensity end
+
+"""
+    FlexiChains.mmixeddensity!
+
+Mutating version of `mmixeddensity`, for use with existing Makie.Axis objects.
+"""
+function mmixeddensity! end
 
 ###########################################################
 # Utility functions for plotting (shared across backends) #
@@ -181,6 +230,7 @@ end
 struct FlexiChainHistogram{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
+    pool_chains::Bool
 end
 
 function runningmean(v::AbstractVector{<:Union{Real,Missing}})
@@ -217,11 +267,13 @@ end
 struct FlexiChainMixedDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
+    pool_chains::Bool
 end
 
 struct FlexiChainDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
+    pool_chains::Bool
 end
 
 end # module PlotUtils
