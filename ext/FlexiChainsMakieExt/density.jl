@@ -28,9 +28,11 @@ function Makie.density(
         figure...,
     )
     a, p = nothing, nothing
-    for (i, k) in enumerate(keys_to_plot)
+    # This order means that plots go from left to right before going to the next row
+    indices = Iterators.product(1:ncols, 1:nrows)
+    for ((col, row), k) in zip(indices, keys_to_plot)
         a, p = Makie.density!(
-            Makie.Axis(figure[i, 1]; _default_density_axis(k)..., axis...),
+            Makie.Axis(figure[row, col]; _default_density_axis(k)..., axis...),
             FC.PlotUtils.FlexiChainDensity(chn, k, pool_chains);
             kwargs...,
         )
