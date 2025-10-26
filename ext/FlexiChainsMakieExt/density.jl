@@ -1,3 +1,7 @@
+function _default_density_axis(k::FC.ParameterOrExtra)
+    return (xlabel="value", ylabel="density", title=string(k.name))
+end
+
 """
 This handles plotting onto a full Figure.
 """
@@ -5,13 +9,20 @@ function Makie.density(
     chn::FC.FlexiChain,
     param_or_params=FC.Parameter.(FC.parameters(chn));
     pool_chains::Bool=false,
+    layout::Union{Tuple{Int,Int},Nothing}=nothing,
+    legend_position::Symbol=:bottom,
     figure=(;),
     axis=(;),
+    legend=(;),
     kwargs...,
 )
     keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
-    nrows, ncols = length(keys_to_plot), 1
+    nrows, ncols = if isnothing(layout)
+        length(keys_to_plot), 1
+    else
+        layout
+    end
     figure = Makie.Figure(;
         size=(FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
         figure...,
@@ -24,6 +35,10 @@ function Makie.density(
             kwargs...,
         )
     end
+    # Extract the colors used in the last axis
+    colors = map(p -> p.color[], a.scene.plots)
+    # Don't create a legend if chains were pooled
+    pool_chains || maybe_add_legend(figure, chn, colors, legend_position; legend...)
     return Makie.FigureAxisPlot(figure, a, p)
 end
 
@@ -52,16 +67,20 @@ function Makie.density!(chn::FC.FlexiChain, param; kwargs...)
 end
 
 """
-This is the actual workhorse function that does the density plotting.
+This is the actual function that does the density plotting.
 """
 function Makie.density!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainDensity; kwargs...)
     y = FC._get_raw_data(d.chn, d.param)
+    FC.PlotUtils.check_eltype_is_real(y)
+    p = nothing
     if d.pool_chains
         p = Makie.density!(ax, vec(y); label="pooled", kwargs...)
     else
         labels = permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
-        for (label, datacol) in zip(labels, eachcol(y))
-            p = Makie.density!(ax, datacol; label=label, kwargs...)
+        nchains = size(y, 2)
+        color_kwargs = determine_color_kwargs(nchains, NamedTuple(kwargs))
+        for (label, datacol, color_kwarg) in zip(labels, eachcol(y), color_kwargs)
+            p = Makie.density!(ax, datacol; label=label, kwargs..., color_kwarg...)
         end
     end
     return Makie.AxisPlot(ax, p)

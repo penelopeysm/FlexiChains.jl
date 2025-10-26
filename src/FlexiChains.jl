@@ -69,6 +69,7 @@ include("plots.jl")
 @public mixeddensity, mixeddensity!
 @public meanplot, meanplot!
 @public autocorplot, autocorplot!
+@public mtraceplot, mtraceplot!
 
 # Convenience re-exports.
 using DimensionalData: At, Near, Contains, (..), Touches, Where, Not
