@@ -56,7 +56,7 @@ function _rename_iter_dim(arr::DD.AbstractDimArray)
     return DD.set(arr, FlexiChains.ITER_DIM_NAME => :draw)
 end
 
-_cat_draws(arr::AbstractMatrix{<:Real}) = arr
+_cat_draws(arr::AbstractArray{<:Real}) = arr
 function _cat_draws(arr::AbstractMatrix{<:AbstractArray{<:Real,N}}) where {N}
     return permutedims(stack(arr), (N + 1, N + 2, ntuple(identity, N)...))
 end
