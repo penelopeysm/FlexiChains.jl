@@ -1,8 +1,28 @@
 module FlexiChainsTuringExt
 
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, ParameterOrExtra, VarName
+using OrderedCollections: OrderedDict
 using PrecompileTools: @setup_workload, @compile_workload
 using Turing: Turing, AbstractMCMC
+
+"""
+    Turing.loadstate(chain::FlexiChain{<:VarName})
+
+Extracts the last sampler state from a `FlexiChain`. This is the same function as 
+[`FlexiChains.last_sampler_state`](@ref).
+
+!!! warning
+
+    This function is provided for maximum ease of use with Turing's interface, but it is
+    recommended to use [`FlexiChains.last_sampler_state`](@ref) as it guards against future
+    changes to Turing's API. In particular, it is unclear whether `loadstate` will be
+    preserved if/when MCMCChains is no longer the default chain type in Turing.
+
+$(FlexiChains._INITIAL_STATE_DOCSTRING)
+"""
+function Turing.loadstate(chain::FlexiChain{<:VarName})
+    return FlexiChains.last_sampler_state(chain)
+end
 
 ######################
 # Chain construction #
@@ -10,19 +30,21 @@ using Turing: Turing, AbstractMCMC
 
 function FlexiChains.to_varname_dict(
     transition::Turing.Inference.Transition
-)::Dict{ParameterOrExtra{<:VarName},Any}
-    d = Dict{ParameterOrExtra{<:VarName},Any}()
+)::OrderedDict{ParameterOrExtra{<:VarName},Any}
+    d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
     for (varname, value) in pairs(transition.θ)
         d[Parameter(varname)] = value
     end
-    # add in the log probs
-    d[Extra(:logprobs, :logprior)] = transition.logprior
-    d[Extra(:logprobs, :loglikelihood)] = transition.loglikelihood
-    d[Extra(:logprobs, :lp)] = transition.logprior + transition.loglikelihood
     # add in the transition stats (if available)
     for (key, value) in pairs(transition.stat)
-        d[Extra(:sampler_stats, key)] = value
+        # Note that if `transition.stat` contains `lp`, `logprior`, or `loglikelihood`, it
+        # will be overwritten below...
+        d[Extra(key)] = value
     end
+    # add in the log probs
+    d[FlexiChains._LOGPRIOR_KEY] = transition.logprior
+    d[FlexiChains._LOGLIKELIHOOD_KEY] = transition.loglikelihood
+    d[FlexiChains._LOGJOINT_KEY] = transition.logprior + transition.loglikelihood
     return d
 end
 
@@ -38,7 +60,7 @@ function AbstractMCMC.bundle_samples(
     thinning::Int=1,
     _kwargs...,
 )::FlexiChain{VarName}
-    NIter = length(transitions)
+    niters = length(transitions)
     dicts = map(FlexiChains.to_varname_dict, transitions)
     # timings
     tm = stats === missing ? missing : stats.stop - stats.start
@@ -47,12 +69,14 @@ function AbstractMCMC.bundle_samples(
     # calculate iteration indices
     start = discard_initial + 1
     iter_indices = if thinning != 1
-        range(start; step=thinning, length=NIter)
+        range(start; step=thinning, length=niters)
     else
         # This returns UnitRange not StepRange -- a bit cleaner
-        start:(start + NIter - 1)
+        start:(start + niters - 1)
     end
-    return FlexiChain{VarName,NIter,1}(
+    return FlexiChain{VarName}(
+        niters,
+        1,
         dicts;
         iter_indices=iter_indices,
         # 1:1 gives nicer DimMatrix output than just [1]
@@ -62,19 +86,20 @@ function AbstractMCMC.bundle_samples(
     )
 end
 
-using Turing: @model, sample, NUTS, Normal, MvNormal, I
+using Turing: @model, sample, NUTS, Normal, MvNormal, I, LKJCholesky
 using Turing: AbstractMCMC, DynamicPPL
-using FlexiChains: VNChain
+using FlexiChains: VNChain, summarystats
 @setup_workload begin
     @model function f()
-        return x ~ Normal()
+        x ~ MvNormal(zeros(10), I)
+        z ~ Normal()
+        return y ~ LKJCholesky(3, 3.0)
     end
     model, spl = f(), NUTS()
-    transitions = sample(model, spl, 100; chain_type=Any, progress=false, verbose=false)
+    transitions = sample(model, spl, 10; chain_type=Any, progress=false, verbose=false)
     @compile_workload begin
-        AbstractMCMC.bundle_samples(
-            transitions, model, DynamicPPL.Sampler(spl), nothing, VNChain
-        )
+        chn = AbstractMCMC.bundle_samples(transitions, model, spl, nothing, VNChain)
+        summarystats(chn)
     end
 end
 

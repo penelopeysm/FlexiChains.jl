@@ -6,7 +6,8 @@ using DynamicPPL: DynamicPPL
 using FlexiChains: FlexiChains, VNChain, Parameter, Extra
 using MCMCChains: MCMCChains
 using Random: Random, Xoshiro
-using SliceSampling: RandPermGibbs, SliceSteppingOut
+using Serialization: serialize, deserialize
+using StableRNGs: StableRNG
 using Test
 using Turing
 
@@ -38,6 +39,20 @@ Turing.setprogress!(false)
             @test size(chn) == (100, 3)
         end
 
+        @testset "serialisation" begin
+            chn = sample(
+                model, NUTS(), MCMCSerial(), 100, 3; chain_type=VNChain, verbose=false
+            )
+            fname = Base.Filesystem.tempname()
+            serialize(fname, chn)
+            chn2 = deserialize(fname)
+            @test isequal(chn, chn2)
+            # also test ordering of keys, since isequal doesn't check that
+            @test collect(keys(chn)) == collect(keys(chn2))
+            # note that we can't test isequal(chn1, chn2) with save_state=true because the
+            # states don't compare equal :( that would need to be fixed upstream in Turing
+        end
+
         @testset "rng is respected" begin
             @testset "single-chain" begin
                 chn1 = sample(
@@ -46,11 +61,11 @@ Turing.setprogress!(false)
                 chn2 = sample(
                     Xoshiro(468), model, NUTS(), 100; chain_type=VNChain, verbose=false
                 )
-                @test chn1 == chn2
+                @test FlexiChains.has_same_data(chn1, chn2)
                 chn3 = sample(
                     Xoshiro(469), model, NUTS(), 100; chain_type=VNChain, verbose=false
                 )
-                @test chn1 != chn3
+                @test !FlexiChains.has_same_data(chn1, chn3)
             end
 
             @testset "single-chain with seed!" begin
@@ -58,7 +73,7 @@ Turing.setprogress!(false)
                 chn1 = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
                 Random.seed!(468)
                 chn2 = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
-                @test chn1 == chn2
+                @test FlexiChains.has_same_data(chn1, chn2)
             end
 
             @testset "multi-chain" begin
@@ -82,7 +97,7 @@ Turing.setprogress!(false)
                     chain_type=VNChain,
                     verbose=false,
                 )
-                @test chn1 == chn2
+                @test FlexiChains.has_same_data(chn1, chn2)
                 chn3 = sample(
                     Xoshiro(469),
                     model,
@@ -93,8 +108,20 @@ Turing.setprogress!(false)
                     chain_type=VNChain,
                     verbose=false,
                 )
-                @test chn1 != chn3
+                @test !FlexiChains.has_same_data(chn1, chn3)
             end
+        end
+
+        @testset "ordering of parameters follows that of model" begin
+            @model function f()
+                a ~ Normal()
+                x = zeros(2)
+                x .~ Normal()
+                return b ~ Normal()
+            end
+            chn = sample(f(), NUTS(), 10; chain_type=VNChain, verbose=false)
+            @test FlexiChains.parameters(chn) ==
+                [@varname(a), @varname(x[1]), @varname(x[2]), @varname(b)]
         end
 
         @testset "underlying data is same as MCMCChains" begin
@@ -111,17 +138,15 @@ Turing.setprogress!(false)
             )
             @test vec(chn_flexi[@varname(s2)]) == vec(chn_mcmc[:s2])
             @test vec(chn_flexi[@varname(m)]) == vec(chn_mcmc[:m])
-            for lp_type in [:lp, :logprior, :loglikelihood]
-                @test vec(chn_flexi[:logprobs, lp_type]) == vec(chn_mcmc[lp_type])
+            for lp_type in [:logprior, :loglikelihood]
+                @test vec(chn_flexi[Extra(lp_type)]) == vec(chn_mcmc[lp_type])
             end
+            # logjoint is stored as different names
+            @test vec(chn_flexi[Extra(:logjoint)]) == vec(chn_mcmc[:lp])
         end
 
-        @testset "with another sampler: $spl_name" for (spl_name, spl) in [
-            ("MH", MH()),
-            ("HMC", HMC(0.1, 10)),
-            ("PG", PG(5)),
-            ("SliceSampling.jl", externalsampler(RandPermGibbs(SliceSteppingOut(2.0)))),
-        ]
+        @testset "with another sampler: $spl_name" for (spl_name, spl) in
+                                                       [("MH", MH()), ("HMC", HMC(0.1, 10))]
             chn = sample(model, spl, 20; chain_type=VNChain)
             @test chn isa VNChain
             @test size(chn) == (20, 1)
@@ -131,16 +156,22 @@ Turing.setprogress!(false)
             # Set up the sampler itself.
             struct S <: AbstractMCMC.AbstractSampler end
             struct Tn end
-            AbstractMCMC.step(rng, model, ::S, state=nothing; kwargs...) = (Tn(), nothing)
+            AbstractMCMC.step(
+                rng::Random.AbstractRNG,
+                model::DynamicPPL.Model,
+                ::S,
+                state=nothing;
+                kwargs...,
+            ) = (Tn(), nothing)
             # Get it to work with FlexiChains
             FlexiChains.to_varname_dict(::Tn) =
-                Dict(Parameter(@varname(x)) => 1, Extra(:a, :b) => "hi")
+                Dict(Parameter(@varname(x)) => 1, Extra(:b) => "hi")
             # Then we should be able to sample
             chn = sample(model, S(), 20; chain_type=VNChain)
             @test chn isa VNChain
             @test size(chn) == (20, 1)
             @test all(x -> x == 1, vec(chn[@varname(x)]))
-            @test all(x -> x == "hi", vec(chn[:a, :b]))
+            @test all(x -> x == "hi", vec(chn[Extra(:b)]))
         end
     end
 
@@ -162,23 +193,19 @@ Turing.setprogress!(false)
             end
         end
 
-        @testset "save_state and resume_from" begin
+        @testset "save_state and initial_state" begin
             @model f() = x ~ Normal()
             model = f()
 
             # This sampler does nothing (it just stays at the existing state)
-            struct StaticSampler <: Turing.Inference.InferenceAlgorithm end
-            function DynamicPPL.initialstep(
-                rng, model, ::DynamicPPL.Sampler{<:StaticSampler}, vi; kwargs...
+            struct StaticSampler <: AbstractMCMC.AbstractSampler end
+            function Turing.Inference.initialstep(
+                rng, model, ::StaticSampler, vi; kwargs...
             )
                 return Turing.Inference.Transition(model, vi, nothing), vi
             end
             function AbstractMCMC.step(
-                rng,
-                model,
-                ::DynamicPPL.Sampler{<:StaticSampler},
-                vi::DynamicPPL.AbstractVarInfo;
-                kwargs...,
+                rng, model, ::StaticSampler, vi::DynamicPPL.AbstractVarInfo; kwargs...
             )
                 return Turing.Inference.Transition(model, vi, nothing), vi
             end
@@ -201,7 +228,7 @@ Turing.setprogress!(false)
                     10;
                     chain_type=VNChain,
                     verbose=false,
-                    resume_from=chn1,
+                    initial_state=only(FlexiChains.last_sampler_state(chn1)),
                 )
                 # check that it did reuse the previous state
                 xval = chn1[@varname(x)][end]
@@ -232,13 +259,28 @@ Turing.setprogress!(false)
                     3;
                     chain_type=VNChain,
                     verbose=false,
-                    resume_from=chn1,
+                    initial_state=FlexiChains.last_sampler_state(chn1),
                 )
                 # check that it did reuse the previous state
                 xval = chn1[@varname(x)][end, :]
                 @test all(i -> chn2[@varname(x)][i, :] == xval, 1:10)
             end
         end
+    end
+
+    @testset "summaries on chains from Turing" begin
+        @model function f()
+            x ~ Normal()
+            y ~ Poisson()
+            return z ~ MvNormal(zeros(2), I)
+        end
+        model = f()
+        chn = sample(model, MH(), 100; chain_type=VNChain)
+        ss = FlexiChains.summarystats(chn)
+        @test ss isa FlexiChains.FlexiSummary
+        @test Set(FlexiChains.parameters(ss)) ==
+            Set([@varname(x), @varname(y), @varname(z[1]), @varname(z[2])])
+        display(ss)
     end
 
     @testset "logp(model, chain)" begin
@@ -272,33 +314,79 @@ Turing.setprogress!(false)
         end
     end
 
+    @testset "pointwise logprobs" begin
+        @model function f(y)
+            x ~ Normal()
+            return y ~ Normal(x)
+        end
+        model = f(1.0)
+
+        chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+        xs = chn[@varname(x)]
+
+        @testset "logdensities" begin
+            pld = DynamicPPL.pointwise_logdensities(model, chn)
+            @test pld isa VNChain
+            @test FlexiChains.iter_indices(pld) == FlexiChains.iter_indices(chn)
+            @test FlexiChains.chain_indices(pld) == FlexiChains.chain_indices(chn)
+            @test length(keys(pld)) == 2
+            @test isapprox(pld[@varname(x)], logpdf.(Normal(), xs))
+            @test isapprox(pld[@varname(y)], logpdf.(Normal.(xs), 1.0))
+        end
+
+        @testset "loglikelihoods" begin
+            pld = DynamicPPL.pointwise_loglikelihoods(model, chn)
+            @test pld isa VNChain
+            @test FlexiChains.iter_indices(pld) == FlexiChains.iter_indices(chn)
+            @test FlexiChains.chain_indices(pld) == FlexiChains.chain_indices(chn)
+            @test length(keys(pld)) == 1
+            @test isapprox(pld[@varname(y)], logpdf.(Normal.(xs), 1.0))
+        end
+
+        @testset "logpriors" begin
+            pld = DynamicPPL.pointwise_prior_logdensities(model, chn)
+            @test pld isa VNChain
+            @test FlexiChains.iter_indices(pld) == FlexiChains.iter_indices(chn)
+            @test FlexiChains.chain_indices(pld) == FlexiChains.chain_indices(chn)
+            @test length(keys(pld)) == 1
+            @test isapprox(pld[@varname(x)], logpdf.(Normal(), xs))
+        end
+    end
+
     @testset "returned" begin
         @model function f()
             x ~ Normal()
-            return x + 1
+            y ~ MvNormal(zeros(2), I)
+            return x + y[1] + y[2]
         end
         model = f()
         chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
-        expected_rtnd = chn[:x] .+ 1
+        expected_rtnd = chn[@varname(x)] .+ chn[@varname(y[1])] .+ chn[@varname(y[2])]
+
         rtnd = returned(model, chn)
         @test isapprox(rtnd, expected_rtnd)
         @test rtnd isa DD.DimMatrix
         @test parent(parent(DD.dims(rtnd, :iter))) == FlexiChains.iter_indices(chn)
         @test parent(parent(DD.dims(rtnd, :chain))) == FlexiChains.chain_indices(chn)
+
+        split_chn = FlexiChains.split_varnames(chn)
+        split_rtnd = returned(model, split_chn)
+        @test split_rtnd == rtnd
     end
 
     @testset "predict" begin
         @model function f()
+            # Inserting a vector-valued parameter lets us check behaviour when splitting up
+            # VarNames.
+            m ~ MvNormal(zeros(2), I)
             x ~ Normal()
             return y ~ Normal(x)
         end
         model = f() | (; y=4.0)
-        # We sample larger numbers so that we have some confidence that
-        # the results weren't obtained by sheer luck.
-        # TODO: Use StableRNG. I couldn't download the package because
-        # train WiFi.
+        # Sample larger numbers so that we have some confidence that the results weren't
+        # obtained by sheer luck.
         chn = sample(
-            Xoshiro(468),
+            StableRNG(468),
             model,
             NUTS(),
             1000;
@@ -308,46 +396,90 @@ Turing.setprogress!(false)
         )
         # Sanity check
         @test isapprox(mean(chn[@varname(x)]), 2.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(m[1])]), 0.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(m[2])]), 0.0; atol=0.1)
 
         @testset "chain values are actually used" begin
-            # TODO: Use StableRNG. I couldn't download the package because
-            # train WiFi.
-            pdns = predict(Xoshiro(468), f(), chn)
+            pdns = predict(StableRNG(468), f(), chn)
             # Sanity check.
             @test pdns[@varname(x)] == chn[@varname(x)]
+            @test pdns[@varname(m)] == chn[@varname(m)]
             # Since the model was conditioned with y = 4.0, we should
             # expect that the chain's mean of x is approx 2.0.
             # So the posterior predictions for y should be centred on
-            # 1.0 (ish).
+            # 2.0 (ish).
             @test isapprox(mean(pdns[@varname(y)]), 2.0; atol=0.1)
         end
 
-        @testset "non-parameter keys are preserved" begin
-            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+        @testset "logp" begin
             pdns = predict(f(), chn)
+            # Since we deconditioned `y`, there are no likelihood terms.
+            @test all(iszero, pdns[FlexiChains._LOGLIKELIHOOD_KEY])
+            # The logprior should be the same as that of the original chain, but 
+            # with an extra term for y ~ Normal(x)
+            chn_logprior = chn[FlexiChains._LOGPRIOR_KEY]
+            pdns_logprior = pdns[FlexiChains._LOGPRIOR_KEY]
+            expected_diff = logpdf.(Normal.(chn[@varname(x)]), pdns[@varname(y)])
+            @test isapprox(pdns_logprior, chn_logprior .+ expected_diff)
+            # Logjoint should be the same as logprior
+            @test pdns[FlexiChains._LOGJOINT_KEY] == pdns[FlexiChains._LOGPRIOR_KEY]
+        end
+
+        @testset "non-parameter keys are preserved" begin
+            pdns = predict(f(), chn)
+            display(chn)
+            display(pdns)
             # Check that the only new thing added was the prediction for y.
             @test only(setdiff(Set(keys(pdns)), Set(keys(chn)))) == Parameter(@varname(y))
             # Check that no other keys originally in `chn` were removed.
             @test isempty(setdiff(Set(keys(chn)), Set(keys(pdns))))
         end
 
-        @testset "metadata is preserved" begin
-            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+        @testset "include_all=false" begin
+            pdns = predict(f(), chn; include_all=false)
+            # Check that the only parameter in the chain is the prediction for y.
+            @test only(Set(FlexiChains.parameters(pdns))) == @varname(y)
+        end
+
+        @testset "indices are preserved" begin
             pdns = predict(f(), chn)
             @test FlexiChains.iter_indices(pdns) == FlexiChains.iter_indices(chn)
             @test FlexiChains.chain_indices(pdns) == FlexiChains.chain_indices(chn)
-            @test isequal(FlexiChains.sampling_time(pdns), FlexiChains.sampling_time(chn))
-            @test isequal(
-                FlexiChains.last_sampler_state(pdns), FlexiChains.last_sampler_state(chn)
-            )
+        end
+
+        @testset "no sampling time and sampler state" begin
+            # it just doesn't really make sense for the predictions to carry those
+            # information
+            pdns = predict(f(), chn)
+            @test all(ismissing, FlexiChains.sampling_time(pdns))
+            @test all(ismissing, FlexiChains.last_sampler_state(pdns))
+        end
+
+        @testset "still works after chain has been split up" begin
+            # I mean, just in case people want to do it......
+            split_chn = FlexiChains.split_varnames(chn)
+            pdns_split = predict(Xoshiro(468), f(), split_chn)
+            pdns_orig = predict(Xoshiro(468), f(), chn)
+            for k in FlexiChains.parameters(pdns_split)
+                @test pdns_split[k] == pdns_orig[k]
+            end
         end
 
         @testset "rng is respected" begin
             pdns1 = predict(Xoshiro(468), f(), chn)
             pdns2 = predict(Xoshiro(468), f(), chn)
-            @test pdns1 == pdns2
+            @test FlexiChains.has_same_data(pdns1, pdns2)
             pdns3 = predict(Xoshiro(469), f(), chn)
-            @test pdns1 != pdns3
+            @test !FlexiChains.has_same_data(pdns1, pdns3)
+
+            @testset "and also with split chain" begin
+                split_chn = FlexiChains.split_varnames(chn)
+                pdns1 = predict(Xoshiro(468), f(), split_chn)
+                pdns2 = predict(Xoshiro(468), f(), split_chn)
+                @test FlexiChains.has_same_data(pdns1, pdns2)
+                pdns3 = predict(Xoshiro(469), f(), split_chn)
+                @test !FlexiChains.has_same_data(pdns1, pdns3)
+            end
         end
     end
 
@@ -363,8 +495,6 @@ Turing.setprogress!(false)
         flexic = sample(Xoshiro(468), f(), NUTS(), 20; chain_type=VNChain, verbose=false)
         new_mcmcc = MCMCChains.Chains(flexic)
 
-        # In general because the ordering of parameters in FlexiChains is not guaranteed
-        # we cannot directly compare the two chains.
         @testset "the data itself" begin
             @test Set(keys(new_mcmcc)) == Set(keys(mcmcc))
             for k in keys(new_mcmcc)

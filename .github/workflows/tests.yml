@@ -14,7 +14,8 @@ permissions:
 # Cancel existing tests on the same PR if a new commit is added to a pull request
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
-  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') || github.ref == 'refs/heads/main' }}
+
 
 jobs:
   test:
@@ -36,9 +37,12 @@ jobs:
           # Minimum supported version
           - version: 'min'
             os: ubuntu-latest
+          # 1.11
+          - version: '1.11'
+            os: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: julia-actions/setup-julia@v2
         with:

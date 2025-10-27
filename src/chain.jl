@@ -1,9 +1,9 @@
-using AbstractMCMC: AbstractChains
-using DimensionalData.Dimensions.Lookups: Lookups as DDL
-
 @public FlexiChain, Parameter, Extra, ParameterOrExtra
 @public iter_indices, chain_indices, renumber_iters, renumber_chains
 @public sampling_time, last_sampler_state
+
+const ITER_DIM_NAME = :iter
+const CHAIN_DIM_NAME = :chain
 
 """
     _make_lookup(AbstractRange)::DimensionalData.Lookup
@@ -35,7 +35,39 @@ function _make_lookup(v::AbstractVector{<:Integer})
 end
 
 """
-    Parameter(name)
+    _check_size(data::AbstractArray, iters::Int, chains::Int; key_name=nothing)::Matrix
+
+Check that `data` is either a size `(iters, chains)`, or if `chains==1` and `data` is a
+vector, check that it has length `iters. Convert it to a `Matrix` if it is not one.
+
+The `key_name` keyword argument is used only to provide a more informative error message.
+"""
+function _check_size(
+    data::AbstractMatrix{T}, iters::Int, chains::Int; key_name=nothing
+)::Matrix{T} where {T}
+    if size(data) != (iters, chains)
+        key_str = isnothing(key_name) ? "" : " for key $(key_name)"
+        msg = "expected matrix of size ($(iters), $(chains))$(key_str), but got $(size(data))."
+        throw(DimensionMismatch(msg))
+    end
+    return collect(data)
+end
+function _check_size(
+    data::AbstractVector{T}, iters::Int, chains::Int; key_name=nothing
+)::Matrix{T} where {T}
+    if chains != 1
+        throw(ArgumentError("expected chains=1 for vector input."))
+    end
+    if length(data) != iters
+        key_str = isnothing(key_name) ? "" : " for key $(key_name)"
+        msg = "expected vector of length $(iters)$(key_str), but got $(length(data))."
+        throw(DimensionMismatch(msg))
+    end
+    return reshape(collect(data), iters, 1)
+end
+
+"""
+    Parameter{T}(name::T)
 
 A named parameter in a `FlexiChain`. The name can be of any type, but all
 parameters in a `FlexiChain` must have the same type for their names.
@@ -48,16 +80,13 @@ struct Parameter{T}
 end
 
 """
-    Extra(section_name::Symbol, key_name::Any)
+    Extra(name::Any)
 
-A key in a `FlexiChain` that is not a parameter. FlexiChain allows for
-such informations to be grouped into _sections_, which are identified by
-`Symbol`s. The name of the key itself can be of any type and is not
-constrained by the type of the `FlexiChain`.
+A key in a `FlexiChain` that is not a parameter. The name of the key itself can be of any
+type and is not constrained by the type of the `FlexiChain`.
 """
 struct Extra{T}
-    section_name::Symbol
-    key_name::T
+    name::T
 end
 
 """
@@ -83,8 +112,6 @@ end
 A struct to hold common kinds of metadata typically associated with a chain.
 """
 struct FlexiChainMetadata{
-    NIter,
-    NChain,
     TIIdx<:DDL.Lookup,
     TCIdx<:DDL.Lookup,
     Ttime<:AbstractVector{<:Union{Real,Missing}},
@@ -115,25 +142,25 @@ struct FlexiChainMetadata{
     """
     last_sampler_state::Tstate
 
-    function FlexiChainMetadata{NIter,NChains}(
+    function FlexiChainMetadata(
+        niter::Int,
+        nchains::Int,
         iter_indices::AbstractVector{<:Integer},
         chain_indices::AbstractVector{<:Integer},
         sampling_time::AbstractVector{<:Union{Real,Missing}},
         last_sampler_state::AbstractVector,
-    ) where {NIter,NChains}
+    )
         iter_indices_checked = _make_lookup(
-            _check_length(NIter, iter_indices, "iter_indices")
+            _check_length(niter, iter_indices, "iter_indices")
         )
         chain_indices_checked = _make_lookup(
-            _check_length(NChains, chain_indices, "chain_indices")
+            _check_length(nchains, chain_indices, "chain_indices")
         )
-        sampling_time_checked = _check_length(NChains, sampling_time, "sampling_time")
+        sampling_time_checked = _check_length(nchains, sampling_time, "sampling_time")
         last_sampler_state_checked = _check_length(
-            NChains, last_sampler_state, "last_sampler_state"
+            nchains, last_sampler_state, "last_sampler_state"
         )
         return new{
-            NIter,
-            NChains,
             typeof(iter_indices_checked),
             typeof(chain_indices_checked),
             typeof(sampling_time_checked),
@@ -146,20 +173,29 @@ struct FlexiChainMetadata{
         )
     end
 end
+function Base.:(==)(m1::FlexiChainMetadata, m2::FlexiChainMetadata)
+    return (m1.iter_indices == m2.iter_indices) &
+           (m1.chain_indices == m2.chain_indices) &
+           (m1.sampling_time == m2.sampling_time) &
+           (m1.last_sampler_state == m2.last_sampler_state)
+end
+function Base.isequal(m1::FlexiChainMetadata, m2::FlexiChainMetadata)
+    return isequal(m1.iter_indices, m2.iter_indices) &&
+           isequal(m1.chain_indices, m2.chain_indices) &&
+           isequal(m1.sampling_time, m2.sampling_time) &&
+           isequal(m1.last_sampler_state, m2.last_sampler_state)
+end
 
 """
     struct FlexiChain{
-        TKey,NIter,NChains,
-        TMetadata<:NTuple{NChains,FlexiChainMetadata}
+        TKey,TMetadata<:NTuple{N,FlexiChainMetadata}
     } <: AbstractMCMC.AbstractChains
 
 An MCMC chain.
 
 !!! warning
 
-    Please note that all fields of the FlexiChain type are considered internal. Furthermore,
-the ordering of keys within a `FlexiChain` is an implementation detail and is not
-guaranteed.
+    Please note that all fields of the FlexiChain type are considered internal.
 
 TODO: Document further.
 
@@ -167,13 +203,12 @@ TODO: Document further.
 
 $(TYPEDFIELDS)
 """
-struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains}} <:
-       AbstractChains
+struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractMCMC.AbstractChains
     """
     Internal per-iteration data for parameters and extra keys. To access the data
     in here, you should index into the chain.
     """
-    _data::Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,NChains,<:Any}}
+    _data::OrderedDict{ParameterOrExtra{<:TKey},Matrix{<:Any}}
 
     """
     Other items associated with the chain. These are not necessarily per-iteration (for
@@ -186,12 +221,14 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
     _metadata::TMetadata
 
     @doc """
-        FlexiChain{TKey,NIter,NChains}(
+        FlexiChain{TKey}(
+            niters::Int,
+            nchains::Int,
             array_of_dicts::AbstractArray{<:AbstractDict,N};
-            iter_indices::AbstractVector{Int}=1:NIter,
-            chain_indices::AbstractVector{Int}=1:NChains,
-            sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, NChains),
-            last_sampler_state::AbstractVector=fill(missing, NChains),
+            iter_indices::AbstractVector{Int}=1:niters,
+            chain_indices::AbstractVector{Int}=1:nchains,
+            sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
+            last_sampler_state::AbstractVector=fill(missing, nchains),
         ) where {TKey,N}
 
     Construct a `FlexiChain` from a vector or matrix of dictionaries. Each dictionary
@@ -211,35 +248,37 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
     ## Metadata
 
     `iter_indices` and `chain_indices` can be used to specify the iteration and chain
-    indices, respectively. By default, these are `1:NIter` and `1:NChains`, but can be any
+    indices, respectively. By default, these are `1:niters` and `1:nchains`, but can be any
     vector of integers of the appropriate length. `sampling_time` and `last_sampler_state`
     are used to store metadata about each chain. They should be given as vectors of length
-    `NChains` (even if there is only one chain).
+    `nchains` (even if there is only one chain).
 
     ## Example usage
 
     ```julia
     d = fill(
-        Dict(Parameter(:x) => rand(), Extra(:section, "y") => rand()), 200, 3
+        Dict(Parameter(:x) => rand(), Extra("y") => rand()), 200, 3
     )
-    chn = FlexiChain{Symbol,200,3}(d)
+    chn = FlexiChain{Symbol}(200, 3, d)
     ```
     """
-    function FlexiChain{TKey,NIter,NChains}(
+    function FlexiChain{TKey}(
+        niters::Int,
+        nchains::Int,
         array_of_dicts::AbstractArray{<:AbstractDict};
-        iter_indices::AbstractVector{Int}=1:NIter,
-        chain_indices::AbstractVector{Int}=1:NChains,
-        sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, NChains),
-        last_sampler_state::AbstractVector=fill(missing, NChains),
-    ) where {TKey,NIter,NChains}
+        iter_indices::AbstractVector{Int}=1:niters,
+        chain_indices::AbstractVector{Int}=1:nchains,
+        sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
+        last_sampler_state::AbstractVector=fill(missing, nchains),
+    ) where {TKey}
         # Construct metadata. We do this early so that if any of the inputs have the
         # wrong length we get an error before doing any more work.
-        metadata = FlexiChainMetadata{NIter,NChains}(
-            iter_indices, chain_indices, sampling_time, last_sampler_state
+        metadata = FlexiChainMetadata(
+            niters, nchains, iter_indices, chain_indices, sampling_time, last_sampler_state
         )
 
         # Extract all unique keys from the dictionaries
-        keys_set = Set{ParameterOrExtra{<:TKey}}()
+        keys_set = OrderedSet{ParameterOrExtra{<:TKey}}()
         for d in array_of_dicts
             for k in keys(d)
                 if !(k isa ParameterOrExtra{<:TKey})
@@ -251,26 +290,25 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
         end
 
         # We have data as matrices-of-dict; we want to convert to dict-of-matrices.
-        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,NChains}}()
+        data = OrderedDict{ParameterOrExtra{<:TKey},Matrix}()
         for key in keys_set
             # Extract the values for this key from all dictionaries
             values = map(d -> get(d, key, missing), array_of_dicts)
-            # Convert to SizedMatrix
-            values_smat = SizedMatrix{NIter,NChains}(values)
             # Store in the data dictionary
-            data[key] = values_smat
+            data[key] = _check_size(values, niters, nchains; key_name=key)
         end
-
-        return new{TKey,NIter,NChains,typeof(metadata)}(data, metadata)
+        return new{TKey,typeof(metadata)}(data, metadata)
     end
 
     @doc """
-        FlexiChain{TKey,NIter,NChains}(
+        FlexiChain{TKey}(
+            niters::Int,
+            nchains::Int,
             dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}};
-            iter_indices::AbstractVector{Int}=1:NIter,
-            chain_indices::AbstractVector{Int}=1:NChains,
-            sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, NChains),
-            last_sampler_state::AbstractVector=fill(missing, NChains),
+            iter_indices::AbstractVector{Int}=1:niters,
+            chain_indices::AbstractVector{Int}=1:nchains,
+            sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
+            last_sampler_state::AbstractVector=fill(missing, nchains),
         ) where {TKey,N}
 
     Construct a `FlexiChain` from a dictionary of arrays.
@@ -290,59 +328,48 @@ struct FlexiChain{TKey,NIter,NChains,TMetadata<:FlexiChainMetadata{NIter,NChains
     ## Metadata
 
     `iter_indices` and `chain_indices` can be used to specify the iteration and chain
-    indices, respectively. By default, these are `1:NIter` and `1:NChains`, but can be any
+    indices, respectively. By default, these are `1:niters` and `1:nchains`, but can be any
     vector of integers of the appropriate length. `sampling_time` and `last_sampler_state`
     are used to store metadata about each chain. They should be given as vectors of length
-    `NChains` (even if there is only one chain).
+    `nchains` (even if there is only one chain).
 
     ## Example usage
 
     ```julia
     d = Dict(
         Parameter(:x) => rand(200, 3),
-        Extra(:section, "y") => rand(200, 3),
+        Extra("y") => rand(200, 3),
     )
-    chn = FlexiChain{Symbol,200,3}(d)
+    chn = FlexiChain{Symbol}(200, 3, d)
     ```
     """
-    function FlexiChain{TKey,NIter,NChains}(
+    function FlexiChain{TKey}(
+        niters::Int,
+        nchains::Int,
         dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any}};
-        iter_indices::AbstractVector{Int}=1:NIter,
-        chain_indices::AbstractVector{Int}=1:NChains,
-        sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, NChains),
-        last_sampler_state::AbstractVector=fill(missing, NChains),
-    ) where {TKey,NIter,NChains}
+        iter_indices::AbstractVector{Int}=1:niters,
+        chain_indices::AbstractVector{Int}=1:nchains,
+        sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
+        last_sampler_state::AbstractVector=fill(missing, nchains),
+    ) where {TKey}
         # Construct metadata. We do this early so that if any of the inputs have the
         # wrong length we get an error before doing any more work.
-        metadata = FlexiChainMetadata{NIter,NChains}(
-            iter_indices, chain_indices, sampling_time, last_sampler_state
+        metadata = FlexiChainMetadata(
+            niters, nchains, iter_indices, chain_indices, sampling_time, last_sampler_state
         )
 
-        data = Dict{ParameterOrExtra{<:TKey},SizedMatrix{NIter,NChains}}()
+        data = OrderedDict{ParameterOrExtra{<:TKey},Matrix}()
         for (key, array) in pairs(dict_of_arrays)
             # Check key type
             if !(key isa ParameterOrExtra{<:TKey})
                 msg = "all keys should either be `Parameter{<:$TKey}` or `Extra`; got `$(typeof(key))`."
                 throw(ArgumentError(msg))
             end
-            # Check size
-            if array isa AbstractVector
-                if length(array) != NIter
-                    msg = "data for key $key has an inconsistent size: expected $(NIter), got $(length(array))."
-                    throw(DimensionMismatch(msg))
-                end
-            elseif array isa AbstractMatrix
-                if size(array) != (NIter, NChains)
-                    msg = "data for key $key has an inconsistent size: expected ($(NIter), $(NChains)), got $(size(array))."
-                    throw(DimensionMismatch(msg))
-                end
-            end
-            # Convert to SMatrix
-            mat = SizedMatrix{NIter,NChains}(array)
-            data[key] = mat
+            # Check size and store in dictionary
+            data[key] = _check_size(array, niters, nchains; key_name=key)
         end
 
-        return new{TKey,NIter,NChains,typeof(metadata)}(data, metadata)
+        return new{TKey,typeof(metadata)}(data, metadata)
     end
 end
 
@@ -360,23 +387,26 @@ iter_indices(chain::FlexiChain)::DDL.Lookup = chain._metadata.iter_indices
 """
     chain_indices(chain::FlexiChain)::DimensionalData.Lookup
 
-The indices of each MCMC chain in the chain. This will pretty much always be `1:NChains`
-(unless the chain has been subsetted).
+The indices of each MCMC chain in the chain. This will pretty much always be
+`1:nchains(chain)` (unless the chain has been subsetted, or chain indices have been manually
+specified).
 """
 chain_indices(chain::FlexiChain)::DDL.Lookup = chain._metadata.chain_indices
 
 """
     renumber_iters(
-        chain::FlexiChain{TKey,NIter,NChain},
-        iter_indices::AbstractVector{<:Integer}=1:NIter
-    )::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
+        chain::FlexiChain{TKey},
+        iter_indices::AbstractVector{<:Integer}=1:niters(chain)
+    )::FlexiChain{TKey} where {TKey}
 
 Return a copy of `chain` with the iteration indices replaced by `iter_indices`.
 """
 function renumber_iters(
-    chain::FlexiChain{TKey,NIter,NChain}, iter_indices::AbstractVector{<:Integer}=1:NIter
-)::FlexiChain{TKey,NIter,NChain} where {TKey,NIter,NChain}
-    return FlexiChain{TKey,NIter,NChain}(
+    chain::FlexiChain{TKey}, iter_indices::AbstractVector{<:Integer}=1:niters(chain)
+) where {TKey}
+    return FlexiChain{TKey}(
+        niters(chain),
+        nchains(chain),
         chain._data;
         iter_indices=iter_indices,
         chain_indices=chain_indices(chain),
@@ -387,17 +417,18 @@ end
 
 """
     renumber_chains(
-        chain::FlexiChain{TKey,NIter,NChains},
-        chain_indices::AbstractVector{<:Integer}=1:NChains
-    )::FlexiChain{TKey,NIter,NChains} where {TKey,NIter,NChains}
+        chain::FlexiChain{TKey},
+        chain_indices::AbstractVector{<:Integer}=1:nchains(chain)
+    )::FlexiChain{TKey} where {TKey}
 
 Return a copy of `chain` with the chain indices replaced by `chain_indices`.
 """
 function renumber_chains(
-    chain::FlexiChain{TKey,NIter,NChains},
-    chain_indices::AbstractVector{<:Integer}=1:NChains,
-)::FlexiChain{TKey,NIter,NChains} where {TKey,NIter,NChains}
-    return FlexiChain{TKey,NIter,NChains}(
+    chain::FlexiChain{TKey}, chain_indices::AbstractVector{<:Integer}=1:nchains(chain)
+) where {TKey}
+    return FlexiChain{TKey}(
+        niters(chain),
+        nchains(chain),
         chain._data;
         iter_indices=iter_indices(chain),
         chain_indices=chain_indices,
@@ -409,7 +440,7 @@ end
 """
     sampling_time(chain::FlexiChain):Vector
 
-Return the time taken to sample the chain (in seconds). If the time was not recorded, this
+Return the time taken to sample each chain (in seconds). If the time was not recorded, this
 will be `missing`.
 
 Note that this always returns a vector with length equal to the number of chains.
@@ -417,16 +448,94 @@ Note that this always returns a vector with length equal to the number of chains
 sampling_time(chain::FlexiChain)::Vector{<:Union{Real,Missing}} =
     chain._metadata.sampling_time
 
+const _INITIAL_STATE_DOCSTRING = """
+!!! note "Returns a vector"
+
+    This function *always* returns a vector of sampler states, even if there is only one chain.
+    Consequently, if you are resuming a single-chain MCMC run like `sample(model, spl, N)`, you
+    will need to extract the sole element of the returned vector before passing it as the
+    `initial_state` keyword argument to `sample(). Please see the ['using with Turing'](@ref
+    Saving-and-resuming-MCMC-sampling-progress) page, or [the Turing.jl documentation page
+    on
+    `initial_state`](https://turinglang.org/docs/usage/sampling-options/#saving-and-resuming-sampling),
+    for more explanation of this.
+"""
+
 """
     last_sampler_state(chain::FlexiChain)::Vector
 
 Return the final state of the sampler used to generate the chain, if the `save_state=true`
 keyword argument was passed to `sample`. This can be used for resuming MCMC sampling.
 
-Note that this always returns a vector with length equal to the number of chains.
+If the state was not saved for a given chain, its entry in the vector will be `missing`.
 
-If the state was not saved, this will be `missing` (or a vector thereof).
+$(_INITIAL_STATE_DOCSTRING)
 """
 function last_sampler_state(chain::FlexiChain)::Vector
     return chain._metadata.last_sampler_state
+end
+
+"""
+    _get_raw_data(chain::FlexiChain{<:TKey}, key::ParameterOrExtra{<:TKey})
+
+Extract the raw data (i.e. a matrix of samples) corresponding to a given key in the chain.
+
+!!! important
+    This function does not check if the key exists.
+"""
+function _get_raw_data(
+    chain::FlexiChain{<:TKey}, key::ParameterOrExtra{<:TKey}
+)::Matrix where {TKey}
+    return chain._data[key]
+end
+
+function _default_dims(chain::FlexiChain)
+    return (
+        DD.Dim{ITER_DIM_NAME}(iter_indices(chain)),
+        DD.Dim{CHAIN_DIM_NAME}(chain_indices(chain)),
+    )
+end
+"""
+    _raw_to_user_data(chain::FlexiChain, data::Matrix)
+
+Convert `data`, which is a raw matrix of samples, to a `DimensionalData.DimArray` using the
+indices stored in in the `FlexiChain`. This is the format that users expect to obtain when
+indexing into a `FlexiChain`.
+
+!!! important
+    This function performs no checks to make sure that the lengths of the indices stored in
+the chain line up with the size of the matrix.
+"""
+function _raw_to_user_data(chain::FlexiChain, mat::Matrix)
+    return DD.DimMatrix(mat, _default_dims(chain))
+end
+function _raw_to_user_data(
+    chain::FlexiChain, mat_of_dimarr::Matrix{<:DD.DimArray{<:Any,Ndims}}
+) where {Ndims}
+    dimmat_of_dimarr = DD.DimMatrix(mat_of_dimarr, _default_dims(chain))
+    # This stacked matrix will have the iter and chain dims at the end.
+    stacked_dimarr = stack(dimmat_of_dimarr)
+    return permutedims(stacked_dimarr, (Ndims + 1, Ndims + 2, 1:Ndims...))
+end
+
+"""
+    _replace_data(chain::FlexiChain, new_keytype, new_data)
+
+Construct a new `FlexiChain` with the same metadata as `chain`, but with `new_data`. Note
+that the key type of the resulting FlexiChain must be specified, and must be consistent with
+`new_data`.
+
+!!! danger
+    Do not use this function unless you are very sure of what you are doing!
+"""
+function _replace_data(chain::FlexiChain, ::Type{newkey}, new_data) where {newkey}
+    return FlexiChain{newkey}(
+        niters(chain),
+        nchains(chain),
+        new_data;
+        iter_indices=iter_indices(chain),
+        chain_indices=chain_indices(chain),
+        sampling_time=sampling_time(chain),
+        last_sampler_state=last_sampler_state(chain),
+    )
 end

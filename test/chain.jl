@@ -2,6 +2,7 @@ module FCChainTests
 
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra
 using DimensionalData: val
+using OrderedCollections: OrderedDict
 using Test
 
 @testset verbose = true "chain.jl" begin
@@ -12,18 +13,16 @@ using Test
             @testset "vector of dict" begin
                 N_iters = 10
                 dicts = fill(
-                    Dict(
-                        Parameter(:a) => 1,
-                        Parameter(:b) => 2,
-                        Extra(:section, "hello") => 3.0,
-                    ),
+                    Dict(Parameter(:a) => 1, Parameter(:b) => 2, Extra("hello") => 3.0),
                     N_iters,
                 )
-                chain = FlexiChain{Symbol,N_iters,1}(dicts)
+                chain = FlexiChain{Symbol}(N_iters, 1, dicts)
                 @test size(chain) == (N_iters, 1)
 
                 @testset "with metadata" begin
-                    chain2 = FlexiChain{Symbol,N_iters,1}(
+                    chain2 = FlexiChain{Symbol}(
+                        N_iters,
+                        1,
                         dicts;
                         iter_indices=3:3:(3 * N_iters),
                         chain_indices=[2],
@@ -41,38 +40,34 @@ using Test
             @testset "matrix of dict" begin
                 N_iters, N_chains = 10, 2
                 dicts = fill(
-                    Dict(
-                        Parameter(:a) => 1,
-                        Parameter(:b) => 2,
-                        Extra(:section, "hello") => 3.0,
-                    ),
+                    Dict(Parameter(:a) => 1, Parameter(:b) => 2, Extra("hello") => 3.0),
                     N_iters,
                     N_chains,
                 )
-                chain = FlexiChain{Symbol,N_iters,N_chains}(dicts)
+                chain = FlexiChain{Symbol}(N_iters, N_chains, dicts)
                 @test size(chain) == (N_iters, N_chains)
 
                 @testset "wrong size of data" begin
                     N_iters, N_chains = 10, 2
                     dicts = fill(Dict(Parameter(:a) => 1), N_iters, N_chains)
-                    @test_throws DimensionMismatch FlexiChain{
-                        Symbol,N_iters + 1,N_chains + 1
-                    }(
-                        dicts
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters + 1, N_chains + 1, dicts
                     )
                 end
 
                 @testset "wrong indices length" begin
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        dicts; iter_indices=1:(2 * N_iters)
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, dicts; iter_indices=1:(2 * N_iters)
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        dicts; chain_indices=1:(2 * N_chains)
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, dicts; chain_indices=1:(2 * N_chains)
                     )
                 end
 
                 @testset "with metadata" begin
-                    chain2 = FlexiChain{Symbol,N_iters,N_chains}(
+                    chain2 = FlexiChain{Symbol}(
+                        N_iters,
+                        N_chains,
                         dicts;
                         iter_indices=3:3:(3 * N_iters),
                         chain_indices=[2, 1],
@@ -87,17 +82,17 @@ using Test
                 end
 
                 @testset "wrong metadata size" begin
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        dicts; sampling_time=[1]
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, dicts; sampling_time=[1]
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        dicts; sampling_time=1:3
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, dicts; sampling_time=1:3
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        dicts; last_sampler_state=["foo"]
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, dicts; last_sampler_state=["foo"]
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        dicts; last_sampler_state=["foo", "bar", "baz"]
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, dicts; last_sampler_state=["foo", "bar", "baz"]
                     )
                 end
             end
@@ -109,13 +104,15 @@ using Test
                 arrays = Dict(
                     Parameter(:a) => rand(N_iters),
                     Parameter(:b) => rand(N_iters),
-                    Extra(:section, "hello") => rand(N_iters),
+                    Extra("hello") => rand(N_iters),
                 )
-                chain = FlexiChain{Symbol,N_iters,1}(arrays)
+                chain = FlexiChain{Symbol}(N_iters, 1, arrays)
                 @test size(chain) == (N_iters, 1)
 
                 @testset "with metadata" begin
-                    chain2 = FlexiChain{Symbol,N_iters,1}(
+                    chain2 = FlexiChain{Symbol}(
+                        N_iters,
+                        1,
                         arrays;
                         iter_indices=3:3:(3 * N_iters),
                         chain_indices=[2],
@@ -135,32 +132,32 @@ using Test
                 arrays = Dict(
                     Parameter(:a) => rand(N_iters, N_chains),
                     Parameter(:b) => rand(N_iters, N_chains),
-                    Extra(:section, "hello") => rand(N_iters, N_chains),
+                    Extra("hello") => rand(N_iters, N_chains),
                 )
-                chain = FlexiChain{Symbol,N_iters,N_chains}(arrays)
+                chain = FlexiChain{Symbol}(N_iters, N_chains, arrays)
                 @test size(chain) == (N_iters, N_chains)
 
                 @testset "wrong size of data" begin
                     N_iters, N_chains = 10, 2
                     arrays = Dict(Parameter(:a) => rand(N_iters, N_chains))
-                    @test_throws DimensionMismatch FlexiChain{
-                        Symbol,N_iters + 1,N_chains + 1
-                    }(
-                        arrays
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters + 1, N_chains + 1, arrays
                     )
                 end
 
                 @testset "wrong indices length" begin
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        arrays; iter_indices=1:(2 * N_iters)
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, arrays; iter_indices=1:(2 * N_iters)
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        arrays; chain_indices=1:(2 * N_chains)
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, arrays; chain_indices=1:(2 * N_chains)
                     )
                 end
 
                 @testset "with metadata" begin
-                    chain2 = FlexiChain{Symbol,N_iters,N_chains}(
+                    chain2 = FlexiChain{Symbol}(
+                        N_iters,
+                        N_chains,
                         arrays;
                         iter_indices=3:3:(3 * N_iters),
                         chain_indices=[2, 1],
@@ -175,27 +172,53 @@ using Test
                 end
 
                 @testset "wrong metadata size" begin
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        arrays; sampling_time=[1]
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, arrays; sampling_time=[1]
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        arrays; sampling_time=1:3
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, arrays; sampling_time=1:3
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        arrays; last_sampler_state=["foo"]
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, arrays; last_sampler_state=["foo"]
                     )
-                    @test_throws DimensionMismatch FlexiChain{Symbol,N_iters,N_chains}(
-                        arrays; last_sampler_state=["foo", "bar", "baz"]
+                    @test_throws DimensionMismatch FlexiChain{Symbol}(
+                        N_iters, N_chains, arrays; last_sampler_state=["foo", "bar", "baz"]
                     )
                 end
             end
         end
     end
 
+    @testset "key ordering of internal data" begin
+        # note that the ordering returned by keys(), parameters(), etc. is tested elsewhere
+        @testset "array-of-dict" begin
+            N_iters, N_chains = 10, 2
+            dicts = fill(
+                OrderedDict(Parameter(:b) => 1, Extra("hello") => 3, Parameter(:a) => 2),
+                N_iters,
+                N_chains,
+            )
+            chain = FlexiChain{Symbol}(N_iters, N_chains, dicts)
+            @test collect(keys(chain._data)) ==
+                [Parameter(:b), Extra("hello"), Parameter(:a)]
+        end
+        @testset "dict-of-array" begin
+            N_iters, N_chains = 10, 2
+            dicts = OrderedDict(
+                Parameter(:b) => fill(1, N_iters, N_chains),
+                Extra("hello") => fill(3, N_iters, N_chains),
+                Parameter(:a) => fill(2, N_iters, N_chains),
+            )
+            chain = FlexiChain{Symbol}(N_iters, N_chains, dicts)
+            @test collect(keys(chain._data)) ==
+                [Parameter(:b), Extra("hello"), Parameter(:a)]
+        end
+    end
+
     @testset "renumber_iters and renumber_chains" begin
         N_iters, N_chains = 10, 2
         dicts = fill(Dict(Parameter(:a) => 1), N_iters, N_chains)
-        chain = FlexiChain{Symbol,N_iters,N_chains}(dicts)
+        chain = FlexiChain{Symbol}(N_iters, N_chains, dicts)
         @testset "renumber_iters" begin
             new_iters = 3:3:(3 * N_iters)
             chain2 = @inferred FlexiChains.renumber_iters(chain, new_iters)

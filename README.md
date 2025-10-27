@@ -1,10 +1,10 @@
-## FlexiChains.jl
+# FlexiChains.jl
 
 Flexible Markov chains.
 
 [**Documentation**](http://pysm.dev/FlexiChains.jl/)
 
-### Usage with Turing.jl
+## Quickstart
 
 `FlexiChain{T}` represents a chain that stores data for parameters of type `T`.
 `VNChain` is a alias for `FlexiChain{VarName}`, and is the appropriate type for storing Turing.jl's outputs.
@@ -13,13 +13,14 @@ To obtain a `VNChain` from MCMC sampling, pass the `chain_type` argument to the 
 
 ```julia
 using Turing
-using FlexiChains: VNChain
+using FlexiChains
 
 @model function f()
     x ~ Normal()
-    y ~ MvNormal(zeros(2), I)
+    y ~ Poisson(3.0)
+    z ~ MvNormal(zeros(2), I)
 end
-chain = sample(f(), NUTS(), 1000; chain_type=VNChain)
+chain = sample(f(), NUTS(), MCMCThreads(), 1000, 3; chain_type=VNChain)
 ```
 
 You can index into a `VNChain` using `VarName`s.
@@ -27,29 +28,46 @@ Data is returned as a `DimMatrix` from the [`DimensionalData.jl` package](https:
 
 ```julia
 chain[@varname(x)]    # -> DimMatrix{Float64}
-chain[@varname(y)]    # -> DimMatrix{Vector{Float64}}
-chain[@varname(y[1])] # -> DimMatrix{Float64}
+chain[@varname(y)]    # -> DimMatrix{Int}
+chain[@varname(z)]    # -> DimMatrix{Vector{Float64}}; but see also DimensionalDistributions.jl
+chain[@varname(z[1])] # -> DimMatrix{Float64}
+chain[:logjoint]      # -> DimMatrix{Float64} NOTE: not `:lp`
 ```
 
-Applying summary functions to the chain returns a summary object, which can be indexed into in the same way:
+Quick and dirty summary stats can be obtained with:
 
 ```julia
-mean(chain)              # -> an (internal) summary object
-mean(chain)[@varname(x)] # -> Float64
-mean(chain; dims=:iter)  # average over iterations only
+ss = summarystats(chain)         # mean, std, mcse, ess, rhat for all variables
+ss[@varname(x), stat=At(:mean)]  # -> Float64 (the mean of x)
 ```
 
-Functions in Turing.jl which take chains as input, such as `returned`, `predict`, and `logjoint` should work out of the box with exactly the same behaviour as before.
-If you find a function that does not work, please let me know by opening an issue.
+Or you can compute statistics directly with individual functions:
 
-Because FlexiChains is in early development, it does not have feature parity with MCMCChains.
-In particular, **plotting is not yet implemented**: if you need this, you can convert a `VNChain` to `MCMCChains.Chains` using `MCMCChains.Chains(chain)` and then plot that.
+```julia
+mean(chain)              # just the mean for all variables
+mean(chain)[@varname(x)] # -> Float64
+mean(chain; dims=:iter)  # take the mean over iterations only
+```
 
-### How is FlexiChains better?
+Visualisation with Plots.jl and Makie.jl is supported:
+
+```julia
+using StatsPlots  # or CairoMakie
+plot(chain)                    # trace + densities for all variables
+plot(chain, [@varname(z)])     # trace + density for z[1] and z[2] only
+plot(chain; pool_chains=true)  # combining samples from all chains
+```
+
+Finally, functions in Turing.jl which take chains as input, such as `returned`, `predict`, and `logjoint` should work out of the box with exactly the same behaviour as before.
+
+The [online documentation](https://pysm.dev/FlexiChains.jl) contains much more detail about FlexiChains and its interface.
+Please do check it out!
+
+## Why use FlexiChains?
 
 Turing's default data type for Markov chains is [`MCMCChains.Chains`](https://turinglang.org/MCMCChains.jl/stable/).
 
-This entire package essentially came about because I think `MCMCChains.Chains` is a bad data structure.
+This entire package essentially came about because `MCMCChains.Chains` is, in my opinion, a bad data structure.
 
 Consider the following model:
 
@@ -83,3 +101,5 @@ This leads to several problems:
 FlexiChains solves all of these by making the mapping of parameters to values much more flexible (hence the name).
 Both keys and values can, in general, be of any type.
 This makes for a less compact representation of the data, but means that information about the chain is preserved much more faithfully.
+
+For more information, and some concrete examples of where FlexiChains does better, [please see the 'Why FlexiChains' documentation page](https://pysm.dev/FlexiChains.jl/stable/why/).
