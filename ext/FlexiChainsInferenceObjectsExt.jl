@@ -35,7 +35,7 @@ function InferenceObjects.convert_to_inference_data(
     sample_stats = OrderedDict{Symbol,AbstractArray{<:Real}}()
     for k in FlexiChains.extras(chain)
         arr_of_draws = _rename_iter_dim(chain[k])
-        sym = Symbol(k.key_name)
+        sym = Symbol(k.name)
         extra_name = get(stats_key_map, sym, sym)
         sample_stats[extra_name] = _cat_draws(arr_of_draws)
     end
