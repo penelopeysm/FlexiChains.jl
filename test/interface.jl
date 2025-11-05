@@ -414,13 +414,13 @@ using Test
                 iters = 1:5
                 d = FlexiChains.values_at(c, iters, 1)
                 @test d isa
-                    DD.DimVector{<:OrderedDict{<:FlexiChains.ParameterOrExtra{Symbol}}}
+                    DD.DimVector{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
                 for i in iters
                     @test d[i] == FlexiChains.values_at(c, i, 1)
                 end
                 d = FlexiChains.values_at(c, iters, :)
                 @test d isa
-                    DD.DimMatrix{<:OrderedDict{<:FlexiChains.ParameterOrExtra{Symbol}}}
+                    DD.DimMatrix{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
                 for i in iters, j in 1:Nc
                     @test d[i, j] == FlexiChains.values_at(c, i, j)
                 end

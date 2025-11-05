@@ -321,7 +321,7 @@ Turing.setprogress!(false)
         c = AbstractMCMC.from_samples(VNChain, ps)
 
         # Then convert back to ParamsWithStats
-        arr_pss = AbstractMCMC.to_samples(ParamsWithStats, c)
+        arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c)
         @test size(arr_pss) == (50, 1)
         for i in 1:50
             new_p = arr_pss[i, 1]
