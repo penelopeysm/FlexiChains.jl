@@ -51,8 +51,8 @@ function values_at(
     iter::Union{Int,DD.At},
     chain::Union{Int,DD.At},
     ::Type{T}=OrderedDict,
-)::T{ParameterOrExtra{TKey},Any} where {TKey,T<:AbstractDict}
-    return T{ParameterOrExtra{TKey},Any}(
+)::T{ParameterOrExtra{<:TKey},Any} where {TKey,T<:AbstractDict}
+    return T{ParameterOrExtra{<:TKey},Any}(
         k => chn[k, iter=iter, chain=chain] for k in keys(chn)
     )
 end

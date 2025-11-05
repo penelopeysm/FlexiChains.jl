@@ -437,6 +437,16 @@ using Test
                 @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, NamedTuple)
                 @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, ComponentArray)
             end
+
+            @testset "VarName" begin
+                # This doesn't really test `VarName` per se, it's more about testing an
+                # abstract type parameter, as this used to error
+                cvn = FlexiChain{VarName}(
+                    1, 1, OrderedDict(Parameter(@varname(a)) => rand(1, 1))
+                )
+                vals = FlexiChains.values_at(cvn, 1, 1)
+                @test vals isa OrderedDict{ParameterOrExtra{<:VarName},Any}
+            end
         end
 
         @testset "parameters_at" begin

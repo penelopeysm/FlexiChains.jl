@@ -283,6 +283,49 @@ Turing.setprogress!(false)
         display(ss)
     end
 
+    @testset "AbstractMCMC.from_samples" begin
+        @model function f(z)
+            x ~ Normal()
+            y := x + 1
+            return z ~ Normal(y)
+        end
+
+        z = 1.0
+        model = f(z)
+
+        ps = [ParamsWithStats(VarInfo(model), model) for _ in 1:50, _ in 1:3]
+        c = AbstractMCMC.from_samples(VNChain, ps)
+        @test c isa VNChain
+        @test size(c) == (50, 3)
+        @test FlexiChains.parameters(c) == [@varname(x), @varname(y)]
+        @test c[@varname(x)] == map(p -> p.params[@varname(x)], ps)
+        @test c[@varname(y)] == c[@varname(x)] .+ 1
+        @test logpdf.(Normal(), c[@varname(x)]) ≈ c[Extra(:logprior)]
+    end
+
+    @testset "AbstractMCMC.to_samples" begin
+        @model function f(z)
+            x ~ Normal()
+            y := x + 1
+            return z ~ Normal(y)
+        end
+        # Make the chain first
+        z = 1.0
+        model = f(z)
+        ps = hcat([ParamsWithStats(VarInfo(model), model) for _ in 1:50])
+        c = AbstractMCMC.from_samples(VNChain, ps)
+
+        # Then convert back to ParamsWithStats
+        arr_pss = AbstractMCMC.to_samples(ParamsWithStats, c)
+        @test size(arr_pss) == (50, 1)
+        for i in 1:50
+            new_p = arr_pss[i, 1]
+            p = ps[i]
+            @test new_p.params == p.params
+            @test new_p.stats == p.stats
+        end
+    end
+
     @testset "logp(model, chain)" begin
         @model function f()
             x ~ Normal()

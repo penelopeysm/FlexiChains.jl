@@ -1,10 +1,66 @@
 module FlexiChainsDynamicPPLExt
 
-using FlexiChains: FlexiChains, FlexiChain, VarName, Parameter, ParameterOrExtra, VNChain
+using FlexiChains:
+    FlexiChains, FlexiChain, VarName, Parameter, Extra, ParameterOrExtra, VNChain
 using DimensionalData: DimensionalData as DD
-using DynamicPPL: DynamicPPL, AbstractPPL
+using DynamicPPL: DynamicPPL, AbstractPPL, AbstractMCMC
 using OrderedCollections: OrderedDict
 using Random: Random
+
+##################################################
+# AbstractMCMC.{to,from}_samples implementations #
+##################################################
+
+"""
+    AbstractMCMC.from_samples(
+        ::Type{<:VNChain},
+        params_and_stats::AbstractMatrix{<:DynamicPPL.ParamsWithStats}
+    )::VNChain
+
+Convert a matrix of `DynamicPPL.ParamsWithStats` to a `VNChain`.
+"""
+function AbstractMCMC.from_samples(
+    ::Type{<:VNChain}, params_and_stats::AbstractMatrix{<:DynamicPPL.ParamsWithStats}
+)::VNChain
+    # Just need to convert the `ParamsWithStats` to Dicts of ParameterOrExtra.
+    dicts = map(params_and_stats) do ps
+        # Parameters
+        d = OrderedDict{ParameterOrExtra{<:VarName},Any}(
+            Parameter(vn) => val for (vn, val) in ps.params
+        )
+        # Stats
+        for (stat_vn, stat_val) in pairs(ps.stats)
+            d[Extra(stat_vn)] = stat_val
+        end
+        d
+    end
+    return VNChain(size(params_and_stats, 1), size(params_and_stats, 2), dicts)
+end
+
+"""
+    AbstractMCMC.to_samples(
+        ::Type{DynamicPPL.ParamsWithStats},
+        chain::VNChain
+    )::DimensionalData.DimMatrix{DynamicPPL.ParamsWithStats}
+
+Convert a `VNChain` to a `DimMatrix` of `DynamicPPL.ParamsWithStats`.
+"""
+function AbstractMCMC.to_samples(
+    ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}
+)::DD.DimMatrix{<:DynamicPPL.ParamsWithStats} where {T<:VarName}
+    dicts = FlexiChains.values_at(chain, :, :)
+    return map(dicts) do d
+        # Need to separate parameters and stats.
+        param_dict = OrderedDict{T,Any}(
+            vn_param.name => val for (vn_param, val) in d if vn_param isa Parameter{<:T}
+        )
+        stats_nt = NamedTuple(
+            Symbol(extra_param.name) => val for
+            (extra_param, val) in d if extra_param isa Extra
+        )
+        DynamicPPL.ParamsWithStats(param_dict, stats_nt)
+    end
+end
 
 ###########################################
 # DynamicPPL: predict, returned, logjoint #
