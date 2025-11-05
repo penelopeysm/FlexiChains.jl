@@ -8,6 +8,7 @@ using StatsBase: StatsBase
 using MCMCDiagnosticTools: MCMCDiagnosticTools
 using PosteriorDB: PosteriorDB
 using PosteriorStats: PosteriorStats
+using AbstractMCMC: AbstractMCMC
 using DynamicPPL: DynamicPPL
 using MCMCChains: MCMCChains
 using Turing: Turing

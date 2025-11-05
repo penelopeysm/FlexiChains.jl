@@ -17,7 +17,7 @@ using Random: Random
         params_and_stats::AbstractMatrix{<:DynamicPPL.ParamsWithStats}
     )::VNChain
 
-Convert a matrix of `DynamicPPL.ParamsWithStats` to a `VNChain`.
+Convert a matrix of [`DynamicPPL.ParamsWithStats`](@ref) to a `VNChain`.
 """
 function AbstractMCMC.from_samples(
     ::Type{<:VNChain}, params_and_stats::AbstractMatrix{<:DynamicPPL.ParamsWithStats}
@@ -43,7 +43,9 @@ end
         chain::VNChain
     )::DimensionalData.DimMatrix{DynamicPPL.ParamsWithStats}
 
-Convert a `VNChain` to a `DimMatrix` of `DynamicPPL.ParamsWithStats`.
+Convert a `VNChain` to a `DimMatrix` of [`DynamicPPL.ParamsWithStats`](@ref).
+
+The axes of the `DimMatrix` are the same as those of the input `VNChain`.
 """
 function AbstractMCMC.to_samples(
     ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}

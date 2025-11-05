@@ -153,8 +153,8 @@ DynamicPPL.pointwise_loglikelihoods
 DynamicPPL.pointwise_prior_logdensities
 MCMCChains.Chains
 Turing.loadstate
-AbstractMCMC.from_chains
-AbstractMCMC.to_chains
+AbstractMCMC.from_samples
+AbstractMCMC.to_samples
 ```
 
 ## Summaries
