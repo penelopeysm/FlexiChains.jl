@@ -293,7 +293,10 @@ Turing.setprogress!(false)
         z = 1.0
         model = f(z)
 
-        ps = [ParamsWithStats(VarInfo(model), model) for _ in 1:50, _ in 1:3]
+        ps = [
+            DynamicPPL.ParamsWithStats(DynamicPPL.VarInfo(model), model) for _ in 1:50,
+            _ in 1:3
+        ]
         c = AbstractMCMC.from_samples(VNChain, ps)
         @test c isa VNChain
         @test size(c) == (50, 3)
@@ -312,7 +315,9 @@ Turing.setprogress!(false)
         # Make the chain first
         z = 1.0
         model = f(z)
-        ps = hcat([ParamsWithStats(VarInfo(model), model) for _ in 1:50])
+        ps = hcat([
+            DynamicPPL.ParamsWithStats(DynamicPPL.VarInfo(model), model) for _ in 1:50
+        ])
         c = AbstractMCMC.from_samples(VNChain, ps)
 
         # Then convert back to ParamsWithStats
