@@ -1,3 +1,8 @@
+# 0.1.5
+
+Implemented `AbstractMCMC.to_chains` and `AbstractMCMC.from_chains` methods for converting `VNChain` to and from `DynamicPPL.ParamsWithStats`.
+Please see the DynamicPPL documentation for more info about this.
+
 # 0.1.4
 
 Added some plotting methods with Makie.jl!
