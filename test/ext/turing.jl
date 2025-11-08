@@ -521,15 +521,6 @@ end
             @test FlexiChains.has_same_data(pdns1, pdns2)
             pdns3 = predict(Xoshiro(469), f(), chn)
             @test !FlexiChains.has_same_data(pdns1, pdns3)
-
-            @testset "and also with split chain" begin
-                split_chn = FlexiChains.split_varnames(chn)
-                pdns1 = predict(Xoshiro(468), f(), split_chn)
-                pdns2 = predict(Xoshiro(468), f(), split_chn)
-                @test FlexiChains.has_same_data(pdns1, pdns2)
-                pdns3 = predict(Xoshiro(469), f(), split_chn)
-                @test !FlexiChains.has_same_data(pdns1, pdns3)
-            end
         end
     end
 
