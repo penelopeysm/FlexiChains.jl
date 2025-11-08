@@ -172,7 +172,7 @@ using ..FlexiChains:
     FlexiChain,
     ParameterOrExtra,
     VarName,
-    split_varnames,
+    _split_varnames,
     niters,
     _get_multi_keys,
     _get_multi_key
