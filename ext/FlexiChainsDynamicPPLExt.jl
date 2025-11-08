@@ -95,6 +95,19 @@ end
 ##################################
 # Optimisation for parameters_at #
 ##################################
+"""
+    InitFromFlexiChain(chain::FlexiChain, iter_index::Int, chain_index::Int; fallback=nothing)
+
+A DynamicPPL initialisation strategy that obtains values from the given `FlexiChain` at the
+specified iteration and chain indices.
+
+Note that iteration and chain indices must be 1-based integers! We do this so that indexing
+into the `FlexiChain` is as fast as possible.
+
+`fallback` provides the same functionality as it does in `DynamicPPL.InitFromParams`, that
+is, if a variable is not found in the `FlexiChain`, the fallback strategy is used to
+generate its value. This is necessary for `predict`.
+"""
 struct InitFromFlexiChain{
     C<:FlexiChains.VNChain,S<:Union{DynamicPPL.AbstractInitStrategy,Nothing}
 } <: DynamicPPL.AbstractInitStrategy
@@ -110,6 +123,9 @@ function DynamicPPL.init(
     strategy::InitFromFlexiChain,
 )
     param = FlexiChains.Parameter(vn)
+    # This skips the `getindex` faff and index directly into underlying data. Of course,
+    # this is a bit more prone to breaking. But the performance gains are huge, so this is
+    # really worth it.
     if haskey(strategy.chain._data, param)
         return strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
     elseif strategy.fallback !== nothing
