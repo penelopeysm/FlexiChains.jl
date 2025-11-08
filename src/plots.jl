@@ -196,7 +196,7 @@ function get_keys_to_plot(chn::FlexiChain{TKey}, param_or_params) where {TKey}
     chn = chn[parameters_to_plot]
     # Now, we split VarNames into real-valued parameters if requested.
     if TKey <: VarName
-        chn = split_varnames(chn)
+        chn = _split_varnames(chn)
     end
     # Re-calculate which keys need to be plotted. Now, in the general case, `keys_to_plot`
     # will _already_ be the same as `keys(chn)` because of the subsetting above. However, if
