@@ -95,20 +95,28 @@ end
 ##################################
 # Optimisation for parameters_at #
 ##################################
-struct InitFromFlexiChain{C<:FlexiChains.VNChain} <: DynamicPPL.AbstractInitStrategy
+struct InitFromFlexiChain{
+    C<:FlexiChains.VNChain,S<:Union{DynamicPPL.AbstractInitStrategy,Nothing}
+} <: DynamicPPL.AbstractInitStrategy
     chain::C
     iter_index::Int
     chain_index::Int
+    fallback::S
 end
 function DynamicPPL.init(
-    ::Random.AbstractRNG,
+    rng::Random.AbstractRNG,
     vn::VarName,
-    ::Distributions.Distribution,
+    dist::Distributions.Distribution,
     strategy::InitFromFlexiChain,
 )
-    return strategy.chain._data[FlexiChains.Parameter(vn)][
-        strategy.iter_index, strategy.chain_index
-    ]
+    param = FlexiChains.Parameter(vn)
+    if haskey(strategy.chain._data, param)
+        return strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
+    elseif strategy.fallback !== nothing
+        return DynamicPPL.init(rng, vn, dist, strategy.fallback)
+    else
+        error("Variable $(vn) not found in FlexiChain and no fallback strategy provided.")
+    end
 end
 
 ###########################################
@@ -132,12 +140,15 @@ function reevaluate(
     model::DynamicPPL.Model,
     chain::FlexiChain{<:VarName},
     accs::NTuple{N,DynamicPPL.AbstractAccumulator}=_default_reevaluate_accs(),
+    fallback_strategy::Union{DynamicPPL.AbstractInitStrategy,Nothing}=nothing,
 )::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
     niters, nchains = size(chain)
     tuples = Iterators.product(1:niters, 1:nchains)
     retvals_and_varinfos = map(tuples) do (i, j)
         vi = DynamicPPL.Experimental.OnlyAccsVarInfo(DynamicPPL.AccumulatorTuple(accs))
-        DynamicPPL.init!!(rng, model, vi, InitFromFlexiChain(chain, i, j))
+        DynamicPPL.init!!(
+            rng, model, vi, InitFromFlexiChain(chain, i, j, fallback_strategy)
+        )
     end
     return FlexiChains._raw_to_user_data(chain, retvals_and_varinfos)
 end
@@ -145,8 +156,9 @@ function reevaluate(
     model::DynamicPPL.Model,
     chain::FlexiChain{<:VarName},
     accs::NTuple{N,DynamicPPL.AbstractAccumulator}=_default_reevaluate_accs(),
+    fallback_strategy::Union{DynamicPPL.AbstractInitStrategy,Nothing}=nothing,
 )::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
-    return reevaluate(Random.default_rng(), model, chain, accs)
+    return reevaluate(Random.default_rng(), model, chain, accs, fallback_strategy)
 end
 
 """
@@ -230,7 +242,9 @@ function DynamicPPL.predict(
     include_all::Bool=true,
 )::FlexiChain{VarName}
     existing_parameters = Set(FlexiChains.parameters(chain))
-    param_dicts = map(reevaluate(rng, model, chain)) do (_, vi)
+    accs = _default_reevaluate_accs()
+    fallback = DynamicPPL.InitFromPrior()
+    param_dicts = map(reevaluate(rng, model, chain, accs, fallback)) do (_, vi)
         vn_dict = DynamicPPL.getacc(vi, Val(:ValuesAsInModel)).values
         # ^ that is OrderedDict{VarName}
         p_dict = OrderedDict{ParameterOrExtra{<:VarName},Any}(
