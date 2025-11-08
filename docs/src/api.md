@@ -134,11 +134,17 @@ FlexiChains.split_varnames
 
 Do note that this is a lossy conversion.
 There is no way to un-split the chain!
+
 Furthermore, while functions like `predict` will still work with a split chain, there will be substantial performance regressions.
 It is therefore strongly recommended that you only split a chain up only when necessary, and never earlier than that.
 
 There should really be little reason why you would need to call this function directly: just let the summary and plotting interfaces handle it for you.
 If you have a genuine use case, please get in touch as I'd be interested to hear about it.
+
+!!! warning
+    In v0.2 of FlexiChains onwards, using functions like `returned`, `predict`, and `logjoint` on a split chain will result in errors.
+    This results from a substantial performance improvement implemented for non-split chains, which will not work with split chains.
+    Furthermore, the `split_varname` function will be made private in the same version.
 
 ## Integration with Turing.jl
 
