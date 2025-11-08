@@ -1,3 +1,8 @@
+# 0.1.6
+
+Implemented `InitFromParams(chain::VNChain, i, j)` to allow you to initialise sampling etc. from the `i`-th iteration of the `j`-th chain of a `VNChain`.
+Please see [the documentation](https://pysm.dev/FlexiChains.jl/stable/turing) for an example.
+
 # 0.1.5
 
 Implemented `AbstractMCMC.to_chains` and `AbstractMCMC.from_chains` methods for converting `VNChain` to and from `DynamicPPL.ParamsWithStats`.

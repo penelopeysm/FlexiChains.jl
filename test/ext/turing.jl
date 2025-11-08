@@ -13,6 +13,17 @@ using Turing
 
 Turing.setprogress!(false)
 
+# This sampler does nothing (it just stays at the existing state)
+struct StaticSampler <: AbstractMCMC.AbstractSampler end
+function Turing.Inference.initialstep(rng, model, ::StaticSampler, vi; kwargs...)
+    return Turing.Inference.Transition(model, vi, nothing), vi
+end
+function AbstractMCMC.step(
+    rng, model, ::StaticSampler, vi::DynamicPPL.AbstractVarInfo; kwargs...
+)
+    return Turing.Inference.Transition(model, vi, nothing), vi
+end
+
 @testset verbose = true "FlexiChainTuringExt" begin
     @info "Testing ext/turing.jl"
 
@@ -197,19 +208,6 @@ Turing.setprogress!(false)
             @model f() = x ~ Normal()
             model = f()
 
-            # This sampler does nothing (it just stays at the existing state)
-            struct StaticSampler <: AbstractMCMC.AbstractSampler end
-            function Turing.Inference.initialstep(
-                rng, model, ::StaticSampler, vi; kwargs...
-            )
-                return Turing.Inference.Transition(model, vi, nothing), vi
-            end
-            function AbstractMCMC.step(
-                rng, model, ::StaticSampler, vi::DynamicPPL.AbstractVarInfo; kwargs...
-            )
-                return Turing.Inference.Transition(model, vi, nothing), vi
-            end
-
             @testset "single chain" begin
                 chn1 = sample(
                     model,
@@ -266,6 +264,24 @@ Turing.setprogress!(false)
                 @test all(i -> chn2[@varname(x)][i, :] == xval, 1:10)
             end
         end
+    end
+
+    @testset "InitFromParams(chain, i, j)" begin
+        @model function f()
+            x ~ Normal()
+            return y ~ Normal(x)
+        end
+        model = f()
+        chn = sample(model, NUTS(), 100; chain_type=VNChain)
+        chn2 = sample(
+            model,
+            StaticSampler(),
+            10;
+            chain_type=VNChain,
+            initial_params=InitFromParams(chn, 10, 1),
+        )
+        @test all(x -> x == chn[@varname(x), iter=10, chain=1], chn2[@varname(x)])
+        @test all(y -> y == chn[@varname(y), iter=10, chain=1], chn2[@varname(y)])
     end
 
     @testset "summaries on chains from Turing" begin

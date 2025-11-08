@@ -64,6 +64,28 @@ function AbstractMCMC.to_samples(
     end
 end
 
+############################
+# InitFromParams extension #
+############################
+"""
+    DynamicPPL.InitFromParams(
+        chn::FlexiChain{<:VarName},
+        iter::Union{Int,DD.At},
+        chain::Union{Int,DD.At},
+        fallback::Union{AbstractInitStrategy,Nothing}=InitFromPrior()
+    )::DynamicPPL.InitFromParams
+
+Use the parameters stored in a FlexiChain as an initialisation strategy.
+"""
+function DynamicPPL.InitFromParams(
+    chn::FlexiChain{<:VarName},
+    iter::Union{Int,DD.At},
+    chain::Union{Int,DD.At},
+    fallback::Union{DynamicPPL.AbstractInitStrategy,Nothing}=DynamicPPL.InitFromPrior(),
+)
+    return DynamicPPL.InitFromParams(FlexiChains.parameters_at(chn, iter, chain), fallback)
+end
+
 ###########################################
 # DynamicPPL: predict, returned, logjoint #
 ###########################################

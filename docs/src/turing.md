@@ -260,6 +260,19 @@ combined_chn = vcat(chn1, chn2)
     
     The above applies equally to `MCMCSerial()` and `MCMCDistributed()`.
 
+## Initialising MCMC sampling from a FlexiChain
+
+You can also use the parameters stored in a `FlexiChain` to initialise MCMC sampling.
+Note that this is different from _resuming sampling_ from a saved sampler state, because all other sampler information (e.g. momentum, ...) will be re-initialised.
+
+For example, to start a new chain from the fifth iteration and first chain contained inside `chain`, you can do
+
+```@example 1
+chn3 = sample(model, MH(), 5; chain_type=VNChain, initial_params=InitFromParams(chain, 5, 1))
+```
+
+Since this only uses the parameters which are already part of the chain, this does not require you to use `save_state=true` for the original chain.
+
 ## Posterior predictions and friends
 
 The functions `predict`, `returned`, `logjoint`, `loglikelihood`, and `logprior` all work 'as expected' using FlexiChains with exactly the same signatures that you are used to.
