@@ -3,7 +3,7 @@ module FlexiChainsDynamicPPLExt
 using FlexiChains:
     FlexiChains, FlexiChain, VarName, Parameter, Extra, ParameterOrExtra, VNChain
 using DimensionalData: DimensionalData as DD
-using DynamicPPL: DynamicPPL, AbstractPPL, AbstractMCMC
+using DynamicPPL: DynamicPPL, AbstractPPL, AbstractMCMC, Distributions
 using OrderedCollections: OrderedDict
 using Random: Random
 
@@ -83,7 +83,32 @@ function DynamicPPL.InitFromParams(
     chain::Union{Int,DD.At},
     fallback::Union{DynamicPPL.AbstractInitStrategy,Nothing}=DynamicPPL.InitFromPrior(),
 )
+    # Note that this is functionally the same as `InitFromFlexiChainUnsafe` but it is more
+    # flexible because it allows `DD.At` indices, and it also allows for split-VarNames
+    # (although that's an unlikely situation). I think conceptually, the difference is that
+    # `InitFromParams` isn't meant to be used in tight loops / performance-sensitive code,
+    # and can thus give more guarantees about flexibility, whereas
+    # `InitFromFlexiChainUnsafe` is really meant for internal use only.
     return DynamicPPL.InitFromParams(FlexiChains.parameters_at(chn, iter, chain), fallback)
+end
+
+##################################
+# Optimisation for parameters_at #
+##################################
+struct InitFromFlexiChain{C<:FlexiChains.VNChain} <: DynamicPPL.AbstractInitStrategy
+    chain::C
+    iter_index::Int
+    chain_index::Int
+end
+function DynamicPPL.init(
+    ::Random.AbstractRNG,
+    vn::VarName,
+    ::Distributions.Distribution,
+    strategy::InitFromFlexiChain,
+)
+    return strategy.chain._data[FlexiChains.Parameter(vn)][
+        strategy.iter_index, strategy.chain_index
+    ]
 end
 
 ###########################################
@@ -109,12 +134,10 @@ function reevaluate(
     accs::NTuple{N,DynamicPPL.AbstractAccumulator}=_default_reevaluate_accs(),
 )::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
     niters, nchains = size(chain)
-    vi = DynamicPPL.VarInfo(model)
-    vi = DynamicPPL.setaccs!!(vi, accs)
     tuples = Iterators.product(1:niters, 1:nchains)
     retvals_and_varinfos = map(tuples) do (i, j)
-        vals = FlexiChains.parameters_at(chain, i, j)
-        DynamicPPL.init!!(rng, model, vi, DynamicPPL.InitFromParams(vals))
+        vi = DynamicPPL.Experimental.OnlyAccsVarInfo(DynamicPPL.AccumulatorTuple(accs))
+        DynamicPPL.init!!(rng, model, vi, InitFromFlexiChain(chain, i, j))
     end
     return FlexiChains._raw_to_user_data(chain, retvals_and_varinfos)
 end
