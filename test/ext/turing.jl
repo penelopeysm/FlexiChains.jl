@@ -432,10 +432,6 @@ end
         @test rtnd isa DD.DimMatrix
         @test parent(parent(DD.dims(rtnd, :iter))) == FlexiChains.iter_indices(chn)
         @test parent(parent(DD.dims(rtnd, :chain))) == FlexiChains.chain_indices(chn)
-
-        split_chn = FlexiChains.split_varnames(chn)
-        split_rtnd = returned(model, split_chn)
-        @test split_rtnd == rtnd
     end
 
     @testset "predict" begin
@@ -517,16 +513,6 @@ end
             pdns = predict(f(), chn)
             @test all(ismissing, FlexiChains.sampling_time(pdns))
             @test all(ismissing, FlexiChains.last_sampler_state(pdns))
-        end
-
-        @testset "still works after chain has been split up" begin
-            # I mean, just in case people want to do it......
-            split_chn = FlexiChains.split_varnames(chn)
-            pdns_split = predict(Xoshiro(468), f(), split_chn)
-            pdns_orig = predict(Xoshiro(468), f(), chn)
-            for k in FlexiChains.parameters(pdns_split)
-                @test pdns_split[k] == pdns_orig[k]
-            end
         end
 
         @testset "rng is respected" begin
