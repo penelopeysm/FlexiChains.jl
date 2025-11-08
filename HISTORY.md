@@ -2,6 +2,7 @@
 
 Implemented `InitFromParams(chain::VNChain, i, j)` to allow you to initialise sampling etc. from the `i`-th iteration of the `j`-th chain of a `VNChain`.
 Please see [the documentation](https://pysm.dev/FlexiChains.jl/stable/turing) for an example.
+`i` and `j` can either be integers, or `At(...)` selectors.
 
 # 0.1.5
 
