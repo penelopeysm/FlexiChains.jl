@@ -96,19 +96,33 @@ end
 # Optimisation for parameters_at #
 ##################################
 """
-    InitFromFlexiChain(chain::FlexiChain, iter_index::Int, chain_index::Int; fallback=nothing)
+    InitFromFlexiChainUnsafe(
+        chain::FlexiChain, iter_index::Int, chain_index::Int, fallback=nothing
+    )
 
 A DynamicPPL initialisation strategy that obtains values from the given `FlexiChain` at the
 specified iteration and chain indices.
 
-Note that iteration and chain indices must be 1-based integers! We do this so that indexing
-into the `FlexiChain` is as fast as possible.
+In order for `InitFromFlexiChainUnsafe` to work correctly, two things must be ensured:
+
+1. The variables being asked for must **exactly** match those stored in the FlexiChain. That
+   is, if the chain contains `@varname(y)` and the model asks for `@varname(y)`, this will
+   either error (if no fallback is provided) or silently use the fallback.
+
+2. The iteration and chain indices must be 1-based integers.
+
+These requirements allow us to skip the usual `getindex` method when retrieving values from
+the `FlexiChain`, and instead index directly into the data storage, which is much faster.
+
+These conditions, especially (1), can be guaranteed if and only if the chain used to
+re-evaluate the model was generated from the same model (or a model with the same
+structure).
 
 `fallback` provides the same functionality as it does in `DynamicPPL.InitFromParams`, that
 is, if a variable is not found in the `FlexiChain`, the fallback strategy is used to
 generate its value. This is necessary for `predict`.
 """
-struct InitFromFlexiChain{
+struct InitFromFlexiChainUnsafe{
     C<:FlexiChains.VNChain,S<:Union{DynamicPPL.AbstractInitStrategy,Nothing}
 } <: DynamicPPL.AbstractInitStrategy
     chain::C
@@ -120,7 +134,7 @@ function DynamicPPL.init(
     rng::Random.AbstractRNG,
     vn::VarName,
     dist::Distributions.Distribution,
-    strategy::InitFromFlexiChain,
+    strategy::InitFromFlexiChainUnsafe,
 )
     param = FlexiChains.Parameter(vn)
     # This skips the `getindex` faff and index directly into underlying data. Of course,
@@ -163,7 +177,7 @@ function reevaluate(
     retvals_and_varinfos = map(tuples) do (i, j)
         vi = DynamicPPL.Experimental.OnlyAccsVarInfo(DynamicPPL.AccumulatorTuple(accs))
         DynamicPPL.init!!(
-            rng, model, vi, InitFromFlexiChain(chain, i, j, fallback_strategy)
+            rng, model, vi, InitFromFlexiChainUnsafe(chain, i, j, fallback_strategy)
         )
     end
     return FlexiChains._raw_to_user_data(chain, retvals_and_varinfos)
