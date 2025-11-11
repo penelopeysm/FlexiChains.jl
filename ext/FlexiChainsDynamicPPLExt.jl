@@ -130,6 +130,7 @@ struct InitFromFlexiChainUnsafe{
     chain_index::Int
     fallback::S
 end
+DynamicPPL._get_strat_param_eltype(::InitFromFlexiChainUnsafe) = Any
 function DynamicPPL.init(
     rng::Random.AbstractRNG,
     vn::VarName,
@@ -141,7 +142,8 @@ function DynamicPPL.init(
     # this is a bit more prone to breaking. But the performance gains are huge, so this is
     # really worth it.
     if haskey(strategy.chain._data, param)
-        return strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
+        x = strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
+        return (x, DynamicPPL._typed_identity)
     elseif strategy.fallback !== nothing
         return DynamicPPL.init(rng, vn, dist, strategy.fallback)
     else
@@ -174,8 +176,9 @@ function reevaluate(
 )::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
     niters, nchains = size(chain)
     tuples = Iterators.product(1:niters, 1:nchains)
+    vi = DynamicPPL.VarInfo(model)
+    vi = DynamicPPL.setaccs!!(vi, DynamicPPL.AccumulatorTuple(accs))
     retvals_and_varinfos = map(tuples) do (i, j)
-        vi = DynamicPPL.Experimental.OnlyAccsVarInfo(DynamicPPL.AccumulatorTuple(accs))
         DynamicPPL.init!!(
             rng, model, vi, InitFromFlexiChainUnsafe(chain, i, j, fallback_strategy)
         )
