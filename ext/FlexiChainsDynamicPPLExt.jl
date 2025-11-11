@@ -130,7 +130,6 @@ struct InitFromFlexiChainUnsafe{
     chain_index::Int
     fallback::S
 end
-DynamicPPL._get_strat_param_eltype(::InitFromFlexiChainUnsafe) = Any
 function DynamicPPL.init(
     rng::Random.AbstractRNG,
     vn::VarName,
