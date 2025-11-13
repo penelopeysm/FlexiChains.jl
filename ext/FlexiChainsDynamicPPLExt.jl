@@ -64,6 +64,23 @@ function AbstractMCMC.to_samples(
     end
 end
 
+# This method will make `bundle_samples` 'just work'
+function FlexiChains.to_varname_dict(
+    transition::DynamicPPL.ParamsWithStats
+)::OrderedDict{ParameterOrExtra{<:VarName},Any}
+    d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
+    for (varname, value) in pairs(transition.params)
+        d[Parameter(varname)] = value
+    end
+    # add in the transition stats (if available)
+    for (key, value) in pairs(transition.stats)
+        # override lp -> logjoint
+        actual_key = key == :lp ? :logjoint : key
+        d[Extra(actual_key)] = value
+    end
+    return d
+end
+
 ############################
 # InitFromParams extension #
 ############################
