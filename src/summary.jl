@@ -489,7 +489,7 @@ function collapse(
                 "`split_varnames=true` is only supported for chains with `TKey<:VarName`",
             ),
         )
-        chain = FlexiChains.split_varnames(chain)
+        chain = FlexiChains._split_varnames(chain)
     end
     data = OrderedDict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
     names, funcs = _get_names_and_funcs(funcs)

@@ -1,8 +1,6 @@
 using AbstractPPL: AbstractPPL, VarName, @varname
 using OrderedCollections: OrderedSet
 
-@public split_varname
-
 """
 Helper function to apply an optic function to an array. Errors if none of the array elements
 actually can be transformed by the optic. If only some of the array elements can be
@@ -123,14 +121,18 @@ function Base.getindex(
 end
 
 """
-    FlexiChains.split_varnames(cs::ChainOrSummary{<:VarName})
+    FlexiChains._split_varnames(cs::ChainOrSummary{<:VarName})
 
 Split up a chain, which in general may contain array- or other-valued parameters, into a
 chain containing only scalar-valued parameters. This is done by replacing the original
 `VarName` keys with appropriate _leaves_. For example, if `x` is a vector-valued parameter,
 then it is replaced by `x[1]`, `x[2]`, etc.
+
+This function is only used for summarising and plotting: note that calling this on an
+original chain, and subsequently using that chain for functions such as `returned` or
+`predict`, **will** lead to errors!
 """
-function split_varnames(cs::ChainOrSummary{<:VarName})
+function _split_varnames(cs::ChainOrSummary{<:VarName})
     vns = OrderedSet{VarName}()
     for vn in FlexiChains.parameters(cs)
         d = _get_raw_data(cs, Parameter(vn))

@@ -1,3 +1,27 @@
+# 0.2.0
+
+## Breaking changes
+
+### `split_varnames`
+
+`FlexiChains.split_varnames` has been removed (technically, renamed made internal).
+From a user's point of view, summarising and plotting chains will still automatically split VarNames up.
+However, you cannot do this for your own chains any more.
+
+### DynamicPPL functions like `returned`, `predict`, `logjoint`
+
+In v0.1, FlexiChains guaranteed that if you called `split_varnames(chn)`, these functions would still work correctly on the resulting split chain.
+
+In v0.2 this is no longer the case.
+`returned` and `logjoint` will error, and `predict` will silently give wrong results.
+This is the main rationale behind the removal of `split_varnames`.
+
+## Other changes
+
+### DynamicPPL functions like `returned`, `predict`, `logjoint`
+
+In return for no longer working on split VarName chains, these functions have been made to run up to 10x faster on unsplit chains.
+
 # 0.1.6
 
 Implemented `InitFromParams(chain::VNChain, i, j)` to allow you to initialise sampling etc. from the `i`-th iteration of the `j`-th chain of a `VNChain`.
