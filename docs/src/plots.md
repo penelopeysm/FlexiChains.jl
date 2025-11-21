@@ -19,6 +19,7 @@ The following series types are supported for `FlexiChain` objects.
 | `:mixeddensity`          | [`FlexiChains.mixeddensity()`](@ref)           | Density plot or histogram, depending on whether the parameter is continuous or discrete |
 | `:meanplot`              | [`FlexiChains.meanplot()`](@ref)               | Running mean of samples                                                                 |
 | `:autocorplot`           | [`FlexiChains.autocorplot()`](@ref)            | Autocorrelation of samples                                                              |
+| `:violin`                | `StatsPlots.violin()`                          | Violin plot of sample density                                                           |
 | `:traceplot_and_density` | `Plots.plot()` (with no `seriestype` argument) | Trace plot and mixed density side-by-side                                               |
 
 !!! warning "Identifier conflicts"
