@@ -38,12 +38,12 @@ const _AUTOCORPLOT_SERIESTYPE = :autocorplot
 function FC.autocorplot(
     chn::FC.FlexiChain, args...; lags=FC.PlotUtils.default_lags(chn), demean=true, kwargs...
 )
-    return plot(chn, args...; kwargs..., lags, demean, seriestype=_AUTOCORPLOT_SERIESTYPE)
+    return plot(chn, args...; lags, demean, kwargs..., seriestype=_AUTOCORPLOT_SERIESTYPE)
 end
 function FC.autocorplot!(
     chn::FC.FlexiChain, args...; lags=FC.PlotUtils.default_lags(chn), demean=true, kwargs...
 )
-    return plot!(chn, args...; kwargs..., lags, demean, seriestype=_AUTOCORPLOT_SERIESTYPE)
+    return plot!(chn, args...; lags, demean, kwargs..., seriestype=_AUTOCORPLOT_SERIESTYPE)
 end
 
 const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
@@ -65,6 +65,7 @@ constituent real-valued parameters by default.
     lags=nothing,
     demean=nothing,
     pool_chains=false,
+    box=true,
 )
     keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
     # When the user calls `plot(chn[, params])` without specifying a `seriestype`, we
@@ -109,6 +110,8 @@ constituent real-valued parameters by default.
                     return FC.PlotUtils.FlexiChainMean(chn, k)
                 elseif seriestype === _AUTOCORPLOT_SERIESTYPE
                     return FC.PlotUtils.FlexiChainAutoCor(chn, k, lags, demean)
+                elseif seriestype === :violin
+                    return FC.PlotUtils.FlexiChainViolin(chn, k, pool_chains, box)
                 else
                     return (chn, k, seriestype)
                 end
@@ -201,6 +204,30 @@ Plot of autocorrelation.
     label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(t.chn)))
     title --> t.param.name
     return x, y
+end
+
+"""
+Plot of autocorrelation.
+"""
+@recipe function _(t::FC.PlotUtils.FlexiChainViolin)
+    # Extract data
+    # StatsPlots.violin wants data in quite a weird format.
+    data = FC._get_raw_data(t.chn, t.param)
+    nchains, niters = size(t.chn)
+    y = vec(data)
+    FC.PlotUtils.check_eltype_is_real(y)
+    label --> nothing
+    title --> t.param.name
+    yguide --> "value"
+    if t.pool_chains
+        xticks --> []
+        x = [1]
+        return x, y
+    else
+        labels = map(cidx -> "chain $cidx", FC.chain_indices(t.chn))
+        x = repeat(labels; inner=niters)
+        return x, y
+    end
 end
 
 """
