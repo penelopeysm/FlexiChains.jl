@@ -11,75 +11,77 @@ using Random: Random
 # AbstractMCMC.{to,from}_samples implementations #
 ##################################################
 
-"""
-    AbstractMCMC.from_samples(
-        ::Type{<:VNChain},
-        params_and_stats::AbstractMatrix{<:DynamicPPL.ParamsWithStats}
-    )::VNChain
+#### Note that this requires DynamicPPL 0.39, which is not released yet
 
-Convert a matrix of [`DynamicPPL.ParamsWithStats`](@extref) to a `VNChain`.
-"""
-function AbstractMCMC.from_samples(
-    ::Type{<:VNChain}, params_and_stats::AbstractMatrix{<:DynamicPPL.ParamsWithStats}
-)::VNChain
-    # Just need to convert the `ParamsWithStats` to Dicts of ParameterOrExtra.
-    dicts = map(params_and_stats) do ps
-        # Parameters
-        d = OrderedDict{ParameterOrExtra{<:VarName},Any}(
-            Parameter(vn) => val for (vn, val) in ps.params
-        )
-        # Stats
-        for (stat_vn, stat_val) in pairs(ps.stats)
-            d[Extra(stat_vn)] = stat_val
-        end
-        d
-    end
-    return VNChain(size(params_and_stats, 1), size(params_and_stats, 2), dicts)
-end
-
-"""
-    AbstractMCMC.to_samples(
-        ::Type{DynamicPPL.ParamsWithStats},
-        chain::VNChain
-    )::DimensionalData.DimMatrix{DynamicPPL.ParamsWithStats}
-
-Convert a `VNChain` to a `DimMatrix` of [`DynamicPPL.ParamsWithStats`](@extref).
-
-The axes of the `DimMatrix` are the same as those of the input `VNChain`.
-"""
-function AbstractMCMC.to_samples(
-    ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}
-)::DD.DimMatrix{<:DynamicPPL.ParamsWithStats} where {T<:VarName}
-    dicts = FlexiChains.values_at(chain, :, :)
-    return map(dicts) do d
-        # Need to separate parameters and stats.
-        param_dict = OrderedDict{T,Any}(
-            vn_param.name => val for (vn_param, val) in d if vn_param isa Parameter{<:T}
-        )
-        stats_nt = NamedTuple(
-            Symbol(extra_param.name) => val for
-            (extra_param, val) in d if extra_param isa Extra
-        )
-        DynamicPPL.ParamsWithStats(param_dict, stats_nt)
-    end
-end
-
-# This method will make `bundle_samples` 'just work'
-function FlexiChains.to_varname_dict(
-    transition::DynamicPPL.ParamsWithStats
-)::OrderedDict{ParameterOrExtra{<:VarName},Any}
-    d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
-    for (varname, value) in pairs(transition.params)
-        d[Parameter(varname)] = value
-    end
-    # add in the transition stats (if available)
-    for (key, value) in pairs(transition.stats)
-        # override lp -> logjoint
-        actual_key = key == :lp ? :logjoint : key
-        d[Extra(actual_key)] = value
-    end
-    return d
-end
+# """
+#     AbstractMCMC.from_samples(
+#         ::Type{<:VNChain},
+#         params_and_stats::AbstractMatrix{<:DynamicPPL.ParamsWithStats}
+#     )::VNChain
+#
+# Convert a matrix of [`DynamicPPL.ParamsWithStats`](@extref) to a `VNChain`.
+# """
+# function AbstractMCMC.from_samples(
+#     ::Type{<:VNChain}, params_and_stats::AbstractMatrix{<:DynamicPPL.ParamsWithStats}
+# )::VNChain
+#     # Just need to convert the `ParamsWithStats` to Dicts of ParameterOrExtra.
+#     dicts = map(params_and_stats) do ps
+#         # Parameters
+#         d = OrderedDict{ParameterOrExtra{<:VarName},Any}(
+#             Parameter(vn) => val for (vn, val) in ps.params
+#         )
+#         # Stats
+#         for (stat_vn, stat_val) in pairs(ps.stats)
+#             d[Extra(stat_vn)] = stat_val
+#         end
+#         d
+#     end
+#     return VNChain(size(params_and_stats, 1), size(params_and_stats, 2), dicts)
+# end
+#
+# """
+#     AbstractMCMC.to_samples(
+#         ::Type{DynamicPPL.ParamsWithStats},
+#         chain::VNChain
+#     )::DimensionalData.DimMatrix{DynamicPPL.ParamsWithStats}
+#
+# Convert a `VNChain` to a `DimMatrix` of [`DynamicPPL.ParamsWithStats`](@extref).
+#
+# The axes of the `DimMatrix` are the same as those of the input `VNChain`.
+# """
+# function AbstractMCMC.to_samples(
+#     ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}
+# )::DD.DimMatrix{<:DynamicPPL.ParamsWithStats} where {T<:VarName}
+#     dicts = FlexiChains.values_at(chain, :, :)
+#     return map(dicts) do d
+#         # Need to separate parameters and stats.
+#         param_dict = OrderedDict{T,Any}(
+#             vn_param.name => val for (vn_param, val) in d if vn_param isa Parameter{<:T}
+#         )
+#         stats_nt = NamedTuple(
+#             Symbol(extra_param.name) => val for
+#             (extra_param, val) in d if extra_param isa Extra
+#         )
+#         DynamicPPL.ParamsWithStats(param_dict, stats_nt)
+#     end
+# end
+#
+# # This method will make `bundle_samples` 'just work'
+# function FlexiChains.to_varname_dict(
+#     transition::DynamicPPL.ParamsWithStats
+# )::OrderedDict{ParameterOrExtra{<:VarName},Any}
+#     d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
+#     for (varname, value) in pairs(transition.params)
+#         d[Parameter(varname)] = value
+#     end
+#     # add in the transition stats (if available)
+#     for (key, value) in pairs(transition.stats)
+#         # override lp -> logjoint
+#         actual_key = key == :lp ? :logjoint : key
+#         d[Extra(actual_key)] = value
+#     end
+#     return d
+# end
 
 ############################
 # InitFromParams extension #
