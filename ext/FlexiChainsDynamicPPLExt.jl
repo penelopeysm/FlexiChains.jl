@@ -126,7 +126,7 @@ In order for `InitFromFlexiChainUnsafe` to work correctly, two things must be en
    is, if the chain contains `@varname(y)` and the model asks for `@varname(y)`, this will
    either error (if no fallback is provided) or silently use the fallback.
 
-2. The iteration and chain indices must be 1-based integers.
+2. The `iter_index` and `chain_index` arguments must be 1-based indices.
 
 These requirements allow us to skip the usual `getindex` method when retrieving values from
 the `FlexiChain`, and instead index directly into the data storage, which is much faster.
