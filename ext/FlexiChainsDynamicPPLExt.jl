@@ -159,7 +159,8 @@ function DynamicPPL.init(
     # really worth it.
     if haskey(strategy.chain._data, param)
         x = strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
-        return (x, DynamicPPL.typed_identity)
+        # TODO (DynamicPPL 0.39): return (x, DynamicPPL.typed_identity) instead
+        return x
     elseif strategy.fallback !== nothing
         return DynamicPPL.init(rng, vn, dist, strategy.fallback)
     else
