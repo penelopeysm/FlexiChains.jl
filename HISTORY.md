@@ -4,7 +4,7 @@
 
 ### `split_varnames`
 
-`FlexiChains.split_varnames` has been removed (technically, renamed made internal).
+`FlexiChains.split_varnames` has been removed (technically, renamed and made internal).
 From a user's point of view, summarising and plotting chains will still automatically split VarNames up.
 However, you cannot do this for your own chains any more.
 
