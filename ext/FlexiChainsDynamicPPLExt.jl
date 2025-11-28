@@ -3,7 +3,7 @@ module FlexiChainsDynamicPPLExt
 using FlexiChains:
     FlexiChains, FlexiChain, VarName, Parameter, Extra, ParameterOrExtra, VNChain
 using DimensionalData: DimensionalData as DD
-using DynamicPPL: DynamicPPL, AbstractPPL, AbstractMCMC
+using DynamicPPL: DynamicPPL, AbstractPPL, AbstractMCMC, Distributions
 using OrderedCollections: OrderedDict
 using Random: Random
 
@@ -64,6 +64,23 @@ function AbstractMCMC.to_samples(
     end
 end
 
+# This method will make `bundle_samples` 'just work'
+function FlexiChains.to_varname_dict(
+    transition::DynamicPPL.ParamsWithStats
+)::OrderedDict{ParameterOrExtra{<:VarName},Any}
+    d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
+    for (varname, value) in pairs(transition.params)
+        d[Parameter(varname)] = value
+    end
+    # add in the transition stats (if available)
+    for (key, value) in pairs(transition.stats)
+        # override lp -> logjoint
+        actual_key = key == :lp ? :logjoint : key
+        d[Extra(actual_key)] = value
+    end
+    return d
+end
+
 ############################
 # InitFromParams extension #
 ############################
@@ -83,7 +100,72 @@ function DynamicPPL.InitFromParams(
     chain::Union{Int,DD.At},
     fallback::Union{DynamicPPL.AbstractInitStrategy,Nothing}=DynamicPPL.InitFromPrior(),
 )
+    # Note that this is functionally the same as `InitFromFlexiChainUnsafe` but it is more
+    # flexible because it allows `DD.At` indices, and it also allows for split-VarNames
+    # (although that's an unlikely situation). I think conceptually, the difference is that
+    # `InitFromParams` isn't meant to be used in tight loops / performance-sensitive code,
+    # and can thus give more guarantees about flexibility, whereas
+    # `InitFromFlexiChainUnsafe` is really meant for internal use only.
     return DynamicPPL.InitFromParams(FlexiChains.parameters_at(chn, iter, chain), fallback)
+end
+
+##################################
+# Optimisation for parameters_at #
+##################################
+"""
+    InitFromFlexiChainUnsafe(
+        chain::FlexiChain, iter_index::Int, chain_index::Int, fallback=nothing
+    )
+
+A DynamicPPL initialisation strategy that obtains values from the given `FlexiChain` at the
+specified iteration and chain indices.
+
+In order for `InitFromFlexiChainUnsafe` to work correctly, two things must be ensured:
+
+1. The variables being asked for must **exactly** match those stored in the FlexiChain. That
+   is, if the chain contains `@varname(y)` and the model asks for `@varname(y)`, this will
+   either error (if no fallback is provided) or silently use the fallback.
+
+2. The `iter_index` and `chain_index` arguments must be 1-based indices.
+
+These requirements allow us to skip the usual `getindex` method when retrieving values from
+the `FlexiChain`, and instead index directly into the data storage, which is much faster.
+
+These conditions, especially (1), can be guaranteed if and only if the chain used to
+re-evaluate the model was generated from the same model (or a model with the same
+structure).
+
+`fallback` provides the same functionality as it does in `DynamicPPL.InitFromParams`, that
+is, if a variable is not found in the `FlexiChain`, the fallback strategy is used to
+generate its value. This is necessary for `predict`.
+"""
+struct InitFromFlexiChainUnsafe{
+    C<:FlexiChains.VNChain,S<:Union{DynamicPPL.AbstractInitStrategy,Nothing}
+} <: DynamicPPL.AbstractInitStrategy
+    chain::C
+    iter_index::Int
+    chain_index::Int
+    fallback::S
+end
+function DynamicPPL.init(
+    rng::Random.AbstractRNG,
+    vn::VarName,
+    dist::Distributions.Distribution,
+    strategy::InitFromFlexiChainUnsafe,
+)
+    param = FlexiChains.Parameter(vn)
+    # This skips the `getindex` faff and index directly into underlying data. Of course,
+    # this is a bit more prone to breaking. But the performance gains are huge, so this is
+    # really worth it.
+    if haskey(strategy.chain._data, param)
+        x = strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
+        # TODO (DynamicPPL 0.39): return (x, DynamicPPL.typed_identity) instead
+        return x
+    elseif strategy.fallback !== nothing
+        return DynamicPPL.init(rng, vn, dist, strategy.fallback)
+    else
+        error("Variable $(vn) not found in FlexiChain and no fallback strategy provided.")
+    end
 end
 
 ###########################################
@@ -107,14 +189,16 @@ function reevaluate(
     model::DynamicPPL.Model,
     chain::FlexiChain{<:VarName},
     accs::NTuple{N,DynamicPPL.AbstractAccumulator}=_default_reevaluate_accs(),
+    fallback_strategy::Union{DynamicPPL.AbstractInitStrategy,Nothing}=nothing,
 )::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
     niters, nchains = size(chain)
-    vi = DynamicPPL.VarInfo(model)
-    vi = DynamicPPL.setaccs!!(vi, accs)
     tuples = Iterators.product(1:niters, 1:nchains)
+    vi = DynamicPPL.VarInfo(model)
+    vi = DynamicPPL.setaccs!!(vi, DynamicPPL.AccumulatorTuple(accs))
     retvals_and_varinfos = map(tuples) do (i, j)
-        vals = FlexiChains.parameters_at(chain, i, j)
-        DynamicPPL.init!!(rng, model, vi, DynamicPPL.InitFromParams(vals))
+        DynamicPPL.init!!(
+            rng, model, vi, InitFromFlexiChainUnsafe(chain, i, j, fallback_strategy)
+        )
     end
     return FlexiChains._raw_to_user_data(chain, retvals_and_varinfos)
 end
@@ -122,8 +206,9 @@ function reevaluate(
     model::DynamicPPL.Model,
     chain::FlexiChain{<:VarName},
     accs::NTuple{N,DynamicPPL.AbstractAccumulator}=_default_reevaluate_accs(),
+    fallback_strategy::Union{DynamicPPL.AbstractInitStrategy,Nothing}=nothing,
 )::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
-    return reevaluate(Random.default_rng(), model, chain, accs)
+    return reevaluate(Random.default_rng(), model, chain, accs, fallback_strategy)
 end
 
 """
@@ -207,7 +292,9 @@ function DynamicPPL.predict(
     include_all::Bool=true,
 )::FlexiChain{VarName}
     existing_parameters = Set(FlexiChains.parameters(chain))
-    param_dicts = map(reevaluate(rng, model, chain)) do (_, vi)
+    accs = _default_reevaluate_accs()
+    fallback = DynamicPPL.InitFromPrior()
+    param_dicts = map(reevaluate(rng, model, chain, accs, fallback)) do (_, vi)
         vn_dict = DynamicPPL.getacc(vi, Val(:ValuesAsInModel)).values
         # ^ that is OrderedDict{VarName}
         p_dict = OrderedDict{ParameterOrExtra{<:VarName},Any}(

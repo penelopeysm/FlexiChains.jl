@@ -376,6 +376,20 @@ end
             @test parent(parent(DD.dims(ljoint, :iter))) == FlexiChains.iter_indices(chn)
             @test parent(parent(DD.dims(ljoint, :chain))) == FlexiChains.chain_indices(chn)
         end
+
+        @testset "errors on missing variables" begin
+            @model function xonly()
+                return x ~ Normal()
+            end
+            @model function xy()
+                x ~ Normal()
+                return y ~ Normal()
+            end
+            chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
+            @test_throws "not found" logprior(xy(), chn)
+            @test_throws "not found" loglikelihood(xy(), chn)
+            @test_throws "not found" logjoint(xy(), chn)
+        end
     end
 
     @testset "pointwise logprobs" begin
@@ -415,6 +429,20 @@ end
             @test length(keys(pld)) == 1
             @test isapprox(pld[@varname(x)], logpdf.(Normal(), xs))
         end
+
+        @testset "errors on missing variables" begin
+            @model function xonly()
+                return x ~ Normal()
+            end
+            @model function xy()
+                x ~ Normal()
+                return y ~ Normal()
+            end
+            chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
+            @test_throws "not found" DynamicPPL.pointwise_logdensities(xy(), chn)
+            @test_throws "not found" DynamicPPL.pointwise_loglikelihoods(xy(), chn)
+            @test_throws "not found" DynamicPPL.pointwise_prior_logdensities(xy(), chn)
+        end
     end
 
     @testset "returned" begin
@@ -433,9 +461,27 @@ end
         @test parent(parent(DD.dims(rtnd, :iter))) == FlexiChains.iter_indices(chn)
         @test parent(parent(DD.dims(rtnd, :chain))) == FlexiChains.chain_indices(chn)
 
-        split_chn = FlexiChains.split_varnames(chn)
-        split_rtnd = returned(model, split_chn)
-        @test split_rtnd == rtnd
+        @testset "works even for dists that hasvalue isn't implemented for" begin
+            @model function f()
+                return x ~ product_distribution((; a=Normal()))
+            end
+            model = f()
+            chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
+            rets = returned(f(), chn)
+            @test chn[@varname(x)] == rets
+        end
+
+        @testset "errors on missing variables" begin
+            @model function xonly()
+                return x ~ Normal()
+            end
+            @model function xy()
+                x ~ Normal()
+                return y ~ Normal()
+            end
+            chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
+            @test_throws "not found" returned(xy(), chn)
+        end
     end
 
     @testset "predict" begin
@@ -519,31 +565,12 @@ end
             @test all(ismissing, FlexiChains.last_sampler_state(pdns))
         end
 
-        @testset "still works after chain has been split up" begin
-            # I mean, just in case people want to do it......
-            split_chn = FlexiChains.split_varnames(chn)
-            pdns_split = predict(Xoshiro(468), f(), split_chn)
-            pdns_orig = predict(Xoshiro(468), f(), chn)
-            for k in FlexiChains.parameters(pdns_split)
-                @test pdns_split[k] == pdns_orig[k]
-            end
-        end
-
         @testset "rng is respected" begin
             pdns1 = predict(Xoshiro(468), f(), chn)
             pdns2 = predict(Xoshiro(468), f(), chn)
             @test FlexiChains.has_same_data(pdns1, pdns2)
             pdns3 = predict(Xoshiro(469), f(), chn)
             @test !FlexiChains.has_same_data(pdns1, pdns3)
-
-            @testset "and also with split chain" begin
-                split_chn = FlexiChains.split_varnames(chn)
-                pdns1 = predict(Xoshiro(468), f(), split_chn)
-                pdns2 = predict(Xoshiro(468), f(), split_chn)
-                @test FlexiChains.has_same_data(pdns1, pdns2)
-                pdns3 = predict(Xoshiro(469), f(), split_chn)
-                @test !FlexiChains.has_same_data(pdns1, pdns3)
-            end
         end
     end
 

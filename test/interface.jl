@@ -804,7 +804,7 @@ using Test
             Extra("hello") => 3.0,
         )
         chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
-        chain2 = FlexiChains.split_varnames(chain)
+        chain2 = FlexiChains._split_varnames(chain)
         @test collect(keys(chain2)) == ([
             Parameter(@varname(a)),
             Parameter(@varname(c.x)),
