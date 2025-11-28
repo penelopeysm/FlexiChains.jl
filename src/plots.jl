@@ -6,6 +6,12 @@ you can explicitly pass all keys with `$(funcname)(chn, :)`.
 """
 end
 
+const _POOL_CHAINS_DOCSTRING = """
+The `pool_chains` keyword argument specifies whether to pool samples across multiple chains
+when plotting. If `true` (the default), samples from all chains are pooled together; if
+`false`, samples from each chain are plotted separately.
+"""
+
 ######################
 # Plots.jl overloads #
 ######################
@@ -36,12 +42,15 @@ function traceplot! end
 """
     FlexiChains.mixeddensity(
         chn::FlexiChain{TKey}[, param_or_params];
+        pool_chains=true,
         kwargs...
     )
 
 Create either a density plot, or a histogram, of the specified parameter(s) in the given
 `FlexiChain` using Plots.jl. Continuous-valued parameters are plotted using density plots,
 discrete-valued parameters with histograms.
+
+$(_POOL_CHAINS_DOCSTRING)
 
 $(_PARAM_DOCSTRING("mixeddensity"))
 """
@@ -50,6 +59,7 @@ function mixeddensity end
 """
     FlexiChains.mixeddensity!(
         chn::FlexiChain{TKey}[, param_or_params];
+        pool_chains=true,
         kwargs...
     )
 
@@ -113,6 +123,33 @@ Same as `FlexiChains.autocorplot`, but uses `plot!` instead of `plot`.
 """
 function autocorplot! end
 
+"""
+    FlexiChains.violinplot(
+        chn::FlexiChain{TKey}[, param_or_params];
+        pool_chains=true,
+        box=true,
+        kwargs...
+    )
+
+Plot the density of the specified parameter(s) in the given `FlexiChain` using Plots.jl, in
+the form of a violin plot (i.e. a mirrored density plot, plus a box plot, if `box=true`).
+
+$(_POOL_CHAINS_DOCSTRING)
+
+$(_PARAM_DOCSTRING("violinplot"))
+"""
+function violinplot end
+
+"""
+    FlexiChains.violinplot!(
+        chn::FlexiChain{TKey}[, param_or_params];
+        kwargs...
+    )
+
+Same as `FlexiChains.violinplot`, but uses `plot!` instead of `plot`.
+"""
+function violinplot! end
+
 ###################
 # Makie overloads #
 ###################
@@ -139,12 +176,15 @@ function mtraceplot! end
 """
     FlexiChains.mmixeddensity(
         chn::FlexiChain{TKey}[, param_or_params];
+        pool_chains=true,
         kwargs...
     )
 
 Create a mixed density plot of the specified parameter(s) in the given `FlexiChain` using
 Makie.jl: if the parameter is continuous-valued, a density plot is created; if
 discrete-valued, a histogram is created.
+
+$(_POOL_CHAINS_DOCSTRING)
 
 $(_PARAM_DOCSTRING("mmixeddensity"))
 """
@@ -274,6 +314,13 @@ struct FlexiChainDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
     pool_chains::Bool
+end
+
+struct FlexiChainViolin{TKey,Tp<:ParameterOrExtra{<:TKey}}
+    chn::FlexiChain{TKey}
+    param::Tp
+    pool_chains::Bool
+    box::Bool
 end
 
 end # module PlotUtils
