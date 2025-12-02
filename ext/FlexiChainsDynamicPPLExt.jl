@@ -159,8 +159,7 @@ function DynamicPPL.init(
     # really worth it.
     if haskey(strategy.chain._data, param)
         x = strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
-        # TODO (DynamicPPL 0.39): return (x, DynamicPPL.typed_identity) instead
-        return x
+        return (x, DynamicPPL.typed_identity)
     elseif strategy.fallback !== nothing
         return DynamicPPL.init(rng, vn, dist, strategy.fallback)
     else
@@ -193,8 +192,7 @@ function reevaluate(
 )::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
     niters, nchains = size(chain)
     tuples = Iterators.product(1:niters, 1:nchains)
-    vi = DynamicPPL.VarInfo(model)
-    vi = DynamicPPL.setaccs!!(vi, DynamicPPL.AccumulatorTuple(accs))
+    vi = DynamicPPL.OnlyAccsVarInfo(DynamicPPL.AccumulatorTuple(accs))
     retvals_and_varinfos = map(tuples) do (i, j)
         DynamicPPL.init!!(
             rng, model, vi, InitFromFlexiChainUnsafe(chain, i, j, fallback_strategy)

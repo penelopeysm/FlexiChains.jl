@@ -37,14 +37,8 @@ function FlexiChains.to_varname_dict(
     end
     # add in the transition stats (if available)
     for (key, value) in pairs(transition.stat)
-        # Note that if `transition.stat` contains `lp`, `logprior`, or `loglikelihood`, it
-        # will be overwritten below...
         d[Extra(key)] = value
     end
-    # add in the log probs
-    d[FlexiChains._LOGPRIOR_KEY] = transition.logprior
-    d[FlexiChains._LOGLIKELIHOOD_KEY] = transition.loglikelihood
-    d[FlexiChains._LOGJOINT_KEY] = transition.logprior + transition.loglikelihood
     return d
 end
 
