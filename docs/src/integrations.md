@@ -9,11 +9,12 @@ However, it also contains some useful links to other packages (listed here in al
 
 !!! note
     DimensionalDistributions.jl is not yet registered in the Julia package registry; at present you will need to install it from GitHub using `]add https://github.com/sethaxen/DimensionalDistributions.jl`.
+    Furthermore, it is not yet compatible with the latest release of DynamicPPL; hence the code blocks here have been disabled.
 
 In the quickstart guide we saw that FlexiChains, by default, stores vector-valued parameters together.
 For example, `chn[@varname(x)]` here returns a `DimArray` of `Vector`s:
 
-```@example dimdist
+```julia
 using FlexiChains, Turing
 
 @model f() = x ~ MvNormal(zeros(3), I)
@@ -25,7 +26,7 @@ chn[@varname(x)]
 One might like to stack these vectors together, such that `chn[@varname(x)]` returns a three-dimensional `DimArray` instead.
 You can do this manually, for example:
 
-```@example dimdist
+```julia
 using DimensionalData
 school_dim = Dim{:school}([:a, :b, :c])
 permutedims(stack(map(v -> DimVector(v, school_dim), chn[@varname(x)])), (2, 3, 1))
@@ -36,7 +37,7 @@ Unfortunately, there is not much that FlexiChains can do because `MvNormal()` it
 
 But, if you can use the `withdims` wrapper from DimensionalDistributions.jl, you will get a distribution that returns `DimVector`s:
 
-```@example dimdist
+```julia
 using DimensionalDistributions
 dim_mvnormal = withdims(MvNormal(zeros(3), I), school_dim)
 rand(dim_mvnormal)
@@ -44,7 +45,7 @@ rand(dim_mvnormal)
 
 And if you use this in a Turing model, then this information will be carried through all the way to FlexiChains, and indexing into this parameter will automatically give you a stacked `DimArray`:
 
-```@example dimdist
+```julia
 @model f2() = x ~ dim_mvnormal
 chn2 = sample(f2(), MH(), MCMCThreads(), 5, 2; chain_type=VNChain, progress=false)
 chn2[@varname(x)]
@@ -52,7 +53,7 @@ chn2[@varname(x)]
 
 Sub-VarName indexing also works, although you can't use DimensionalData selectors inside a VarName, so only one-based indexing:
 
-```@example dimdist
+```julia
 chn2[@varname(x[1])]
 ```
 

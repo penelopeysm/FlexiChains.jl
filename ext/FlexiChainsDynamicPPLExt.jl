@@ -74,9 +74,7 @@ function FlexiChains.to_varname_dict(
     end
     # add in the transition stats (if available)
     for (key, value) in pairs(transition.stats)
-        # override lp -> logjoint
-        actual_key = key == :lp ? :logjoint : key
-        d[Extra(actual_key)] = value
+        d[Extra(key)] = value
     end
     return d
 end
@@ -390,6 +388,31 @@ function DynamicPPL.pointwise_prior_logdensities(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
 )
     return DynamicPPL.pointwise_logdensities(model, chain, Val(:prior))
+end
+
+#######################
+# Precompile workload #
+#######################
+
+using DynamicPPL: DynamicPPL, Distributions, AbstractMCMC, @model, VarInfo, ParamsWithStats
+using FlexiChains: VNChain, summarystats
+using PrecompileTools: @setup_workload, @compile_workload
+
+# dummy, needed to satisfy interface of bundle_samples
+struct NotASampler <: AbstractMCMC.AbstractSampler end
+@setup_workload begin
+    @model function f()
+        x ~ Distributions.MvNormal(zeros(2), [1.0 0.5; 0.5 1.0])
+        return y ~ Distributions.Normal()
+    end
+    model = f()
+    transitions = [ParamsWithStats(VarInfo(model), model) for _ in 1:10]
+    @compile_workload begin
+        chn = AbstractMCMC.bundle_samples(
+            transitions, model, NotASampler(), nothing, VNChain
+        )
+        summarystats(chn)
+    end
 end
 
 end # module FlexiChainsDynamicPPLExt
