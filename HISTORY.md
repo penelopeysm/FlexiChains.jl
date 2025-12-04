@@ -1,6 +1,6 @@
 # 0.2.1
 
-This release introduces support for DynamicPPL v0.39.
+This release introduces support for DynamicPPL v0.39 and Turing v0.42.
 There are no user-facing changes, but you should see some performance improvements in functions such as `returned` and `predict`.
 
 # 0.2.0
