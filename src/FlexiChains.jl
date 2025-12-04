@@ -46,20 +46,60 @@ struct PointwiseProb{T<:VarName}
     varname::T
 end
 Base.show(io::IO, p::PointwiseProb) = print(io, "PointwiseProb(@varname($(p.varname)))")
-# Overloaded in TuringExt.
+
+# Overloaded in DynamicPPLExt for DynamicPPL.ParamsWithStats
 """
     to_varname_dict(transition)::AbstractDict{VarName,Any}
 
-Convert the _first output_ (i.e. the 'transition') of an AbstractMCMC sampler
-into a dictionary mapping `VarName`s to their corresponding values.
+Convert the _first output_ (i.e. the 'transition') of an AbstractMCMC sampler into a
+dictionary mapping `VarName`s to their corresponding values.
 
-If you are writing a custom sampler for Turing.jl and your sampler's
-implementation of `AbstractMCMC.step` returns anything _but_ a
-`Turing.Inference.Transition` as its first return value, then to use FlexiChains
-with your sampler, you will have to overload this function.
+If you are writing a custom sampler for Turing.jl and your sampler's implementation of
+`AbstractMCMC.step` returns anything _but_ a `DynamicPPL.ParamsWithStats` as its first
+return value, then to use FlexiChains with your sampler, you will have to overload this
+function.
 """
 function to_varname_dict end
 @public to_varname_dict
+
+function AbstractMCMC.bundle_samples(
+    transitions::AbstractVector,
+    @nospecialize(m::AbstractMCMC.AbstractModel),
+    @nospecialize(s::AbstractMCMC.AbstractSampler),
+    last_sampler_state::Any,
+    chain_type::Type{FlexiChain{VarName}};
+    save_state=false,
+    stats=missing,
+    discard_initial::Int=0,
+    thinning::Int=1,
+    _kwargs...,
+)::FlexiChain{VarName}
+    niters = length(transitions)
+    dicts = map(to_varname_dict, transitions)
+    # timings
+    tm = stats === missing ? missing : stats.stop - stats.start
+    # last sampler state
+    st = save_state ? last_sampler_state : missing
+    # calculate iteration indices
+    start = discard_initial + 1
+    iter_indices = if thinning != 1
+        range(start; step=thinning, length=niters)
+    else
+        # This returns UnitRange not StepRange -- a bit cleaner
+        start:(start + niters - 1)
+    end
+    return FlexiChain{VarName}(
+        niters,
+        1,
+        dicts;
+        iter_indices=iter_indices,
+        # 1:1 gives nicer DimMatrix output than just [1]
+        chain_indices=1:1,
+        sampling_time=[tm],
+        last_sampler_state=[st],
+    )
+end
+
 # Extended in PosteriorDB extension (but not exported)
 function from_posteriordb_ref end
 @public from_posteriordb_ref

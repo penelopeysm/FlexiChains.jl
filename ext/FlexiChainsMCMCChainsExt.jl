@@ -51,9 +51,7 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
     for k in FlexiChains.extras(vnchain)
         v = map(identity, vnchain[k])
         if eltype(v) <: Real
-            # special-case logjoint ...
-            mcmcc_key = k.name == :logjoint ? :lp : Symbol(k.name)
-            push!(internal_keys, mcmcc_key)
+            push!(internal_keys, Symbol(k.name))
             internal_values = hcat(internal_values, reshape(v, ni, 1, nc))
         else
             @warn "key $k skipped in MCMCChains conversion as it is not Real-valued"

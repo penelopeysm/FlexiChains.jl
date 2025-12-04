@@ -1,3 +1,8 @@
+# 0.2.1
+
+This release introduces support for DynamicPPL v0.39.
+There are no user-facing changes, but you should see some performance improvements in functions such as `returned` and `predict`.
+
 # 0.2.0
 
 ## Breaking changes

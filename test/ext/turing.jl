@@ -16,12 +16,12 @@ Turing.setprogress!(false)
 # This sampler does nothing (it just stays at the existing state)
 struct StaticSampler <: AbstractMCMC.AbstractSampler end
 function Turing.Inference.initialstep(rng, model, ::StaticSampler, vi; kwargs...)
-    return Turing.Inference.Transition(model, vi, nothing), vi
+    return DynamicPPL.ParamsWithStats(vi, model), vi
 end
 function AbstractMCMC.step(
     rng, model, ::StaticSampler, vi::DynamicPPL.AbstractVarInfo; kwargs...
 )
-    return Turing.Inference.Transition(model, vi, nothing), vi
+    return DynamicPPL.ParamsWithStats(vi, model), vi
 end
 
 @testset verbose = true "FlexiChainTuringExt" begin
@@ -149,11 +149,9 @@ end
             )
             @test vec(chn_flexi[@varname(s2)]) == vec(chn_mcmc[:s2])
             @test vec(chn_flexi[@varname(m)]) == vec(chn_mcmc[:m])
-            for lp_type in [:logprior, :loglikelihood]
+            for lp_type in [:logprior, :loglikelihood, :logjoint]
                 @test vec(chn_flexi[Extra(lp_type)]) == vec(chn_mcmc[lp_type])
             end
-            # logjoint is stored as different names
-            @test vec(chn_flexi[Extra(:logjoint)]) == vec(chn_mcmc[:lp])
         end
 
         @testset "with another sampler: $spl_name" for (spl_name, spl) in

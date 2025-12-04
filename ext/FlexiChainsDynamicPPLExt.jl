@@ -74,9 +74,7 @@ function FlexiChains.to_varname_dict(
     end
     # add in the transition stats (if available)
     for (key, value) in pairs(transition.stats)
-        # override lp -> logjoint
-        actual_key = key == :lp ? :logjoint : key
-        d[Extra(actual_key)] = value
+        d[Extra(key)] = value
     end
     return d
 end
@@ -159,8 +157,7 @@ function DynamicPPL.init(
     # really worth it.
     if haskey(strategy.chain._data, param)
         x = strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
-        # TODO (DynamicPPL 0.39): return (x, DynamicPPL.typed_identity) instead
-        return x
+        return (x, DynamicPPL.typed_identity)
     elseif strategy.fallback !== nothing
         return DynamicPPL.init(rng, vn, dist, strategy.fallback)
     else
@@ -193,8 +190,7 @@ function reevaluate(
 )::DD.DimMatrix{<:Tuple{<:Any,<:DynamicPPL.AbstractVarInfo}} where {N}
     niters, nchains = size(chain)
     tuples = Iterators.product(1:niters, 1:nchains)
-    vi = DynamicPPL.VarInfo(model)
-    vi = DynamicPPL.setaccs!!(vi, DynamicPPL.AccumulatorTuple(accs))
+    vi = DynamicPPL.OnlyAccsVarInfo(DynamicPPL.AccumulatorTuple(accs))
     retvals_and_varinfos = map(tuples) do (i, j)
         DynamicPPL.init!!(
             rng, model, vi, InitFromFlexiChainUnsafe(chain, i, j, fallback_strategy)
@@ -392,6 +388,31 @@ function DynamicPPL.pointwise_prior_logdensities(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
 )
     return DynamicPPL.pointwise_logdensities(model, chain, Val(:prior))
+end
+
+#######################
+# Precompile workload #
+#######################
+
+using DynamicPPL: DynamicPPL, Distributions, AbstractMCMC, @model, VarInfo, ParamsWithStats
+using FlexiChains: VNChain, summarystats
+using PrecompileTools: @setup_workload, @compile_workload
+
+# dummy, needed to satisfy interface of bundle_samples
+struct NotASampler <: AbstractMCMC.AbstractSampler end
+@setup_workload begin
+    @model function f()
+        x ~ Distributions.MvNormal(zeros(2), [1.0 0.5; 0.5 1.0])
+        return y ~ Distributions.Normal()
+    end
+    model = f()
+    transitions = [ParamsWithStats(VarInfo(model), model) for _ in 1:10]
+    @compile_workload begin
+        chn = AbstractMCMC.bundle_samples(
+            transitions, model, NotASampler(), nothing, VNChain
+        )
+        summarystats(chn)
+    end
 end
 
 end # module FlexiChainsDynamicPPLExt
