@@ -67,7 +67,7 @@ The data that we didn't care for, such as `@varname(x[2])`, are simply dropped.
 
 Notice that this also gives us a way to 'flatten' a `FlexiChain` object such that all of its keys point to scalar values.
 We just need to find a full set of sub-`VarName`s, like the following.
-In practice you don't need to construct this set yourself: the [`split_varnames`](@ref) function will do this for you.
+In practice you don't need to construct this set yourself: FlexiChains has an internal function, called `_split_varnames`, that will do this for you.
 
 ```@example 1
 chn[[@varname(x[1]), @varname(x[2])]]
