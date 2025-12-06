@@ -127,8 +127,6 @@ Because MCMCChains stores _all_ its data in a single array, it has to flatten th
 (mchain[Symbol("x.L[1, 1]")][1, 1], mchain[Symbol("x.L[2, 1]")][1, 1]) # ...
 ```
 
-Of course, if you really wanted to flatten a chain, FlexiChains lets you do that with [`FlexiChains.split_varnames`](@ref).
-
 ## VarNames as keys
 
 Did you notice in that last line we had to write something like `Symbol("x.L[1, 1]")`?

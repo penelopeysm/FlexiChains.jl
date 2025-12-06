@@ -77,7 +77,7 @@ chain[@varname(theta)]
 MCMCChains by default will break vector-valued parameters into multiple scalar-valued parameters called `theta[1]`, `theta[2]`, etc., whereas FlexiChains keeps them together as they were defined in the model.
 
 !!! tip "If you want a 3D array..."
-    If you want to access `theta` as a 3D array of shape `(num_iterations, num_chains, vector_length)`, you can manually perform `stack` and `permutedims`. But even better, you can use a distribution that returns `DimVector`s: in this case FlexiChains will automatically convert `theta` as a 3D array for you! Please see [the DimensionalDistributions.jl integration](@ref DimensionalDistributions.jl) for the details.
+    If you want to access `theta` as a 3D array of shape `(num_iterations, num_chains, vector_length)`, you can manually perform (for example) `stack` and `permutedims`. Alternatively, you can use a distribution that returns `DimVector`s: in this case FlexiChains will automatically convert `theta` as a 3D array for you! Please see [the DimensionalDistributions.jl integration](@ref DimensionalDistributions.jl) for the details.
 
 If you want to obtain only the first element of `theta`, you don't need to manipulate the `DimMatrix`.
 You can just index into the chain with the corresponding `VarName`:
@@ -109,19 +109,25 @@ That is, if your model has `x ~ dist`, FlexiChains will let you access some fiel
     ```julia
     @model function f()
         x = Vector{Float64}(undef, 2)
+        # `.~` is essentially `x[i] ~ dist for i in eachindex(x)`
         return x .~ dist
     end
     ```
     
-    you cannot 'reconstruct' `x` from its component elements, because `x` does not exist as a single parameter in the model.
-    (Or at least, you can't do it with FlexiChains.
-    You can still call `chain[@varname(x[1])]` and `chain[@varname(x[2])]` and then perform `hcat` or similar to put them together yourself.)
+    FlexiChains cannot 'reconstruct' `x` from its component elements, because `x` does not exist as a single parameter in the model.
+    You can still call `chain[@varname(x[1])]` and `chain[@varname(x[2])]` and then perform `hcat` or similar to put them together yourself.
 
 You can also use keyword arguments when indexing to specify which chains or iterations you are interested in.
 Note that when using square brackets to index, keyword arguments must be separated from positional arguments by a comma, not a semicolon!
 
 ```@example 1
 chain[@varname(mu), iter=2:4, chain=1]
+```
+
+You can also use selectors from DimensionalData.jl to specify which iterations or chains you want.
+
+```@example 1
+chain[@varname(mu), iter=Not(At(9)), chain=At(1)]
 ```
 
 The indexing behaviour of FlexiChains is described fully on [the Indexing page](./indexing.md).
@@ -139,7 +145,7 @@ chain[Extra(:logjoint)]
 ```
 
 !!! warning
-    MCMCChains stores the log-joint probability as `:lp`. FlexiChains uses `:logjoint` instead, which is clearer. It is possible that MCMCChains may be changed to use `:logjoint` in the future, but for now this is another difference to be aware of.
+    In older versions of Turing.jl, MCMCChains would store the log-joint probability as `:lp`. FlexiChains uses `:logjoint` instead, which is clearer. Since Turing v0.42, both MCMCChains and FlexiChains use `:logjoint`.
 
 If there is no ambiguity in the symbol `:logjoint`, then you can use a shortcut which is described in the next section.
 
@@ -182,8 +188,24 @@ summarystats(chain)
 !!! note
     The large number of NaN's and Inf's here are just because of the very short chain length. On a real chain you would get proper statistics.
 
+To index into this, you can use a similar syntax as for `FlexiChain`s:
+
+```@example 1
+ss = summarystats(chain)
+ss[@varname(mu)]
+```
+
+or to access an individual statistic
+
+```@example 1
+ss[@varname(mu), stat=At(:mean)]
+```
+
+!!! note
+    Note that the `At` selector from DimensionalData.jl is needed here to specify the name of the statistic we're interested in.
+
 By default, `summarystats` will split `VarName`s up.
-This is done because summary statistics often only make sense for scalar-valued parameters, and users are unlikely to use a `FlexiSummary` to a performance-critical task.
+This is done because summary statistics often only make sense for scalar-valued parameters.
 If you want to avoid this, you can set `split_varnames=false`:
 
 ```@example 1

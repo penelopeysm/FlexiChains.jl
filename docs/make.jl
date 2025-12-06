@@ -15,6 +15,7 @@ using Turing: Turing
 
 links = InterLinks(
     "DimensionalData" => "https://rafaqz.github.io/DimensionalData.jl/stable/",
+    "DynamicPPL" => "https://turinglang.org/DynamicPPL.jl/stable/",
     "MCMCDiagnosticTools" => "https://turinglang.org/MCMCDiagnosticTools.jl/stable/",
     "PosteriorDB" => "https://sethaxen.github.io/PosteriorDB.jl/stable/",
     "PosteriorStats" => "https://julia.arviz.org/PosteriorStats/stable/",

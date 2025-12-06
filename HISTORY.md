@@ -1,3 +1,7 @@
+# 0.2.2
+
+This release contains only documentation updates.
+
 # 0.2.1
 
 This release introduces support for DynamicPPL v0.39 and Turing v0.42.
