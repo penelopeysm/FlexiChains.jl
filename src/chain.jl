@@ -517,6 +517,17 @@ function _raw_to_user_data(
     stacked_dimarr = stack(dimmat_of_dimarr)
     return permutedims(stacked_dimarr, (Ndims + 1, Ndims + 2, 1:Ndims...))
 end
+function _raw_to_user_data(
+    ::FlexiChain, dimmat_of_dimarr::DD.DimMatrix{<:DD.DimArray{<:Any,Ndims}}
+) where {Ndims}
+    # assume that the DimMat already has the right iter/chain dims
+    stacked_dimarr = stack(dimmat_of_dimarr)
+    return permutedims(stacked_dimarr, (Ndims + 1, Ndims + 2, 1:Ndims...))
+end
+function _raw_to_user_data(::FlexiChain, dimmat::DD.DimMatrix)
+    # assume that the DimMat already has the right iter/chain dims
+    return dimmat
+end
 
 """
     _replace_data(chain::FlexiChain, new_keytype, new_data)
