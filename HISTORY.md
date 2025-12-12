@@ -1,3 +1,7 @@
+# 0.3.0
+
+If a model's return value is a `DimArray`, then `returned(model, chain::VNChain)` will now stack the axes together (much like indexing into a FlexiChain).
+
 # 0.2.2
 
 This release contains only documentation updates.

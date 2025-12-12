@@ -480,6 +480,18 @@ end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
             @test_throws "not found" returned(xy(), chn)
         end
+
+        @testset "stacks DimArray return values" begin
+            @model function return_dimarray()
+                x ~ Normal()
+                return DD.DimArray(randn(2, 3), (:a, :b))
+            end
+            chn = sample(return_dimarray(), NUTS(), 50; chain_type=VNChain, verbose=false)
+            rets = returned(return_dimarray(), chn)
+            @test rets isa DD.DimArray{T,4} where {T}
+            @test size(rets) == (50, 1, 2, 3)
+            @test DD.name.(DD.dims(rets)) == (:iter, :chain, :a, :b)
+        end
     end
 
     @testset "predict" begin
