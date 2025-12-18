@@ -127,7 +127,7 @@ chain[@varname(mu), iter=2:4, chain=1]
 You can also use selectors from DimensionalData.jl to specify which iterations or chains you want.
 
 ```@example 1
-chain[@varname(mu), iter=Not(At(9)), chain=At(1)]
+chain[@varname(mu), iter=Not(At(7)), chain=At(1)]
 ```
 
 The indexing behaviour of FlexiChains is described fully on [the Indexing page](./indexing.md).

@@ -3,7 +3,7 @@
 In general a `FlexiChain` contains data in matrices of size `(niters, nchains)`.
 Often it is useful to summarise this data along one or both dimensions.
 
-FlexiChains allows you to calculate one or more statistics for each variable stored in a `FlexiChain`.
+FlexiChains therefore allows you to calculate one or more statistics for each variable stored in a `FlexiChain`.
 The result is a `FlexiSummary` object, which can be indexed into in a very similar way to `FlexiChain`s: see [the Indexing page](./indexing.md) for full details, or the examples on this page.
 
 ## Unsupported data types
@@ -11,12 +11,12 @@ The result is a `FlexiSummary` object, which can be indexed into in a very simil
 Before we launch into the available summary statistics, it is worth mentioning one point about data types.
 Since FlexiChains allows for storage of completely arbitrary data types, it can contain data for which the mean (or other statistic) is not defined.
 For example, the mean of `String` values is not defined.
-In such cases, the key will be silently dropped from the result, and a warning issued (you can suppress the warning by passing the `warn=false` keyword argument).
+Thus, when calculating `mean(chain)`, any `String`-valued parameters will be dropped from the result.
 
 If multiple summary statistics are requested (e.g. with [`summarystats`](@ref StatsBase.summarystats)), the key is only dropped if _all_ of them fail.
 If at least one statistic is successfully computed for a key, that key will be included in the result, with `missing` values for the statistics that failed.
 
-To give a flavour of how this works, here is an example:
+To give a flavour of how this works, here is an example of a model that generates parameters of different types:
 
 ```@example stats
 using FlexiChains, Turing
@@ -30,6 +30,8 @@ end
 chain = sample(f(), MH(), MCMCThreads(), 20, 3; chain_type=VNChain)
 ```
 
+Over the course of this page we will see what happens to each of these parameters when we try to compute summary statistics.
+
 ## Overall summary statistics
 
 If you want a quick overview of what's in your chain, [`summarystats`](@ref StatsBase.summarystats) provides a handy selection of commonly used statistics:
@@ -42,8 +44,8 @@ StatsBase.summarystats(::FlexiChains.FlexiChain)
 st = summarystats(chain)
 ```
 
-Note that in the result, the vector-valued `v` has been broken up into its individual elements `v[1]` and `v[2]`.
-This happens automatically for chains with `VarName` keys; you can disable this behaviour by passing `split_varnames=false`.
+Notice that the string-valued parameter `s` has been dropped from the result, since no statistics could be computed for it.
+(If you run this in the terminal, you will see a warning about this, so it is not completely silent; it's just not shown in the docs.)
 
 You can index with a variable name (or names!) and the `stat` dimension:
 
@@ -55,6 +57,18 @@ st[@varname(v[1]), stat=At(:mean)]  # Mean of first element of vector v
     Notice to access the _mean_ you have to use `stat=At(:mean)` rather than just `stat=:mean`. This seems a bit verbose, but is actually perfectly consistent with DimensionalData.jl's behaviour: `stat=1` means the first statistic, and `stat=At(:f)` means the statistic with the named index `:f`.
 
 For more details on indexing, please see the [Indexing page](./indexing.md).
+
+In the result above, the vector-valued `v` has been broken up into its individual elements `v[1]` and `v[2]`.
+This happens automatically for chains with `VarName` keys; you can disable this behaviour by passing `split_varnames=false`:
+
+```@example stats
+st2 = summarystats(chain; split_varnames=false)
+```
+
+Now, the summary statistics are calculated with each vector `v` being a single entity.
+The key `v` is still present in the result (since `mean` and `std` could be computed for it).
+However, notice that other statistics such as `ess` are no longer defined, and so return `missing` values.
+Just like before, the string `s` is dropped since no statistics could be computed for it.
 
 ## Individual statistics
 

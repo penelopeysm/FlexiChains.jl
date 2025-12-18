@@ -714,7 +714,7 @@ end
     StatsBase.summarystats(
         chain::FlexiChain{TKey};
         split_varnames::Bool=(TKey<:VarName),
-        warn::Bool=false,
+        warn::Bool=true,
     ) where {TKey}
 
 Compute a standard set of summary statistics for each key in the `chain`. The statistics include:
