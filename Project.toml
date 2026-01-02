@@ -1,7 +1,7 @@
 name = "FlexiChains"
 uuid = "4a37a8b9-6e57-4b92-8664-298d46e639f7"
 authors = ["Penelope Yong <penelopeysm@gmail.com>"]
-version = "0.3.1"
+version = "0.3.2"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
@@ -39,9 +39,12 @@ FlexiChainsTuringExt = ["Turing", "PrecompileTools", "OrderedCollections"]
 [compat]
 AbstractMCMC = "5.10"
 AbstractPPL = "0.13.5"
+ComponentArrays = "0.15"
 DimensionalData = "0.29.24"
 DocStringExtensions = "0.9"
 DynamicPPL = "0.39"
+Makie = "0.24"
+MCMCChains = "6, 7"
 MCMCDiagnosticTools = "0.3.15"
 OrderedCollections = "1"
 PosteriorDB = "0.6"
