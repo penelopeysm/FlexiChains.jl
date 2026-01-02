@@ -39,9 +39,12 @@ FlexiChainsTuringExt = ["Turing", "PrecompileTools", "OrderedCollections"]
 [compat]
 AbstractMCMC = "5.10"
 AbstractPPL = "0.13.5"
+ComponentArrays = "0.15"
 DimensionalData = "0.29.24"
 DocStringExtensions = "0.9"
 DynamicPPL = "0.39"
+Makie = "0.24"
+MCMCChains = "6, 7"
 MCMCDiagnosticTools = "0.3.15"
 OrderedCollections = "1"
 PosteriorDB = "0.6"
