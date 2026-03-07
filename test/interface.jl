@@ -62,10 +62,10 @@ using Test
         # But if we compare the data it should be the same
         @test FlexiChains.has_same_data(chain1, chain3)
         @test Set(keys(chain1)) == Set(keys(chain3))
-        # Note that == on DimData also takes indices into account
-        @test !all(k -> chain1[k] == chain3[k], keys(chain1))
-        # But isequal doesn't.
-        @test all(k -> isequal(chain1[k], chain3[k]), keys(chain1))
+        # Note that == and isequal on DimData also take indices into account
+        # (isequal only from v0.30 onwards though)
+        @test !any(k -> chain1[k] == chain3[k], keys(chain1))
+        @test !any(k -> isequal(chain1[k], chain3[k]), keys(chain1))
         # A final test case with missing
         dmiss = Dict(Parameter(:a) => missing)
         chainmiss1 = FlexiChain{Symbol}(

@@ -1,3 +1,7 @@
+# 0.3.3
+
+Add compatibility for DimensionalData 0.30.
+
 # 0.3.2
 
 Remove the 'exported' `split_varnames` function (the function was removed in 0.2.0, but the export wasn't deleted.)
