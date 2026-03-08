@@ -5,6 +5,7 @@ using DimensionalData: DimensionalData as DD
 using DynamicPPL: DynamicPPL
 using FlexiChains: FlexiChains, VNChain, Parameter, Extra
 using MCMCChains: MCMCChains
+using OffsetArrays: OffsetArray
 using Random: Random, Xoshiro
 using Serialization: serialize, deserialize
 using StableRNGs: StableRNG
@@ -28,13 +29,12 @@ end
     @info "Testing ext/turing.jl"
 
     @testset "sampling" begin
-        @model function gdemo(x, y)
-            s2 ~ InverseGamma(2, 3)
-            m ~ Normal(0, sqrt(s2))
-            x ~ Normal(m, sqrt(s2))
-            return y ~ Normal(m, sqrt(s2))
+        @model function demomodel(x)
+            m ~ Normal(0, 1.0)
+            x ~ Normal(m, 1.0)
+            return nothing
         end
-        model = gdemo(1.5, 2)
+        model = demomodel(1.5)
 
         @testset "single-chain sampling" begin
             chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
@@ -131,8 +131,7 @@ end
                 return b ~ Normal()
             end
             chn = sample(f(), NUTS(), 10; chain_type=VNChain, verbose=false)
-            @test FlexiChains.parameters(chn) ==
-                [@varname(a), @varname(x[1]), @varname(x[2]), @varname(b)]
+            @test FlexiChains.parameters(chn) == [@varname(a), @varname(x), @varname(b)]
         end
 
         @testset "underlying data is same as MCMCChains" begin
@@ -147,7 +146,6 @@ end
                 chain_type=MCMCChains.Chains,
                 verbose=false,
             )
-            @test vec(chn_flexi[@varname(s2)]) == vec(chn_mcmc[:s2])
             @test vec(chn_flexi[@varname(m)]) == vec(chn_mcmc[:m])
             for lp_type in [:logprior, :loglikelihood, :logjoint]
                 @test vec(chn_flexi[Extra(lp_type)]) == vec(chn_mcmc[lp_type])
@@ -335,13 +333,28 @@ end
         c = AbstractMCMC.from_samples(VNChain, ps)
 
         # Then convert back to ParamsWithStats
-        arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c)
-        @test size(arr_pss) == (50, 1)
-        for i in 1:50
-            new_p = arr_pss[i, 1]
-            p = ps[i]
-            @test new_p.params == p.params
-            @test new_p.stats == p.stats
+        @testset "with model" begin
+            arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c, model)
+            @test size(arr_pss) == (50, 1)
+            for i in 1:50
+                new_p = arr_pss[i, 1]
+                p = ps[i]
+                @test new_p.params == p.params
+                @test new_p.stats == p.stats
+            end
+        end
+
+        @testset "without model" begin
+            # In this case, because there are no arrays / special templates, the
+            # conversion with and without the model is identical.
+            arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c)
+            @test size(arr_pss) == (50, 1)
+            for i in 1:50
+                new_p = arr_pss[i, 1]
+                p = ps[i]
+                @test new_p.params == p.params
+                @test new_p.stats == p.stats
+            end
         end
     end
 
@@ -384,9 +397,23 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "not found" logprior(xy(), chn)
-            @test_throws "not found" loglikelihood(xy(), chn)
-            @test_throws "not found" logjoint(xy(), chn)
+            @test_throws "No value was provided" logprior(xy(), chn)
+            @test_throws "No value was provided" loglikelihood(xy(), chn)
+            @test_throws "No value was provided" logjoint(xy(), chn)
+        end
+
+        @testset "with non-standard Array variables" begin
+            @model function offset_lp(y)
+                x = OffsetArray(zeros(2), -2:-1)
+                x[-2] ~ Normal()
+                y ~ Normal(x[-2])
+                return nothing
+            end
+            model = offset_lp(2.0)
+            chn = sample(model, NUTS(), 50; chain_type=VNChain, verbose=false)
+            lprior = logprior(model, chn)
+            @test logprior(model, chn) ≈ logpdf.(Normal(), chn[@varname(x[-2])])
+            @test loglikelihood(model, chn) ≈ logpdf.(Normal.(chn[@varname(x[-2])]), 2.0)
         end
     end
 
@@ -437,9 +464,29 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "not found" DynamicPPL.pointwise_logdensities(xy(), chn)
-            @test_throws "not found" DynamicPPL.pointwise_loglikelihoods(xy(), chn)
-            @test_throws "not found" DynamicPPL.pointwise_prior_logdensities(xy(), chn)
+            @test_throws "No value was provided" DynamicPPL.pointwise_logdensities(
+                xy(), chn
+            )
+            @test_throws "No value was provided" DynamicPPL.pointwise_loglikelihoods(
+                xy(), chn
+            )
+            @test_throws "No value was provided" DynamicPPL.pointwise_prior_logdensities(
+                xy(), chn
+            )
+        end
+
+        @testset "with non-standard Array variables" begin
+            @model function offset_pld(y)
+                x = OffsetArray(zeros(2), -2:-1)
+                x[-2] ~ Normal()
+                y ~ Normal(x[-2])
+                return nothing
+            end
+            model = offset_pld(2.0)
+            chn = sample(model, NUTS(), 50; chain_type=VNChain, verbose=false)
+            plds = DynamicPPL.pointwise_logdensities(model, chn)
+            @test plds[@varname(x[-2])] == logpdf.(Normal(), chn[@varname(x[-2])])
+            @test plds[@varname(y)] == logpdf.(Normal.(chn[@varname(x[-2])]), 2.0)
         end
     end
 
@@ -478,7 +525,7 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "not found" returned(xy(), chn)
+            @test_throws "No value was provided" returned(xy(), chn)
         end
 
         @testset "stacks DimArray return values" begin
@@ -492,13 +539,36 @@ end
             @test size(rets) == (50, 1, 2, 3)
             @test DD.name.(DD.dims(rets)) == (:iter, :chain, :a, :b)
         end
+
+        @testset "with non-standard Array variables" begin
+            # This essentially tests that templates are correctly used when calling
+            # returned()
+            @model function offset()
+                x = OffsetArray(zeros(2), -2:-1)
+                # Don't sample all elements of `x` to prevent it from being densified,
+                # thus bypassing the code that we want to check.
+                x[-2] ~ Normal()
+                return first(x)
+            end
+            model = offset()
+            chn = sample(model, NUTS(), 50; chain_type=VNChain, verbose=false)
+            rets = returned(model, chn)
+            @test rets == chn[@varname(x[-2])]
+        end
     end
 
     @testset "predict" begin
         @model function f()
-            # Inserting a vector-valued parameter lets us check behaviour when splitting up
-            # VarNames.
+            # By default, FlexiChains will store `m` as a single variable. However, this
+            # also lets us check behaviour after splitting up VarNames (i.e., if the chain
+            # has m[1] and m[2] but the model has m).
             m ~ MvNormal(zeros(2), I)
+            # Same but with dot tilde; on DPPL v0.40 onwards, the model will have p[1] and
+            # p[2] but since the VNT is densified before chain construction, the chain will
+            # have p.
+            p = zeros(2)
+            p .~ Normal()
+            # Then some normal parameters.
             x ~ Normal()
             return y ~ Normal(x)
         end
@@ -518,12 +588,15 @@ end
         @test isapprox(mean(chn[@varname(x)]), 2.0; atol=0.1)
         @test isapprox(mean(chn[@varname(m[1])]), 0.0; atol=0.1)
         @test isapprox(mean(chn[@varname(m[2])]), 0.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(p[1])]), 0.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(p[2])]), 0.0; atol=0.1)
 
         @testset "chain values are actually used" begin
             pdns = predict(StableRNG(468), f(), chn)
             # Sanity check.
             @test pdns[@varname(x)] == chn[@varname(x)]
             @test pdns[@varname(m)] == chn[@varname(m)]
+            @test pdns[@varname(p)] == chn[@varname(p)]
             # Since the model was conditioned with y = 4.0, we should
             # expect that the chain's mean of x is approx 2.0.
             # So the posterior predictions for y should be centred on
@@ -581,6 +654,26 @@ end
             @test FlexiChains.has_same_data(pdns1, pdns2)
             pdns3 = predict(Xoshiro(469), f(), chn)
             @test !FlexiChains.has_same_data(pdns1, pdns3)
+        end
+
+        @testset "with non-standard Array variables" begin
+            # This essentially tests that templates are correctly used when calling
+            # predict().
+            @model function offset2()
+                x = OffsetArray(zeros(2), -2:-1)
+                # Don't sample all elements of `x` to prevent it from being densified,
+                # thus bypassing the code that we want to check.
+                x[-2] ~ Normal()
+                return y ~ Normal(x[-2])
+            end
+            cond_model = offset2() | (; y=2.0)
+            chn = sample(
+                StableRNG(468), cond_model, NUTS(), 1000; chain_type=VNChain, verbose=false
+            )
+            @test mean(chn[@varname(x[-2])]) ≈ 1.0 atol = 0.05
+            pdns = predict(StableRNG(468), offset2(), chn)
+            @test pdns[@varname(x[-2])] == chn[@varname(x[-2])]
+            @test mean(pdns[@varname(y)]) ≈ 1.0 atol = 0.05
         end
     end
 

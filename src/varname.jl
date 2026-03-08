@@ -9,10 +9,10 @@ transformed, then the transformed elements are returned and the rest are `missin
 `orig_vn` is the VarName that the user attempted to access. It is used only for error
 reporting.
 """
-function _map_optic(::typeof(identity), arr::AbstractArray, ::VarName)
+function _map_optic(::AbstractPPL.Iden, arr::AbstractArray, ::VarName)
     return arr
 end
-function _map_optic(optic::Function, arr::AbstractArray, orig_vn::VarName)
+function _map_optic(optic::AbstractPPL.AbstractOptic, arr::AbstractArray, orig_vn::VarName)
     found = false
     results = map(arr) do elem
         if AbstractPPL.canview(optic, elem)
@@ -36,9 +36,9 @@ reporting.
 function _getindex_optic_and_vn(
     vn_keys::AbstractVector{<:VarName},
     vn::VarName{sym},
-    optic::Function,
+    optic::AbstractPPL.AbstractOptic,
     orig_vn::VarName{sym},
-)::Tuple{AbstractPPL.ALLOWED_OPTICS,VarName} where {sym}
+)::Tuple{AbstractPPL.AbstractOptic,VarName} where {sym}
     if vn in vn_keys
         return (optic, vn)
     else
@@ -46,8 +46,8 @@ function _getindex_optic_and_vn(
         # TODO: This depends on AbstractPPL internals and is prone to breaking.
         # These should be exported from AbstractPPL.
         o = AbstractPPL.getoptic(vn)
-        i, l = AbstractPPL._init(o), AbstractPPL._last(o)
-        if l === identity
+        i, l = AbstractPPL.oinit(o), AbstractPPL.olast(o)
+        if l isa AbstractPPL.Iden
             # Cannot reduce further
             throw(KeyError(orig_vn))
         else
@@ -64,7 +64,7 @@ Overloaded method which provides extra functionality when indexing by VarNames.
 function _get_raw_data(cs::ChainOrSummary{<:VarName}, vn_param::Parameter{<:VarName})
     orig_vn = vn_param.name
     optic, vn = _getindex_optic_and_vn(
-        FlexiChains.parameters(cs), orig_vn, identity, orig_vn
+        FlexiChains.parameters(cs), orig_vn, AbstractPPL.Iden(), orig_vn
     )
     # can't use get_raw_data in this line or else it will recurse.
     raw = cs._data[Parameter(vn)]
