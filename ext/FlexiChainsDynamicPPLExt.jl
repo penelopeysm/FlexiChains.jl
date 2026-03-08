@@ -3,7 +3,14 @@ module FlexiChainsDynamicPPLExt
 using FlexiChains:
     FlexiChains, FlexiChain, VarName, Parameter, Extra, ParameterOrExtra, VNChain
 using DimensionalData: DimensionalData as DD
-using DynamicPPL: DynamicPPL, AbstractPPL, AbstractMCMC, Distributions
+using DynamicPPL:
+    DynamicPPL,
+    AbstractPPL,
+    AbstractMCMC,
+    Distributions,
+    UnlinkAll,
+    UntransformedValue,
+    VarNamedTuple
 using OrderedCollections: OrderedDict
 using Random: Random
 
@@ -26,7 +33,7 @@ function AbstractMCMC.from_samples(
     dicts = map(params_and_stats) do ps
         # Parameters
         d = OrderedDict{ParameterOrExtra{<:VarName},Any}(
-            Parameter(vn) => val for (vn, val) in ps.params
+            Parameter(vn) => val for (vn, val) in pairs(ps.params)
         )
         # Stats
         for (stat_vn, stat_val) in pairs(ps.stats)
@@ -60,21 +67,30 @@ function AbstractMCMC.to_samples(
             Symbol(extra_param.name) => val for
             (extra_param, val) in d if extra_param isa Extra
         )
-        DynamicPPL.ParamsWithStats(param_dict, stats_nt)
+        DynamicPPL.ParamsWithStats(VarNamedTuple(param_dict), stats_nt)
     end
 end
 
 # This method will make `bundle_samples` 'just work'
 function FlexiChains.to_varname_dict(
-    transition::DynamicPPL.ParamsWithStats
+    pws::DynamicPPL.ParamsWithStats
 )::OrderedDict{ParameterOrExtra{<:VarName},Any}
     d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
-    for (varname, value) in pairs(transition.params)
+    for (varname, value) in pairs(pws.params)
         d[Parameter(varname)] = value
     end
     # add in the transition stats (if available)
-    for (key, value) in pairs(transition.stats)
+    for (key, value) in pairs(pws.stats)
         d[Extra(key)] = value
+    end
+    return d
+end
+function FlexiChains.to_varname_dict(
+    vnt::DynamicPPL.VarNamedTuple
+)::OrderedDict{ParameterOrExtra{<:VarName},Any}
+    d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
+    for (varname, value) in pairs(vnt)
+        d[Parameter(varname)] = value
     end
     return d
 end
@@ -157,7 +173,7 @@ function DynamicPPL.init(
     # really worth it.
     if haskey(strategy.chain._data, param)
         x = strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
-        return (x, DynamicPPL.typed_identity)
+        return UntransformedValue(x)
     elseif strategy.fallback !== nothing
         return DynamicPPL.init(rng, vn, dist, strategy.fallback)
     else
@@ -174,7 +190,7 @@ function _default_reevaluate_accs()
         DynamicPPL.LogPriorAccumulator(),
         DynamicPPL.LogJacobianAccumulator(),
         DynamicPPL.LogLikelihoodAccumulator(),
-        DynamicPPL.ValuesAsInModelAccumulator(true),
+        DynamicPPL.RawValueAccumulator(true),
     )
 end
 
@@ -193,7 +209,11 @@ function reevaluate(
     vi = DynamicPPL.OnlyAccsVarInfo(DynamicPPL.AccumulatorTuple(accs))
     retvals_and_varinfos = map(tuples) do (i, j)
         DynamicPPL.init!!(
-            rng, model, vi, InitFromFlexiChainUnsafe(chain, i, j, fallback_strategy)
+            rng,
+            model,
+            vi,
+            InitFromFlexiChainUnsafe(chain, i, j, fallback_strategy),
+            UnlinkAll(),
         )
     end
     return FlexiChains._raw_to_user_data(chain, retvals_and_varinfos)
@@ -293,11 +313,10 @@ function DynamicPPL.predict(
     accs = _default_reevaluate_accs()
     fallback = DynamicPPL.InitFromPrior()
     param_dicts = map(reevaluate(rng, model, chain, accs, fallback)) do (_, vi)
-        vn_dict = DynamicPPL.getacc(vi, Val(:ValuesAsInModel)).values
-        # ^ that is OrderedDict{VarName}
+        vnt = DynamicPPL.get_raw_values(vi)
         p_dict = OrderedDict{ParameterOrExtra{<:VarName},Any}(
             Parameter(vn) => val for
-            (vn, val) in vn_dict if (include_all || !(vn in existing_parameters))
+            (vn, val) in pairs(vnt) if (include_all || !(vn in existing_parameters))
         )
         # Tack on the probabilities
         p_dict[FlexiChains._LOGPRIOR_KEY] = DynamicPPL.getlogprior(vi)
@@ -322,45 +341,53 @@ function DynamicPPL.predict(
     return DynamicPPL.predict(Random.default_rng(), model, chain; include_all=include_all)
 end
 
-"""
-    DynamicPPL.pointwise_logdensities(
-        model::Model,
-        chain::FlexiChain{T},
-        ::Val{whichlogprob}=Val(:both),
-    )::FlexiChain{T} where {T<:VarName,whichlogprob}
-
-Calculate the log probability density associated with each variable in the model, for each
-iteration in the `FlexiChain`.
-
-The `whichlogprob` argument controls which log probabilities are calculated and stored. It can take the values `:prior`, `:likelihood`, or `:both` (the default).
-
-Returns a new `FlexiChain` with the same structure as the input `chain`, mapping the
-variables to their log probabilities.
-"""
-function DynamicPPL.pointwise_logdensities(
-    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}, ::Val{whichlogprob}=Val(:both)
-) where {whichlogprob}
-    AccType = DynamicPPL.PointwiseLogProbAccumulator{whichlogprob}
-    pld_dicts = map(reevaluate(model, chain, (AccType(),))) do (_, vi)
-        logps = DynamicPPL.getacc(vi, Val(DynamicPPL.accumulator_name(AccType))).logps
+# Shared internal helper function.
+function _pointwise_logprobs(
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}, ::Val{Prior}, ::Val{Likelihood}
+) where {Prior,Likelihood}
+    acc = DynamicPPL.VNTAccumulator{DynamicPPL.POINTWISE_ACCNAME}(
+        DynamicPPL.PointwiseLogProb{Prior,Likelihood}()
+    )
+    pointwise_dicts = map(reevaluate(model, chain, (acc,), nothing)) do (_, oavi)
+        logprobs = DynamicPPL.get_pointwise_logprobs(oavi)
+        dense_logprobs = DynamicPPL.densify!!(logprobs)
         OrderedDict{ParameterOrExtra{<:VarName},Any}(
-            Parameter(vn) => only(val) for (vn, val) in logps
+            Parameter(vn) => val for (vn, val) in pairs(dense_logprobs)
         )
     end
+    ni, nc = size(chain)
     return FlexiChain{VarName}(
-        FlexiChains.niters(chain),
-        FlexiChains.nchains(chain),
-        pld_dicts;
+        ni,
+        nc,
+        pointwise_dicts;
         iter_indices=FlexiChains.iter_indices(chain),
         chain_indices=FlexiChains.chain_indices(chain),
     )
 end
 
 """
+    DynamicPPL.pointwise_logdensities(
+        model::Model,
+        chain::FlexiChain{<:VarName}
+    )::FlexiChain{VarName}
+
+Calculate the log probability density associated with each variable in the model, for each
+iteration in the `FlexiChain`.
+
+Returns a new `FlexiChain` with the same structure as the input `chain`, mapping the
+variables to their log probabilities.
+"""
+function DynamicPPL.pointwise_logdensities(
+    model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+)
+    return _pointwise_logprobs(model, chain, Val(true), Val(true))
+end
+
+"""
     DynamicPPL.pointwise_loglikelihoods(
         model::Model,
         chain::FlexiChain{<:VarName},
-    )::FlexiChain{VarName} where
+    )::FlexiChain{VarName}
 
 Calculate the log likelihood associated with each observed variable in the model, for each
 iteration in the `FlexiChain`.
@@ -371,16 +398,16 @@ observed variables to their log probabilities.
 function DynamicPPL.pointwise_loglikelihoods(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
 )
-    return DynamicPPL.pointwise_logdensities(model, chain, Val(:likelihood))
+    return _pointwise_logprobs(model, chain, Val(false), Val(true))
 end
 
 """
     DynamicPPL.pointwise_prior_logdensities(
         model::Model,
         chain::FlexiChain{<:VarName},
-    )::FlexiChain{VarName} where
+    )::FlexiChain{VarName}
 
-Calculate the log likelihood associated with each observed variable in the model, for each
+Calculate the log prior associated with each random variable in the model, for each
 iteration in the `FlexiChain`.
 
 Returns a new `FlexiChain` with the same structure as the input `chain`, mapping the
@@ -389,7 +416,7 @@ observed variables to their log probabilities.
 function DynamicPPL.pointwise_prior_logdensities(
     model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
 )
-    return DynamicPPL.pointwise_logdensities(model, chain, Val(:prior))
+    return _pointwise_logprobs(model, chain, Val(true), Val(false))
 end
 
 #######################

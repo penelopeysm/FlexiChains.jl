@@ -131,8 +131,7 @@ end
                 return b ~ Normal()
             end
             chn = sample(f(), NUTS(), 10; chain_type=VNChain, verbose=false)
-            @test FlexiChains.parameters(chn) ==
-                [@varname(a), @varname(x[1]), @varname(x[2]), @varname(b)]
+            @test FlexiChains.parameters(chn) == [@varname(a), @varname(x), @varname(b)]
         end
 
         @testset "underlying data is same as MCMCChains" begin
