@@ -5,6 +5,7 @@ using DimensionalData: DimensionalData as DD
 using DynamicPPL: DynamicPPL
 using FlexiChains: FlexiChains, VNChain, Parameter, Extra
 using MCMCChains: MCMCChains
+using OffsetArrays: OffsetArray
 using Random: Random, Xoshiro
 using Serialization: serialize, deserialize
 using StableRNGs: StableRNG
@@ -402,6 +403,20 @@ end
             @test_throws "No value was provided" loglikelihood(xy(), chn)
             @test_throws "No value was provided" logjoint(xy(), chn)
         end
+
+        @testset "with non-standard Array variables" begin
+            @model function offset_lp(y)
+                x = OffsetArray(zeros(2), -2:-1)
+                x[-2] ~ Normal()
+                y ~ Normal(x[-2])
+                return nothing
+            end
+            model = offset_lp(2.0)
+            chn = sample(model, NUTS(), 50; chain_type=VNChain, verbose=false)
+            lprior = logprior(model, chn)
+            @test logprior(model, chn) ≈ logpdf.(Normal(), chn[@varname(x[-2])])
+            @test loglikelihood(model, chn) ≈ logpdf.(Normal.(chn[@varname(x[-2])]), 2.0)
+        end
     end
 
     @testset "pointwise logprobs" begin
@@ -461,6 +476,20 @@ end
                 xy(), chn
             )
         end
+
+        @testset "with non-standard Array variables" begin
+            @model function offset_pld(y)
+                x = OffsetArray(zeros(2), -2:-1)
+                x[-2] ~ Normal()
+                y ~ Normal(x[-2])
+                return nothing
+            end
+            model = offset_pld(2.0)
+            chn = sample(model, NUTS(), 50; chain_type=VNChain, verbose=false)
+            plds = DynamicPPL.pointwise_logdensities(model, chn)
+            @test plds[@varname(x[-2])] == logpdf.(Normal(), chn[@varname(x[-2])])
+            @test plds[@varname(y)] == logpdf.(Normal.(chn[@varname(x[-2])]), 2.0)
+        end
     end
 
     @testset "returned" begin
@@ -511,6 +540,22 @@ end
             @test rets isa DD.DimArray{T,4} where {T}
             @test size(rets) == (50, 1, 2, 3)
             @test DD.name.(DD.dims(rets)) == (:iter, :chain, :a, :b)
+        end
+
+        @testset "with non-standard Array variables" begin
+            # This essentially tests that templates are correctly used when calling
+            # returned()
+            @model function offset()
+                x = OffsetArray(zeros(2), -2:-1)
+                # Don't sample all elements of `x` to prevent it from being densified,
+                # thus bypassing the code that we want to check.
+                x[-2] ~ Normal()
+                return first(x)
+            end
+            model = offset()
+            chn = sample(model, NUTS(), 50; chain_type=VNChain, verbose=false)
+            rets = returned(model, chn)
+            @test rets == chn[@varname(x[-2])]
         end
     end
 
@@ -611,6 +656,26 @@ end
             @test FlexiChains.has_same_data(pdns1, pdns2)
             pdns3 = predict(Xoshiro(469), f(), chn)
             @test !FlexiChains.has_same_data(pdns1, pdns3)
+        end
+
+        @testset "with non-standard Array variables" begin
+            # This essentially tests that templates are correctly used when calling
+            # predict().
+            @model function offset2()
+                x = OffsetArray(zeros(2), -2:-1)
+                # Don't sample all elements of `x` to prevent it from being densified,
+                # thus bypassing the code that we want to check.
+                x[-2] ~ Normal()
+                return y ~ Normal(x[-2])
+            end
+            cond_model = offset2() | (; y=2.0)
+            chn = sample(
+                StableRNG(468), cond_model, NUTS(), 1000; chain_type=VNChain, verbose=false
+            )
+            @test mean(chn[@varname(x[-2])]) ≈ 1.0 atol = 0.05
+            pdns = predict(StableRNG(468), offset2(), chn)
+            @test pdns[@varname(x[-2])] == chn[@varname(x[-2])]
+            @test mean(pdns[@varname(y)]) ≈ 1.0 atol = 0.05
         end
     end
 

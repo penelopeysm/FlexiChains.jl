@@ -182,11 +182,14 @@ is, if a variable is not found in the `FlexiChain`, the fallback strategy is use
 generate its value. This is necessary for `predict`.
 """
 struct InitFromFlexiChain{
-    C<:FlexiChains.VNChain,S<:Union{DynamicPPL.AbstractInitStrategy,Nothing}
+    C<:FlexiChains.VNChain,
+    V<:VarNamedTuple,
+    S<:Union{DynamicPPL.AbstractInitStrategy,Nothing},
 } <: DynamicPPL.AbstractInitStrategy
     chain::C
     iter_index::Int
     chain_index::Int
+    template_vnt::V
     fallback::S
 end
 function DynamicPPL.init(
@@ -212,7 +215,13 @@ function DynamicPPL.init(
         param_dict = FlexiChains.parameters_at(
             strategy.chain, strategy.iter_index, strategy.chain_index
         )
-        augmented_fallback = DynamicPPL.InitFromParams(param_dict, strategy.fallback)
+        vnt = VarNamedTuple()
+        for (vn, val) in pairs(param_dict)
+            top_sym = AbstractPPL.getsym(vn)
+            template = get(strategy.template_vnt.data, top_sym, DynamicPPL.NoTemplate())
+            vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
+        end
+        augmented_fallback = DynamicPPL.InitFromParams(vnt, strategy.fallback)
         return DynamicPPL.init(rng, vn, dist, augmented_fallback)
     end
 end
@@ -243,12 +252,13 @@ function reevaluate(
     niters, nchains = size(chain)
     tuples = Iterators.product(1:niters, 1:nchains)
     vi = DynamicPPL.OnlyAccsVarInfo(DynamicPPL.AccumulatorTuple(accs))
+    template_vnt = rand(model)
     retvals_and_varinfos = map(tuples) do (i, j)
         DynamicPPL.init!!(
             rng,
             model,
             vi,
-            InitFromFlexiChain(chain, i, j, fallback_strategy),
+            InitFromFlexiChain(chain, i, j, template_vnt, fallback_strategy),
             UnlinkAll(),
         )
     end
