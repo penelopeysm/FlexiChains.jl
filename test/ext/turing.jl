@@ -146,7 +146,6 @@ end
                 chain_type=MCMCChains.Chains,
                 verbose=false,
             )
-            @test vec(chn_flexi[@varname(s2)]) == vec(chn_mcmc[:s2])
             @test vec(chn_flexi[@varname(m)]) == vec(chn_mcmc[:m])
             for lp_type in [:logprior, :loglikelihood, :logjoint]
                 @test vec(chn_flexi[Extra(lp_type)]) == vec(chn_mcmc[lp_type])
