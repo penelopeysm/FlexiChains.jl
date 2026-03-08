@@ -29,13 +29,12 @@ end
     @info "Testing ext/turing.jl"
 
     @testset "sampling" begin
-        @model function gdemo(x, y)
-            s2 ~ InverseGamma(2, 3)
-            m ~ Normal(0, sqrt(s2))
-            x ~ Normal(m, sqrt(s2))
-            return y ~ Normal(m, sqrt(s2))
+        @model function demomodel(x)
+            m ~ Normal(0, 1.0)
+            x ~ Normal(m, 1.0)
+            return nothing
         end
-        model = gdemo(1.5, 2)
+        model = demomodel(1.5)
 
         @testset "single-chain sampling" begin
             chn = sample(model, NUTS(), 100; chain_type=VNChain, verbose=false)
