@@ -1,3 +1,41 @@
+# 0.3.4
+
+This patch adds compatibility for DynamicPPL 0.40 and Turing 0.43.
+Specifically:
+
+- The signature of the `DynamicPPL.pointwise_logdensities` family of functions has been updated to match the new signature in DynamicPPL 0.40 (i.e., it no longer takes an optional `Val{whichlogprob}` argument).
+- Added an implementation of `AbstractMCMC.to_samples(::Type{ParamsWithStats}, chn, model)` (even though it is not used elsewhere in FlexiChains)
+
+However, the user should note that this release is not *completely* compatible with DynamicPPL.
+In particular, the following issues still remain.
+
+- `FlexiChains.parameters_at` returns an `OrderedDict{VarName}`.
+  (It would ideally return a `VarNamedTuple`.)
+
+- Functions such as `returned` and `predict` assume that the shape of any array containing random variables is constant across all iterations.
+  (DynamicPPL 0.40 already mandates that the shape of an array containing random variables does not change *within* a single model evaluation, but it is still possible for the shape to change *across* iterations.)
+
+  For example, consider this model.
+
+  ```julia
+  @model function f()
+      n ~ Poisson(5)
+      x = zeros(n + 2)
+      x[1] ~ Normal()
+      x[2] ~ Normal()
+  end
+  ```
+
+  In this model, although the shape of `x` is constant within one evaluation of the model, it can vary from iteration to iteration.
+  Sampling a chain will work, but subsequently using that chain with `returned` or `predict` *may* give errors.
+  (If *all* of the elements of `x` are random variables, then they will *definitely* work correctly.)
+
+Note that these issues are also present in MCMCChains, and so none of these are reasons to avoid using FlexiChains.
+
+These issues will be fixed in a future release of FlexiChains.
+However, figuring out how to fix these is not an easy problem at all, and may take a while.
+This version has therefore been released just to allow users to start using FlexiChains with the new versions of DynamicPPL and Turing.
+
 # 0.3.3
 
 Add compatibility for DimensionalData 0.30.
