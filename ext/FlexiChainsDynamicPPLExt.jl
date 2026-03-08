@@ -114,12 +114,12 @@ function DynamicPPL.InitFromParams(
     chain::Union{Int,DD.At},
     fallback::Union{DynamicPPL.AbstractInitStrategy,Nothing}=DynamicPPL.InitFromPrior(),
 )
-    # Note that this is functionally the same as `InitFromFlexiChainUnsafe` but it is more
+    # Note that this is functionally the same as `InitFromFlexiChain` but it is more
     # flexible because it allows `DD.At` indices, and it also allows for split-VarNames
     # (although that's an unlikely situation). I think conceptually, the difference is that
     # `InitFromParams` isn't meant to be used in tight loops / performance-sensitive code,
     # and can thus give more guarantees about flexibility, whereas
-    # `InitFromFlexiChainUnsafe` is really meant for internal use only.
+    # `InitFromFlexiChain` is really meant for internal use only.
     return DynamicPPL.InitFromParams(FlexiChains.parameters_at(chn, iter, chain), fallback)
 end
 
@@ -127,14 +127,14 @@ end
 # Optimisation for parameters_at #
 ##################################
 """
-    InitFromFlexiChainUnsafe(
+    InitFromFlexiChain(
         chain::FlexiChain, iter_index::Int, chain_index::Int, fallback=nothing
     )
 
 A DynamicPPL initialisation strategy that obtains values from the given `FlexiChain` at the
 specified iteration and chain indices.
 
-In order for `InitFromFlexiChainUnsafe` to work correctly, two things must be ensured:
+In order for `InitFromFlexiChain` to work correctly, two things must be ensured:
 
 1. The variables being asked for must **exactly** match those stored in the FlexiChain. That
    is, if the chain contains `@varname(y)` and the model asks for `@varname(y)`, this will
@@ -153,7 +153,7 @@ structure).
 is, if a variable is not found in the `FlexiChain`, the fallback strategy is used to
 generate its value. This is necessary for `predict`.
 """
-struct InitFromFlexiChainUnsafe{
+struct InitFromFlexiChain{
     C<:FlexiChains.VNChain,S<:Union{DynamicPPL.AbstractInitStrategy,Nothing}
 } <: DynamicPPL.AbstractInitStrategy
     chain::C
@@ -165,19 +165,27 @@ function DynamicPPL.init(
     rng::Random.AbstractRNG,
     vn::VarName,
     dist::Distributions.Distribution,
-    strategy::InitFromFlexiChainUnsafe,
+    strategy::InitFromFlexiChain,
 )
     param = FlexiChains.Parameter(vn)
-    # This skips the `getindex` faff and index directly into underlying data. Of course,
-    # this is a bit more prone to breaking. But the performance gains are huge, so this is
-    # really worth it.
+    # First check if there's an exact match in the chain, and if so, use that.
+    #
+    # Otherwise, attempt to construct the full dictionary of parameters and use
+    # that. (That guards against cases where the chain has a densified variable
+    # e.g. `x`, but the model has `x[1]` and `x[2]`: e.g. x = zeros(2); x .~
+    # Normal().)
+    #
+    # Finally, if even that isn't found, just use the fallback strategy (if
+    # provided).
     if haskey(strategy.chain._data, param)
         x = strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
         return UntransformedValue(x)
-    elseif strategy.fallback !== nothing
-        return DynamicPPL.init(rng, vn, dist, strategy.fallback)
     else
-        error("Variable $(vn) not found in FlexiChain and no fallback strategy provided.")
+        param_dict = FlexiChains.parameters_at(
+            strategy.chain, strategy.iter_index, strategy.chain_index
+        )
+        augmented_fallback = DynamicPPL.InitFromParams(param_dict, strategy.fallback)
+        return DynamicPPL.init(rng, vn, dist, augmented_fallback)
     end
 end
 
@@ -212,7 +220,7 @@ function reevaluate(
             rng,
             model,
             vi,
-            InitFromFlexiChainUnsafe(chain, i, j, fallback_strategy),
+            InitFromFlexiChain(chain, i, j, fallback_strategy),
             UnlinkAll(),
         )
     end
@@ -313,7 +321,7 @@ function DynamicPPL.predict(
     accs = _default_reevaluate_accs()
     fallback = DynamicPPL.InitFromPrior()
     param_dicts = map(reevaluate(rng, model, chain, accs, fallback)) do (_, vi)
-        vnt = DynamicPPL.get_raw_values(vi)
+        vnt = DynamicPPL.densify!!(DynamicPPL.get_raw_values(vi))
         p_dict = OrderedDict{ParameterOrExtra{<:VarName},Any}(
             Parameter(vn) => val for
             (vn, val) in pairs(vnt) if (include_all || !(vn in existing_parameters))
@@ -349,10 +357,9 @@ function _pointwise_logprobs(
         DynamicPPL.PointwiseLogProb{Prior,Likelihood}()
     )
     pointwise_dicts = map(reevaluate(model, chain, (acc,), nothing)) do (_, oavi)
-        logprobs = DynamicPPL.get_pointwise_logprobs(oavi)
-        dense_logprobs = DynamicPPL.densify!!(logprobs)
+        logprobs = DynamicPPL.densify!!(DynamicPPL.get_pointwise_logprobs(oavi))
         OrderedDict{ParameterOrExtra{<:VarName},Any}(
-            Parameter(vn) => val for (vn, val) in pairs(dense_logprobs)
+            Parameter(vn) => val for (vn, val) in pairs(logprobs)
         )
     end
     ni, nc = size(chain)

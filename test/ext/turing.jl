@@ -383,9 +383,9 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "not found" logprior(xy(), chn)
-            @test_throws "not found" loglikelihood(xy(), chn)
-            @test_throws "not found" logjoint(xy(), chn)
+            @test_throws "No value was provided" logprior(xy(), chn)
+            @test_throws "No value was provided" loglikelihood(xy(), chn)
+            @test_throws "No value was provided" logjoint(xy(), chn)
         end
     end
 
@@ -436,9 +436,15 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "not found" DynamicPPL.pointwise_logdensities(xy(), chn)
-            @test_throws "not found" DynamicPPL.pointwise_loglikelihoods(xy(), chn)
-            @test_throws "not found" DynamicPPL.pointwise_prior_logdensities(xy(), chn)
+            @test_throws "No value was provided" DynamicPPL.pointwise_logdensities(
+                xy(), chn
+            )
+            @test_throws "No value was provided" DynamicPPL.pointwise_loglikelihoods(
+                xy(), chn
+            )
+            @test_throws "No value was provided" DynamicPPL.pointwise_prior_logdensities(
+                xy(), chn
+            )
         end
     end
 
@@ -477,7 +483,7 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "not found" returned(xy(), chn)
+            @test_throws "No value was provided" returned(xy(), chn)
         end
 
         @testset "stacks DimArray return values" begin
@@ -495,9 +501,16 @@ end
 
     @testset "predict" begin
         @model function f()
-            # Inserting a vector-valued parameter lets us check behaviour when splitting up
-            # VarNames.
+            # By default, FlexiChains will store `m` as a single variable. However, this
+            # also lets us check behaviour after splitting up VarNames (i.e., if the chain
+            # has m[1] and m[2] but the model has m).
             m ~ MvNormal(zeros(2), I)
+            # Same but with dot tilde; on DPPL v0.40 onwards, the model will have p[1] and
+            # p[2] but since the VNT is densified before chain construction, the chain will
+            # have p.
+            p = zeros(2)
+            p .~ Normal()
+            # Then some normal parameters.
             x ~ Normal()
             return y ~ Normal(x)
         end
@@ -517,12 +530,15 @@ end
         @test isapprox(mean(chn[@varname(x)]), 2.0; atol=0.1)
         @test isapprox(mean(chn[@varname(m[1])]), 0.0; atol=0.1)
         @test isapprox(mean(chn[@varname(m[2])]), 0.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(p[1])]), 0.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(p[2])]), 0.0; atol=0.1)
 
         @testset "chain values are actually used" begin
             pdns = predict(StableRNG(468), f(), chn)
             # Sanity check.
             @test pdns[@varname(x)] == chn[@varname(x)]
             @test pdns[@varname(m)] == chn[@varname(m)]
+            @test pdns[@varname(p)] == chn[@varname(p)]
             # Since the model was conditioned with y = 4.0, we should
             # expect that the chain's mean of x is approx 2.0.
             # So the posterior predictions for y should be centred on
