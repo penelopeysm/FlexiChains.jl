@@ -334,13 +334,28 @@ end
         c = AbstractMCMC.from_samples(VNChain, ps)
 
         # Then convert back to ParamsWithStats
-        arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c)
-        @test size(arr_pss) == (50, 1)
-        for i in 1:50
-            new_p = arr_pss[i, 1]
-            p = ps[i]
-            @test new_p.params == p.params
-            @test new_p.stats == p.stats
+        @testset "with model" begin
+            arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c, model)
+            @test size(arr_pss) == (50, 1)
+            for i in 1:50
+                new_p = arr_pss[i, 1]
+                p = ps[i]
+                @test new_p.params == p.params
+                @test new_p.stats == p.stats
+            end
+        end
+
+        @testset "without model" begin
+            # In this case, because there are no arrays / special templates, the
+            # conversion with and without the model is identical.
+            arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c)
+            @test size(arr_pss) == (50, 1)
+            for i in 1:50
+                new_p = arr_pss[i, 1]
+                p = ps[i]
+                @test new_p.params == p.params
+                @test new_p.stats == p.stats
+            end
         end
     end
 

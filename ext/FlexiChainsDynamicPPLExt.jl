@@ -47,7 +47,8 @@ end
 """
     AbstractMCMC.to_samples(
         ::Type{DynamicPPL.ParamsWithStats},
-        chain::VNChain
+        chain::VNChain,
+        [model::DynamicPPL.Model]
     )::DimensionalData.DimMatrix{DynamicPPL.ParamsWithStats}
 
 Convert a `VNChain` to a `DimMatrix` of [`DynamicPPL.ParamsWithStats`](@extref).
@@ -55,19 +56,46 @@ Convert a `VNChain` to a `DimMatrix` of [`DynamicPPL.ParamsWithStats`](@extref).
 The axes of the `DimMatrix` are the same as those of the input `VNChain`.
 """
 function AbstractMCMC.to_samples(
-    ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}
+    ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}, model::DynamicPPL.Model
 )::DD.DimMatrix{<:DynamicPPL.ParamsWithStats} where {T<:VarName}
+    template_vnt = rand(model)
     dicts = FlexiChains.values_at(chain, :, :)
     return map(dicts) do d
-        # Need to separate parameters and stats.
-        param_dict = OrderedDict{T,Any}(
-            vn_param.name => val for (vn_param, val) in d if vn_param isa Parameter{<:T}
-        )
+        # Params
+        vnt = DynamicPPL.VarNamedTuple()
+        for (vn_param, val) in d
+            if vn_param isa Parameter{<:T}
+                vn = vn_param.name
+                top_sym = AbstractPPL.getsym(vn)
+                template = get(template_vnt.data, top_sym, DynamicPPL.NoTemplate())
+                vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
+            end
+        end
+        # Stats
         stats_nt = NamedTuple(
             Symbol(extra_param.name) => val for
             (extra_param, val) in d if extra_param isa Extra
         )
-        DynamicPPL.ParamsWithStats(VarNamedTuple(param_dict), stats_nt)
+        DynamicPPL.ParamsWithStats(vnt, stats_nt)
+    end
+end
+function AbstractMCMC.to_samples(
+    ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}
+)::DD.DimMatrix{<:DynamicPPL.ParamsWithStats} where {T<:VarName}
+    dicts = FlexiChains.values_at(chain, :, :)
+    return map(dicts) do d
+        # Params
+        vnt = VarNamedTuple(
+            OrderedDict{T,Any}(
+                vn_param.name => val for (vn_param, val) in d if vn_param isa Parameter{<:T}
+            ),
+        )
+        # Stats
+        stats_nt = NamedTuple(
+            Symbol(extra_param.name) => val for
+            (extra_param, val) in d if extra_param isa Extra
+        )
+        DynamicPPL.ParamsWithStats(vnt, stats_nt)
     end
 end
 
