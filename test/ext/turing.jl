@@ -731,6 +731,79 @@ end
             end
         end
     end
+
+    @testset "Models with variable-length parameters" begin
+        @testset "single variable" begin
+            @model function varlen_single()
+                n ~ Poisson(5.0)
+                x ~ MvNormal(zeros(n), I)
+                y ~ Normal(sum(x))
+                return prod(x)
+            end
+            cond_model = varlen_single() | (; y=1.0)
+            chn = sample(cond_model, MH(), 100; chain_type=VNChain, verbose=false)
+            # Sanity check
+            @test chn[@varname(n)] == length.(chn[@varname(x)])
+            # Check that returned and predict both work. For returned we can also
+            # check correctness, but for predict we just check that it runs.
+            @test isapprox(returned(cond_model, chn), prod.(chn[@varname(x)]))
+            pdns = predict(varlen_single(), chn)
+            @test pdns isa VNChain
+            for vn in FlexiChains.parameters(chn)
+                @test pdns[vn] == chn[vn]
+            end
+            @test @varname(y) in FlexiChains.parameters(pdns)
+        end
+
+        @testset "dense vector" begin
+            # For this model, `x` should still be represented in the chain as a single
+            # variable, since the PartialArray will get densified.
+            @model function varlen_dense()
+                n ~ Poisson(5.0)
+                x = zeros(n)
+                x .~ Normal()
+                y ~ Normal(sum(x))
+                return prod(x)
+            end
+            cond_model = varlen_dense() | (; y=1.0)
+            chn = sample(cond_model, MH(), 100; chain_type=VNChain, verbose=false)
+            # Sanity check
+            @test chn[@varname(n)] == length.(chn[@varname(x)])
+            # Check that returned and predict both work. For returned we can also
+            # check correctness, but for predict we just check that it runs.
+            @test isapprox(returned(cond_model, chn), prod.(chn[@varname(x)]))
+            pdns = predict(varlen_dense(), chn)
+            @test pdns isa VNChain
+            for vn in FlexiChains.parameters(chn)
+                @test pdns[vn] == chn[vn]
+            end
+            @test @varname(y) in FlexiChains.parameters(pdns)
+        end
+
+        @testset "nondense (sparse?) vector" begin
+            # For this model, `x` will be broken up in the chain, because not 
+            # all entries in the PartialArray are filled
+            @model function varlen_nondense()
+                n ~ Poisson(5.0)
+                x = zeros(n + 2)
+                for i in 1:n
+                    x[i] ~ Normal()
+                end
+                y ~ Normal(sum(x[1:n]))
+                return prod(x[1:n])
+            end
+            cond_model = varlen_nondense() | (; y=1.0)
+            chn = sample(cond_model, MH(), 100; chain_type=VNChain, verbose=false)
+            # Check that returned and predict both work.
+            @test returned(cond_model, chn) isa DD.DimArray
+            pdns = predict(varlen_nondense(), chn)
+            @test pdns isa VNChain
+            for vn in FlexiChains.parameters(chn)
+                @test isequal(pdns[vn], chn[vn]) # might have missing so need isequal
+            end
+            @test @varname(y) in FlexiChains.parameters(pdns)
+        end
+    end
 end
 
 end # module

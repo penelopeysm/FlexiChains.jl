@@ -76,6 +76,7 @@ function FlexiChains.reconstruct_values(chn::VNChain, i, j, structure::VarNamedT
     for param_or_extra in keys(chn)
         val = chn[param_or_extra][i, j]
         if param_or_extra isa Parameter
+            ismissing(val) && continue
             vn = param_or_extra.name
             top_sym = AbstractPPL.getsym(vn)
             template = get(structure.data, top_sym, DynamicPPL.NoTemplate())
@@ -91,6 +92,7 @@ function FlexiChains.reconstruct_parameters(chn::VNChain, i, j, structure::VarNa
     vnt = DynamicPPL.VarNamedTuple()
     for vn in FlexiChains.parameters(chn)
         val = chn[Parameter(vn)][i, j]
+        ismissing(val) && continue
         top_sym = AbstractPPL.getsym(vn)
         template = get(structure.data, top_sym, DynamicPPL.NoTemplate())
         vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
@@ -293,6 +295,8 @@ function DynamicPPL.init(
         x = strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
         return UntransformedValue(x)
     else
+        # TODO: We could be smarter here; if the variable is completely a different symbol
+        # from whatever is in the chain, we could skip straight to the fallback.
         vnt = FlexiChains.parameters_at(
             strategy.chain, strategy.iter_index, strategy.chain_index
         )
