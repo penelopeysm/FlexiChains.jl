@@ -731,7 +731,7 @@ end
     @testset "Models with variable-length parameters" begin
         @testset "single variable" begin
             @model function varlen_single()
-                n ~ Poisson(5.0)
+                n ~ DiscreteUniform(2, 5)
                 x ~ MvNormal(zeros(n), I)
                 y ~ Normal(sum(x))
                 return prod(x)
@@ -755,7 +755,7 @@ end
             # For this model, `x` should still be represented in the chain as a single
             # variable, since the PartialArray will get densified.
             @model function varlen_dense()
-                n ~ Poisson(5.0)
+                n ~ DiscreteUniform(2, 5)
                 x = zeros(n)
                 x .~ Normal()
                 y ~ Normal(sum(x))
@@ -780,7 +780,7 @@ end
             # For this model, `x` will be broken up in the chain, because not 
             # all entries in the PartialArray are filled
             @model function varlen_nondense()
-                n ~ Poisson(5.0)
+                n ~ DiscreteUniform(2, 5)
                 x = zeros(n + 2)
                 for i in 1:n
                     x[i] ~ Normal()
