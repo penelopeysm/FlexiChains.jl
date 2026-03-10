@@ -95,6 +95,7 @@ function Base.vcat(
         niters(c1) + niters(c2),
         nchains(c1),
         d;
+        structures=vcat(c1._structures, c2._structures),
         iter_indices=new_iter_indices,
         chain_indices=FlexiChains.chain_indices(c1),
         sampling_time=FlexiChains.sampling_time(c1) .+ FlexiChains.sampling_time(c2),
@@ -164,6 +165,7 @@ function Base.hcat(
         niters(c1),
         nchains(c1) + nchains(c2),
         d;
+        structures=hcat(c1._structures, c2._structures),
         iter_indices=FlexiChains.iter_indices(c1),
         chain_indices=1:(nchains(c1) + nchains(c2)),
         sampling_time=vcat(FlexiChains.sampling_time(c1), FlexiChains.sampling_time(c2)),

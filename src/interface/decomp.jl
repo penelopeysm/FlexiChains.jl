@@ -65,7 +65,9 @@ function values_at(
     # version to explicitly dispatch on.
     ::Type{Nothing}=Nothing,
 ) where {TKey}
-    return reconstruct_values(chn, iter, chain, chn._structures[iter=iter, chain=chain])
+    i_1based = DD.selectindices(iter_indices(chn), iter)
+    c_1based = DD.selectindices(chain_indices(chn), chain)
+    return reconstruct_values(chn, iter, chain, chn._structures[i_1based, c_1based])
 end
 function values_at(
     chn::FlexiChain{TKey}, iter::Union{Int,DD.At}, chain::Union{Int,DD.At}, ::Type{T}
@@ -150,7 +152,9 @@ function parameters_at(
     # version to explicitly dispatch on.
     ::Type{Nothing}=Nothing,
 ) where {TKey}
-    return reconstruct_parameters(chn, iter, chain, chn._structures[iter=iter, chain=chain])
+    i_1based = DD.selectindices(iter_indices(chn), iter)
+    c_1based = DD.selectindices(chain_indices(chn), chain)
+    return reconstruct_parameters(chn, iter, chain, chn._structures[i_1based, c_1based])
 end
 function parameters_at(
     chn::FlexiChain{TKey}, iter::Union{Int,DD.At}, chain::Union{Int,DD.At}, ::Type{T}
@@ -216,7 +220,7 @@ for f in (:values_at, :parameters_at)
                 new_chain_indices
             end
             mat = map(CartesianIndices((new_iter_indices, new_chain_indices))) do ci
-                $f(chn, ci..., Tout)
+                $f(chn, Tuple(ci)..., Tout)
             end
             dimmat = DD.DimMatrix(
                 map(identity, mat),
