@@ -42,7 +42,9 @@ function AbstractMCMC.bundle_samples(
         end
         d
     end
-    skeletons = map(DynamicPPL.skeleton ∘ first, vnts_and_stats)
+    # note that FlexiChains constructor expects structures to have size (niters x nchains),
+    # so a vector won't do
+    skeletons = hcat(map(DynamicPPL.skeleton ∘ first, vnts_and_stats))
     # timings
     tm = stats === missing ? missing : stats.stop - stats.start
     # last sampler state
