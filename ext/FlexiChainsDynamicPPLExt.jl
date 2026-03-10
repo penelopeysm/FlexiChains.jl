@@ -34,7 +34,7 @@ function AbstractMCMC.bundle_samples(
     niters = length(transitions)
     vnts_and_stats = map(FlexiChains.to_vnt_and_stats, transitions)
     dicts = map(vnts_and_stats) do (vnt, stat)
-        d = OrderedDict{ParameterOrExtra{VarName},Any}(
+        d = OrderedDict{ParameterOrExtra{<:VarName},Any}(
             Parameter(vn) => val for (vn, val) in pairs(vnt)
         )
         for (stat_vn, stat_val) in pairs(stat)
