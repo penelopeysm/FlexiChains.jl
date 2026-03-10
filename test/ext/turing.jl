@@ -171,8 +171,7 @@ end
                 kwargs...,
             ) = (Tn(), nothing)
             # Get it to work with FlexiChains
-            FlexiChains.to_varname_dict(::Tn) =
-                Dict(Parameter(@varname(x)) => 1, Extra(:b) => "hi")
+            FlexiChains.to_vnt_and_stats(::Tn) = (VarNamedTuple(; x=1), (; b="hi"))
             # Then we should be able to sample
             chn = sample(model, S(), 20; chain_type=VNChain)
             @test chn isa VNChain
@@ -318,6 +317,33 @@ end
         @test logpdf.(Normal(), c[@varname(x)]) ≈ c[Extra(:logprior)]
     end
 
+    @testset "parameters_at and values_at" begin
+        @model function f()
+            x ~ Normal()
+            y = zeros(3)
+            y[2] ~ Normal()
+            z = (; a=nothing)
+            return z.a ~ Normal()
+        end
+        Ni, Nc = 10, 2
+        # These should give the same results, but chn is just the ParamsWithStats
+        # bundled into a VNChain. (For chain_type=Any, default bundle_samples gives
+        # a vector of vectors, so we use stack to get it into an Ni * Nc matrix.)
+        chn = sample(Xoshiro(468), f(), Prior(), MCMCSerial(), Ni, Nc; chain_type=VNChain)
+        pwss = stack(
+            sample(Xoshiro(468), f(), Prior(), MCMCSerial(), Ni, Nc; chain_type=Any)
+        )
+
+        for i in 1:Ni, c in 1:Nc
+            prms = FlexiChains.parameters_at(chn, i, c)
+            @test prms isa VarNamedTuple
+            @test prms == pwss[i, c].params
+            vals = FlexiChains.values_at(chn, i, c)
+            @test vals isa DynamicPPL.ParamsWithStats
+            @test vals == pwss[i, c]
+        end
+    end
+
     @testset "AbstractMCMC.to_samples" begin
         @model function f(z)
             x ~ Normal()
@@ -333,28 +359,24 @@ end
         c = AbstractMCMC.from_samples(VNChain, ps)
 
         # Then convert back to ParamsWithStats
-        @testset "with model" begin
-            arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c, model)
-            @test size(arr_pss) == (50, 1)
-            for i in 1:50
-                new_p = arr_pss[i, 1]
-                p = ps[i]
-                @test new_p.params == p.params
-                @test new_p.stats == p.stats
-            end
+        @model function newmodel()
+            error(
+                "This model should never be run, because there is structure info" *
+                " in the chain.",
+            )
+            x ~ Normal()
+            return nothing
         end
 
+        @testset "with model" begin
+            # Make sure that the model isn't actually ever used, by passing one that
+            # errors when run.
+            arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c, newmodel())
+            @test arr_pss == ps
+        end
         @testset "without model" begin
-            # In this case, because there are no arrays / special templates, the
-            # conversion with and without the model is identical.
             arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c)
-            @test size(arr_pss) == (50, 1)
-            for i in 1:50
-                new_p = arr_pss[i, 1]
-                p = ps[i]
-                @test new_p.params == p.params
-                @test new_p.stats == p.stats
-            end
+            @test arr_pss == ps
         end
     end
 
@@ -397,9 +419,9 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "No value was provided" logprior(xy(), chn)
-            @test_throws "No value was provided" loglikelihood(xy(), chn)
-            @test_throws "No value was provided" logjoint(xy(), chn)
+            @test_throws "not found in chain" logprior(xy(), chn)
+            @test_throws "not found in chain" loglikelihood(xy(), chn)
+            @test_throws "not found in chain" logjoint(xy(), chn)
         end
 
         @testset "with non-standard Array variables" begin
@@ -464,13 +486,9 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "No value was provided" DynamicPPL.pointwise_logdensities(
-                xy(), chn
-            )
-            @test_throws "No value was provided" DynamicPPL.pointwise_loglikelihoods(
-                xy(), chn
-            )
-            @test_throws "No value was provided" DynamicPPL.pointwise_prior_logdensities(
+            @test_throws "not found in chain" DynamicPPL.pointwise_logdensities(xy(), chn)
+            @test_throws "not found in chain" DynamicPPL.pointwise_loglikelihoods(xy(), chn)
+            @test_throws "not found in chain" DynamicPPL.pointwise_prior_logdensities(
                 xy(), chn
             )
         end
@@ -525,7 +543,7 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "No value was provided" returned(xy(), chn)
+            @test_throws "not found in chain" returned(xy(), chn)
         end
 
         @testset "stacks DimArray return values" begin
@@ -707,6 +725,79 @@ end
                 # each of these is a vector which may be in a different order
                 @test Set(new_mcmcc.name_map[k]) == Set(mcmcc.name_map[k])
             end
+        end
+    end
+
+    @testset "Models with variable-length parameters" begin
+        @testset "single variable" begin
+            @model function varlen_single()
+                n ~ DiscreteUniform(2, 5)
+                x ~ MvNormal(zeros(n), I)
+                y ~ Normal(sum(x))
+                return prod(x)
+            end
+            cond_model = varlen_single() | (; y=1.0)
+            chn = sample(cond_model, MH(), 100; chain_type=VNChain, verbose=false)
+            # Sanity check
+            @test chn[@varname(n)] == length.(chn[@varname(x)])
+            # Check that returned and predict both work. For returned we can also
+            # check correctness, but for predict we just check that it runs.
+            @test isapprox(returned(cond_model, chn), prod.(chn[@varname(x)]))
+            pdns = predict(varlen_single(), chn)
+            @test pdns isa VNChain
+            for vn in FlexiChains.parameters(chn)
+                @test pdns[vn] == chn[vn]
+            end
+            @test @varname(y) in FlexiChains.parameters(pdns)
+        end
+
+        @testset "dense vector" begin
+            # For this model, `x` should still be represented in the chain as a single
+            # variable, since the PartialArray will get densified.
+            @model function varlen_dense()
+                n ~ DiscreteUniform(2, 5)
+                x = zeros(n)
+                x .~ Normal()
+                y ~ Normal(sum(x))
+                return prod(x)
+            end
+            cond_model = varlen_dense() | (; y=1.0)
+            chn = sample(cond_model, MH(), 100; chain_type=VNChain, verbose=false)
+            # Sanity check
+            @test chn[@varname(n)] == length.(chn[@varname(x)])
+            # Check that returned and predict both work. For returned we can also
+            # check correctness, but for predict we just check that it runs.
+            @test isapprox(returned(cond_model, chn), prod.(chn[@varname(x)]))
+            pdns = predict(varlen_dense(), chn)
+            @test pdns isa VNChain
+            for vn in FlexiChains.parameters(chn)
+                @test pdns[vn] == chn[vn]
+            end
+            @test @varname(y) in FlexiChains.parameters(pdns)
+        end
+
+        @testset "nondense (sparse?) vector" begin
+            # For this model, `x` will be broken up in the chain, because not 
+            # all entries in the PartialArray are filled
+            @model function varlen_nondense()
+                n ~ DiscreteUniform(2, 5)
+                x = zeros(n + 2)
+                for i in 1:n
+                    x[i] ~ Normal()
+                end
+                y ~ Normal(sum(x[1:n]))
+                return prod(x[1:n])
+            end
+            cond_model = varlen_nondense() | (; y=1.0)
+            chn = sample(cond_model, MH(), 100; chain_type=VNChain, verbose=false)
+            # Check that returned and predict both work.
+            @test returned(cond_model, chn) isa DD.DimArray
+            pdns = predict(varlen_nondense(), chn)
+            @test pdns isa VNChain
+            for vn in FlexiChains.parameters(chn)
+                @test isequal(pdns[vn], chn[vn]) # might have missing so need isequal
+            end
+            @test @varname(y) in FlexiChains.parameters(pdns)
         end
     end
 end

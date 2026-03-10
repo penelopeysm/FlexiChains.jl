@@ -1,3 +1,48 @@
+# 0.4.0
+
+This is a breaking release, which is designed to add *true* support for DynamicPPL 0.40 and Turing 0.43, fixing the remaining issues that were present in FlexiChains v0.3.4.
+
+## `values_at` and `parameters_at`
+
+The most obvious change in this version is when using Turing.jl with FlexiChains.
+If `chn` is a `VNChain` sampled from Turing,
+
+ - `FlexiChains.values_at` will now return a `DynamicPPL.ParamsWithStats` instead of an `OrderedDict{ParameterOrExtra{<:VarName}}`.
+ - `FlexiChains.parameters_at` will now return a `VarNamedTuple` instead of an `OrderedDict{VarName}`.
+
+This is designed to maximise interoperability with other parts of DynamicPPL / Turing.
+For example, it is now trivial to obtain a `VarNamedTuple` of parameters from a chain, and then re-evaluate the model at those parameters using `InitFromParams(FlexiChains.parameters_at(chn, i, j))`.
+**Furthermore, by using `VarNamedTuple` as the intermediate data structure, we ensure that no loss of fidelity occurs when MCMC results are stored in a `FlexiChain`.**
+
+## Reconstruction
+
+`FlexiChain` now stores an extra field, `structures`, which is used to store information that converts the `OrderedDict{ParameterOrExtra,T}` data back into a richer format.
+
+In order to do this, it introduces two new functions:
+
+- `FlexiChains.reconstruct_values(chn::FlexiChain{T}, i, j, structure)`
+- `FlexiChains.reconstruct_parameters(chn::FlexiChain{T}, i, j, structure)`
+
+where `i` and `j` are the iteration and chain indices, and `structure` is the relevant entry in the `structures` field of the chain.
+
+By default, these functions simply return an `OrderedDict` of values or parameters, which preserves old behaviour for chains that do not include any structures.
+However, these functions can be overloaded to return richer data structures than `OrderedDict`.
+
+The canonical example of this is with chains sampled from Turing.jl.
+When sampling with Turing, the `structures` field of the resulting chain will contain one skeleton `VarNamedTuple` per iteration (see [the DynamicPPL documentation](https://turinglang.org/DynamicPPL.jl/stable/vnt/manipulation/) for more information about this).
+When calling `FlexiChains.parameters_at(chain, i, j)`, the `reconstruct_parameters` function will use that skeleton to construct a `VarNamedTuple` of parameters, rather than an `OrderedDict`.
+Likewise, when calling `FlexiChains.values_at(chain, i, j)`, the `reconstruct_values` function will use the skeleton to construct a `DynamicPPL.ParamsWithStats` of values.
+
+**The end-result of this is that FlexiChains can fully support models where the shape or type of an array varies across iterations.**
+(Note, however, that models where the shape or type changes *within* a single model evaluation are now forbidden by DynamicPPL: that is not something that can be patched by FlexiChains.)
+
+## `to_varname_dict` -> `to_vnt_and_stats`
+
+Previously, in the rare instance where your custom sampler returned an unusual type as the first return value of `AbstractMCMC.step`, you would have to implement `FlexiChains.to_varname_dict` to convert that type into an `OrderedDict{ParameterOrExtra{VarName}}`.
+This has been replaced with `FlexiChains.to_vnt_and_stats`, which converts the type into a combination of `VarNamedTuple` (for parameters) and `NamedTuple` (for stats) instead.
+
+Note that because `DynamicPPL.ParamsWithStats` is *exactly* a wrapper around a `VarNamedTuple` and a `NamedTuple`, you *may as well* just make your sampler return `ParamsWithStats`, and skip the faff of having to overload `to_vnt_and_stats` at all.
+
 # 0.3.4
 
 This patch adds compatibility for DynamicPPL 0.40 and Turing 0.43.

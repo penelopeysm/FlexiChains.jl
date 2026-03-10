@@ -14,6 +14,92 @@ using DynamicPPL:
 using OrderedCollections: OrderedDict
 using Random: Random
 
+##################
+# bundle_samples #
+##################
+function AbstractMCMC.bundle_samples(
+    # TODO(penelopeysm): When VarNamedTuple is moved into AbstractPPL, this can go back
+    # into src/ rather than the extension.
+    transitions::AbstractVector,
+    @nospecialize(m::AbstractMCMC.AbstractModel),
+    @nospecialize(s::AbstractMCMC.AbstractSampler),
+    last_sampler_state::Any,
+    chain_type::Type{FlexiChain{VarName}};
+    save_state=false,
+    stats=missing,
+    discard_initial::Int=0,
+    thinning::Int=1,
+    _kwargs...,
+)::FlexiChain{VarName}
+    niters = length(transitions)
+    vnts_and_stats = map(FlexiChains.to_vnt_and_stats, transitions)
+    dicts = map(vnts_and_stats) do (vnt, stat)
+        d = OrderedDict{ParameterOrExtra{<:VarName},Any}(
+            Parameter(vn) => val for (vn, val) in pairs(vnt)
+        )
+        for (stat_vn, stat_val) in pairs(stat)
+            d[Extra(stat_vn)] = stat_val
+        end
+        d
+    end
+    # note that FlexiChains constructor expects structures to have size (niters x nchains),
+    # so a vector won't do
+    skeletons = hcat(map(DynamicPPL.skeleton ∘ first, vnts_and_stats))
+    # timings
+    tm = stats === missing ? missing : stats.stop - stats.start
+    # last sampler state
+    st = save_state ? last_sampler_state : missing
+    # calculate iteration indices
+    start = discard_initial + 1
+    iter_indices = if thinning != 1
+        range(start; step=thinning, length=niters)
+    else
+        # This returns UnitRange not StepRange -- a bit cleaner
+        start:(start + niters - 1)
+    end
+    return FlexiChain{VarName}(
+        niters,
+        1,
+        dicts;
+        structures=skeletons,
+        iter_indices=iter_indices,
+        # 1:1 gives nicer DimMatrix output than just [1]
+        chain_indices=1:1,
+        sampling_time=[tm],
+        last_sampler_state=[st],
+    )
+end
+
+function FlexiChains.reconstruct_values(chn::VNChain, i, j, structure::VarNamedTuple)
+    vnt = DynamicPPL.VarNamedTuple()
+    nt = NamedTuple()
+    for param_or_extra in keys(chn)
+        val = chn[param_or_extra][i, j]
+        if param_or_extra isa Parameter
+            ismissing(val) && continue
+            vn = param_or_extra.name
+            top_sym = AbstractPPL.getsym(vn)
+            template = get(structure.data, top_sym, DynamicPPL.NoTemplate())
+            vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
+        elseif param_or_extra isa Extra
+            nt = merge(nt, (; Symbol(param_or_extra.name) => val))
+        end
+    end
+    return DynamicPPL.ParamsWithStats(vnt, nt)
+end
+
+function FlexiChains.reconstruct_parameters(chn::VNChain, i, j, structure::VarNamedTuple)
+    vnt = DynamicPPL.VarNamedTuple()
+    for vn in FlexiChains.parameters(chn)
+        val = chn[Parameter(vn)][i, j]
+        ismissing(val) && continue
+        top_sym = AbstractPPL.getsym(vn)
+        template = get(structure.data, top_sym, DynamicPPL.NoTemplate())
+        vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
+    end
+    return vnt
+end
+
 ##################################################
 # AbstractMCMC.{to,from}_samples implementations #
 ##################################################
@@ -41,7 +127,11 @@ function AbstractMCMC.from_samples(
         end
         d
     end
-    return VNChain(size(params_and_stats, 1), size(params_and_stats, 2), dicts)
+    # And get the structures.
+    structures = map(ps -> DynamicPPL.skeleton(ps.params), params_and_stats)
+    return VNChain(
+        size(params_and_stats, 1), size(params_and_stats, 2), dicts; structures=structures
+    )
 end
 
 """
@@ -58,69 +148,74 @@ The axes of the `DimMatrix` are the same as those of the input `VNChain`.
 function AbstractMCMC.to_samples(
     ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}, model::DynamicPPL.Model
 )::DD.DimMatrix{<:DynamicPPL.ParamsWithStats} where {T<:VarName}
-    template_vnt = rand(model)
-    dicts = FlexiChains.values_at(chain, :, :)
-    return map(dicts) do d
-        # Params
-        vnt = DynamicPPL.VarNamedTuple()
-        for (vn_param, val) in d
-            if vn_param isa Parameter{<:T}
-                vn = vn_param.name
-                top_sym = AbstractPPL.getsym(vn)
-                template = get(template_vnt.data, top_sym, DynamicPPL.NoTemplate())
-                vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
+    template_vnt = nothing # Set later on-demand.
+    # If there is no skeletal VNT structure stored, then values_at will return a Dict.
+    # Otherwise it will return a ParamsWithStats
+    dicts_or_pwss = FlexiChains.values_at(chain, :, :)
+    pwss = map(dicts_or_pwss) do d_or_pws
+        if d_or_pws isa DynamicPPL.ParamsWithStats
+            d_or_pws
+        else
+            # No skeleton -- rerun the model once to get a template, and pray that
+            # it's accurate.
+            if template_vnt === nothing
+                template_vnt = rand(model)
             end
+            # Then attempt to reconstruct
+            vnt = DynamicPPL.VarNamedTuple()
+            for (vn_param, val) in pairs(d_or_pws)
+                if vn_param isa Parameter
+                    vn = vn_param.name
+                    top_sym = AbstractPPL.getsym(vn)
+                    template = get(template_vnt.data, top_sym, DynamicPPL.NoTemplate())
+                    vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
+                end
+            end
+            # Stats
+            stats_nt = NamedTuple(
+                Symbol(extra_param.name) => val for
+                (extra_param, val) in d_or_pws if extra_param isa Extra
+            )
+            DynamicPPL.ParamsWithStats(vnt, stats_nt)
         end
-        # Stats
-        stats_nt = NamedTuple(
-            Symbol(extra_param.name) => val for
-            (extra_param, val) in d if extra_param isa Extra
-        )
-        DynamicPPL.ParamsWithStats(vnt, stats_nt)
     end
+    return FlexiChains._raw_to_user_data(chain, pwss)
 end
+
 function AbstractMCMC.to_samples(
     ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}
 )::DD.DimMatrix{<:DynamicPPL.ParamsWithStats} where {T<:VarName}
-    dicts = FlexiChains.values_at(chain, :, :)
-    return map(dicts) do d
-        # Params
-        vnt = VarNamedTuple(
-            OrderedDict{T,Any}(
-                vn_param.name => val for (vn_param, val) in d if vn_param isa Parameter{<:T}
-            ),
-        )
-        # Stats
-        stats_nt = NamedTuple(
-            Symbol(extra_param.name) => val for
-            (extra_param, val) in d if extra_param isa Extra
-        )
-        DynamicPPL.ParamsWithStats(vnt, stats_nt)
+    # If there is no skeletal VNT structure stored, then values_at will return a Dict.
+    # Otherwise it will return a ParamsWithStats
+    dicts_or_pwss = FlexiChains.values_at(chain, :, :)
+    pwss = map(dicts_or_pwss) do d_or_pws
+        if d_or_pws isa DynamicPPL.ParamsWithStats
+            d_or_pws
+        else
+            # No skeleton. Just cry and use setindex!!.
+            vnt = DynamicPPL.VarNamedTuple()
+            for (vn_param, val) in pairs(d_or_pws)
+                if vn_param isa Parameter
+                    vnt = DynamicPPL.setindex!!(vnt, val, vn_param.name)
+                end
+            end
+            # Stats
+            stats_nt = NamedTuple(
+                Symbol(extra_param.name) => val for
+                (extra_param, val) in d_or_pws if extra_param isa Extra
+            )
+            DynamicPPL.ParamsWithStats(vnt, stats_nt)
+        end
     end
+    return FlexiChains._raw_to_user_data(chain, pwss)
 end
 
 # This method will make `bundle_samples` 'just work'
-function FlexiChains.to_varname_dict(
-    pws::DynamicPPL.ParamsWithStats
-)::OrderedDict{ParameterOrExtra{<:VarName},Any}
-    d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
-    for (varname, value) in pairs(pws.params)
-        d[Parameter(varname)] = value
-    end
-    # add in the transition stats (if available)
-    for (key, value) in pairs(pws.stats)
-        d[Extra(key)] = value
-    end
-    return d
+function FlexiChains.to_vnt_and_stats(pws::DynamicPPL.ParamsWithStats)
+    return (pws.params, pws.stats)
 end
-function FlexiChains.to_varname_dict(
-    vnt::DynamicPPL.VarNamedTuple
-)::OrderedDict{ParameterOrExtra{<:VarName},Any}
-    d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
-    for (varname, value) in pairs(vnt)
-        d[Parameter(varname)] = value
-    end
-    return d
+function FlexiChains.to_vnt_and_stats(vnt::DynamicPPL.VarNamedTuple)
+    return (vnt, (;))
 end
 
 ############################
@@ -142,18 +237,9 @@ function DynamicPPL.InitFromParams(
     chain::Union{Int,DD.At},
     fallback::Union{DynamicPPL.AbstractInitStrategy,Nothing}=DynamicPPL.InitFromPrior(),
 )
-    # Note that this is functionally the same as `InitFromFlexiChain` but it is more
-    # flexible because it allows `DD.At` indices, and it also allows for split-VarNames
-    # (although that's an unlikely situation). I think conceptually, the difference is that
-    # `InitFromParams` isn't meant to be used in tight loops / performance-sensitive code,
-    # and can thus give more guarantees about flexibility, whereas
-    # `InitFromFlexiChain` is really meant for internal use only.
-    return DynamicPPL.InitFromParams(FlexiChains.parameters_at(chn, iter, chain), fallback)
+    return InitFromFlexiChain(chn, iter, chain, fallback)
 end
 
-##################################
-# Optimisation for parameters_at #
-##################################
 """
     InitFromFlexiChain(
         chain::FlexiChain, iter_index::Int, chain_index::Int, fallback=nothing
@@ -182,15 +268,38 @@ is, if a variable is not found in the `FlexiChain`, the fallback strategy is use
 generate its value. This is necessary for `predict`.
 """
 struct InitFromFlexiChain{
-    C<:FlexiChains.VNChain,
-    V<:VarNamedTuple,
-    S<:Union{DynamicPPL.AbstractInitStrategy,Nothing},
+    C<:FlexiChains.VNChain,S<:Union{DynamicPPL.AbstractInitStrategy,Nothing}
 } <: DynamicPPL.AbstractInitStrategy
     chain::C
     iter_index::Int
     chain_index::Int
-    template_vnt::V
     fallback::S
+    _top_syms::Set{Symbol}
+    # Lazily populated cache of the full parameters VNT for this (iter, chain).
+    _vnt_cache::Ref{Union{Nothing,VarNamedTuple}}
+    function InitFromFlexiChain(
+        chain::C, iter_index::Int, chain_index::Int, fallback::S=nothing
+    ) where {C<:FlexiChains.VNChain,S<:Union{DynamicPPL.AbstractInitStrategy,Nothing}}
+        top_syms = Set{Symbol}(
+            AbstractPPL.getsym(vn) for vn in FlexiChains.parameters(chain)
+        )
+        return new{C,S}(
+            chain,
+            iter_index,
+            chain_index,
+            fallback,
+            top_syms,
+            Ref{Union{Nothing,VarNamedTuple}}(nothing),
+        )
+    end
+end
+function _get_parameters_vnt(strategy::InitFromFlexiChain)
+    if strategy._vnt_cache[] === nothing
+        strategy._vnt_cache[] = FlexiChains.parameters_at(
+            strategy.chain, strategy.iter_index, strategy.chain_index
+        )
+    end
+    return strategy._vnt_cache[]
 end
 function DynamicPPL.init(
     rng::Random.AbstractRNG,
@@ -212,17 +321,18 @@ function DynamicPPL.init(
         x = strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
         return UntransformedValue(x)
     else
-        param_dict = FlexiChains.parameters_at(
-            strategy.chain, strategy.iter_index, strategy.chain_index
-        )
-        vnt = VarNamedTuple()
-        for (vn, val) in pairs(param_dict)
-            top_sym = AbstractPPL.getsym(vn)
-            template = get(strategy.template_vnt.data, top_sym, DynamicPPL.NoTemplate())
-            vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
+        # Check if any parameter in the chain shares the same top-level symbol. If not,
+        # we can skip the expensive VNT reconstruction and go straight to the fallback.
+        has_matching_sym = AbstractPPL.getsym(vn) in strategy._top_syms
+        if has_matching_sym
+            vnt = _get_parameters_vnt(strategy)
+            augmented_fallback = DynamicPPL.InitFromParams(vnt, strategy.fallback)
+            return DynamicPPL.init(rng, vn, dist, augmented_fallback)
+        elseif strategy.fallback !== nothing
+            return DynamicPPL.init(rng, vn, dist, strategy.fallback)
+        else
+            error("Variable $vn not found in chain and no fallback strategy provided.")
         end
-        augmented_fallback = DynamicPPL.InitFromParams(vnt, strategy.fallback)
-        return DynamicPPL.init(rng, vn, dist, augmented_fallback)
     end
 end
 
@@ -252,13 +362,12 @@ function reevaluate(
     niters, nchains = size(chain)
     tuples = Iterators.product(1:niters, 1:nchains)
     vi = DynamicPPL.OnlyAccsVarInfo(DynamicPPL.AccumulatorTuple(accs))
-    template_vnt = rand(model)
     retvals_and_varinfos = map(tuples) do (i, j)
         DynamicPPL.init!!(
             rng,
             model,
             vi,
-            InitFromFlexiChain(chain, i, j, template_vnt, fallback_strategy),
+            InitFromFlexiChain(chain, i, j, fallback_strategy),
             UnlinkAll(),
         )
     end
@@ -358,23 +467,28 @@ function DynamicPPL.predict(
     existing_parameters = Set(FlexiChains.parameters(chain))
     accs = _default_reevaluate_accs()
     fallback = DynamicPPL.InitFromPrior()
-    param_dicts = map(reevaluate(rng, model, chain, accs, fallback)) do (_, vi)
-        vnt = DynamicPPL.densify!!(DynamicPPL.get_raw_values(vi))
-        p_dict = OrderedDict{ParameterOrExtra{<:VarName},Any}(
-            Parameter(vn) => val for
-            (vn, val) in pairs(vnt) if (include_all || !(vn in existing_parameters))
-        )
-        # Tack on the probabilities
-        p_dict[FlexiChains._LOGPRIOR_KEY] = DynamicPPL.getlogprior(vi)
-        p_dict[FlexiChains._LOGJOINT_KEY] = DynamicPPL.getlogjoint(vi)
-        p_dict[FlexiChains._LOGLIKELIHOOD_KEY] = DynamicPPL.getloglikelihood(vi)
-        p_dict
-    end
+    param_dicts_and_skeletons =
+        map(reevaluate(rng, model, chain, accs, fallback)) do (_, vi)
+            vnt = DynamicPPL.densify!!(DynamicPPL.get_raw_values(vi))
+            p_dict = OrderedDict{ParameterOrExtra{<:VarName},Any}(
+                Parameter(vn) => val for
+                (vn, val) in pairs(vnt) if (include_all || !(vn in existing_parameters))
+            )
+            # Use skeletons from reevaluation, since they will be appropriate for the new
+            # chain that we are constructing.
+            skeleton = DynamicPPL.skeleton(vnt)
+            # Tack on the probabilities
+            p_dict[FlexiChains._LOGPRIOR_KEY] = DynamicPPL.getlogprior(vi)
+            p_dict[FlexiChains._LOGJOINT_KEY] = DynamicPPL.getlogjoint(vi)
+            p_dict[FlexiChains._LOGLIKELIHOOD_KEY] = DynamicPPL.getloglikelihood(vi)
+            (p_dict, skeleton)
+        end
     ni, nc = size(chain)
     predictions_chain = FlexiChain{VarName}(
         ni,
         nc,
-        param_dicts;
+        map(first, param_dicts_and_skeletons);
+        structures=map(last, param_dicts_and_skeletons),
         iter_indices=FlexiChains.iter_indices(chain),
         chain_indices=FlexiChains.chain_indices(chain),
     )

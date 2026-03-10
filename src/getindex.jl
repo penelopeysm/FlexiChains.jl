@@ -467,6 +467,7 @@ function Base.getindex(
         length(new_iter_lookup),
         length(new_chain_lookup),
         new_data;
+        structures=fchain._structures[new_iter_indices, new_chain_indices],
         iter_indices=new_iter_lookup,
         chain_indices=new_chain_lookup,
         sampling_time=FlexiChains.sampling_time(fchain)[new_chain_indices],

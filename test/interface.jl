@@ -187,6 +187,17 @@ using Test
                 [FlexiChains.last_sampler_state(c)[2]]
         end
 
+        @testset "structures are preserved" begin
+            Ni, Nc = 10, 2
+            d = Dict(Parameter(:a) => 1)
+            structs = [(i, j) for i in 1:Ni, j in 1:Nc]
+            chn = FlexiChain{Symbol}(Ni, Nc, fill(d, Ni, Nc); structures=structs)
+            @test chn[iter=3:5]._structures == structs[3:5, :]
+            @test chn[chain=2]._structures == structs[:, 2:2]
+            @test chn[iter=1:4, chain=1]._structures == structs[1:4, 1:1]
+            @test chn[[Parameter(:a)]]._structures == structs
+        end
+
         @testset "unambiguous: TKey and ParameterOrExtra{TKey}" begin
             struct Shay
                 T::String
@@ -447,6 +458,28 @@ using Test
                 vals = FlexiChains.values_at(cvn, 1, 1)
                 @test vals isa OrderedDict{ParameterOrExtra{<:VarName},Any}
             end
+
+            @testset "dispatch on structures" begin
+                struct TestValStructure
+                    tag::Tuple{Int,Int}
+                end
+                FlexiChains.reconstruct_values(
+                    ::FlexiChain, ::Any, ::Any, s::TestValStructure
+                ) = s
+                Ni_s, Nc_s = 4, 2
+                structs = [TestValStructure((i, j)) for i in 1:Ni_s, j in 1:Nc_s]
+                cs = FlexiChain{Symbol}(
+                    Ni_s,
+                    Nc_s,
+                    OrderedDict(Parameter(:a) => rand(Ni_s, Nc_s));
+                    structures=structs,
+                )
+                for i in 1:Ni_s, j in 1:Nc_s
+                    @test FlexiChains.values_at(cs, i, j) === structs[i, j]
+                end
+                # Explicit type should bypass structures
+                @test FlexiChains.values_at(cs, 1, 1, OrderedDict) isa OrderedDict
+            end
         end
 
         @testset "parameters_at" begin
@@ -488,6 +521,30 @@ using Test
                 @test_throws ArgumentError FlexiChains.parameters_at(
                     c2, 1, 1, ComponentArray
                 )
+            end
+
+            @testset "dispatch on structures" begin
+                struct TestParamStructure
+                    tag::Tuple{Int,Int}
+                end
+                FlexiChains.reconstruct_parameters(
+                    ::FlexiChain, ::Any, ::Any, s::TestParamStructure
+                ) = s
+                Ni_s, Nc_s = 4, 2
+                structs = [TestParamStructure((i, j)) for i in 1:Ni_s, j in 1:Nc_s]
+                cs = FlexiChain{Symbol}(
+                    Ni_s,
+                    Nc_s,
+                    OrderedDict(
+                        Parameter(:a) => rand(Ni_s, Nc_s), Extra("c") => rand(Ni_s, Nc_s)
+                    );
+                    structures=structs,
+                )
+                for i in 1:Ni_s, j in 1:Nc_s
+                    @test FlexiChains.parameters_at(cs, i, j) === structs[i, j]
+                end
+                # Explicit type should bypass structures
+                @test FlexiChains.parameters_at(cs, 1, 1, OrderedDict) isa OrderedDict
             end
         end
     end
@@ -585,6 +642,27 @@ using Test
             @test ch[Parameter("b")] isa AbstractMatrix{String}
             @test ch[Parameter("b")] == fill("Hi", 10, 1)
         end
+
+        @testset "structures are preserved" begin
+            Ni, Nc = 10, 2
+            d1 = Dict(Parameter(:a) => 1)
+            d2 = Dict(Parameter(:a) => 2, Parameter(:b) => 3.0)
+            nt_structs1 = [(a=i, b=j) for i in 1:Ni, j in 1:Nc]
+            nt_structs2 = [(b=100, c=200) for _ in 1:Ni, _ in 1:Nc]
+            chn1 = FlexiChain{Symbol}(Ni, Nc, fill(d1, Ni, Nc); structures=nt_structs1)
+            chn2 = FlexiChain{Symbol}(Ni, Nc, fill(d2, Ni, Nc); structures=nt_structs2)
+            merged = merge(chn1, chn2)
+            for i in 1:Ni, j in 1:Nc
+                @test merged._structures[i, j] ==
+                    merge(nt_structs1[i, j], nt_structs2[i, j])
+            end
+        end
+
+        @testset "merge_structures with nothing" begin
+            @test FlexiChains.merge_structures(nothing, nothing) === nothing
+            @test FlexiChains.merge_structures(nothing, :foo) === :foo
+            @test FlexiChains.merge_structures(:foo, nothing) === :foo
+        end
     end
 
     @testset "subset parameters and extras" begin
@@ -657,6 +735,17 @@ using Test
             @test FlexiChains.last_sampler_state(chain12) == ["bar"]
         end
 
+        @testset "structures are preserved" begin
+            Nc = 2
+            d1 = Dict(Parameter(:a) => 1)
+            structs1 = [(i, j) for i in 1:10, j in 1:Nc]
+            chn1 = FlexiChain{Symbol}(10, Nc, fill(d1, 10, Nc); structures=structs1)
+            d2 = Dict(Parameter(:a) => 2)
+            structs2 = [(i, j) for i in 11:15, j in 1:Nc]
+            chn2 = FlexiChain{Symbol}(5, Nc, fill(d2, 5, Nc); structures=structs2)
+            @test vcat(chn1, chn2)._structures == vcat(structs1, structs2)
+        end
+
         @testset "error on different number of chains" begin
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
             chain1 = FlexiChain{Symbol}(10, 1, fill(d1, 10, 1))
@@ -717,6 +806,17 @@ using Test
             @test chain12[Parameter(:a)] == repeat([1 2], N_iters)
             @test FlexiChains.sampling_time(chain12) == [1, 2]
             @test FlexiChains.last_sampler_state(chain12) == ["foo", "bar"]
+        end
+
+        @testset "structures are preserved" begin
+            Ni = 10
+            d1 = Dict(Parameter(:a) => 1)
+            structs1 = [(i, 1) for i in 1:Ni, _ in 1:1]
+            chn1 = FlexiChain{Symbol}(Ni, 1, fill(d1, Ni); structures=structs1)
+            d2 = Dict(Parameter(:a) => 2)
+            structs2 = [(i, 2) for i in 1:Ni, _ in 1:1]
+            chn2 = FlexiChain{Symbol}(Ni, 1, fill(d2, Ni); structures=structs2)
+            @test hcat(chn1, chn2)._structures == hcat(structs1, structs2)
         end
 
         @testset "3 or more inputs" begin

@@ -1,4 +1,18 @@
-@public subset_parameters, subset_extras
+@public subset_parameters, subset_extras, merge_structures
+
+"""
+    merge_structures(s1, s2)
+
+Merge two structure objects. This is used when merging two `FlexiChain`s to combine the
+per-iteration structure metadata.
+
+The default implementation uses `Base.merge(s1, s2)`. If either argument is `nothing`, the
+non-`nothing` argument is returned (or `nothing` if both are).
+"""
+merge_structures(s1, s2) = Base.merge(s1, s2)
+merge_structures(::Nothing, ::Nothing) = nothing
+merge_structures(::Nothing, s2) = s2
+merge_structures(s1, ::Nothing) = s1
 
 """
     Base.merge(
@@ -39,10 +53,13 @@ function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1,T
     d1 = OrderedDict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c1._data)
     d2 = OrderedDict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c2._data)
     merged_data = merge(d1, d2)
+    # Merge structures element-wise
+    merged_structures = map(merge_structures, c1._structures, c2._structures)
     return FlexiChain{TKeyNew}(
         niters(c1),
         nchains(c1),
         merged_data;
+        structures=merged_structures,
         iter_indices=FlexiChains.iter_indices(c2),
         chain_indices=FlexiChains.chain_indices(c2),
         sampling_time=FlexiChains.sampling_time(c2),
@@ -60,10 +77,14 @@ function subset_parameters(cs::ChainOrSummary)
 end
 
 """
-    subset_extras(chain::FlexiChain)
+    subset_extras(cs::ChainOrSummary)
 
-Subset a chain, retaining only the keys that are `Extra`s (i.e. not parameters).
+Subset a chain or summary, retaining only the keys that are `Extra`s (i.e. not parameters).
 """
-function subset_extras(cs::ChainOrSummary)
-    return cs[extras(cs)]
+function subset_extras(c::FlexiChain)
+    # Extras don't need structures, so we can safely drop them
+    return _drop_structures(c[extras(c)])
+end
+function subset_extras(s::FlexiSummary)
+    return s[extras(s)]
 end
