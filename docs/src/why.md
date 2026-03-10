@@ -51,8 +51,7 @@ However, if you attempt to use the value of `x` somewhere where it needs to be a
     return sum(x)
 end
 
-mchain = sample(Xoshiro(468), f2(), MH(), 50; chain_type=MCMCChains.Chains)
-nothing # hide
+mchain = sample(Xoshiro(468), f2(), MH(), 50; chain_type=MCMCChains.Chains);
 ```
 
 you will find that it errors, because `n` is stored as `2.0` in the chain:
