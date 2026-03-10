@@ -18,7 +18,6 @@ In my opinion.
 
 ```@example types
 using Random, Turing, FlexiChains, MCMCChains
-setprogress!(false)
 
 @model function f()
     x ~ Normal()
@@ -31,8 +30,8 @@ When sampling from this model, one should expect that the samples of `x` are sto
 Under the hood, MCMCChains stores the values of all parameters in a single array, which means that all samples get converted into the same type.
 
 ```@example types
-mchain = sample(Xoshiro(468), f(), MH(), 50; chain_type=MCMCChains.Chains)
-fchain = sample(Xoshiro(468), f(), MH(), 50; chain_type=FlexiChains.VNChain)
+mchain = sample(Xoshiro(468), f(), MH(), 50; chain_type=MCMCChains.Chains);
+fchain = sample(Xoshiro(468), f(), MH(), 50; chain_type=FlexiChains.VNChain);
 
 (eltype(mchain[:y]), eltype(fchain[:y]))
 ```
@@ -232,8 +231,8 @@ If you have `x` stored as a full vector, you can also do fancy things like index
 
 ```@example reconstruct
 @model function varlen_again()
-   n ~ Poisson(3.5)
-   x ~ MvNormal(zeros(n), I)
+    n ~ Poisson(3.5)
+    x ~ MvNormal(zeros(n), I)
 end
 
 fchain = sample(Xoshiro(468), varlen_again(), MH(), 5; chain_type=FlexiChains.VNChain);

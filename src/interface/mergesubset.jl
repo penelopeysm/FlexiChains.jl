@@ -82,6 +82,7 @@ end
 Subset a chain or summary, retaining only the keys that are `Extra`s (i.e. not parameters).
 """
 function subset_extras(c::FlexiChain)
+    # Extras don't need structures, so we can safely drop them
     return _drop_structures(c[extras(c)])
 end
 function subset_extras(s::FlexiSummary)

@@ -443,6 +443,8 @@ function DynamicPPL.predict(
                 Parameter(vn) => val for
                 (vn, val) in pairs(vnt) if (include_all || !(vn in existing_parameters))
             )
+            # Use skeletons from reevaluation, since they will be appropriate for the new
+            # chain that we are constructing.
             skeleton = DynamicPPL.skeleton(vnt)
             # Tack on the probabilities
             p_dict[FlexiChains._LOGPRIOR_KEY] = DynamicPPL.getlogprior(vi)
