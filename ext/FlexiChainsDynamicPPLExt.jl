@@ -235,18 +235,9 @@ function DynamicPPL.InitFromParams(
     chain::Union{Int,DD.At},
     fallback::Union{DynamicPPL.AbstractInitStrategy,Nothing}=DynamicPPL.InitFromPrior(),
 )
-    # Note that this is functionally the same as `InitFromFlexiChain` but it is more
-    # flexible because it allows `DD.At` indices, and it also allows for split-VarNames
-    # (although that's an unlikely situation). I think conceptually, the difference is that
-    # `InitFromParams` isn't meant to be used in tight loops / performance-sensitive code,
-    # and can thus give more guarantees about flexibility, whereas
-    # `InitFromFlexiChain` is really meant for internal use only.
-    return DynamicPPL.InitFromParams(FlexiChains.parameters_at(chn, iter, chain), fallback)
+    return InitFromFlexiChain(chn, iter, chain, fallback)
 end
 
-##################################
-# Optimisation for parameters_at #
-##################################
 """
     InitFromFlexiChain(
         chain::FlexiChain, iter_index::Int, chain_index::Int, fallback=nothing
@@ -441,23 +432,26 @@ function DynamicPPL.predict(
     existing_parameters = Set(FlexiChains.parameters(chain))
     accs = _default_reevaluate_accs()
     fallback = DynamicPPL.InitFromPrior()
-    param_dicts = map(reevaluate(rng, model, chain, accs, fallback)) do (_, vi)
-        vnt = DynamicPPL.densify!!(DynamicPPL.get_raw_values(vi))
-        p_dict = OrderedDict{ParameterOrExtra{<:VarName},Any}(
-            Parameter(vn) => val for
-            (vn, val) in pairs(vnt) if (include_all || !(vn in existing_parameters))
-        )
-        # Tack on the probabilities
-        p_dict[FlexiChains._LOGPRIOR_KEY] = DynamicPPL.getlogprior(vi)
-        p_dict[FlexiChains._LOGJOINT_KEY] = DynamicPPL.getlogjoint(vi)
-        p_dict[FlexiChains._LOGLIKELIHOOD_KEY] = DynamicPPL.getloglikelihood(vi)
-        p_dict
-    end
+    param_dicts_and_skeletons =
+        map(reevaluate(rng, model, chain, accs, fallback)) do (_, vi)
+            vnt = DynamicPPL.densify!!(DynamicPPL.get_raw_values(vi))
+            p_dict = OrderedDict{ParameterOrExtra{<:VarName},Any}(
+                Parameter(vn) => val for
+                (vn, val) in pairs(vnt) if (include_all || !(vn in existing_parameters))
+            )
+            skeleton = DynamicPPL.skeleton(vnt)
+            # Tack on the probabilities
+            p_dict[FlexiChains._LOGPRIOR_KEY] = DynamicPPL.getlogprior(vi)
+            p_dict[FlexiChains._LOGJOINT_KEY] = DynamicPPL.getlogjoint(vi)
+            p_dict[FlexiChains._LOGLIKELIHOOD_KEY] = DynamicPPL.getloglikelihood(vi)
+            (p_dict, skeleton)
+        end
     ni, nc = size(chain)
     predictions_chain = FlexiChain{VarName}(
         ni,
         nc,
-        param_dicts;
+        map(first, param_dicts_and_skeletons);
+        structures=map(last, param_dicts_and_skeletons),
         iter_indices=FlexiChains.iter_indices(chain),
         chain_indices=FlexiChains.chain_indices(chain),
     )

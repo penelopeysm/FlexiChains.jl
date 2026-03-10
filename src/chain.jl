@@ -584,3 +584,25 @@ function _replace_data(chain::FlexiChain, ::Type{newkey}, new_data) where {newke
         last_sampler_state=last_sampler_state(chain),
     )
 end
+
+"""
+    _drop_structures(chain::FlexiChain)
+
+Construct a new `FlexiChain` with the same data and metadata as `chain`, but with the
+`_structures` field set to a matrix of `nothing`.
+
+!!! danger
+    Do not use this function unless you are very sure of what you are doing!
+"""
+function _drop_structures(chain::FlexiChain{TKey}) where {TKey}
+    return FlexiChain{TKey}(
+        niters(chain),
+        nchains(chain),
+        chain._data;
+        structures=fill(nothing, size(chain._structures)),
+        iter_indices=iter_indices(chain),
+        chain_indices=chain_indices(chain),
+        sampling_time=sampling_time(chain),
+        last_sampler_state=last_sampler_state(chain),
+    )
+end

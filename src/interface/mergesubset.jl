@@ -77,10 +77,13 @@ function subset_parameters(cs::ChainOrSummary)
 end
 
 """
-    subset_extras(chain::FlexiChain)
+    subset_extras(cs::ChainOrSummary)
 
-Subset a chain, retaining only the keys that are `Extra`s (i.e. not parameters).
+Subset a chain or summary, retaining only the keys that are `Extra`s (i.e. not parameters).
 """
-function subset_extras(cs::ChainOrSummary)
-    return cs[extras(cs)]
+function subset_extras(c::FlexiChain)
+    return _drop_structures(c[extras(c)])
+end
+function subset_extras(s::FlexiSummary)
+    return s[extras(s)]
 end
