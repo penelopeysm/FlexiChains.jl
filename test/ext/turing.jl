@@ -419,9 +419,9 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "No value was provided" logprior(xy(), chn)
-            @test_throws "No value was provided" loglikelihood(xy(), chn)
-            @test_throws "No value was provided" logjoint(xy(), chn)
+            @test_throws "not found in chain" logprior(xy(), chn)
+            @test_throws "not found in chain" loglikelihood(xy(), chn)
+            @test_throws "not found in chain" logjoint(xy(), chn)
         end
 
         @testset "with non-standard Array variables" begin
@@ -486,13 +486,9 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "No value was provided" DynamicPPL.pointwise_logdensities(
-                xy(), chn
-            )
-            @test_throws "No value was provided" DynamicPPL.pointwise_loglikelihoods(
-                xy(), chn
-            )
-            @test_throws "No value was provided" DynamicPPL.pointwise_prior_logdensities(
+            @test_throws "not found in chain" DynamicPPL.pointwise_logdensities(xy(), chn)
+            @test_throws "not found in chain" DynamicPPL.pointwise_loglikelihoods(xy(), chn)
+            @test_throws "not found in chain" DynamicPPL.pointwise_prior_logdensities(
                 xy(), chn
             )
         end
@@ -547,7 +543,7 @@ end
                 return y ~ Normal()
             end
             chn = sample(xonly(), NUTS(), 100; chain_type=VNChain, verbose=false)
-            @test_throws "No value was provided" returned(xy(), chn)
+            @test_throws "not found in chain" returned(xy(), chn)
         end
 
         @testset "stacks DimArray return values" begin

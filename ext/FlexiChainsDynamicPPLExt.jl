@@ -274,6 +274,41 @@ struct InitFromFlexiChain{
     iter_index::Int
     chain_index::Int
     fallback::S
+    _top_syms::Set{Symbol}
+    function InitFromFlexiChain(
+        chain::C, iter_index::Int, chain_index::Int, fallback::S=nothing
+    ) where {C<:FlexiChains.VNChain,S<:Union{DynamicPPL.AbstractInitStrategy,Nothing}}
+        top_syms = Set{Symbol}(
+            AbstractPPL.getsym(vn) for vn in FlexiChains.parameters(chain)
+        )
+        return new{C,S}(chain, iter_index, chain_index, fallback, top_syms)
+    end
+end
+"""
+    _reconstruct_symbol(strategy::InitFromFlexiChain, sym::Symbol) -> VarNamedTuple
+
+Reconstruct a partial `VarNamedTuple` containing only the parameters from the chain that
+share the given top-level symbol `sym`. This avoids the cost of reconstructing the full
+VNT when we only need one variable.
+"""
+function _reconstruct_symbol(strategy::InitFromFlexiChain, sym::Symbol)
+    chn = strategy.chain
+    i_1based = DD.selectindices(FlexiChains.iter_indices(chn), strategy.iter_index)
+    c_1based = DD.selectindices(FlexiChains.chain_indices(chn), strategy.chain_index)
+    structure = chn._structures[i_1based, c_1based]
+    template = if structure isa VarNamedTuple
+        get(structure.data, sym, DynamicPPL.NoTemplate())
+    else
+        DynamicPPL.NoTemplate()
+    end
+    vnt = DynamicPPL.VarNamedTuple()
+    for chain_vn in FlexiChains.parameters(chn)
+        AbstractPPL.getsym(chain_vn) == sym || continue
+        val = chn._data[FlexiChains.Parameter(chain_vn)][i_1based, c_1based]
+        ismissing(val) && continue
+        vnt = DynamicPPL.templated_setindex!!(vnt, val, chain_vn, template)
+    end
+    return vnt
 end
 function DynamicPPL.init(
     rng::Random.AbstractRNG,
@@ -295,13 +330,18 @@ function DynamicPPL.init(
         x = strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
         return UntransformedValue(x)
     else
-        # TODO: We could be smarter here; if the variable is completely a different symbol
-        # from whatever is in the chain, we could skip straight to the fallback.
-        vnt = FlexiChains.parameters_at(
-            strategy.chain, strategy.iter_index, strategy.chain_index
-        )
-        augmented_fallback = DynamicPPL.InitFromParams(vnt, strategy.fallback)
-        return DynamicPPL.init(rng, vn, dist, augmented_fallback)
+        # Check if any parameter in the chain shares the same top-level symbol. If not,
+        # we can skip the expensive VNT reconstruction and go straight to the fallback.
+        has_matching_sym = AbstractPPL.getsym(vn) in strategy._top_syms
+        if has_matching_sym
+            partial_vnt = _reconstruct_symbol(strategy, AbstractPPL.getsym(vn))
+            augmented_fallback = DynamicPPL.InitFromParams(partial_vnt, strategy.fallback)
+            return DynamicPPL.init(rng, vn, dist, augmented_fallback)
+        elseif strategy.fallback !== nothing
+            return DynamicPPL.init(rng, vn, dist, strategy.fallback)
+        else
+            error("Variable $vn not found in chain and no fallback strategy provided.")
+        end
     end
 end
 
