@@ -65,7 +65,7 @@ function values_at(
     # version to explicitly dispatch on.
     ::Type{Nothing}=Nothing,
 ) where {TKey}
-    return reconstruct_values(chn, iter, chain, chn.structure[iter=iter, chain=chain])
+    return reconstruct_values(chn, iter, chain, chn._structures[iter=iter, chain=chain])
 end
 function values_at(
     chn::FlexiChain{TKey}, iter::Union{Int,DD.At}, chain::Union{Int,DD.At}, ::Type{T}
@@ -150,7 +150,7 @@ function parameters_at(
     # version to explicitly dispatch on.
     ::Type{Nothing}=Nothing,
 ) where {TKey}
-    return reconstruct_parameters(chn, iter, chain, chn.structure[iter=iter, chain=chain])
+    return reconstruct_parameters(chn, iter, chain, chn._structures[iter=iter, chain=chain])
 end
 function parameters_at(
     chn::FlexiChain{TKey}, iter::Union{Int,DD.At}, chain::Union{Int,DD.At}, ::Type{T}
