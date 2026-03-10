@@ -70,6 +70,34 @@ function AbstractMCMC.bundle_samples(
     )
 end
 
+function FlexiChains.reconstruct_values(chn::VNChain, i, j, structure::VarNamedTuple)
+    vnt = DynamicPPL.VarNamedTuple()
+    nt = NamedTuple()
+    for param_or_extra in keys(chn)
+        val = chn[param_or_extra][i, j]
+        if param_or_extra isa Parameter
+            vn = param_or_extra.name
+            top_sym = AbstractPPL.getsym(vn)
+            template = get(structure.data, top_sym, DynamicPPL.NoTemplate())
+            vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
+        elseif param_or_extra isa Extra
+            nt = merge(nt, (; Symbol(param_or_extra.name) => val))
+        end
+    end
+    return DynamicPPL.ParamsWithStats(vnt, nt)
+end
+
+function FlexiChains.reconstruct_parameters(chn::VNChain, i, j, structure::VarNamedTuple)
+    vnt = DynamicPPL.VarNamedTuple()
+    for vn in FlexiChains.parameters(chn)
+        val = chn[Parameter(vn)][i, j]
+        top_sym = AbstractPPL.getsym(vn)
+        template = get(structure.data, top_sym, DynamicPPL.NoTemplate())
+        vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
+    end
+    return vnt
+end
+
 ##################################################
 # AbstractMCMC.{to,from}_samples implementations #
 ##################################################
@@ -97,7 +125,11 @@ function AbstractMCMC.from_samples(
         end
         d
     end
-    return VNChain(size(params_and_stats, 1), size(params_and_stats, 2), dicts)
+    # And get the structures.
+    structures = map(ps -> DynamicPPL.skeleton(ps.params), params_and_stats)
+    return VNChain(
+        size(params_and_stats, 1), size(params_and_stats, 2), dicts; structures=structures
+    )
 end
 
 """
@@ -114,45 +146,66 @@ The axes of the `DimMatrix` are the same as those of the input `VNChain`.
 function AbstractMCMC.to_samples(
     ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}, model::DynamicPPL.Model
 )::DD.DimMatrix{<:DynamicPPL.ParamsWithStats} where {T<:VarName}
-    template_vnt = rand(model)
-    dicts = FlexiChains.values_at(chain, :, :)
-    return map(dicts) do d
-        # Params
-        vnt = DynamicPPL.VarNamedTuple()
-        for (vn_param, val) in d
-            if vn_param isa Parameter{<:T}
-                vn = vn_param.name
-                top_sym = AbstractPPL.getsym(vn)
-                template = get(template_vnt.data, top_sym, DynamicPPL.NoTemplate())
-                vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
+    template_vnt = nothing # Set later on-demand.
+    # If there is no skeletal VNT structure stored, then values_at will return a Dict.
+    # Otherwise it will return a ParamsWithStats
+    dicts_or_pwss = FlexiChains.values_at(chain, :, :)
+    pwss = map(dicts_or_pwss) do d_or_pws
+        if d_or_pws isa DynamicPPL.ParamsWithStats
+            d_or_pws
+        else
+            # No skeleton -- rerun the model once to get a template, and pray that
+            # it's accurate.
+            if template_vnt === nothing
+                template_vnt = rand(model)
             end
+            # Then attempt to reconstruct
+            vnt = DynamicPPL.VarNamedTuple()
+            for (vn_param, val) in pairs(d_or_pws)
+                if vn_param isa Parameter
+                    vn = vn_param.name
+                    top_sym = AbstractPPL.getsym(vn)
+                    template = get(template_vnt.data, top_sym, DynamicPPL.NoTemplate())
+                    vnt = DynamicPPL.templated_setindex!!(vnt, val, vn, template)
+                end
+            end
+            # Stats
+            stats_nt = NamedTuple(
+                Symbol(extra_param.name) => val for
+                (extra_param, val) in d_or_pws if extra_param isa Extra
+            )
+            DynamicPPL.ParamsWithStats(vnt, stats_nt)
         end
-        # Stats
-        stats_nt = NamedTuple(
-            Symbol(extra_param.name) => val for
-            (extra_param, val) in d if extra_param isa Extra
-        )
-        DynamicPPL.ParamsWithStats(vnt, stats_nt)
     end
+    return FlexiChains._raw_to_user_data(chain, pwss)
 end
+
 function AbstractMCMC.to_samples(
     ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}
 )::DD.DimMatrix{<:DynamicPPL.ParamsWithStats} where {T<:VarName}
-    dicts = FlexiChains.values_at(chain, :, :)
-    return map(dicts) do d
-        # Params
-        vnt = VarNamedTuple(
-            OrderedDict{T,Any}(
-                vn_param.name => val for (vn_param, val) in d if vn_param isa Parameter{<:T}
-            ),
-        )
-        # Stats
-        stats_nt = NamedTuple(
-            Symbol(extra_param.name) => val for
-            (extra_param, val) in d if extra_param isa Extra
-        )
-        DynamicPPL.ParamsWithStats(vnt, stats_nt)
+    # If there is no skeletal VNT structure stored, then values_at will return a Dict.
+    # Otherwise it will return a ParamsWithStats
+    dicts_or_pwss = FlexiChains.values_at(chain, :, :)
+    pwss = map(dicts_or_pwss) do d_or_pws
+        if d_or_pws isa DynamicPPL.ParamsWithStats
+            d_or_pws
+        else
+            # No skeleton. Just cry and use setindex!!.
+            vnt = DynamicPPL.VarNamedTuple()
+            for (vn_param, val) in pairs(d_or_pws)
+                if vn_param isa Parameter
+                    vnt = DynamicPPL.setindex!!(vnt, val, vn_param.name)
+                end
+            end
+            # Stats
+            stats_nt = NamedTuple(
+                Symbol(extra_param.name) => val for
+                (extra_param, val) in d_or_pws if extra_param isa Extra
+            )
+            DynamicPPL.ParamsWithStats(vnt, stats_nt)
+        end
     end
+    return FlexiChains._raw_to_user_data(chain, pwss)
 end
 
 # This method will make `bundle_samples` 'just work'
