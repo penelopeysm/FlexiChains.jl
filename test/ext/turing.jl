@@ -317,6 +317,33 @@ end
         @test logpdf.(Normal(), c[@varname(x)]) ≈ c[Extra(:logprior)]
     end
 
+    @testset "parameters_at and values_at" begin
+        @model function f()
+            x ~ Normal()
+            y = zeros(3)
+            y[2] ~ Normal()
+            z = (; a=nothing)
+            return z.a ~ Normal()
+        end
+        Ni, Nc = 10, 2
+        # These should give the same results, but chn is just the ParamsWithStats
+        # bundled into a VNChain. (For chain_type=Any, default bundle_samples gives
+        # a vector of vectors, so we use stack to get it into an Ni * Nc matrix.)
+        chn = sample(Xoshiro(468), f(), Prior(), MCMCSerial(), Ni, Nc; chain_type=VNChain)
+        pwss = stack(
+            sample(Xoshiro(468), f(), Prior(), MCMCSerial(), Ni, Nc; chain_type=Any)
+        )
+
+        for i in 1:Ni, c in 1:Nc
+            prms = FlexiChains.parameters_at(chn, i, c)
+            @test prms isa VarNamedTuple
+            @test prms == pwss[i, c].params
+            vals = FlexiChains.values_at(chn, i, c)
+            @test vals isa DynamicPPL.ParamsWithStats
+            @test vals == pwss[i, c]
+        end
+    end
+
     @testset "AbstractMCMC.to_samples" begin
         @model function f(z)
             x ~ Normal()
@@ -332,28 +359,24 @@ end
         c = AbstractMCMC.from_samples(VNChain, ps)
 
         # Then convert back to ParamsWithStats
-        @testset "with model" begin
-            arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c, model)
-            @test size(arr_pss) == (50, 1)
-            for i in 1:50
-                new_p = arr_pss[i, 1]
-                p = ps[i]
-                @test new_p.params == p.params
-                @test new_p.stats == p.stats
-            end
+        @model function newmodel()
+            error(
+                "This model should never be run, because there is structure info" *
+                " in the chain.",
+            )
+            x ~ Normal()
+            return nothing
         end
 
+        @testset "with model" begin
+            # Make sure that the model isn't actually ever used, by passing one that
+            # errors when run.
+            arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c, newmodel())
+            @test arr_pss == ps
+        end
         @testset "without model" begin
-            # In this case, because there are no arrays / special templates, the
-            # conversion with and without the model is identical.
             arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c)
-            @test size(arr_pss) == (50, 1)
-            for i in 1:50
-                new_p = arr_pss[i, 1]
-                p = ps[i]
-                @test new_p.params == p.params
-                @test new_p.stats == p.stats
-            end
+            @test arr_pss == ps
         end
     end
 
