@@ -18,6 +18,7 @@ In my opinion.
 
 ```@example types
 using Random, Turing, FlexiChains, MCMCChains
+setprogress!(false)
 
 @model function f()
     x ~ Normal()
@@ -32,20 +33,48 @@ Under the hood, MCMCChains stores the values of all parameters in a single array
 ```@example types
 mchain = sample(Xoshiro(468), f(), MH(), 50; chain_type=MCMCChains.Chains)
 fchain = sample(Xoshiro(468), f(), MH(), 50; chain_type=FlexiChains.VNChain)
+
 (eltype(mchain[:y]), eltype(fchain[:y]))
 ```
 
-In general, this doesn't cause problems with functions like `predict` because Distributions.jl kindly allows you to call `logpdf(::Poisson, x::Float64)` and returns the correct value if `isinteger(x)`.
-In fact, this is true of all discrete univariate distributions in Distributions.jl.
-But if you were to define your own discrete distribution, you would have to remember to implement this method, or else you would get an error when trying to use things like `predict`.
+Now, Distributions.jl kindly allows you to call `logpdf(::Poisson, x::Float64)` and returns the correct value if `isinteger(x)`.
+So, if your model is simple enough, you can still use functions such as `returned` and `predict` without running into errors, even with MCMCChains.
+
+However, if you attempt to use the value of `x` somewhere where it needs to be an integer, such as...
+
+```@example types
+@model function f2()
+    # A more realistic scenario is `n ~ Poisson(...)`.
+    # That errors with MCMCChains for a *different* reason;
+    # we'll come to that in a while.
+    n ~ DiscreteUniform(2, 2)
+    x ~ MvNormal(zeros(n), I)
+    return sum(x)
+end
+
+mchain = sample(Xoshiro(468), f2(), MH(), 50; chain_type=MCMCChains.Chains)
+nothing # hide
+```
+
+you will find that it errors, because `n` is stored as `2.0` in the chain:
+
+```@example types
+try #hide
+returned(f2(), mchain)
+catch e; showerror(stdout, e); end # hide
+```
+
+Now, you *could* work around this with `zeros(Int(n))`, but that's deeply unsatisfying, because `n` really *should* be an integer.
+Good news: FlexiChains will store it as an integer for you!
+
+```@example types
+fchain = sample(Xoshiro(468), f2(), MH(), 50; chain_type=FlexiChains.VNChain)
+returned(f2(), fchain)
+```
 
 ## Missing data
 
-Okay, maybe the above is still quite abstract.
-(For us, it's not: we actually ran into a bug with Turing's test suite once because of this very issue.)
-But after all, if it works for everything in Distributions, surely we're fine?
-
-Consider the case where some data is missing:
+As a variant on the above bug with proper type representation, consider the case where some data is missing:
 
 ```@example missing
 using Random, Turing, FlexiChains, MCMCChains
@@ -75,6 +104,61 @@ In Turing's MCMC sampling, the first step is not an actual MCMC step, but rather
 Thus, there are no 'sampler statistics' for the first step, and these are stored as `missing` in MCMCChains.
 That means that all the parameters become `Union{Missing, Float64}`!
 
+## Variable-length parameters
+
+Above we used an example with `DiscreteUniform(2, 2)` to demonstrate what happens when `Int`-valued parameters get converted to `Float`s.
+This is of course a bit pointless since sampling from that always gives `2`.
+Let's see now what happens when we have a truly variable-length parameter:
+
+```@example varlen
+using Random, Turing, FlexiChains, MCMCChains
+
+@model function varlen()
+    n ~ Poisson(3.5)
+    x ~ MvNormal(zeros(n), I)
+    y ~ Normal(sum(x))
+end
+
+model = varlen()
+cond_model = varlen() | (; y = 2.0)
+
+mchain = sample(Xoshiro(468), cond_model, MH(), 50; chain_type=MCMCChains.Chains);
+fchain = sample(Xoshiro(468), cond_model, MH(), 50; chain_type=FlexiChains.VNChain);
+nothing # hide
+```
+
+So far, so good; we can sample from everything just fine.
+The trouble comes when you want to use something like `predict` or `returned` which involves feeding the samples from the chain back into the model.
+
+```@example varlen
+try #hide
+predict(model, mchain)
+catch e; showerror(stdout, e); end # hide
+```
+
+!!! warning
+    The above will *probably* fail, but it *can* actually run successfully, if you are lucky enough to get a sample where `n` is larger than or equal to that in all the other samples.
+    If the built docs don't show an error, try running it in the REPL, and you'll find that it will almost always fail.
+
+The reason why MCMCChains fails here is because it does two things:
+
+1. It stores `x` as a series of elements `x[1]`, `x[2]`, and so on.
+2. When reconstructing the value of `x` for use in the model, it doesn't know how long `x` is *supposed* to be.
+   It determines this by running the model once, and taking the value of `x` from *that specific* run of the model.
+
+This of course ignores the fact that `x` can have different lengths.
+
+In contrast, FlexiChains does two things:
+
+1. Where possible, it will store `x` as a single parameter.
+2. As a guard against situations where this isn't possible (e.g. if not all values of `x` are filled in), it *also* stores the structure of `x` as part of the chain, so that it can always reconstruct it correctly.
+
+This means that regardless of what value `n` takes in the samples, `predict` and `returned` will always work correctly with FlexiChains.
+
+```@example varlen
+predict(model, fchain)
+```
+
 ## Arbitrary types
 
 [Turing provides this very nice operator `:=`](https://turinglang.org/docs/usage/tracking-extra-quantities/), which lets you store arbitrary values in the chain during an MCMC run.
@@ -90,7 +174,7 @@ using Random, Turing, FlexiChains, MCMCChains
     y := "$x"
 end
 try #hide
-mchain = sample(Xoshiro(468), hasstring(), MH(), 50; chain_type=MCMCChains.Chains, progress=false)
+mchain = sample(Xoshiro(468), hasstring(), MH(), 50; chain_type=MCMCChains.Chains)
 catch e; showerror(stdout, e); end # hide
 ```
 
@@ -108,6 +192,7 @@ Suppose you have some array-valued parameter.
 
 ```@example reconstruct
 using Random, Turing, FlexiChains, MCMCChains
+setprogress!(false)
 
 @model lkj() = x ~ LKJCholesky(3, 2.0)
 
@@ -141,6 +226,82 @@ fchain[@varname(x.L[1,1])][iter=1, chain=1] # No space!
 
 ```@example reconstruct
 fchain[@varname(x.L[:, 1])][iter=1, chain=1] # Index into `x` any way you like
+```
+
+If you have `x` stored as a full vector, you can also do fancy things like indexing into `x[end]`, which will give you the last element of `x` regardless of how long it is in that particular sample.
+
+```@example reconstruct
+@model function varlen_again()
+   n ~ Poisson(3.5)
+   x ~ MvNormal(zeros(n), I)
+end
+
+fchain = sample(Xoshiro(468), varlen_again(), MH(), 5; chain_type=FlexiChains.VNChain);
+fchain[@varname(x)]
+```
+
+```@example reconstruct
+fchain[@varname(x[end])]
+```
+
+## Interoperability with the rest of Turing
+
+Suppose you have sampled a chain, and you want to use something from it as the starting point for a new chain, or a new optimisation, or something.
+
+```@example interop
+using Random, Turing, FlexiChains, MCMCChains
+
+@model function twonorm()
+    x ~ Normal()
+    y ~ Normal()
+    return x + y
+end
+
+mchain = sample(Xoshiro(468), twonorm(), MH(), 50; chain_type=MCMCChains.Chains);
+fchain = sample(Xoshiro(468), twonorm(), MH(), 50; chain_type=FlexiChains.VNChain);
+```
+
+Let's say you want to use the last sample of `x` as the starting point for another sampler.
+
+```@example interop
+Array(mchain)[50, :, :]
+```
+
+Even at this early point, it is already quite ugly: you have to know that the samples are stored in a 3D array, and that the first dimension corresponds to iterations, the second to parameters, and the third to chains.
+Secondly, it gives you a *vector* of parameters, and it's nontrivial to figure out from this how these map to the original variables in the model.
+You *can* use
+
+```@example interop
+names(MCMCChains.get_sections(mchain, :parameters))
+```
+
+and for this trivial model it's very clear that the first one is `x` and the second is `y`.
+However, this generalises to complex samples very poorly (consider e.g. matrices and Cholesky samples again), and is *very* difficult to write in a programmatic way!
+
+In contrast, with FlexiChains, you can just do
+
+```@example interop
+vnt = FlexiChains.parameters_at(fchain, 50, 1)
+```
+
+which directly gives you a `VarNamedTuple` that will 'just work' with the rest of Turing.
+For example, you can use it as the starting point for a new sampler:
+
+```@example interop
+init = InitFromParams(vnt)
+sample(twonorm(), NUTS(), 50; initial_params=init, chain_type=FlexiChains.VNChain)
+```
+
+or use it to begin an optimisation (a bit pointless for our trivial model, but you get the idea!):
+
+```@example interop
+maximum_a_posteriori(twonorm(); initial_params=init)
+```
+
+or pass it to a function like `returned`:
+
+```@example interop
+returned(twonorm(), vnt)
 ```
 
 ## Performance (on important things)
