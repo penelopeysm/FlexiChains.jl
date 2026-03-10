@@ -220,11 +220,21 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractMCMC.AbstractCh
     """
     _metadata::TMetadata
 
+    """
+    A 'structure' object, one per sample, that can be used to upconvert the OrderedDict
+    representation of the data into a richer information format. This is in general
+    `nothing`, but Turing.jl in particular hijacks this field to store a skeleton
+    `VarNamedTuple`, allowing for functions like `parameters_at` to return `VarNamedTuple`s
+    instead of `OrderedDict{VarName}`.
+    """
+    _structures::Matrix{<:Any}
+
     @doc """
         FlexiChain{TKey}(
             niters::Int,
             nchains::Int,
             array_of_dicts::AbstractArray{<:AbstractDict,N};
+            structures::AbstractArray{<:Any,N}=fill(nothing, size(array_of_dicts)),
             iter_indices::AbstractVector{Int}=1:niters,
             chain_indices::AbstractVector{Int}=1:nchains,
             sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
@@ -244,6 +254,12 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractMCMC.AbstractCh
     `(niter, nchains) = size(dicts)`.
 
     Other values of `N` will error.
+
+    ## Structures
+
+    The `structures` keyword argument can be used to provide an array of 'structures'.
+    See the docstring for the `_structures` field for more information. The array must
+    have the same size as `array_of_dicts`.
 
     ## Metadata
 
@@ -266,6 +282,7 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractMCMC.AbstractCh
         niters::Int,
         nchains::Int,
         array_of_dicts::AbstractArray{<:AbstractDict};
+        structures::AbstractArray{<:Any}=fill(nothing, niters, nchains),
         iter_indices::AbstractVector{Int}=1:niters,
         chain_indices::AbstractVector{Int}=1:nchains,
         sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
@@ -276,6 +293,12 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractMCMC.AbstractCh
         metadata = FlexiChainMetadata(
             niters, nchains, iter_indices, chain_indices, sampling_time, last_sampler_state
         )
+
+        # Check structures array size
+        if size(structures) != (niters, nchains)
+            msg = "expected `structures` to have size ($(niters), $(nchains)), but got $(size(structures))."
+            throw(DimensionMismatch(msg))
+        end
 
         # Extract all unique keys from the dictionaries
         keys_set = OrderedSet{ParameterOrExtra{<:TKey}}()
@@ -297,7 +320,7 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractMCMC.AbstractCh
             # Store in the data dictionary
             data[key] = _check_size(values, niters, nchains; key_name=key)
         end
-        return new{TKey,typeof(metadata)}(data, metadata)
+        return new{TKey,typeof(metadata)}(data, metadata, structures)
     end
 
     @doc """
@@ -305,6 +328,7 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractMCMC.AbstractCh
             niters::Int,
             nchains::Int,
             dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}};
+            structures::AbstractArray{<:Any,N}=fill(nothing, niters, nchains),
             iter_indices::AbstractVector{Int}=1:niters,
             chain_indices::AbstractVector{Int}=1:nchains,
             sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
@@ -347,6 +371,7 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractMCMC.AbstractCh
         niters::Int,
         nchains::Int,
         dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any}};
+        structures::AbstractArray{<:Any}=fill(nothing, niters, nchains),
         iter_indices::AbstractVector{Int}=1:niters,
         chain_indices::AbstractVector{Int}=1:nchains,
         sampling_time::AbstractVector{<:Union{Real,Missing}}=fill(missing, nchains),
@@ -357,6 +382,12 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractMCMC.AbstractCh
         metadata = FlexiChainMetadata(
             niters, nchains, iter_indices, chain_indices, sampling_time, last_sampler_state
         )
+
+        # Check structures array size
+        if size(structures) != (niters, nchains)
+            msg = "expected `structures` to have size ($(niters), $(nchains)), but got $(size(structures))."
+            throw(DimensionMismatch(msg))
+        end
 
         data = OrderedDict{ParameterOrExtra{<:TKey},Matrix}()
         for (key, array) in pairs(dict_of_arrays)
@@ -369,7 +400,7 @@ struct FlexiChain{TKey,TMetadata<:FlexiChainMetadata} <: AbstractMCMC.AbstractCh
             data[key] = _check_size(array, niters, nchains; key_name=key)
         end
 
-        return new{TKey,typeof(metadata)}(data, metadata)
+        return new{TKey,typeof(metadata)}(data, metadata, structures)
     end
 end
 
@@ -408,6 +439,7 @@ function renumber_iters(
         niters(chain),
         nchains(chain),
         chain._data;
+        structures=chain._structures,
         iter_indices=iter_indices,
         chain_indices=chain_indices(chain),
         sampling_time=sampling_time(chain),
@@ -430,6 +462,7 @@ function renumber_chains(
         niters(chain),
         nchains(chain),
         chain._data;
+        structures=chain._structures,
         iter_indices=iter_indices(chain),
         chain_indices=chain_indices,
         sampling_time=sampling_time(chain),
@@ -544,6 +577,7 @@ function _replace_data(chain::FlexiChain, ::Type{newkey}, new_data) where {newke
         niters(chain),
         nchains(chain),
         new_data;
+        structures=chain._structures,
         iter_indices=iter_indices(chain),
         chain_indices=chain_indices(chain),
         sampling_time=sampling_time(chain),

@@ -14,6 +14,60 @@ using DynamicPPL:
 using OrderedCollections: OrderedDict
 using Random: Random
 
+##################
+# bundle_samples #
+##################
+function AbstractMCMC.bundle_samples(
+    # TODO(penelopeysm): When VarNamedTuple is moved into AbstractPPL, this can go back
+    # into src/ rather than the extension.
+    transitions::AbstractVector,
+    @nospecialize(m::AbstractMCMC.AbstractModel),
+    @nospecialize(s::AbstractMCMC.AbstractSampler),
+    last_sampler_state::Any,
+    chain_type::Type{FlexiChain{VarName}};
+    save_state=false,
+    stats=missing,
+    discard_initial::Int=0,
+    thinning::Int=1,
+    _kwargs...,
+)::FlexiChain{VarName}
+    niters = length(transitions)
+    vnts_and_stats = map(to_vnt_and_stats, transitions)
+    dicts = map(vnts_and_stats) do (vnt, stat)
+        d = OrderedDict{ParameterOrExtra{VarName},Any}(
+            Parameter(vn) => val for (vn, val) in pairs(vnt)
+        )
+        for (stat_vn, stat_val) in pairs(stat)
+            d[Extra(stat_vn)] = stat_val
+        end
+        d
+    end
+    skeletons = map(DynamicPPL.skeleton ∘ first, vnts_and_stats)
+    # timings
+    tm = stats === missing ? missing : stats.stop - stats.start
+    # last sampler state
+    st = save_state ? last_sampler_state : missing
+    # calculate iteration indices
+    start = discard_initial + 1
+    iter_indices = if thinning != 1
+        range(start; step=thinning, length=niters)
+    else
+        # This returns UnitRange not StepRange -- a bit cleaner
+        start:(start + niters - 1)
+    end
+    return FlexiChain{VarName}(
+        niters,
+        1,
+        dicts;
+        structures=skeletons,
+        iter_indices=iter_indices,
+        # 1:1 gives nicer DimMatrix output than just [1]
+        chain_indices=1:1,
+        sampling_time=[tm],
+        last_sampler_state=[st],
+    )
+end
+
 ##################################################
 # AbstractMCMC.{to,from}_samples implementations #
 ##################################################
@@ -100,27 +154,11 @@ function AbstractMCMC.to_samples(
 end
 
 # This method will make `bundle_samples` 'just work'
-function FlexiChains.to_varname_dict(
-    pws::DynamicPPL.ParamsWithStats
-)::OrderedDict{ParameterOrExtra{<:VarName},Any}
-    d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
-    for (varname, value) in pairs(pws.params)
-        d[Parameter(varname)] = value
-    end
-    # add in the transition stats (if available)
-    for (key, value) in pairs(pws.stats)
-        d[Extra(key)] = value
-    end
-    return d
+function FlexiChains.to_vnt_and_stats(pws::DynamicPPL.ParamsWithStats)
+    return (pws.params, pws.stats)
 end
-function FlexiChains.to_varname_dict(
-    vnt::DynamicPPL.VarNamedTuple
-)::OrderedDict{ParameterOrExtra{<:VarName},Any}
-    d = OrderedDict{ParameterOrExtra{<:VarName},Any}()
-    for (varname, value) in pairs(vnt)
-        d[Parameter(varname)] = value
-    end
-    return d
+function FlexiChains.to_vnt_and_stats(vnt::DynamicPPL.VarNamedTuple)
+    return (vnt, (;))
 end
 
 ############################

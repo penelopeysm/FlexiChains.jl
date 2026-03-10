@@ -171,8 +171,7 @@ end
                 kwargs...,
             ) = (Tn(), nothing)
             # Get it to work with FlexiChains
-            FlexiChains.to_varname_dict(::Tn) =
-                Dict(Parameter(@varname(x)) => 1, Extra(:b) => "hi")
+            FlexiChains.to_vnt_and_stats(::Tn) = (VarNamedTuple(; x=1), (; b="hi"))
             # Then we should be able to sample
             chn = sample(model, S(), 20; chain_type=VNChain)
             @test chn isa VNChain
