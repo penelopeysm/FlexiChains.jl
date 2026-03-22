@@ -35,6 +35,7 @@ include("interface/show.jl")
 include("interface/cat.jl")
 include("interface/mergesubset.jl")
 include("interface/decomp.jl")
+include("interface/rand.jl")
 include("varname.jl")
 
 # These denote the 'special' keys that we use for Turing.jl return values

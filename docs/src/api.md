@@ -120,6 +120,7 @@ FlexiChains.subset_extras
 ```@docs
 FlexiChains.values_at
 FlexiChains.parameters_at
+Base.rand
 ```
 
 ## Integration with Turing.jl

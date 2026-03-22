@@ -1,3 +1,7 @@
+# 0.4.1
+
+Added the method `Base.rand([rng,] chn, [dims...])` to sample from a `FlexiChain`.
+
 # 0.4.0
 
 This is a breaking release, which is designed to add *true* support for DynamicPPL 0.40 and Turing 0.43, fixing the remaining issues that were present in FlexiChains v0.3.4.
