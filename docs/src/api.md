@@ -117,11 +117,7 @@ FlexiChains.subset_extras
 
 ## Extracting per-iteration samples
 
-```@docs
-FlexiChains.values_at
-FlexiChains.parameters_at
-Base.rand
-```
+Please see the [samples page](./samples.md).
 
 ## Integration with Turing.jl
 

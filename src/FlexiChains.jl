@@ -34,7 +34,7 @@ include("interface/dict.jl")
 include("interface/show.jl")
 include("interface/cat.jl")
 include("interface/mergesubset.jl")
-include("interface/decomp.jl")
+include("interface/samples.jl")
 include("interface/rand.jl")
 include("varname.jl")
 

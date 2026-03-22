@@ -18,7 +18,9 @@ output that you get directly from sampling with Turing + MCMCChains.
 """
 function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
     ni, nc = size(vnchain)
-    array_of_dicts = [FlexiChains.parameters_at(vnchain, i, j) for i in 1:ni, j in 1:nc]
+    array_of_dicts = [
+        FlexiChains.parameters_at(vnchain; iter=i, chain=j) for i in 1:ni, j in 1:nc
+    ]
     # Construct array of parameter names and array of values.
     # Most of this functionality is copied from _params_to_array in
     # Turing's src/mcmc/Inference.jl.

@@ -3,7 +3,7 @@ module FCInterfaceTests
 using ComponentArrays: ComponentArray
 using FlexiChains:
     FlexiChains, FlexiChain, Parameter, Extra, ParameterOrExtra, @varname, VarName
-using DimensionalData: DimensionalData as DD
+using DimensionalData: DimensionalData as DD, At, Not
 using OrderedCollections: OrderedDict
 using AbstractMCMC: AbstractMCMC
 using Test
@@ -409,32 +409,62 @@ using Random: Xoshiro
 
         @testset "values_at" begin
             for i in 1:Ni
-                d = FlexiChains.values_at(c, i, 1)
+                d = FlexiChains.values_at(c; iter=i, chain=1)
                 @test d isa OrderedDict
                 @test length(d) == 2
                 @test d[Parameter(:a)] == c[Parameter(:a)][i]
                 @test d[Extra("c")] == c[Extra("c")][i]
-                d = FlexiChains.values_at(c, i, 1, NamedTuple)
+                d = FlexiChains.values_at(c, NamedTuple; iter=i, chain=1)
                 @test d == (a=c[Parameter(:a)][i], c=c[Extra("c")][i])
-                d = FlexiChains.values_at(c, i, 1, ComponentArray)
+                d = FlexiChains.values_at(c, ComponentArray; iter=i, chain=1)
                 @test d == ComponentArray(; a=c[Parameter(:a)][i], c=c[Extra("c")][i])
-                d = FlexiChains.values_at(c, i, 1, ComponentArray{Real})
+                d = FlexiChains.values_at(c, ComponentArray{Real}; iter=i, chain=1)
                 @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i], c=c[Extra("c")][i])
             end
 
-            @testset "with vectors of indices" begin
+            @testset "default kwargs (all iters/chains)" begin
+                d = FlexiChains.values_at(c)
+                @test d isa
+                    DD.DimMatrix{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
+                @test size(d) == (Ni, Nc)
+                for i in 1:Ni, j in 1:Nc
+                    @test d[i, j] == FlexiChains.values_at(c; iter=i, chain=j)
+                end
+            end
+
+            @testset "with ranges of indices" begin
                 iters = 1:5
-                d = FlexiChains.values_at(c, iters, 1)
+                d = FlexiChains.values_at(c; iter=iters, chain=1)
                 @test d isa
                     DD.DimVector{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
                 for i in iters
-                    @test d[i] == FlexiChains.values_at(c, i, 1)
+                    @test d[i] == FlexiChains.values_at(c; iter=i, chain=1)
                 end
-                d = FlexiChains.values_at(c, iters, :)
+                d = FlexiChains.values_at(c; iter=iters, chain=:)
                 @test d isa
                     DD.DimMatrix{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
                 for i in iters, j in 1:Nc
-                    @test d[i, j] == FlexiChains.values_at(c, i, j)
+                    @test d[i, j] == FlexiChains.values_at(c; iter=i, chain=j)
+                end
+            end
+
+            @testset "with vector indices" begin
+                iters = [5, 6]
+                d = FlexiChains.values_at(c; iter=iters, chain=1)
+                @test d isa
+                    DD.DimVector{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
+                for i in iters
+                    @test d[At(i)] == FlexiChains.values_at(c; iter=i, chain=1)
+                end
+            end
+
+            @testset "with Not() selector" begin
+                d = FlexiChains.values_at(c; iter=Not(3), chain=1)
+                @test d isa
+                    DD.DimVector{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
+                @test size(d, 1) == Ni - 1
+                for i in [1, 2, 4, 5, 6, 7, 8, 9, 10]
+                    @test d[At(i)] == FlexiChains.values_at(c; iter=i, chain=1)
                 end
             end
 
@@ -446,8 +476,12 @@ using Random: Xoshiro
                         Parameter(:a) => rand(Ni, Nc), Parameter("a") => rand(Ni, Nc)
                     ),
                 )
-                @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, NamedTuple)
-                @test_throws ArgumentError FlexiChains.values_at(c2, 1, 1, ComponentArray)
+                @test_throws ArgumentError FlexiChains.values_at(
+                    c2, NamedTuple; iter=1, chain=1
+                )
+                @test_throws ArgumentError FlexiChains.values_at(
+                    c2, ComponentArray; iter=1, chain=1
+                )
             end
 
             @testset "VarName" begin
@@ -456,7 +490,7 @@ using Random: Xoshiro
                 cvn = FlexiChain{VarName}(
                     1, 1, OrderedDict(Parameter(@varname(a)) => rand(1, 1))
                 )
-                vals = FlexiChains.values_at(cvn, 1, 1)
+                vals = FlexiChains.values_at(cvn; iter=1, chain=1)
                 @test vals isa OrderedDict{ParameterOrExtra{<:VarName},Any}
             end
 
@@ -476,37 +510,65 @@ using Random: Xoshiro
                     structures=structs,
                 )
                 for i in 1:Ni_s, j in 1:Nc_s
-                    @test FlexiChains.values_at(cs, i, j) === structs[i, j]
+                    @test FlexiChains.values_at(cs; iter=i, chain=j) === structs[i, j]
                 end
                 # Explicit type should bypass structures
-                @test FlexiChains.values_at(cs, 1, 1, OrderedDict) isa OrderedDict
+                @test FlexiChains.values_at(cs, OrderedDict; iter=1, chain=1) isa
+                    OrderedDict
             end
         end
 
         @testset "parameters_at" begin
             for i in 1:Ni
-                d = FlexiChains.parameters_at(c, i, 1)
+                d = FlexiChains.parameters_at(c; iter=i, chain=1)
                 @test length(d) == 1
                 @test d[:a] == c[Parameter(:a)][i]
-                d = FlexiChains.parameters_at(c, i, 1, NamedTuple)
+                d = FlexiChains.parameters_at(c, NamedTuple; iter=i, chain=1)
                 @test d == (; a=c[Parameter(:a)][i])
-                d = FlexiChains.parameters_at(c, i, 1, ComponentArray)
+                d = FlexiChains.parameters_at(c, ComponentArray; iter=i, chain=1)
                 @test d == ComponentArray(; a=c[Parameter(:a)][i])
-                d = FlexiChains.parameters_at(c, i, 1, ComponentArray{Real})
+                d = FlexiChains.parameters_at(c, ComponentArray{Real}; iter=i, chain=1)
                 @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i])
             end
 
-            @testset "with vectors of indices" begin
+            @testset "default kwargs (all iters/chains)" begin
+                d = FlexiChains.parameters_at(c)
+                @test d isa DD.DimMatrix{<:OrderedDict{Symbol}}
+                @test size(d) == (Ni, Nc)
+                for i in 1:Ni, j in 1:Nc
+                    @test d[i, j] == FlexiChains.parameters_at(c; iter=i, chain=j)
+                end
+            end
+
+            @testset "with ranges of indices" begin
                 iters = 1:5
-                d = FlexiChains.parameters_at(c, iters, 1)
+                d = FlexiChains.parameters_at(c; iter=iters, chain=1)
                 @test d isa DD.DimVector{<:OrderedDict{Symbol}}
                 for i in iters
-                    @test d[i] == FlexiChains.parameters_at(c, i, 1)
+                    @test d[i] == FlexiChains.parameters_at(c; iter=i, chain=1)
                 end
-                d = FlexiChains.parameters_at(c, iters, :)
+                d = FlexiChains.parameters_at(c; iter=iters, chain=:)
                 @test d isa DD.DimMatrix{<:OrderedDict{Symbol}}
                 for i in iters, j in 1:Nc
-                    @test d[i, j] == FlexiChains.parameters_at(c, i, j)
+                    @test d[i, j] == FlexiChains.parameters_at(c; iter=i, chain=j)
+                end
+            end
+
+            @testset "with vector indices" begin
+                iters = [5, 6]
+                d = FlexiChains.parameters_at(c; iter=iters, chain=1)
+                @test d isa DD.DimVector{<:OrderedDict{Symbol}}
+                for i in iters
+                    @test d[At(i)] == FlexiChains.parameters_at(c; iter=i, chain=1)
+                end
+            end
+
+            @testset "with Not() selector" begin
+                d = FlexiChains.parameters_at(c; iter=Not(3), chain=1)
+                @test d isa DD.DimVector{<:OrderedDict{Symbol}}
+                @test size(d, 1) == Ni - 1
+                for i in [1, 2, 4, 5, 6, 7, 8, 9, 10]
+                    @test d[At(i)] == FlexiChains.parameters_at(c; iter=i, chain=1)
                 end
             end
 
@@ -518,9 +580,11 @@ using Random: Xoshiro
                         Parameter(:a) => rand(Ni, Nc), Parameter("a") => rand(Ni, Nc)
                     ),
                 )
-                @test_throws ArgumentError FlexiChains.parameters_at(c2, 1, 1, NamedTuple)
                 @test_throws ArgumentError FlexiChains.parameters_at(
-                    c2, 1, 1, ComponentArray
+                    c2, NamedTuple; iter=1, chain=1
+                )
+                @test_throws ArgumentError FlexiChains.parameters_at(
+                    c2, ComponentArray; iter=1, chain=1
                 )
             end
 
@@ -542,11 +606,24 @@ using Random: Xoshiro
                     structures=structs,
                 )
                 for i in 1:Ni_s, j in 1:Nc_s
-                    @test FlexiChains.parameters_at(cs, i, j) === structs[i, j]
+                    @test FlexiChains.parameters_at(cs; iter=i, chain=j) === structs[i, j]
                 end
                 # Explicit type should bypass structures
-                @test FlexiChains.parameters_at(cs, 1, 1, OrderedDict) isa OrderedDict
+                @test FlexiChains.parameters_at(cs, OrderedDict; iter=1, chain=1) isa
+                    OrderedDict
             end
+        end
+
+        @testset "deprecated positional API" begin
+            # Positional arguments should still work but emit a deprecation warning
+            d = @test_deprecated FlexiChains.values_at(c, 1, 1)
+            @test d == FlexiChains.values_at(c; iter=1, chain=1)
+            d = @test_deprecated FlexiChains.values_at(c, 1, 1, NamedTuple)
+            @test d == FlexiChains.values_at(c, NamedTuple; iter=1, chain=1)
+            d = @test_deprecated FlexiChains.parameters_at(c, 1, 1)
+            @test d == FlexiChains.parameters_at(c; iter=1, chain=1)
+            d = @test_deprecated FlexiChains.parameters_at(c, 1, 1, NamedTuple)
+            @test d == FlexiChains.parameters_at(c, NamedTuple; iter=1, chain=1)
         end
     end
 
