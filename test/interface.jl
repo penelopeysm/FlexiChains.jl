@@ -422,6 +422,16 @@ using Random: Xoshiro
                 @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i], c=c[Extra("c")][i])
             end
 
+            @testset "default kwargs (all iters/chains)" begin
+                d = FlexiChains.values_at(c)
+                @test d isa
+                    DD.DimMatrix{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
+                @test size(d) == (Ni, Nc)
+                for i in 1:Ni, j in 1:Nc
+                    @test d[i, j] == FlexiChains.values_at(c; iter=i, chain=j)
+                end
+            end
+
             @testset "with ranges of indices" begin
                 iters = 1:5
                 d = FlexiChains.values_at(c; iter=iters, chain=1)
@@ -519,6 +529,15 @@ using Random: Xoshiro
                 @test d == ComponentArray(; a=c[Parameter(:a)][i])
                 d = FlexiChains.parameters_at(c, ComponentArray{Real}; iter=i, chain=1)
                 @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i])
+            end
+
+            @testset "default kwargs (all iters/chains)" begin
+                d = FlexiChains.parameters_at(c)
+                @test d isa DD.DimMatrix{<:OrderedDict{Symbol}}
+                @test size(d) == (Ni, Nc)
+                for i in 1:Ni, j in 1:Nc
+                    @test d[i, j] == FlexiChains.parameters_at(c; iter=i, chain=j)
+                end
             end
 
             @testset "with ranges of indices" begin

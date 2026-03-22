@@ -3,10 +3,10 @@
 _VALUES_PARAMETER_AT_DOCSTRING = """
 The `iter` and `chain` keyword arguments can be anything used to index into the respective
 dimensions of a `FlexiChain`, such as an integer, a vector of integers, a range, or a
-DimensionalData.jl selector.
+DimensionalData.jl selector. Both default to `:` (i.e. all iterations / all chains).
 
 In particular, you can convert the entire chain into a `DimMatrix` of the desired output
-type by passing `:` for both arguments.
+type by calling this function with no keyword arguments.
 """
 
 _VALUES_PARAMETER_AT_WARNING = """
@@ -21,8 +21,8 @@ _VALUES_PARAMETER_AT_WARNING = """
 """
 
 """
-    FlexiChains.values_at(chn::FlexiChain; iter, chain)
-    FlexiChains.values_at(chn::FlexiChain, ::Type{Tout}; iter, chain)
+    FlexiChains.values_at(chn::FlexiChain; iter=:, chain=:)
+    FlexiChains.values_at(chn::FlexiChain, ::Type{Tout}; iter=:, chain=:)
 
 Extract all values from the chain corresponding to a particular set of MCMC iterations(s).
 
@@ -57,8 +57,8 @@ order as they are stored in the `FlexiChain`. This also corresponds to the order
 function values_at end
 
 """
-    FlexiChains.parameters_at(chn::FlexiChain; iter, chain)
-    FlexiChains.parameters_at(chn::FlexiChain, ::Type{Tout}; iter, chain)
+    FlexiChains.parameters_at(chn::FlexiChain; iter=:, chain=:)
+    FlexiChains.parameters_at(chn::FlexiChain, ::Type{Tout}; iter=:, chain=:)
 
 Extract all *parameter* values from the chain corresponding to a particular set of MCMC
 iteration(s), discarding non-parameter (i.e. `Extra`) keys.
@@ -95,7 +95,7 @@ function parameters_at end
 for f in (:values_at, :parameters_at)
     _f = Symbol("_", f)
     @eval begin
-        function $f(chn::FlexiChain, ::Type{Tout}=Nothing; iter, chain) where {Tout}
+        function $f(chn::FlexiChain, ::Type{Tout}=Nothing; iter=:, chain=:) where {Tout}
             return $_f(chn, iter, chain, Tout)
         end
         function $f(chn::FlexiChain, iter, chain, ::Type{Tout}=Nothing) where {Tout}
