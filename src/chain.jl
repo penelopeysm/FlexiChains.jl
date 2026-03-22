@@ -487,7 +487,7 @@ const _INITIAL_STATE_DOCSTRING = """
     This function *always* returns a vector of sampler states, even if there is only one chain.
     Consequently, if you are resuming a single-chain MCMC run like `sample(model, spl, N)`, you
     will need to extract the sole element of the returned vector before passing it as the
-    `initial_state` keyword argument to `sample(). Please see the ['using with Turing'](@ref
+    `initial_state` keyword argument to `sample()`. Please see the ['using with Turing'](@ref
     Saving-and-resuming-MCMC-sampling-progress) page, or [the Turing.jl documentation page
     on
     `initial_state`](https://turinglang.org/docs/usage/sampling-options/#saving-and-resuming-sampling),
