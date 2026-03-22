@@ -1,3 +1,13 @@
+# 0.4.2
+
+Added methods for `FlexiChains.values_at` and `FlexiChains.parameters_at` that take keyword arguments `iter` and `chain` instead of positional arguments.
+If unspecified, they default to `:`, i.e., all iterations and chains.
+This behaviour is designed to be consistent with that of `getindex` on FlexiChains.
+
+The positional arguments are still supported, but will be deprecated in v0.5.
+
+Fixed a few bugs in `values_at` and `parameters_at` where selectors or vectors of indices such as `[1, 2]` would fail.
+
 # 0.4.1
 
 Added the method `Base.rand([rng,] chn, [dims...])` to sample from a `FlexiChain`.
