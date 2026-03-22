@@ -344,6 +344,19 @@ end
         end
     end
 
+    @testset "return type of rand" begin
+        @model function f()
+            x ~ Normal()
+            y ~ Normal()
+            return nothing
+        end
+        chn = sample(f(), Prior(), 10; chain_type=VNChain)
+        @test rand(chn) isa DynamicPPL.ParamsWithStats
+        @test rand(chn; parameters_only=true) isa DynamicPPL.VarNamedTuple
+        @test rand(chn, 5) isa Vector{<:DynamicPPL.ParamsWithStats}
+        @test rand(chn, 5; parameters_only=true) isa Vector{<:DynamicPPL.VarNamedTuple}
+    end
+
     @testset "AbstractMCMC.to_samples" begin
         @model function f(z)
             x ~ Normal()

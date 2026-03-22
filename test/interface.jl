@@ -7,6 +7,7 @@ using DimensionalData: DimensionalData as DD
 using OrderedCollections: OrderedDict
 using AbstractMCMC: AbstractMCMC
 using Test
+using Random: Xoshiro
 
 @testset verbose = true "interface.jl" begin
     @info "Testing interface.jl"
@@ -984,6 +985,30 @@ using Test
             # Returns duplicate keys
             j(::Any) = Parameter(:hello)
             @test_throws ArgumentError FlexiChains.map_keys(j, chain)
+        end
+    end
+
+    @testset "rand" begin
+        N_iters, N_chains = 10, 3
+        d = Dict(Parameter(:a) => 1, Parameter(:b) => 2.0, Extra("lp") => -3.0)
+        chn = FlexiChain{Symbol}(N_iters, N_chains, fill(d, N_iters, N_chains))
+        rng = Xoshiro(468)
+
+        # Test with and without rng
+        for args in ((rng,), ())
+            @test rand(args..., chn) isa OrderedDict{ParameterOrExtra{<:Symbol}}
+            @test rand(args..., chn; parameters_only=true) isa OrderedDict{Symbol}
+            @test rand(args..., chn, 5) isa
+                Vector{<:OrderedDict{ParameterOrExtra{<:Symbol}}}
+            @test size(rand(args..., chn, 5)) == (5,)
+            @test rand(args..., chn, 3, 4) isa
+                Matrix{<:OrderedDict{ParameterOrExtra{<:Symbol}}}
+            @test size(rand(args..., chn, 3, 4)) == (3, 4)
+        end
+
+        @testset "reproducibility" begin
+            @test rand(Xoshiro(468), chn) == rand(Xoshiro(468), chn)
+            @test rand(Xoshiro(468), chn, 2) == rand(Xoshiro(468), chn, 2)
         end
     end
 end

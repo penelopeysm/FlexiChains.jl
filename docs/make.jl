@@ -34,6 +34,10 @@ modules = [
     Base.get_extension(FlexiChains, :FlexiChainsTuringExt),
 ]
 
+# Enable headless mode so that plots don't pop up when building docs.
+old_GKSwstype = get(ENV, "GKSwstype", nothing)
+ENV["GKSwstype"] = "100"
+
 makedocs(;
     sitename="FlexiChains.jl",
     modules=modules,
@@ -55,3 +59,10 @@ makedocs(;
     doctest=false,
     plugins=[links],
 )
+
+# Restore original environment variable
+if isnothing(old_GKSwstype)
+    delete!(ENV, "GKSwstype")
+else
+    ENV["GKSwstype"] = old_GKSwstype
+end
