@@ -3,7 +3,7 @@ import Random: Random
 """
     Base.rand(rng::Random.AbstractRNG, chn::FlexiChain, dims::Int...; parameters_only=false)
 
-Sample from a FlexiChain with replacement.
+Sample uniformly from a FlexiChain with replacement.
 
 `rand([rng,] chn)` returns a single sample, whereas `rand([rng,] chn, dims...)` returns an
 `Array` of samples with dimensions `dims...`. The `parameters_only` keyword specifies
