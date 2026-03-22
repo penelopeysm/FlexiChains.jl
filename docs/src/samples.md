@@ -45,10 +45,10 @@ FlexiChains provides a few convenient ways for you to do this transformation.
 # `values_at`
 
 The function `values_at` is at the core of this transformation.
-Given iteration and chain indices, it returns some container that holds all the values for a given iteration.
+Given iteration and chain indices (as keyword arguments), it returns some container that holds all the values for a given iteration.
 
 ```@example 1
-FlexiChains.values_at(chn, 5, 1)
+FlexiChains.values_at(chn; iter=5, chain=1)
 ```
 
 In the case of a chain sampled from Turing, the returned container is `DynamicPPL.ParamsWithStats`, which separately stores the parameters and the stats as a `VarNamedTuple` and `NamedTuple` respectively.
@@ -61,22 +61,22 @@ The main benefit of this is that you can feed this right back into Turing's API.
 For example, to initialise MCMC sampling from the fifth sample, you can write:
 
 ```@example 1
-pws = FlexiChains.values_at(chn, 5, 1)
+pws = FlexiChains.values_at(chn; iter=5, chain=1)
 sample(f(), NUTS(), 10; initial_params=InitFromParams(pws), progress=false);
 ```
 
 Sometimes, though, one might want different output formats.
-There is some support for converting to `NamedTuple` or `AbstractDict`, by passing an optional last argument.
+There is some support for converting to `NamedTuple` or `AbstractDict`, by passing an optional type argument.
 
 !!! warning
     Note that conversion to `NamedTuple` is lossy if you have `VarName`s that contain indexing or field access syntax (e.g., `x[1]` or `x.a`).
 
 ```@example 1
-FlexiChains.values_at(chn, 5, 1, NamedTuple)
+FlexiChains.values_at(chn, NamedTuple; iter=5, chain=1)
 ```
 
 ```@example 1
-FlexiChains.values_at(chn, 5, 1, Dict)
+FlexiChains.values_at(chn, Dict; iter=5, chain=1)
 ```
 
 # Parameters only
@@ -87,7 +87,7 @@ In that case, you can use `parameters_at`:
 For Turing-sampled chains, this returns a `VarNamedTuple`, which is just the same as the `params` field of the `ParamsWithStats` object.
 
 ```@example 1
-FlexiChains.parameters_at(chn, 5, 1)
+FlexiChains.parameters_at(chn; iter=5, chain=1)
 ```
 
 # Arrays of samples
@@ -95,19 +95,19 @@ FlexiChains.parameters_at(chn, 5, 1)
 To get more than one sample, you can pass arrays of indices.
 
 ```@example 1
-# FlexiChains.parameters_at(chn, [5, 6], 1)
+FlexiChains.parameters_at(chn; iter=[5, 6], chain=1)
 ```
 
 All of DimensionalData's selectors also work:
 
 ```@example 1
-# FlexiChains.parameters_at(chn, Not(At(1..8)), 1)
+FlexiChains.parameters_at(chn; iter=Not(At(1..8)), chain=1)
 ```
 
 This also means that you can convert a FlexiChain back into an `Array` of `ParamsWithStats` objects by passing `:` for both the iteration and chain indices, which is essentially the inverse of what `sample` does (it bundles the array into a FlexiChain):
 
 ```@example 1
-# FlexiChains.values_at(chn, :, :)
+FlexiChains.values_at(chn; iter=:, chain=:)
 ```
 
 # Drawing random samples

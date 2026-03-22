@@ -25,9 +25,13 @@ function Base.rand(
     ci = CartesianIndices(size(chn))
     idxs = rand(rng, ci, dims...)
     return if isempty(dims)
-        func(chn, idxs.I...)
+        i, c = idxs.I
+        func(chn; iter=i, chain=c)
     else
-        map(idx -> func(chn, idx.I...), idxs)
+        map(idxs) do idx
+            i, c = idx.I
+            func(chn; iter=i, chain=c)
+        end
     end
 end
 function Base.rand(chn::FlexiChain, dims::Int...; parameters_only=false)

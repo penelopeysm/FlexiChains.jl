@@ -151,7 +151,7 @@ function AbstractMCMC.to_samples(
     template_vnt = nothing # Set later on-demand.
     # If there is no skeletal VNT structure stored, then values_at will return a Dict.
     # Otherwise it will return a ParamsWithStats
-    dicts_or_pwss = FlexiChains.values_at(chain, :, :)
+    dicts_or_pwss = FlexiChains.values_at(chain; iter=:, chain=:)
     pwss = map(dicts_or_pwss) do d_or_pws
         if d_or_pws isa DynamicPPL.ParamsWithStats
             d_or_pws
@@ -187,7 +187,7 @@ function AbstractMCMC.to_samples(
 )::DD.DimMatrix{<:DynamicPPL.ParamsWithStats} where {T<:VarName}
     # If there is no skeletal VNT structure stored, then values_at will return a Dict.
     # Otherwise it will return a ParamsWithStats
-    dicts_or_pwss = FlexiChains.values_at(chain, :, :)
+    dicts_or_pwss = FlexiChains.values_at(chain; iter=:, chain=:)
     pwss = map(dicts_or_pwss) do d_or_pws
         if d_or_pws isa DynamicPPL.ParamsWithStats
             d_or_pws
@@ -296,7 +296,7 @@ end
 function _get_parameters_vnt(strategy::InitFromFlexiChain)
     if strategy._vnt_cache[] === nothing
         strategy._vnt_cache[] = FlexiChains.parameters_at(
-            strategy.chain, strategy.iter_index, strategy.chain_index
+            strategy.chain; iter=strategy.iter_index, chain=strategy.chain_index
         )
     end
     return strategy._vnt_cache[]
