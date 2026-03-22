@@ -46,6 +46,7 @@ makedocs(;
         "turing.md",
         "summarising.md",
         "indexing.md",
+        "samples.md",
         "plotting.md",
         "plots.md",
         "makie.md",
@@ -65,4 +66,4 @@ if isnothing(old_GKSwstype)
     delete!(ENV, "GKSwstype")
 else
     ENV["GKSwstype"] = old_GKSwstype
-end
+end;
