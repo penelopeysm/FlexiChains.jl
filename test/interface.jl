@@ -176,6 +176,28 @@ using Random: Xoshiro
             end
         end
 
+        @testset "DimArray name is set to key" begin
+            N_iters = 10
+            dicts = fill(
+                Dict(Parameter(:a) => 1, Extra("hello") => 3.0),
+                N_iters,
+            )
+            chain = FlexiChain{Symbol}(N_iters, 1, dicts)
+
+            @testset "by ParameterOrExtra key" begin
+                @test DD.name(chain[Parameter(:a)]) == Parameter(:a)
+                @test DD.name(chain[Extra("hello")]) == Extra("hello")
+            end
+            @testset "by parameter name" begin
+                @test DD.name(chain[:a]) == Parameter(:a)
+            end
+            @testset "by Symbol (String TKey)" begin
+                str_dicts = fill(Dict(Parameter("a") => 1), N_iters)
+                str_chain = FlexiChain{String}(N_iters, 1, str_dicts)
+                @test DD.name(str_chain[:a]) == Parameter("a")
+            end
+        end
+
         @testset "metadata is correctly constructed" begin
             d = Dict(Parameter(:a) => 1, Extra("hello") => 3.0)
             c = FlexiChain{Symbol}(
