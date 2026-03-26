@@ -9,7 +9,7 @@ Returns `(niters, nchains)`, or `niters` or `nchains` if `dim=1` or `dim=2` is s
     
     MCMCChains returns a 3-tuple of `(niters, nkeys, nchains)` where `nkeys` is the total number of parameters. FlexiChains does not do this because the keys are not considered an axis of their own. If you want the total number of keys in a `FlexiChain`, you can use `length(keys(chain))`.
 """
-function Base.size(chain::FlexiChain)::Tuple{Int,Int}
+function Base.size(chain::FlexiChain)::Tuple{Int, Int}
     return (niters(chain), nchains(chain))
 end
 function Base.size(chain::FlexiChain, dim::Int)::Int
@@ -28,7 +28,7 @@ Returns `(niters, nchains, nstats)`, or `niters`, `nchains`, or `nstats` if `dim
 `dim=2`, or `dim=3` is specified. If any of the dimensions have been collapsed, the
 corresponding value will be 0.
 """
-function Base.size(summary::FlexiSummary)::Tuple{Int,Int,Int}
+function Base.size(summary::FlexiSummary)::Tuple{Int, Int, Int}
     return (niters(summary), nchains(summary), nstats(summary))
 end
 function Base.size(summary::FlexiSummary, dim::Int)::Int

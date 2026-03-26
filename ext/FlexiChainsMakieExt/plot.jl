@@ -1,14 +1,14 @@
 function Makie.plot(
-    chn::FC.FlexiChain,
-    param_or_params=FC.Parameter.(FC.parameters(chn));
-    layout::Union{Tuple{Int,Int},Nothing}=nothing,
-    legend_position::Symbol=:bottom,
-    pool_chains::Bool=false,
-    figure=(;),
-    axis=(;),
-    legend=(;),
-    kwargs...,
-)
+        chn::FC.FlexiChain,
+        param_or_params = FC.Parameter.(FC.parameters(chn));
+        layout::Union{Tuple{Int, Int}, Nothing} = nothing,
+        legend_position::Symbol = :bottom,
+        pool_chains::Bool = false,
+        figure = (;),
+        axis = (;),
+        legend = (;),
+        kwargs...,
+    )
     keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nrows, ncols = if isnothing(layout)
@@ -17,7 +17,7 @@ function Makie.plot(
         layout
     end
     figure = Makie.Figure(;
-        size=(FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
+        size = (FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
         figure...,
     )
     a, p = nothing, nothing

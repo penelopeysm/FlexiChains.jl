@@ -7,7 +7,7 @@ using MCMCDiagnosticTools: MCMCDiagnosticTools
 
 const STAT_DIM_NAME = :stat
 function _make_categorical(v::AbstractVector{Symbol})
-    return DD.Categorical(v; order=DD.Unordered())
+    return DD.Categorical(v; order = DD.Unordered())
 end
 
 """
@@ -74,30 +74,30 @@ dimension has been collapsed.
 This information is later used in the `_get_raw_data` and `_raw_to_user_data` functions.
 """
 struct FlexiSummary{
-    TKey,
-    TIIdx<:Union{DD.Lookup,Nothing},
-    TCIdx<:Union{DD.Lookup,Nothing},
-    TSIdx<:Union{DD.Categorical,Nothing},
-}
-    _data::OrderedDict{ParameterOrExtra{<:TKey},<:AbstractArray{<:Any,3}}
+        TKey,
+        TIIdx <: Union{DD.Lookup, Nothing},
+        TCIdx <: Union{DD.Lookup, Nothing},
+        TSIdx <: Union{DD.Categorical, Nothing},
+    }
+    _data::OrderedDict{ParameterOrExtra{<:TKey}, <:AbstractArray{<:Any, 3}}
     _iter_indices::TIIdx
     _chain_indices::TCIdx
     _stat_indices::TSIdx
 
     function FlexiSummary{TKey}(
-        data::OrderedDict{<:Any,<:AbstractArray{<:Any,3}},
-        # Note: These are NOT keyword arguments, they are mandatory positional arguments
-        iter_indices::TIIdx,
-        chain_indices::TCIdx,
-        stat_indices::TSIdx,
-    )::FlexiSummary{
-        TKey,TIIdx,TCIdx,TSIdx
-    } where {
-        TKey,
-        TIIdx<:Union{DD.Lookup,Nothing},
-        TCIdx<:Union{DD.Lookup,Nothing},
-        TSIdx<:Union{DD.Categorical,Nothing},
-    }
+            data::OrderedDict{<:Any, <:AbstractArray{<:Any, 3}},
+            # Note: These are NOT keyword arguments, they are mandatory positional arguments
+            iter_indices::TIIdx,
+            chain_indices::TCIdx,
+            stat_indices::TSIdx,
+        )::FlexiSummary{
+            TKey, TIIdx, TCIdx, TSIdx,
+        } where {
+            TKey,
+            TIIdx <: Union{DD.Lookup, Nothing},
+            TCIdx <: Union{DD.Lookup, Nothing},
+            TSIdx <: Union{DD.Categorical, Nothing},
+        }
         # Get expected size.
         expected_size = (
             TIIdx === Nothing ? 1 : length(iter_indices),
@@ -105,7 +105,7 @@ struct FlexiSummary{
             TSIdx === Nothing ? 1 : length(stat_indices),
         )
         # Size verification (while marshalling into a Dict with the right type).
-        d = OrderedDict{ParameterOrExtra{<:TKey},Array{<:Any,3}}()
+        d = OrderedDict{ParameterOrExtra{<:TKey}, Array{<:Any, 3}}()
         for (k, v) in pairs(data)
             if size(v) != expected_size
                 msg = "got size $(size(v)) for key $k, expected $expected_size"
@@ -113,7 +113,7 @@ struct FlexiSummary{
             end
             d[k] = collect(v)
         end
-        return new{TKey,TIIdx,TCIdx,TSIdx}(d, iter_indices, chain_indices, stat_indices)
+        return new{TKey, TIIdx, TCIdx, TSIdx}(d, iter_indices, chain_indices, stat_indices)
     end
 end
 """
@@ -122,7 +122,7 @@ end
 The iteration indices, which are either the same as in the original chain, or `nothing` if
 the `$ITER_DIM_NAME` dimension has been collapsed.
 """
-function iter_indices(fs::FlexiSummary{TKey,TIIdx})::TIIdx where {TKey,TIIdx}
+function iter_indices(fs::FlexiSummary{TKey, TIIdx})::TIIdx where {TKey, TIIdx}
     return fs._iter_indices
 end
 """
@@ -131,7 +131,7 @@ end
 The chain indices, which are either the same as in the original chain, or `nothing` if the
 `$CHAIN_DIM_NAME` dimension has been collapsed.
 """
-function chain_indices(fs::FlexiSummary{TKey,TIIdx,TCIdx})::TCIdx where {TKey,TIIdx,TCIdx}
+function chain_indices(fs::FlexiSummary{TKey, TIIdx, TCIdx})::TCIdx where {TKey, TIIdx, TCIdx}
     return fs._chain_indices
 end
 """
@@ -141,27 +141,27 @@ The indices for each statistic in the summary. This may be `nothing` if the `$ST
 dimension has been collapsed.
 """
 function stat_indices(
-    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}
-)::TSIdx where {TKey,TIIdx,TCIdx,TSIdx}
+        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}
+    )::TSIdx where {TKey, TIIdx, TCIdx, TSIdx}
     return fs._stat_indices
 end
 
-_pretty_value(x::Integer, ::Bool=false) = repr(x)
-_pretty_value(x::AbstractString, ::Bool=false) = x
-_pretty_value(x::Symbol, ::Bool=false) = String(x)
-function _pretty_value(x::AbstractFloat, short::Bool=false)
+_pretty_value(x::Integer, ::Bool = false) = repr(x)
+_pretty_value(x::AbstractString, ::Bool = false) = x
+_pretty_value(x::Symbol, ::Bool = false) = String(x)
+function _pretty_value(x::AbstractFloat, short::Bool = false)
     return short ? @sprintf("%.1f", x) : @sprintf("%.4f", x)
 end
-function _pretty_value(x::AbstractVector, ::Bool=false)
+function _pretty_value(x::AbstractVector, ::Bool = false)
     return "[" * join(map(x -> _pretty_value(x, true), x), ",") * "]"
 end
 # Fallback: just use repr
-_pretty_value(x, ::Bool=false) = repr(x)
+_pretty_value(x, ::Bool = false) = repr(x)
 _truncate(x::String, n::Int) = length(x) > n ? first(x, n - 1) * "…" : x
 
 function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) where {TKey}
     maybe_s(x) = x == 1 ? "" : "s"
-    printstyled(io, "FlexiSummary"; bold=true)
+    printstyled(io, "FlexiSummary"; bold = true)
     ii = iter_indices(summary)
     ci = chain_indices(summary)
     si = stat_indices(summary)
@@ -177,7 +177,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
         push!(headers, "$(length(si)) statistic$(maybe_s(length(si)))")
     end
     if !isempty(headers)
-        printstyled(io, " ($(join(headers, ", ")))"; bold=true)
+        printstyled(io, " ($(join(headers, ", ")))"; bold = true)
     end
     println(io)
 
@@ -186,7 +186,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
         printstyled(
             io,
             "$(DD.dimsymbol(color_counter)) iter=$(_show_range(ii))";
-            color=DD.dimcolor(color_counter),
+            color = DD.dimcolor(color_counter),
         )
         color_counter += 1
     end
@@ -195,7 +195,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
         printstyled(
             io,
             "$(DD.dimsymbol(color_counter)) chain=$(_show_range(ci))";
-            color=DD.dimcolor(color_counter),
+            color = DD.dimcolor(color_counter),
         )
         color_counter += 1
     end
@@ -204,7 +204,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
         printstyled(
             io,
             "$(DD.dimsymbol(color_counter)) stat=$(_show_range(si))";
-            color=DD.dimcolor(color_counter),
+            color = DD.dimcolor(color_counter),
         )
     end
     println(io)
@@ -212,9 +212,9 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
 
     # Print parameter names
     parameter_names = parameters(summary)
-    printstyled(io, "Parameter type   "; bold=true)
+    printstyled(io, "Parameter type   "; bold = true)
     println(io, "$TKey")
-    printstyled(io, "Parameters       "; bold=true)
+    printstyled(io, "Parameters       "; bold = true)
     if isempty(parameter_names)
         println(io, "(none)")
     else
@@ -223,14 +223,14 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
 
     # Print extras
     extra_names = extras(summary)
-    printstyled(io, "Extra keys       "; bold=true)
+    printstyled(io, "Extra keys       "; bold = true)
     if isempty(extra_names)
         print(io, "(none)")
     else
         print(io, join(map(e -> _pretty_value(e.name), extra_names), ", "))
     end
 
-    # If both iter and chain dimensions have been collapsed, we can print in a 
+    # If both iter and chain dimensions have been collapsed, we can print in a
     # DataFrame-like format.
     if isnothing(ii) && isnothing(ci) && !isempty(parameter_names)
         println(io)
@@ -241,21 +241,23 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
         ]
 
         if isnothing(si)
-            stat_cols = [[
-                "",
+            stat_cols = [
                 [
-                    _truncate(_pretty_value(summary[param_name]), MAX_COL_WIDTH) for
-                    param_name in parameter_names
-                ]...,
-            ]]
+                    "",
+                    [
+                        _truncate(_pretty_value(summary[param_name]), MAX_COL_WIDTH) for
+                            param_name in parameter_names
+                    ]...,
+                ],
+            ]
         else
             stat_cols = map(enumerate(parent(si))) do (stat_i, stat_name)
                 [
                     String(stat_name)
                     [
                         _truncate(
-                            _pretty_value(summary[param_name][stat_i]), MAX_COL_WIDTH
-                        ) for param_name in parameter_names
+                                _pretty_value(summary[param_name][stat_i]), MAX_COL_WIDTH
+                            ) for param_name in parameter_names
                     ]...
                 ]
             end
@@ -269,7 +271,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
             println(io)
             for (j, (entry, width)) in enumerate(zip(row, colwidths))
                 kwargs = if i == 1 || j == 1
-                    (; bold=true)
+                    (; bold = true)
                 else
                     (;)
                 end
@@ -290,14 +292,14 @@ The returned data is always a 3D array with dimensions (NIter, NChain, NStat).
     This function does not check if the key exists.
 """
 function _get_raw_data(
-    summary::FlexiSummary{<:TKey}, key::ParameterOrExtra{<:TKey}
-) where {TKey}
+        summary::FlexiSummary{<:TKey}, key::ParameterOrExtra{<:TKey}
+    ) where {TKey}
     return summary._data[key]
 end
 
 function _get_summary_dims(
-    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}
-) where {TKey,TIIdx,TCIdx,TSIdx}
+        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}
+    ) where {TKey, TIIdx, TCIdx, TSIdx}
     new_dims = DD.Dim[]
     dims_to_keep = Int[]
     if TIIdx !== Nothing
@@ -329,10 +331,10 @@ Convert `data`, which is a raw 3D array of samples, to either:
 the chain line up with the size of the matrix.
 """
 function _raw_to_user_data(
-    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}, arr::Array{T,3}
-) where {TKey,TIIdx,TCIdx,TSIdx,T}
+        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}, arr::Array{T, 3}
+    ) where {TKey, TIIdx, TCIdx, TSIdx, T}
     new_dims, dim_indices_to_drop = _get_summary_dims(fs)
-    dropped_arr = dropdims(arr; dims=dim_indices_to_drop)
+    dropped_arr = dropdims(arr; dims = dim_indices_to_drop)
     return if isempty(new_dims)
         # Scalar value; dropped_arr will be a 0-dimensional array
         dropped_arr[]
@@ -341,10 +343,10 @@ function _raw_to_user_data(
     end
 end
 function _raw_to_user_data(
-    fs::FlexiSummary{TKey,TIIdx,TCIdx,TSIdx}, arr::Array{<:DD.DimArray{<:Any,Ndims},3}
-) where {TKey,TIIdx,TCIdx,TSIdx,Ndims}
+        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}, arr::Array{<:DD.DimArray{<:Any, Ndims}, 3}
+    ) where {TKey, TIIdx, TCIdx, TSIdx, Ndims}
     new_dims, dim_indices_to_drop = _get_summary_dims(fs)
-    dropped_arr = dropdims(arr; dims=dim_indices_to_drop)
+    dropped_arr = dropdims(arr; dims = dim_indices_to_drop)
     return if isempty(new_dims)
         dropped_arr[]
     else
@@ -379,7 +381,7 @@ function _get_names_and_funcs(names_or_funcs::AbstractVector)
         if nf isa Function
             push!(names, Symbol(nf))
             push!(funcs, nf)
-        elseif nf isa Tuple{Symbol,Function}
+        elseif nf isa Tuple{Symbol, Function}
             push!(names, nf[1])
             push!(funcs, nf[2])
         else
@@ -476,13 +478,13 @@ for easier indexing into the result when only one statistic is computed. It is a
 `drop_stat_dim=true` when more than one function is provided.
 """
 function collapse(
-    chain::FlexiChain{TKey},
-    funcs::AbstractVector;
-    dims::Symbol=:both,
-    warn::Bool=true,
-    split_varnames::Bool=(TKey <: VarName),
-    drop_stat_dim::Bool=false,
-) where {TKey}
+        chain::FlexiChain{TKey},
+        funcs::AbstractVector;
+        dims::Symbol = :both,
+        warn::Bool = true,
+        split_varnames::Bool = (TKey <: VarName),
+        drop_stat_dim::Bool = false,
+    ) where {TKey}
     if split_varnames
         TKey <: VarName || throw(
             ArgumentError(
@@ -491,14 +493,14 @@ function collapse(
         )
         chain = FlexiChains._split_varnames(chain)
     end
-    data = OrderedDict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
+    data = OrderedDict{ParameterOrExtra{<:TKey}, AbstractArray{<:Any, 3}}()
     names, funcs = _get_names_and_funcs(funcs)
     expected_size = _get_expected_size(niters(chain), nchains(chain), dims)
     # Not proud of this function, but it does what it needs to do... sigh.
     for (k, v) in chain._data
         try
             at_least_one_summary_func_succeeded = false
-            output = Array{Any,3}(undef, (expected_size..., length(funcs)))
+            output = Array{Any, 3}(undef, (expected_size..., length(funcs)))
             for (i, f) in enumerate(funcs)
                 try
                     collapsed = if dims == :both
@@ -551,30 +553,30 @@ end
 
 function _stat_docstring(func_name, short_name)
     return """
-    $(func_name)(
-        chain::FlexiChain{TKey};
-        dims::Symbol=:both,
-        warn::Bool=true,
-        split_varnames::Bool=(TKey<:VarName),
-        kwargs...
-    ) where {TKey}
+        $(func_name)(
+            chain::FlexiChain{TKey};
+            dims::Symbol=:both,
+            warn::Bool=true,
+            split_varnames::Bool=(TKey<:VarName),
+            kwargs...
+        ) where {TKey}
 
-Calculate the $(short_name) across all iterations and chains for each key in
-the `chain`. If the statistic cannot be computed for a key, that key is
-skipped and a warning is issued (which can be suppressed by setting
-`warn=false`).
+    Calculate the $(short_name) across all iterations and chains for each key in
+    the `chain`. If the statistic cannot be computed for a key, that key is
+    skipped and a warning is issued (which can be suppressed by setting
+    `warn=false`).
 
-The `dims` keyword argument specifies which dimensions to collapse. The default value
-of `:both` collapses both the iteration and chain dimensions. Other valid values are
-`:iter` or `:chain`, which respectively collapse only the iteration or chain dimension.
+    The `dims` keyword argument specifies which dimensions to collapse. The default value
+    of `:both` collapses both the iteration and chain dimensions. Other valid values are
+    `:iter` or `:chain`, which respectively collapse only the iteration or chain dimension.
 
-The `split_varnames` keyword argument, if `true`, will first split up `VarName`s in the
-chain such that each `VarName` corresponds to a single scalar value. This is only supported
-for chains with `TKey<:VarName`.
+    The `split_varnames` keyword argument, if `true`, will first split up `VarName`s in the
+    chain such that each `VarName` corresponds to a single scalar value. This is only supported
+    for chains with `TKey<:VarName`.
 
-Other keyword arguments are forwarded to [`$(func_name)`](@extref); please see its
-documentation for details of supported keyword arguments.
-"""
+    Other keyword arguments are forwarded to [`$(func_name)`](@extref); please see its
+    documentation for details of supported keyword arguments.
+    """
 end
 
 """
@@ -583,21 +585,21 @@ end
 Helper macro to define the functions `func(chain; dims, warn, kwargs...)`.
 """
 macro _forward_stat(func)
-    quote
+    return quote
         function $(esc(func))(
-            chn::FlexiChain{TKey};
-            dims::Symbol=:both,
-            warn::Bool=true,
-            split_varnames::Bool=(TKey <: VarName),
-            kwargs...,
-        ) where {TKey}
+                chn::FlexiChain{TKey};
+                dims::Symbol = :both,
+                warn::Bool = true,
+                split_varnames::Bool = (TKey <: VarName),
+                kwargs...,
+            ) where {TKey}
             return collapse(
                 chn,
                 [(Symbol($(esc(func))), x -> $(esc(func))(x; kwargs...))];
-                dims=dims,
-                split_varnames=split_varnames,
-                warn=warn,
-                drop_stat_dim=true,
+                dims = dims,
+                split_varnames = split_varnames,
+                warn = warn,
+                drop_stat_dim = true,
             )
         end
     end
@@ -688,25 +690,25 @@ The argument `p` specifies the quantile to compute, and is forwarded to
 `Statistics.quantile`, along with any other keyword arguments.
 """
 function Statistics.quantile(
-    chn::FlexiChain{TKey},
-    p;
-    dims::Symbol=:both,
-    warn::Bool=true,
-    split_varnames::Bool=(TKey <: VarName),
-    kwargs...,
-) where {TKey}
+        chn::FlexiChain{TKey},
+        p;
+        dims::Symbol = :both,
+        warn::Bool = true,
+        split_varnames::Bool = (TKey <: VarName),
+        kwargs...,
+    ) where {TKey}
     funcs = if dims == :both
         # quantile only acts on a vector so we have to linearise the matrix x
         [(:quantile, x -> Statistics.quantile(x[:], p; kwargs...))]
     elseif dims == :iter
-        [(:quantile, x -> mapslices(c -> Statistics.quantile(c, p; kwargs...), x; dims=1))]
+        [(:quantile, x -> mapslices(c -> Statistics.quantile(c, p; kwargs...), x; dims = 1))]
     elseif dims == :chain
-        [(:quantile, x -> mapslices(r -> Statistics.quantile(r, p; kwargs...), x; dims=2))]
+        [(:quantile, x -> mapslices(r -> Statistics.quantile(r, p; kwargs...), x; dims = 2))]
     else
         throw(ArgumentError("`dims` must be `:iter`, `:chain`, or `:both`"))
     end
     return collapse(
-        chn, funcs; dims=dims, split_varnames=split_varnames, warn=warn, drop_stat_dim=true
+        chn, funcs; dims = dims, split_varnames = split_varnames, warn = warn, drop_stat_dim = true
     )
 end
 
@@ -737,24 +739,24 @@ resulting `FlexiSummary`, and a warning issued. The warning can be suppressed by
 `warn=false`.
 """
 function StatsBase.summarystats(
-    chain::FlexiChain{TKey}; split_varnames::Bool=(TKey <: VarName), warn::Bool=true
-) where {TKey}
+        chain::FlexiChain{TKey}; split_varnames::Bool = (TKey <: VarName), warn::Bool = true
+    ) where {TKey}
     _DEFAULT_SUMMARYSTAT_FUNCTIONS = [
         (:mean, Statistics.mean),
         (:std, Statistics.std),
         (:mcse, MCMCDiagnosticTools.mcse),
-        (:ess_bulk, x -> MCMCDiagnosticTools.ess(x; kind=:bulk)),
-        (:ess_tail, x -> MCMCDiagnosticTools.ess(x; kind=:tail)),
+        (:ess_bulk, x -> MCMCDiagnosticTools.ess(x; kind = :bulk)),
+        (:ess_tail, x -> MCMCDiagnosticTools.ess(x; kind = :tail)),
         (:rhat, MCMCDiagnosticTools.rhat),
         (:q5, x -> Statistics.quantile(x, 0.05)),
-        (:q50, x -> Statistics.quantile(x, 0.50)),
+        (:q50, x -> Statistics.quantile(x, 0.5)),
         (:q95, x -> Statistics.quantile(x, 0.95)),
     ]
     return collapse(
         chain,
         _DEFAULT_SUMMARYSTAT_FUNCTIONS;
-        dims=:both,
-        split_varnames=split_varnames,
-        warn=warn,
+        dims = :both,
+        split_varnames = split_varnames,
+        warn = warn,
     )
 end

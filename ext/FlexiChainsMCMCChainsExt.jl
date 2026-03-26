@@ -19,7 +19,7 @@ output that you get directly from sampling with Turing + MCMCChains.
 function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
     ni, nc = size(vnchain)
     array_of_dicts = [
-        FlexiChains.parameters_at(vnchain; iter=i, chain=j) for i in 1:ni, j in 1:nc
+        FlexiChains.parameters_at(vnchain; iter = i, chain = j) for i in 1:ni, j in 1:nc
     ]
     # Construct array of parameter names and array of values.
     # Most of this functionality is copied from _params_to_array in
@@ -28,7 +28,7 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
     # Extract the parameter names and values from each transition.
     split_dicts = map(array_of_dicts) do d
         nms_and_vs = if isempty(d)
-            Tuple{VarName,Any}[]
+            Tuple{VarName, Any}[]
         else
             iters = map(AbstractPPL.varname_and_value_leaves, Base.keys(d), Base.values(d))
             mapreduce(collect, vcat, iters)
@@ -49,7 +49,7 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
 
     # Handle non-parameter keys
     internal_keys = Symbol[]
-    internal_values = Array{Real,3}(undef, ni, 0, nc)
+    internal_values = Array{Real, 3}(undef, ni, 0, nc)
     for k in FlexiChains.extras(vnchain)
         v = map(identity, vnchain[k])
         if eltype(v) <: Real
@@ -67,15 +67,15 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
     # https://github.com/TuringLang/Turing.jl/issues/2666 for details.
     all_values = MCMCChains.concretize(all_values)
 
-    info = (varname_to_symbol=OrderedDict(zip(varnames, varname_symbols)),)
+    info = (varname_to_symbol = OrderedDict(zip(varnames, varname_symbols)),)
     # See comment above for the use of 'internals' as the only section.
     return MCMCChains.Chains(
         all_values,
         all_symbols,
         # Note that Turing.jl stores all other keys in the 'internals' section.
-        (; internals=internal_keys);
-        info=info,
-        iterations=FlexiChains.iter_indices(vnchain),
+        (; internals = internal_keys);
+        info = info,
+        iterations = FlexiChains.iter_indices(vnchain),
     )
 end
 

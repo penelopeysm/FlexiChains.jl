@@ -95,17 +95,17 @@ function parameters_at end
 for f in (:values_at, :parameters_at)
     _f = Symbol("_", f)
     @eval begin
-        function $f(chn::FlexiChain, ::Type{Tout}=Nothing; iter=:, chain=:) where {Tout}
+        function $f(chn::FlexiChain, ::Type{Tout} = Nothing; iter = :, chain = :) where {Tout}
             return $_f(chn, iter, chain, Tout)
         end
-        function $f(chn::FlexiChain, iter, chain, ::Type{Tout}=Nothing) where {Tout}
+        function $f(chn::FlexiChain, iter, chain, ::Type{Tout} = Nothing) where {Tout}
             Base.depwarn(
                 "Positional `iter` and `chain` arguments to `" *
-                $(string(f)) *
-                "` are deprecated and will be removed in v0.5. " *
-                "Please use keyword arguments instead: `" *
-                $(string(f)) *
-                "(chn[, Tout]; iter=..., chain=...)`.",
+                    $(string(f)) *
+                    "` are deprecated and will be removed in v0.5. " *
+                    "Please use keyword arguments instead: `" *
+                    $(string(f)) *
+                    "(chn[, Tout]; iter=..., chain=...)`.",
                 $(QuoteNode(f)),
             )
             return $_f(chn, iter, chain, Tout)
@@ -124,8 +124,8 @@ values, but this can be overloaded for specific `structure` types to return more
 output types.
 """
 function reconstruct_values(chn::FlexiChain{TKey}, iter, chain, structure) where {TKey}
-    return OrderedDict{ParameterOrExtra{<:TKey},Any}(
-        k => chn[k, iter=iter, chain=chain] for k in keys(chn)
+    return OrderedDict{ParameterOrExtra{<:TKey}, Any}(
+        k => chn[k, iter = iter, chain = chain] for k in keys(chn)
     )
 end
 
@@ -140,8 +140,8 @@ values, but this can be overloaded for specific `structure` types to return more
 output types.
 """
 function reconstruct_parameters(chn::FlexiChain{TKey}, iter, chain, structure) where {TKey}
-    return OrderedDict{TKey,Any}(
-        k => chn[Parameter(k), iter=iter, chain=chain] for k in FlexiChains.parameters(chn)
+    return OrderedDict{TKey, Any}(
+        k => chn[Parameter(k), iter = iter, chain = chain] for k in FlexiChains.parameters(chn)
     )
 end
 
@@ -157,57 +157,57 @@ end
 #   to_sym     – expression to convert a key `k` into a Symbol (for NamedTuple output)
 #   desc       – noun used in error messages ("key" or "parameter")
 for (f, f_single, reconstruct_f, get_keys, KeyType, idx_key, to_sym, desc) in (
-    (
-        :_values_at,
-        :_values_at_single,
-        :reconstruct_values,
-        :(Base.keys(chn)),
-        :(ParameterOrExtra{<:TKey}),
-        :k,
-        :(Symbol(k.name)),
-        "key",
-    ),
-    (
-        :_parameters_at,
-        :_parameters_at_single,
-        :reconstruct_parameters,
-        :(FlexiChains.parameters(chn)),
-        :TKey,
-        :(Parameter(k)),
-        :(Symbol(k)),
-        "parameter",
-    ),
-)
+        (
+            :_values_at,
+            :_values_at_single,
+            :reconstruct_values,
+            :(Base.keys(chn)),
+            :(ParameterOrExtra{<:TKey}),
+            :k,
+            :(Symbol(k.name)),
+            "key",
+        ),
+        (
+            :_parameters_at,
+            :_parameters_at_single,
+            :reconstruct_parameters,
+            :(FlexiChains.parameters(chn)),
+            :TKey,
+            :(Parameter(k)),
+            :(Symbol(k)),
+            "parameter",
+        ),
+    )
     @eval begin
         # We start by defining `_*_at_single` methods, which act on a single sample at a
         # time and use the `Tout` argument to determine the output type. We need to define
         # quite a few of these, one per output type.
         function $f_single(
-            chn::FlexiChain{TKey},
-            iter::Union{Int,DD.At},
-            chain::Union{Int,DD.At},
-            ::Type{Nothing}=Nothing,
-        ) where {TKey}
+                chn::FlexiChain{TKey},
+                iter::Union{Int, DD.At},
+                chain::Union{Int, DD.At},
+                ::Type{Nothing} = Nothing,
+            ) where {TKey}
             i_1based = DD.selectindices(iter_indices(chn), iter)
             c_1based = DD.selectindices(chain_indices(chn), chain)
             return $reconstruct_f(chn, iter, chain, chn._structures[i_1based, c_1based])
         end
         function $f_single(
-            chn::FlexiChain{TKey},
-            iter::Union{Int,DD.At},
-            chain::Union{Int,DD.At},
-            ::Type{T},
-        )::T{$KeyType,Any} where {TKey,T<:AbstractDict}
-            return T{$KeyType,Any}(
-                k => chn[$idx_key, iter=iter, chain=chain] for k in $get_keys
+                chn::FlexiChain{TKey},
+                iter::Union{Int, DD.At},
+                chain::Union{Int, DD.At},
+                ::Type{T},
+            )::T{$KeyType, Any} where {TKey, T <: AbstractDict}
+            return T{$KeyType, Any}(
+                k => chn[$idx_key, iter = iter, chain = chain] for k in $get_keys
             )
         end
         function $f_single(
-            chn::FlexiChain{TKey},
-            iter::Union{Int,DD.At},
-            chain::Union{Int,DD.At},
-            ::Type{NamedTuple},
-        ) where {TKey}
+                chn::FlexiChain{TKey},
+                iter::Union{Int, DD.At},
+                chain::Union{Int, DD.At},
+                ::Type{NamedTuple},
+            ) where {TKey}
             ks = collect($get_keys)
             N_expected = length(ks)
             N_unique = length(Set($to_sym for k in ks))
@@ -216,13 +216,13 @@ for (f, f_single, reconstruct_f, get_keys, KeyType, idx_key, to_sym, desc) in (
                     ArgumentError($desc * " names could not be converted to unique symbols")
                 )
             end
-            return NamedTuple($to_sym => chn[$idx_key, iter=iter, chain=chain] for k in ks)
+            return NamedTuple($to_sym => chn[$idx_key, iter = iter, chain = chain] for k in ks)
         end
 
         # Once that's been defined, we can make use of them in the main `_values_at` and
         # `_parameters_at` methods, which handle multi-index inputs and additionally convert
         # to `DimArray` output when necessary.
-        function $f(chn::FlexiChain, iter, chain, ::Type{Tout}=Nothing) where {Tout}
+        function $f(chn::FlexiChain, iter, chain, ::Type{Tout} = Nothing) where {Tout}
             new_iter_indices, new_iter_lookup, collapse_iter = _get_indices_and_lookup(
                 chn, iter_indices, iter
             )
@@ -246,7 +246,7 @@ for (f, f_single, reconstruct_f, get_keys, KeyType, idx_key, to_sym, desc) in (
             else
                 mat = [
                     $f_single(chn, i, c, Tout) for i in new_iter_indices,
-                    c in new_chain_indices
+                        c in new_chain_indices
                 ]
                 dimmat = DD.DimMatrix(
                     map(identity, mat),
@@ -256,9 +256,9 @@ for (f, f_single, reconstruct_f, get_keys, KeyType, idx_key, to_sym, desc) in (
                     ),
                 )
                 return if collapse_iter
-                    dropdims(dimmat; dims=ITER_DIM_NAME)
+                    dropdims(dimmat; dims = ITER_DIM_NAME)
                 elseif collapse_chain
-                    dropdims(dimmat; dims=CHAIN_DIM_NAME)
+                    dropdims(dimmat; dims = CHAIN_DIM_NAME)
                 else
                     dimmat
                 end

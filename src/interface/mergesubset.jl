@@ -31,7 +31,7 @@ The two `FlexiChain`s being merged must have the same dimensions.
 The chain indices and metadata are taken from the second chain. Those in the first chain are
 silently ignored.
 """
-function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1,TKey2}
+function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1, TKey2}
     # Check size
     size(c1) == size(c2) || throw(
         DimensionMismatch(
@@ -50,8 +50,8 @@ function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1,T
     # TODO: This function has to access internal data, urk
     TValNew = Base.promote_type(eltype(valtype(c1._data)), eltype(valtype(c2._data)))
     # Merge the data dictionaries
-    d1 = OrderedDict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c1._data)
-    d2 = OrderedDict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c2._data)
+    d1 = OrderedDict{ParameterOrExtra{<:TKeyNew}, Matrix{<:TValNew}}(c1._data)
+    d2 = OrderedDict{ParameterOrExtra{<:TKeyNew}, Matrix{<:TValNew}}(c2._data)
     merged_data = merge(d1, d2)
     # Merge structures element-wise
     merged_structures = map(merge_structures, c1._structures, c2._structures)
@@ -59,11 +59,11 @@ function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1,T
         niters(c1),
         nchains(c1),
         merged_data;
-        structures=merged_structures,
-        iter_indices=FlexiChains.iter_indices(c2),
-        chain_indices=FlexiChains.chain_indices(c2),
-        sampling_time=FlexiChains.sampling_time(c2),
-        last_sampler_state=FlexiChains.last_sampler_state(c2),
+        structures = merged_structures,
+        iter_indices = FlexiChains.iter_indices(c2),
+        chain_indices = FlexiChains.chain_indices(c2),
+        sampling_time = FlexiChains.sampling_time(c2),
+        last_sampler_state = FlexiChains.last_sampler_state(c2),
     )
 end
 

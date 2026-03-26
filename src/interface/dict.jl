@@ -44,7 +44,7 @@ indexing into the chain with each key.
 
 If `parameters_only` is `true`, only the values corresponding to parameter keys are returned.
 """
-function Base.values(cs::ChainOrSummary; parameters_only::Bool=false)
+function Base.values(cs::ChainOrSummary; parameters_only::Bool = false)
     if parameters_only
         return (cs[Parameter(k)] for k in parameters(cs))
     else
@@ -63,7 +63,7 @@ If `parameters_only` is `true`, only the values corresponding to parameter keys 
     Note that this function allows you to decompose a `FlexiChain` into a dict-of-arrays,
     e.g. with `OrderedDict(pairs(chain; parameters_only=...))`.
 """
-function Base.pairs(cs::ChainOrSummary; parameters_only::Bool=false)
+function Base.pairs(cs::ChainOrSummary; parameters_only::Bool = false)
     if parameters_only
         return (k => cs[Parameter(k)] for k in parameters(cs))
     else
@@ -150,7 +150,7 @@ Rename the keys of a `FlexiChain` or `FlexiSummary` by applying the function `f`
 function map_keys(f, cs::ChainOrSummary)
     new_keytype = _get_new_keytype(f, keys(cs))
     N = cs isa FlexiChain ? 2 : 3
-    new_data = OrderedDict{ParameterOrExtra{<:new_keytype},Array{<:Any,N}}(
+    new_data = OrderedDict{ParameterOrExtra{<:new_keytype}, Array{<:Any, N}}(
         f(k) => v for (k, v) in pairs(cs._data)
     )
     return _replace_data(cs, new_keytype, new_data)
@@ -180,7 +180,7 @@ function map_parameters(f, cs::ChainOrSummary)
     new_keytype = eltype(map(identity, collect(seen)))
     wrapper_f = k -> k isa Parameter ? Parameter(f(k.name)) : k
     N = cs isa FlexiChain ? 2 : 3
-    new_data = OrderedDict{ParameterOrExtra{<:new_keytype},Array{<:Any,N}}(
+    new_data = OrderedDict{ParameterOrExtra{<:new_keytype}, Array{<:Any, N}}(
         wrapper_f(k) => v for (k, v) in pairs(cs._data)
     )
     return _replace_data(cs, new_keytype, new_data)

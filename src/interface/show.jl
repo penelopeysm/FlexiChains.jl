@@ -16,25 +16,25 @@ function Base.show(io::IO, ::MIME"text/plain", chain::FlexiChain{TKey}) where {T
     maybe_s(x) = x == 1 ? "" : "s"
     ni, nc = size(chain)
     printstyled(
-        io, "FlexiChain ($ni iteration$(maybe_s(ni)), $nc chain$(maybe_s(nc)))\n"; bold=true
+        io, "FlexiChain ($ni iteration$(maybe_s(ni)), $nc chain$(maybe_s(nc)))\n"; bold = true
     )
     printstyled(
         io,
         "$(DD.dimsymbol(1)) iter=$(_show_range(FlexiChains.iter_indices(chain)))";
-        color=DD.dimcolor(1),
+        color = DD.dimcolor(1),
     )
     print(io, " | ")
     printstyled(
         io,
         "$(DD.dimsymbol(2)) chain=$(_show_range(FlexiChains.chain_indices(chain)))";
-        color=DD.dimcolor(2),
+        color = DD.dimcolor(2),
     )
     println(io, "\n")
     # Print parameter names
     parameter_names = parameters(chain)
-    printstyled(io, "Parameter type   "; bold=true)
+    printstyled(io, "Parameter type   "; bold = true)
     println(io, "$TKey")
-    printstyled(io, "Parameters       "; bold=true)
+    printstyled(io, "Parameters       "; bold = true)
     if isempty(parameter_names)
         println(io, "(none)")
     else
@@ -43,7 +43,7 @@ function Base.show(io::IO, ::MIME"text/plain", chain::FlexiChain{TKey}) where {T
 
     # Print extras
     extra_names = extras(chain)
-    printstyled(io, "Extra keys       "; bold=true)
+    printstyled(io, "Extra keys       "; bold = true)
     if isempty(extra_names)
         println(io, "(none)")
     else

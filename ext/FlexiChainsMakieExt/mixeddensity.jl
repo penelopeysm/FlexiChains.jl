@@ -7,16 +7,16 @@ end
 This handles plotting onto a full Figure.
 """
 function FC.mmixeddensity(
-    chn::FC.FlexiChain,
-    param_or_params=FC.Parameter.(FC.parameters(chn));
-    pool_chains::Bool=false,
-    layout::Union{Tuple{Int,Int},Nothing}=nothing,
-    legend_position::Symbol=:bottom,
-    figure=(;),
-    axis=(;),
-    legend=(;),
-    kwargs...,
-)
+        chn::FC.FlexiChain,
+        param_or_params = FC.Parameter.(FC.parameters(chn));
+        pool_chains::Bool = false,
+        layout::Union{Tuple{Int, Int}, Nothing} = nothing,
+        legend_position::Symbol = :bottom,
+        figure = (;),
+        axis = (;),
+        legend = (;),
+        kwargs...,
+    )
     keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nrows, ncols = if isnothing(layout)
@@ -25,7 +25,7 @@ function FC.mmixeddensity(
         layout
     end
     figure = Makie.Figure(;
-        size=(FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
+        size = (FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
         figure...,
     )
     a, p = nothing, nothing
@@ -54,7 +54,7 @@ end
 """
 This handles plotting onto a single Axis.
 """
-function FC.mmixeddensity(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
+function FC.mmixeddensity(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96
     k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
@@ -68,8 +68,8 @@ function FC.mmixeddensity(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;),
     )
 end
 function FC.mmixeddensity!(
-    ax::Makie.Axis, chn::FC.FlexiChain, param; pool_chains::Bool=false, kwargs...
-)
+        ax::Makie.Axis, chn::FC.FlexiChain, param; pool_chains::Bool = false, kwargs...
+    )
     k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
     a, p = FC.mmixeddensity!(
         ax, FC.PlotUtils.FlexiChainMixedDensity(chn, k, pool_chains); kwargs...
@@ -84,8 +84,8 @@ end
 This is the actual function that does the density plotting.
 """
 function FC.mmixeddensity!(
-    ax::Makie.Axis, d::FC.PlotUtils.FlexiChainMixedDensity; kwargs...
-)
+        ax::Makie.Axis, d::FC.PlotUtils.FlexiChainMixedDensity; kwargs...
+    )
     return if isdiscrete(d.chn, d.param)
         Makie.hist!(
             ax, FC.PlotUtils.FlexiChainHistogram(d.chn, d.param, d.pool_chains); kwargs...
