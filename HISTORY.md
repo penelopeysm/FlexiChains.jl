@@ -1,3 +1,8 @@
+# 0.4.3
+
+When using `getindex` on a chain or a summary, the returned `DimArray` now has the parameter as its name.
+Note that the name is stringified, so it is a lossy representation: this is because `DimensionalData` does not (publicly) allow the use of arbitrary types for array names (one can do it, but it requires overloading an internal method).
+
 # 0.4.2
 
 Added methods for `FlexiChains.values_at` and `FlexiChains.parameters_at` that take keyword arguments `iter` and `chain` instead of positional arguments.
