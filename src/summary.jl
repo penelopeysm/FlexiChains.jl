@@ -331,7 +331,8 @@ Convert `data`, which is a raw 3D array of samples, to either:
 the chain line up with the size of the matrix.
 """
 function _raw_to_user_data(
-        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}, arr::Array{T, 3}
+        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}, arr::Array{T, 3};
+        name = DD.NoName()
     ) where {TKey, TIIdx, TCIdx, TSIdx, T}
     new_dims, dim_indices_to_drop = _get_summary_dims(fs)
     dropped_arr = dropdims(arr; dims = dim_indices_to_drop)
@@ -339,11 +340,12 @@ function _raw_to_user_data(
         # Scalar value; dropped_arr will be a 0-dimensional array
         dropped_arr[]
     else
-        DD.DimArray(dropped_arr, tuple(new_dims...))
+        DD.DimArray(dropped_arr, tuple(new_dims...); name = name)
     end
 end
 function _raw_to_user_data(
-        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}, arr::Array{<:DD.DimArray{<:Any, Ndims}, 3}
+        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}, arr::Array{<:DD.DimArray{<:Any, Ndims}, 3};
+        name = DD.NoName()
     ) where {TKey, TIIdx, TCIdx, TSIdx, Ndims}
     new_dims, dim_indices_to_drop = _get_summary_dims(fs)
     dropped_arr = dropdims(arr; dims = dim_indices_to_drop)
@@ -354,7 +356,10 @@ function _raw_to_user_data(
         arr_of_arr = DD.DimArray(dropped_arr, tuple(new_dims...))
         stacked_arr = stack(arr_of_arr)
         # iter/chain/stat will be the final dimensions. We want them to be the first
-        return permutedims(stacked_arr, ((Ndims + 1):(Ndims + n_new_dims)..., (1:Ndims)...))
+        return DD.rebuild(
+            permutedims(stacked_arr, ((Ndims + 1):(Ndims + n_new_dims)..., (1:Ndims)...));
+            name = name
+        )
     end
 end
 

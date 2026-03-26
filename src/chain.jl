@@ -78,6 +78,7 @@ type `Parameter{TKey}`.
 struct Parameter{T}
     name::T
 end
+Base.show(io::IO, p::Parameter) = print(io, "Parameter(", repr(p.name), ")")
 
 """
     Extra(name::Any)
@@ -88,6 +89,7 @@ type and is not constrained by the type of the `FlexiChain`.
 struct Extra{T}
     name::T
 end
+Base.show(io::IO, e::Extra) = print(io, "Extra(", repr(e.name), ")")
 
 """
     ParameterOrExtra{T}
@@ -539,27 +541,29 @@ indexing into a `FlexiChain`.
     This function performs no checks to make sure that the lengths of the indices stored in
 the chain line up with the size of the matrix.
 """
-function _raw_to_user_data(chain::FlexiChain, mat::Matrix)
-    return DD.DimMatrix(mat, _default_dims(chain))
+function _raw_to_user_data(chain::FlexiChain, mat::Matrix; name = DD.NoName())
+    return DD.DimMatrix(mat, _default_dims(chain); name = name)
 end
 function _raw_to_user_data(
-        chain::FlexiChain, mat_of_dimarr::Matrix{<:DD.DimArray{<:Any, Ndims}}
+        chain::FlexiChain, mat_of_dimarr::Matrix{<:DD.DimArray{<:Any, Ndims}};
+        name = DD.NoName()
     ) where {Ndims}
     dimmat_of_dimarr = DD.DimMatrix(mat_of_dimarr, _default_dims(chain))
     # This stacked matrix will have the iter and chain dims at the end.
     stacked_dimarr = stack(dimmat_of_dimarr)
-    return permutedims(stacked_dimarr, (Ndims + 1, Ndims + 2, 1:Ndims...))
+    return DD.rebuild(permutedims(stacked_dimarr, (Ndims + 1, Ndims + 2, 1:Ndims...)); name = name)
 end
 function _raw_to_user_data(
-        ::FlexiChain, dimmat_of_dimarr::DD.DimMatrix{<:DD.DimArray{<:Any, Ndims}}
+        ::FlexiChain, dimmat_of_dimarr::DD.DimMatrix{<:DD.DimArray{<:Any, Ndims}};
+        name = DD.NoName()
     ) where {Ndims}
     # assume that the DimMat already has the right iter/chain dims
     stacked_dimarr = stack(dimmat_of_dimarr)
-    return permutedims(stacked_dimarr, (Ndims + 1, Ndims + 2, 1:Ndims...))
+    return DD.rebuild(permutedims(stacked_dimarr, (Ndims + 1, Ndims + 2, 1:Ndims...)); name = name)
 end
-function _raw_to_user_data(::FlexiChain, dimmat::DD.DimMatrix)
+function _raw_to_user_data(::FlexiChain, dimmat::DD.DimMatrix; name = DD.NoName())
     # assume that the DimMat already has the right iter/chain dims
-    return dimmat
+    return DD.rebuild(dimmat; name = name)
 end
 
 """
