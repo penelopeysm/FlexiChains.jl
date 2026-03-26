@@ -92,7 +92,7 @@ function Base.getindex(
         fchain::FlexiChain{<:VarName}, vn::VarName; iter = Colon(), chain = Colon()
     )
     raw = _get_raw_data(fchain, Parameter(vn))
-    return _raw_to_user_data(fchain, raw; name = Parameter(vn))[iter = iter, chain = chain]
+    return _raw_to_user_data(fchain, raw; name = string(Parameter(vn)))[iter = iter, chain = chain]
 end
 """
     Base.getindex(
@@ -116,7 +116,7 @@ function Base.getindex(
         stat = _UNSPECIFIED_KWARG,
     )
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(vn)); name = Parameter(vn))
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(vn)); name = string(Parameter(vn)))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 

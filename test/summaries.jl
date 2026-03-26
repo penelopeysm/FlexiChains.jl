@@ -265,9 +265,9 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
         @testset "DimArray name is set to key" begin
             fs = mean(chain; dims = :iter, split_varnames = false)
-            @test DD.name(fs[Parameter(@varname(y))]) == Parameter(@varname(y))
-            @test DD.name(fs[@varname(y)]) == Parameter(@varname(y))
-            @test DD.name(fs[:y]) == Parameter(@varname(y))
+            @test DD.name(fs[Parameter(@varname(y))]) == string(Parameter(@varname(y)))
+            @test DD.name(fs[@varname(y)]) == string(Parameter(@varname(y)))
+            @test DD.name(fs[:y]) == string(Parameter(@varname(y)))
         end
 
         @testset "dims=:iter" begin

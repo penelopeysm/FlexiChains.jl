@@ -75,7 +75,7 @@ iterations or chains from the data corresponding to the given `key`.
 function Base.getindex(
         fchain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}; iter = Colon(), chain = Colon()
     ) where {TKey}
-    return _raw_to_user_data(fchain, _get_raw_data(fchain, key); name = key)[iter = iter, chain = chain]
+    return _raw_to_user_data(fchain, _get_raw_data(fchain, key); name = string(key))[iter = iter, chain = chain]
 end
 """
     Base.getindex(
@@ -100,7 +100,7 @@ function Base.getindex(
         stat = _UNSPECIFIED_KWARG,
     ) where {TKey, TIIdx, TCIdx}
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, key); name = key)
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, key); name = string(key))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
@@ -199,7 +199,7 @@ function Base.getindex(
     ) where {TKey}
     k = _extract_potential_symbol_key(TKey, keys(fs), sym_key)
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name = k)
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name = string(k))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
@@ -247,7 +247,7 @@ function Base.getindex(
         stat = _UNSPECIFIED_KWARG,
     ) where {TKey}
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)); name = Parameter(parameter_name))
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)); name = string(Parameter(parameter_name)))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 function Base.getindex(
@@ -259,7 +259,7 @@ function Base.getindex(
     )
     # Explicitly specify the behaviour for TKey==Symbol so that it doesn't direct to the Symbol method above.
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)); name = Parameter(parameter_name))
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)); name = string(Parameter(parameter_name)))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
