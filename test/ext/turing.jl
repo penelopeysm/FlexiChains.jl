@@ -335,10 +335,10 @@ end
         )
 
         for i in 1:Ni, c in 1:Nc
-            prms = FlexiChains.parameters_at(chn, i, c)
+            prms = FlexiChains.parameters_at(chn; iter = i, chain = c)
             @test prms isa VarNamedTuple
             @test prms == pwss[i, c].params
-            vals = FlexiChains.values_at(chn, i, c)
+            vals = FlexiChains.values_at(chn; iter = i, chain = c)
             @test vals isa DynamicPPL.ParamsWithStats
             @test vals == pwss[i, c]
         end
