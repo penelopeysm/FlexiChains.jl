@@ -33,17 +33,17 @@ function FlexiChains.from_posteriordb_ref(ref::PosteriorDB.ReferencePosterior)
     # We _could_ convert each OrderedDict to a chain and then hcat them,
     # but let's be good citizens and avoid unnecessary work by hcatting the
     # raw data directly.
-    d = OrderedDict{Parameter{String},Matrix{Float64}}()
+    d = OrderedDict{Parameter{String}, Matrix{Float64}}()
     for k in keys(ref_post[1])
         d[Parameter(k)] = hcat(map(d -> d[k], ref_post)...)
     end
     iter_indices = if thin != 1
-        range(nwarmup + thin; step=thin, length=niters)
+        range(nwarmup + thin; step = thin, length = niters)
     else
         # This returns UnitRange not StepRange -- a bit cleaner
         (nwarmup + 1):nsteps
     end
-    return FlexiChain{String}(niters, nchains, d; iter_indices=iter_indices)
+    return FlexiChain{String}(niters, nchains, d; iter_indices = iter_indices)
 end
 
 end # module

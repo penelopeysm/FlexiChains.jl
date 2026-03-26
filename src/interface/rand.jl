@@ -19,21 +19,21 @@ return a `DynamicPPL.ParamsWithStats`, and `rand(chn, parameters_only=true)` wil
 `DynamicPPL.VarNamedTuple`.
 """
 function Base.rand(
-    rng::Random.AbstractRNG, chn::FlexiChain, dims::Int...; parameters_only=false
-)
+        rng::Random.AbstractRNG, chn::FlexiChain, dims::Int...; parameters_only = false
+    )
     func = parameters_only ? FlexiChains.parameters_at : FlexiChains.values_at
     ci = CartesianIndices(size(chn))
     idxs = rand(rng, ci, dims...)
     return if isempty(dims)
         i, c = idxs.I
-        func(chn; iter=i, chain=c)
+        func(chn; iter = i, chain = c)
     else
         map(idxs) do idx
             i, c = idx.I
-            func(chn; iter=i, chain=c)
+            func(chn; iter = i, chain = c)
         end
     end
 end
-function Base.rand(chn::FlexiChain, dims::Int...; parameters_only=false)
-    return rand(Random.default_rng(), chn, dims...; parameters_only=parameters_only)
+function Base.rand(chn::FlexiChain, dims::Int...; parameters_only = false)
+    return rand(Random.default_rng(), chn, dims...; parameters_only = parameters_only)
 end

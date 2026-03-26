@@ -5,7 +5,7 @@ using Makie
 using Makie: ColorTypes
 
 const FC = FlexiChains
-const MakieGrids = Union{Makie.GridPosition,Makie.GridSubposition}
+const MakieGrids = Union{Makie.GridPosition, Makie.GridSubposition}
 
 """
 Adds a legend to the given `fig` for the chains in `chn` using the provided `colors`.
@@ -18,16 +18,16 @@ Keyword arguments are forwarded to `Makie.Legend`.
 Returns the created `Makie.Legend`, or `nothing` if no legend was added.
 """
 function maybe_add_legend(
-    fig::Makie.Figure,
-    chn::FC.FlexiChain,
-    colors::AbstractVector,
-    legend_position::Symbol;
-    kwargs...,
-)
+        fig::Makie.Figure,
+        chn::FC.FlexiChain,
+        colors::AbstractVector,
+        legend_position::Symbol;
+        kwargs...,
+    )
     legend_position == :none && return nothing
     nrows, ncols = size(fig.layout)
     labels = map(string, FC.chain_indices(chn))
-    elems = map(color -> Makie.PolyElement(; color=color), colors)
+    elems = map(color -> Makie.PolyElement(; color = color), colors)
     l = if legend_position == :bottom
         colpos = ncols > 1 ? range(1, ncols) : 1
         Makie.Legend(
@@ -35,7 +35,7 @@ function maybe_add_legend(
             elems,
             labels,
             "Chain";
-            orientation=:horizontal,
+            orientation = :horizontal,
             kwargs...,
         )
     elseif legend_position == :right
@@ -79,15 +79,15 @@ function determine_color_kwargs(nchains::Int, kwargs::NamedTuple)::Vector{NamedT
             length(color) < nchains && error(
                 "not enough colors specified for each chain: got $(length(color)), need $nchains",
             )
-            map(c -> (; color=c), color)
+            map(c -> (; color = c), color)
         else
             # Assume it's a single colour, e.g. `color=:purple`
-            fill((; color=color), nchains)
+            fill((; color = color), nchains)
         end
     else
         # Colormap was provided. We should probably assume it's categorical
         cm = Makie.to_colormap(colormap)
-        map(i -> (; color=cm[i]), 1:nchains)
+        map(i -> (; color = cm[i]), 1:nchains)
     end
     return color_kwargs
 end

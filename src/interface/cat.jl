@@ -61,8 +61,8 @@ The resulting chain's sampling time is the sum of the input chains' sampling tim
 the last sampler state is taken from the second chain.
 """
 function Base.vcat(
-    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}
-)::FlexiChain{TKey} where {TKey}
+        c1::FlexiChain{TKey}, c2::FlexiChain{TKey}
+    )::FlexiChain{TKey} where {TKey}
     # Check sizes are compatible
     nchains(c1) == nchains(c2) || throw(
         DimensionMismatch(
@@ -74,7 +74,7 @@ function Base.vcat(
     if ci1 != ci2
         @warn "concatenating FlexiChains with different chain indices: got $(ci1) and $(ci2). The resulting chain will have the chain indices of the first chain."
     end
-    d = OrderedDict{ParameterOrExtra{<:TKey},Matrix}()
+    d = OrderedDict{ParameterOrExtra{<:TKey}, Matrix}()
     allkeys = OrderedSet{ParameterOrExtra{<:TKey}}(keys(c1))
     union!(allkeys, keys(c2))
     for k in allkeys
@@ -95,14 +95,14 @@ function Base.vcat(
         niters(c1) + niters(c2),
         nchains(c1),
         d;
-        structures=vcat(c1._structures, c2._structures),
-        iter_indices=new_iter_indices,
-        chain_indices=FlexiChains.chain_indices(c1),
-        sampling_time=FlexiChains.sampling_time(c1) .+ FlexiChains.sampling_time(c2),
-        last_sampler_state=FlexiChains.last_sampler_state(c2),
+        structures = vcat(c1._structures, c2._structures),
+        iter_indices = new_iter_indices,
+        chain_indices = FlexiChains.chain_indices(c1),
+        sampling_time = FlexiChains.sampling_time(c1) .+ FlexiChains.sampling_time(c2),
+        last_sampler_state = FlexiChains.last_sampler_state(c2),
     )
 end
-function Base.vcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1,TKey2}
+function Base.vcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1, TKey2}
     throw(
         ArgumentError(
             "cannot vcat FlexiChains with different key types $(TKey1) and $(TKey2)"
@@ -111,8 +111,8 @@ function Base.vcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1,TKey2}
 end
 Base.vcat(c1::FlexiChain) = c1
 function Base.vcat(
-    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}, cs::FlexiChain{TKey}...
-) where {TKey}
+        c1::FlexiChain{TKey}, c2::FlexiChain{TKey}, cs::FlexiChain{TKey}...
+    ) where {TKey}
     return Base.vcat(Base.vcat(c1, c2), cs...)
 end
 
@@ -130,8 +130,8 @@ The resulting chain's sampling times and last sampler states are obtained by con
 those of the input chains.
 """
 function Base.hcat(
-    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}
-)::FlexiChain{TKey} where {TKey}
+        c1::FlexiChain{TKey}, c2::FlexiChain{TKey}
+    )::FlexiChain{TKey} where {TKey}
     # Check sizes are compatible
     niters(c1) == niters(c2) || throw(
         DimensionMismatch(
@@ -144,7 +144,7 @@ function Base.hcat(
         @warn "concatenating FlexiChains with different iteration indices: got $(ii1) and $(ii2). The resulting chain will have the iteration indices of the first chain."
     end
     # Build up the new data dictionary
-    d = OrderedDict{ParameterOrExtra{<:TKey},Matrix}()
+    d = OrderedDict{ParameterOrExtra{<:TKey}, Matrix}()
     allkeys = OrderedSet{ParameterOrExtra{<:TKey}}(keys(c1))
     union!(allkeys, keys(c2))
     for k in allkeys
@@ -165,17 +165,17 @@ function Base.hcat(
         niters(c1),
         nchains(c1) + nchains(c2),
         d;
-        structures=hcat(c1._structures, c2._structures),
-        iter_indices=FlexiChains.iter_indices(c1),
-        chain_indices=1:(nchains(c1) + nchains(c2)),
-        sampling_time=vcat(FlexiChains.sampling_time(c1), FlexiChains.sampling_time(c2)),
-        last_sampler_state=vcat(
+        structures = hcat(c1._structures, c2._structures),
+        iter_indices = FlexiChains.iter_indices(c1),
+        chain_indices = 1:(nchains(c1) + nchains(c2)),
+        sampling_time = vcat(FlexiChains.sampling_time(c1), FlexiChains.sampling_time(c2)),
+        last_sampler_state = vcat(
             FlexiChains.last_sampler_state(c1), FlexiChains.last_sampler_state(c2)
         ),
     )
 end
 Base.hcat(c1::FlexiChain) = c1
-function Base.hcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1,TKey2}
+function Base.hcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1, TKey2}
     throw(
         ArgumentError(
             "cannot hcat FlexiChains with different key types $(TKey1) and $(TKey2)"
@@ -183,8 +183,8 @@ function Base.hcat(::FlexiChain{TKey1}, ::FlexiChain{TKey2}) where {TKey1,TKey2}
     )
 end
 function Base.hcat(
-    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}, cs::FlexiChain{TKey}...
-) where {TKey}
+        c1::FlexiChain{TKey}, c2::FlexiChain{TKey}, cs::FlexiChain{TKey}...
+    ) where {TKey}
     return Base.hcat(Base.hcat(c1, c2), cs...)
 end
 
@@ -194,13 +194,13 @@ end
 Concatenate `FlexiChain`s along the chain dimension.
 """
 function AbstractMCMC.chainscat(
-    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}
-)::FlexiChain{TKey} where {TKey}
+        c1::FlexiChain{TKey}, c2::FlexiChain{TKey}
+    )::FlexiChain{TKey} where {TKey}
     return Base.hcat(c1, c2)
 end
 AbstractMCMC.chainscat(c1::FlexiChain) = c1
 function AbstractMCMC.chainscat(
-    c1::FlexiChain{TKey}, c2::FlexiChain{TKey}, cs::FlexiChain{TKey}...
-) where {TKey}
+        c1::FlexiChain{TKey}, c2::FlexiChain{TKey}, cs::FlexiChain{TKey}...
+    ) where {TKey}
     return AbstractMCMC.chainscat(AbstractMCMC.chainscat(c1, c2), cs...)
 end

@@ -1,4 +1,4 @@
-const ChainOrSummary{TKey} = Union{FlexiChain{TKey},FlexiSummary{TKey}}
+const ChainOrSummary{TKey} = Union{FlexiChain{TKey}, FlexiSummary{TKey}}
 
 const SUMMARY_GETINDEX_KWARGS = """
 !!! note "Keyword arguments"
@@ -22,13 +22,13 @@ function _check_summary_kwargs(fs::FlexiSummary, iter, chain, stat)
         iter === _UNSPECIFIED_KWARG || throw(ArgumentError(err_msg(:iter)))
     else
         new_iter = iter === _UNSPECIFIED_KWARG ? Colon() : iter
-        kwargs = merge(kwargs, (iter=new_iter,))
+        kwargs = merge(kwargs, (iter = new_iter,))
     end
     if FlexiChains.chain_indices(fs) === nothing
         chain === _UNSPECIFIED_KWARG || throw(ArgumentError(err_msg(:chain)))
     else
         new_chain = chain === _UNSPECIFIED_KWARG ? Colon() : chain
-        kwargs = merge(kwargs, (chain=new_chain,))
+        kwargs = merge(kwargs, (chain = new_chain,))
     end
     if FlexiChains.stat_indices(fs) === nothing
         stat === _UNSPECIFIED_KWARG || throw(ArgumentError(err_msg(:stat)))
@@ -42,7 +42,7 @@ function _check_summary_kwargs(fs::FlexiSummary, iter, chain, stat)
         if new_stat isa Symbol
             @warn "indexing with `stat=:$stat` will (most likely) error; you probably want to use `stat=At(:$stat)` instead."
         end
-        kwargs = merge(kwargs, (stat=new_stat,))
+        kwargs = merge(kwargs, (stat = new_stat,))
     end
     return kwargs
 end
@@ -73,9 +73,9 @@ The `iter` and `chain` keyword arguments further allow you to extract specific
 iterations or chains from the data corresponding to the given `key`.
 """
 function Base.getindex(
-    fchain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}; iter=Colon(), chain=Colon()
-) where {TKey}
-    return _raw_to_user_data(fchain, _get_raw_data(fchain, key))[iter=iter, chain=chain]
+        fchain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}; iter = Colon(), chain = Colon()
+    ) where {TKey}
+    return _raw_to_user_data(fchain, _get_raw_data(fchain, key))[iter = iter, chain = chain]
 end
 """
     Base.getindex(
@@ -93,12 +93,12 @@ You will need to use this method if you have multiple keys that convert to the s
 $(SUMMARY_GETINDEX_KWARGS)
 """
 function Base.getindex(
-    fs::FlexiSummary{TKey,TIIdx,TCIdx},
-    key::ParameterOrExtra{<:TKey};
-    iter=_UNSPECIFIED_KWARG,
-    chain=_UNSPECIFIED_KWARG,
-    stat=_UNSPECIFIED_KWARG,
-) where {TKey,TIIdx,TCIdx}
+        fs::FlexiSummary{TKey, TIIdx, TCIdx},
+        key::ParameterOrExtra{<:TKey};
+        iter = _UNSPECIFIED_KWARG,
+        chain = _UNSPECIFIED_KWARG,
+        stat = _UNSPECIFIED_KWARG,
+    ) where {TKey, TIIdx, TCIdx}
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, key))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
@@ -118,8 +118,8 @@ Helper function that, given a list of keys and a target `Symbol`, attempts to fi
 a unique key that corresponds to the `Symbol`.
 """
 function _extract_potential_symbol_key(
-    ::Type{TKey}, all_keys::Base.KeySet, target_sym::Symbol
-)::ParameterOrExtra{<:TKey} where {TKey}
+        ::Type{TKey}, all_keys::Base.KeySet, target_sym::Symbol
+    )::ParameterOrExtra{<:TKey} where {TKey}
     # TODO: `all_keys` should _really_ have the type
     #     all_keys::Base.KeySet{<:ParameterOrExtra{<:TKey}}
     # But again this fails on Julia 1.10. It's probably related to
@@ -170,10 +170,10 @@ If there are multiple matches: for example, if you have a `Parameter(:x)` and al
 it using the actual key.
 """
 function Base.getindex(
-    fchain::FlexiChain{TKey}, sym_key::Symbol; iter=Colon(), chain=Colon()
-) where {TKey}
+        fchain::FlexiChain{TKey}, sym_key::Symbol; iter = Colon(), chain = Colon()
+    ) where {TKey}
     k = _extract_potential_symbol_key(TKey, keys(fchain), sym_key)
-    return fchain[k, iter=iter, chain=chain]
+    return fchain[k, iter = iter, chain = chain]
 end
 """
     Base.getindex(
@@ -191,12 +191,12 @@ does not exist, or if it is not unique.
 $(SUMMARY_GETINDEX_KWARGS)
 """
 function Base.getindex(
-    fs::FlexiSummary{TKey},
-    sym_key::Symbol;
-    iter=_UNSPECIFIED_KWARG,
-    chain=_UNSPECIFIED_KWARG,
-    stat=_UNSPECIFIED_KWARG,
-) where {TKey}
+        fs::FlexiSummary{TKey},
+        sym_key::Symbol;
+        iter = _UNSPECIFIED_KWARG,
+        chain = _UNSPECIFIED_KWARG,
+        stat = _UNSPECIFIED_KWARG,
+    ) where {TKey}
     k = _extract_potential_symbol_key(TKey, keys(fs), sym_key)
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, k))
@@ -216,15 +216,15 @@ end
 Convenience method for retrieving parameters. Equal to `chain[Parameter(parameter_name)]`.
 """
 function Base.getindex(
-    fchain::FlexiChain{TKey}, parameter_name::TKey; iter=Colon(), chain=Colon()
-) where {TKey}
-    return fchain[Parameter(parameter_name), iter=iter, chain=chain]
+        fchain::FlexiChain{TKey}, parameter_name::TKey; iter = Colon(), chain = Colon()
+    ) where {TKey}
+    return fchain[Parameter(parameter_name), iter = iter, chain = chain]
 end
 function Base.getindex(
-    fchain::FlexiChain{Symbol}, parameter_name::Symbol; iter=Colon(), chain=Colon()
-)
+        fchain::FlexiChain{Symbol}, parameter_name::Symbol; iter = Colon(), chain = Colon()
+    )
     # Explicitly specify the behaviour for TKey==Symbol so that it doesn't direct to the Symbol method above.
-    return fchain[Parameter(parameter_name), iter=iter, chain=chain]
+    return fchain[Parameter(parameter_name), iter = iter, chain = chain]
 end
 """
     Base.getindex(
@@ -240,23 +240,23 @@ Convenience method for retrieving parameters. Equal to `summary[Parameter(parame
 $(SUMMARY_GETINDEX_KWARGS)
 """
 function Base.getindex(
-    fs::FlexiSummary{TKey},
-    parameter_name::TKey;
-    iter=_UNSPECIFIED_KWARG,
-    chain=_UNSPECIFIED_KWARG,
-    stat=_UNSPECIFIED_KWARG,
-) where {TKey}
+        fs::FlexiSummary{TKey},
+        parameter_name::TKey;
+        iter = _UNSPECIFIED_KWARG,
+        chain = _UNSPECIFIED_KWARG,
+        stat = _UNSPECIFIED_KWARG,
+    ) where {TKey}
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 function Base.getindex(
-    fs::FlexiSummary{Symbol},
-    parameter_name::Symbol;
-    iter=_UNSPECIFIED_KWARG,
-    chain=_UNSPECIFIED_KWARG,
-    stat=_UNSPECIFIED_KWARG,
-)
+        fs::FlexiSummary{Symbol},
+        parameter_name::Symbol;
+        iter = _UNSPECIFIED_KWARG,
+        chain = _UNSPECIFIED_KWARG,
+        stat = _UNSPECIFIED_KWARG,
+    )
     # Explicitly specify the behaviour for TKey==Symbol so that it doesn't direct to the Symbol method above.
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)))
@@ -307,8 +307,8 @@ to be a parameter, or directly a `ParameterOrExtra{TKey}`), identify the single
 `ParameterOrExtra{TKey}` that the user wants to select.
 """
 function _get_multi_key(
-    ::Type{TKey}, all_keys::Base.KeySet, k
-)::ParameterOrExtra{<:TKey} where {TKey}
+        ::Type{TKey}, all_keys::Base.KeySet, k
+    )::ParameterOrExtra{<:TKey} where {TKey}
     if k isa Symbol
         return _extract_potential_symbol_key(TKey, all_keys, k)
     elseif k isa ParameterOrExtra{<:TKey}
@@ -332,15 +332,15 @@ Given a list of all keys and a user-specified `keyvec` (which may be `Colon` or 
 that the user wants to select.
 """
 function _get_multi_keys(
-    ::Type{TKey}, all_keys::Base.KeySet, ::Colon
-)::Vector{ParameterOrExtra{<:TKey}} where {TKey}
+        ::Type{TKey}, all_keys::Base.KeySet, ::Colon
+    )::Vector{ParameterOrExtra{<:TKey}} where {TKey}
     # TODO: `all_keys` has too loose a type.
     # https://github.com/JuliaLang/julia/issues/59626jg
     return collect(all_keys)
 end
 function _get_multi_keys(
-    ::Type{TKey}, all_keys::Base.KeySet, keyvec::AbstractVector
-)::Vector{ParameterOrExtra{<:TKey}} where {TKey}
+        ::Type{TKey}, all_keys::Base.KeySet, keyvec::AbstractVector
+    )::Vector{ParameterOrExtra{<:TKey}} where {TKey}
     # TODO: `all_keys` has too loose a type.
     # https://github.com/JuliaLang/julia/issues/59626jg
     return map(k -> _get_multi_key(TKey, all_keys, k), keyvec)
@@ -369,12 +369,12 @@ https://github.com/penelopeysm/FlexiChains.jl/issues/51. However, `values_at` an
 `parameters_at` do make use of it.
 """
 function _get_indices_and_lookup(
-    fcs::ChainOrSummary,
-    indices_function::Union{
-        typeof(iter_indices),typeof(chain_indices),typeof(stat_indices)
-    },
-    index,
-)
+        fcs::ChainOrSummary,
+        indices_function::Union{
+            typeof(iter_indices), typeof(chain_indices), typeof(stat_indices),
+        },
+        index,
+    )
     old_lookup = indices_function(fcs)
     # handle collapsed stat dimension
     isnothing(old_lookup) && return Colon(), nothing, true
@@ -442,11 +442,11 @@ The same behaviour applies to the `chain` dimension
 For full details on the indexing syntax please refer to [the DimensionalData.jl documentation](@extref DimensionalData Dimensional-Indexing).
 """
 function Base.getindex(
-    fchain::FlexiChain{TKey},
-    keyvec::Union{Colon,AbstractVector}=Colon();
-    iter=Colon(),
-    chain=Colon(),
-) where {TKey}
+        fchain::FlexiChain{TKey},
+        keyvec::Union{Colon, AbstractVector} = Colon();
+        iter = Colon(),
+        chain = Colon(),
+    ) where {TKey}
     # Figure out which indices we are using -- these refer to the actual 1-based indices
     # that we use to index into the original Matrix
     new_iter_indices, new_iter_lookup, _ = _get_indices_and_lookup(
@@ -458,29 +458,29 @@ function Base.getindex(
     # Figure out which keys to include in the returned chain
     keys_to_include = _get_multi_keys(TKey, keys(fchain), keyvec)
     # Construct new data
-    new_data = OrderedDict{ParameterOrExtra{<:TKey},Matrix}(
+    new_data = OrderedDict{ParameterOrExtra{<:TKey}, Matrix}(
         k => _get_raw_data(fchain, k)[new_iter_indices, new_chain_indices] for
-        k in keys_to_include
+            k in keys_to_include
     )
     # Construct new chain
     return FlexiChain{TKey}(
         length(new_iter_lookup),
         length(new_chain_lookup),
         new_data;
-        structures=fchain._structures[new_iter_indices, new_chain_indices],
-        iter_indices=new_iter_lookup,
-        chain_indices=new_chain_lookup,
-        sampling_time=FlexiChains.sampling_time(fchain)[new_chain_indices],
-        last_sampler_state=FlexiChains.last_sampler_state(fchain)[new_chain_indices],
+        structures = fchain._structures[new_iter_indices, new_chain_indices],
+        iter_indices = new_iter_lookup,
+        chain_indices = new_chain_lookup,
+        sampling_time = FlexiChains.sampling_time(fchain)[new_chain_indices],
+        last_sampler_state = FlexiChains.last_sampler_state(fchain)[new_chain_indices],
     )
 end
 function Base.getindex(
-    fs::FlexiSummary{TKey},
-    keyvec::Union{Colon,AbstractVector}=Colon();
-    iter=_UNSPECIFIED_KWARG,
-    chain=_UNSPECIFIED_KWARG,
-    stat=_UNSPECIFIED_KWARG,
-) where {TKey}
+        fs::FlexiSummary{TKey},
+        keyvec::Union{Colon, AbstractVector} = Colon();
+        iter = _UNSPECIFIED_KWARG,
+        chain = _UNSPECIFIED_KWARG,
+        stat = _UNSPECIFIED_KWARG,
+    ) where {TKey}
     # Follows exactly the same pattern as above except for the additional kwarg handling.
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     new_iter_indices, new_iter_lookup = _get_indices_and_lookup(
@@ -493,9 +493,9 @@ function Base.getindex(
         fs, stat_indices, get(relevant_kwargs, :stat, Colon())
     )
     keys_to_include = _get_multi_keys(TKey, keys(fs), keyvec)
-    new_data = OrderedDict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}(
+    new_data = OrderedDict{ParameterOrExtra{<:TKey}, AbstractArray{<:Any, 3}}(
         k => _get_raw_data(fs, k)[new_iter_indices, new_chain_indices, new_stat_indices] for
-        k in keys_to_include
+            k in keys_to_include
     )
     return FlexiSummary{TKey}(new_data, new_iter_lookup, new_chain_lookup, new_stat_lookup)
 end

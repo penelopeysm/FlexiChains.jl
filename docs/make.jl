@@ -39,9 +39,9 @@ old_GKSwstype = get(ENV, "GKSwstype", nothing)
 ENV["GKSwstype"] = "100"
 
 makedocs(;
-    sitename="FlexiChains.jl",
-    modules=modules,
-    pages=[
+    sitename = "FlexiChains.jl",
+    modules = modules,
+    pages = [
         "index.md",
         "turing.md",
         "summarising.md",
@@ -55,10 +55,10 @@ makedocs(;
         "why.md",
         "whynot.md",
     ],
-    checkdocs=:exports,
-    warnonly=true,
-    doctest=false,
-    plugins=[links],
+    checkdocs = :exports,
+    warnonly = true,
+    doctest = false,
+    plugins = [links],
 )
 
 # Restore original environment variable

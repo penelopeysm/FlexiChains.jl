@@ -24,10 +24,10 @@ using Test
                         N_iters,
                         1,
                         dicts;
-                        iter_indices=3:3:(3 * N_iters),
-                        chain_indices=[2],
-                        sampling_time=[1],
-                        last_sampler_state=["foo"],
+                        iter_indices = 3:3:(3 * N_iters),
+                        chain_indices = [2],
+                        sampling_time = [1],
+                        last_sampler_state = ["foo"],
                     )
                     @test size(chain2) == (N_iters, 1)
                     @test val(FlexiChains.iter_indices(chain2)) == 3:3:(3 * N_iters)
@@ -57,10 +57,10 @@ using Test
 
                 @testset "wrong indices length" begin
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, dicts; iter_indices=1:(2 * N_iters)
+                        N_iters, N_chains, dicts; iter_indices = 1:(2 * N_iters)
                     )
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, dicts; chain_indices=1:(2 * N_chains)
+                        N_iters, N_chains, dicts; chain_indices = 1:(2 * N_chains)
                     )
                 end
 
@@ -69,10 +69,10 @@ using Test
                         N_iters,
                         N_chains,
                         dicts;
-                        iter_indices=3:3:(3 * N_iters),
-                        chain_indices=[2, 1],
-                        sampling_time=[1, 2],
-                        last_sampler_state=["foo", "bar"],
+                        iter_indices = 3:3:(3 * N_iters),
+                        chain_indices = [2, 1],
+                        sampling_time = [1, 2],
+                        last_sampler_state = ["foo", "bar"],
                     )
                     @test size(chain2) == (N_iters, N_chains)
                     @test val(FlexiChains.iter_indices(chain2)) == 3:3:(3 * N_iters)
@@ -83,16 +83,16 @@ using Test
 
                 @testset "wrong metadata size" begin
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, dicts; sampling_time=[1]
+                        N_iters, N_chains, dicts; sampling_time = [1]
                     )
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, dicts; sampling_time=1:3
+                        N_iters, N_chains, dicts; sampling_time = 1:3
                     )
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, dicts; last_sampler_state=["foo"]
+                        N_iters, N_chains, dicts; last_sampler_state = ["foo"]
                     )
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, dicts; last_sampler_state=["foo", "bar", "baz"]
+                        N_iters, N_chains, dicts; last_sampler_state = ["foo", "bar", "baz"]
                     )
                 end
             end
@@ -114,10 +114,10 @@ using Test
                         N_iters,
                         1,
                         arrays;
-                        iter_indices=3:3:(3 * N_iters),
-                        chain_indices=[2],
-                        sampling_time=[1],
-                        last_sampler_state=["foo"],
+                        iter_indices = 3:3:(3 * N_iters),
+                        chain_indices = [2],
+                        sampling_time = [1],
+                        last_sampler_state = ["foo"],
                     )
                     @test size(chain2) == (N_iters, 1)
                     @test val(FlexiChains.iter_indices(chain2)) == 3:3:(3 * N_iters)
@@ -147,10 +147,10 @@ using Test
 
                 @testset "wrong indices length" begin
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, arrays; iter_indices=1:(2 * N_iters)
+                        N_iters, N_chains, arrays; iter_indices = 1:(2 * N_iters)
                     )
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, arrays; chain_indices=1:(2 * N_chains)
+                        N_iters, N_chains, arrays; chain_indices = 1:(2 * N_chains)
                     )
                 end
 
@@ -159,10 +159,10 @@ using Test
                         N_iters,
                         N_chains,
                         arrays;
-                        iter_indices=3:3:(3 * N_iters),
-                        chain_indices=[2, 1],
-                        sampling_time=[1, 2],
-                        last_sampler_state=["foo", "bar"],
+                        iter_indices = 3:3:(3 * N_iters),
+                        chain_indices = [2, 1],
+                        sampling_time = [1, 2],
+                        last_sampler_state = ["foo", "bar"],
                     )
                     @test size(chain2) == (N_iters, N_chains)
                     @test val(FlexiChains.iter_indices(chain2)) == 3:3:(3 * N_iters)
@@ -173,16 +173,16 @@ using Test
 
                 @testset "wrong metadata size" begin
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, arrays; sampling_time=[1]
+                        N_iters, N_chains, arrays; sampling_time = [1]
                     )
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, arrays; sampling_time=1:3
+                        N_iters, N_chains, arrays; sampling_time = 1:3
                     )
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, arrays; last_sampler_state=["foo"]
+                        N_iters, N_chains, arrays; last_sampler_state = ["foo"]
                     )
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
-                        N_iters, N_chains, arrays; last_sampler_state=["foo", "bar", "baz"]
+                        N_iters, N_chains, arrays; last_sampler_state = ["foo", "bar", "baz"]
                     )
                 end
             end

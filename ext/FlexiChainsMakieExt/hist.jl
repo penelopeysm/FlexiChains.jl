@@ -1,5 +1,5 @@
 function _default_histogram_axis(k::FC.ParameterOrExtra)
-    return (xlabel="value", ylabel="probability", title=string(k.name))
+    return (xlabel = "value", ylabel = "probability", title = string(k.name))
 end
 
 for f in (:hist, :stephist)
@@ -10,16 +10,16 @@ for f in (:hist, :stephist)
         This handles plotting onto a full Figure.
         """
         function Makie.$f(
-            chn::FC.FlexiChain,
-            param_or_params=FC.Parameter.(FC.parameters(chn));
-            pool_chains::Bool=false,
-            layout::Union{Tuple{Int,Int},Nothing}=nothing,
-            legend_position::Symbol=:bottom,
-            figure=(;),
-            axis=(;),
-            legend=(;),
-            kwargs...,
-        )
+                chn::FC.FlexiChain,
+                param_or_params = FC.Parameter.(FC.parameters(chn));
+                pool_chains::Bool = false,
+                layout::Union{Tuple{Int, Int}, Nothing} = nothing,
+                legend_position::Symbol = :bottom,
+                figure = (;),
+                axis = (;),
+                legend = (;),
+                kwargs...,
+            )
             keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
             isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
             nrows, ncols = if isnothing(layout)
@@ -28,7 +28,7 @@ for f in (:hist, :stephist)
                 layout
             end
             figure = Makie.Figure(;
-                size=(
+                size = (
                     FC.PlotUtils.DEFAULT_WIDTH * ncols,
                     FC.PlotUtils.DEFAULT_HEIGHT * nrows,
                 ),
@@ -55,7 +55,7 @@ for f in (:hist, :stephist)
         """
         This handles plotting onto a single Axis.
         """
-        function Makie.$f(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
+        function Makie.$f(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
             # TODO: Error if there is already something at the grid position?
             # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96
             k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
@@ -67,12 +67,12 @@ for f in (:hist, :stephist)
             )
         end
         function Makie.$f!(
-            ax::Makie.Axis,
-            chn::FC.FlexiChain,
-            param;
-            pool_chains::Bool=false,
-            kwargs...,
-        )
+                ax::Makie.Axis,
+                chn::FC.FlexiChain,
+                param;
+                pool_chains::Bool = false,
+                kwargs...,
+            )
             k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
             a, p = Makie.$f!(
                 ax, FC.PlotUtils.FlexiChainHistogram(chn, k, pool_chains); kwargs...
@@ -90,16 +90,16 @@ for f in (:hist, :stephist)
         # `hist!` can be called via `mixeddensity!`, for which is it perfectly sensible to
         # specify `alpha`. So we need to explicitly handle it here.
         function Makie.$f!(
-            ax::Makie.Axis,
-            d::FC.PlotUtils.FlexiChainHistogram;
-            alpha=nothing,
-            kwargs...,
-        )
+                ax::Makie.Axis,
+                d::FC.PlotUtils.FlexiChainHistogram;
+                alpha = nothing,
+                kwargs...,
+            )
             y = FC._get_raw_data(d.chn, d.param)
             FC.PlotUtils.check_eltype_is_real(y)
             p = nothing
             if d.pool_chains
-                p = Makie.$f!(ax, vec(y); label="pooled", kwargs...)
+                p = Makie.$f!(ax, vec(y); label = "pooled", kwargs...)
             else
                 labels = permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
                 nchains = size(y, 2)
@@ -108,8 +108,8 @@ for f in (:hist, :stephist)
                     p = Makie.$f!(
                         ax,
                         datacol;
-                        normalization=:pdf,
-                        label=label,
+                        normalization = :pdf,
+                        label = label,
                         kwargs...,
                         color_kwarg...,
                     )

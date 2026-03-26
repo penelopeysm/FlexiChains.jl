@@ -1,20 +1,20 @@
 function _default_traceplot_axis(k::FC.ParameterOrExtra)
-    return (xlabel="iteration number", ylabel="value", title=string(k.name))
+    return (xlabel = "iteration number", ylabel = "value", title = string(k.name))
 end
 
 """
 This handles plotting onto a full Figure.
 """
 function FC.mtraceplot(
-    chn::FC.FlexiChain,
-    param_or_params=FC.Parameter.(FC.parameters(chn));
-    layout::Union{Tuple{Int,Int},Nothing}=nothing,
-    legend_position::Symbol=:bottom,
-    figure=(;),
-    axis=(;),
-    legend=(;),
-    kwargs...,
-)
+        chn::FC.FlexiChain,
+        param_or_params = FC.Parameter.(FC.parameters(chn));
+        layout::Union{Tuple{Int, Int}, Nothing} = nothing,
+        legend_position::Symbol = :bottom,
+        figure = (;),
+        axis = (;),
+        legend = (;),
+        kwargs...,
+    )
     keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nrows, ncols = if isnothing(layout)
@@ -23,7 +23,7 @@ function FC.mtraceplot(
         layout
     end
     figure = Makie.Figure(;
-        size=(FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
+        size = (FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
         figure...,
     )
     a, p = nothing, nothing
@@ -45,7 +45,7 @@ end
 """
 This handles plotting onto a single Axis.
 """
-function FC.mtraceplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
+function FC.mtraceplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96
     k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
@@ -77,7 +77,7 @@ function FC.mtraceplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainTrace; kwargs.
         # want user-specified `kwargs` to override it; but `color_kwarg` was determined from
         # `kwargs`, so we want to apply it last to ensure the color obtained from
         # `determine_color_kwargs` is respected.
-        p = Makie.lines!(ax, datacol; label=label, kwargs..., color_kwarg...)
+        p = Makie.lines!(ax, datacol; label = label, kwargs..., color_kwarg...)
     end
     return Makie.AxisPlot(ax, p)
 end

@@ -11,7 +11,7 @@ using PrecompileTools: @setup_workload, @compile_workload
 # On 1.11+ it just uses the `public` keyword, otherwise it does nothing.
 macro public(ex)
     # https://discourse.julialang.org/t/is-compat-jl-worth-it-for-the-public-keyword/119041/22
-    if VERSION >= v"1.11.0-DEV.469"
+    return if VERSION >= v"1.11.0-DEV.469"
         args = if ex isa Symbol
             (ex,)
         elseif Base.isexpr(ex, :tuple)
@@ -43,7 +43,7 @@ const _LOGJOINT_KEY = Extra(:logjoint)
 const _LOGPRIOR_KEY = Extra(:logprior)
 const _LOGLIKELIHOOD_KEY = Extra(:loglikelihood)
 # Used in DynamicPPLExt.
-struct PointwiseProb{T<:VarName}
+struct PointwiseProb{T <: VarName}
     varname::T
 end
 Base.show(io::IO, p::PointwiseProb) = print(io, "PointwiseProb(@varname($(p.varname)))")
@@ -94,7 +94,7 @@ export VarName, @varname, VNChain
 # Attempt to precompile _some_ stuff, especially for VarName. This cuts the TTFX by about
 # 2-3x.
 @setup_workload begin
-    d = Dict{ParameterOrExtra{<:VarName},Any}()
+    d = Dict{ParameterOrExtra{<:VarName}, Any}()
     d[Parameter(@varname(a))] = 1
     ds = fill(d, 10, 2)
     @compile_workload begin

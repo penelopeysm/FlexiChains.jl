@@ -34,11 +34,11 @@ is a parameter) and applies the `optic` function to the data before returning it
 reporting.
 """
 function _getindex_optic_and_vn(
-    vn_keys::AbstractVector{<:VarName},
-    vn::VarName{sym},
-    optic::AbstractPPL.AbstractOptic,
-    orig_vn::VarName{sym},
-)::Tuple{AbstractPPL.AbstractOptic,VarName} where {sym}
+        vn_keys::AbstractVector{<:VarName},
+        vn::VarName{sym},
+        optic::AbstractPPL.AbstractOptic,
+        orig_vn::VarName{sym},
+    )::Tuple{AbstractPPL.AbstractOptic, VarName} where {sym}
     if vn in vn_keys
         return (optic, vn)
     else
@@ -89,10 +89,10 @@ in the chain, then that will be returned. If not, then `@varname(x)` will be che
 and if that is a vector-valued parameter then all of its first entries will be returned.
 """
 function Base.getindex(
-    fchain::FlexiChain{<:VarName}, vn::VarName; iter=Colon(), chain=Colon()
-)
+        fchain::FlexiChain{<:VarName}, vn::VarName; iter = Colon(), chain = Colon()
+    )
     raw = _get_raw_data(fchain, Parameter(vn))
-    return _raw_to_user_data(fchain, raw)[iter=iter, chain=chain]
+    return _raw_to_user_data(fchain, raw)[iter = iter, chain = chain]
 end
 """
     Base.getindex(
@@ -109,12 +109,12 @@ Turing.jl models.
 $(SUMMARY_GETINDEX_KWARGS)
 """
 function Base.getindex(
-    fs::FlexiSummary{<:VarName},
-    vn::VarName;
-    iter=_UNSPECIFIED_KWARG,
-    chain=_UNSPECIFIED_KWARG,
-    stat=_UNSPECIFIED_KWARG,
-)
+        fs::FlexiSummary{<:VarName},
+        vn::VarName;
+        iter = _UNSPECIFIED_KWARG,
+        chain = _UNSPECIFIED_KWARG,
+        stat = _UNSPECIFIED_KWARG,
+    )
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(vn)))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)

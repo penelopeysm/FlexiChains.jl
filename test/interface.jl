@@ -41,10 +41,10 @@ using Random: Xoshiro
     @testset "equality" begin
         d = Dict(Parameter(:a) => 1, Extra("hello") => 3.0)
         chain1 = FlexiChain{Symbol}(
-            10, 1, fill(d, 10); sampling_time=[2.5], last_sampler_state=["finished"]
+            10, 1, fill(d, 10); sampling_time = [2.5], last_sampler_state = ["finished"]
         )
         chain2 = FlexiChain{Symbol}(
-            10, 1, fill(d, 10); sampling_time=[2.5], last_sampler_state=["finished"]
+            10, 1, fill(d, 10); sampling_time = [2.5], last_sampler_state = ["finished"]
         )
         @test chain1 == chain2
         @test isequal(chain1, chain2)
@@ -54,9 +54,9 @@ using Random: Xoshiro
             10,
             1,
             fill(d, 10);
-            iter_indices=21:30,
-            sampling_time=[2.5],
-            last_sampler_state=["finished"],
+            iter_indices = 21:30,
+            sampling_time = [2.5],
+            last_sampler_state = ["finished"],
         )
         @test chain1 != chain3
         @test !isequal(chain1, chain3)
@@ -70,15 +70,15 @@ using Random: Xoshiro
         # A final test case with missing
         dmiss = Dict(Parameter(:a) => missing)
         chainmiss1 = FlexiChain{Symbol}(
-            10, 1, fill(dmiss, 10); sampling_time=[2.5], last_sampler_state=["finished"]
+            10, 1, fill(dmiss, 10); sampling_time = [2.5], last_sampler_state = ["finished"]
         )
         chainmiss2 = FlexiChain{Symbol}(
-            10, 1, fill(dmiss, 10); sampling_time=[2.5], last_sampler_state=["finished"]
+            10, 1, fill(dmiss, 10); sampling_time = [2.5], last_sampler_state = ["finished"]
         )
         @test ismissing(chainmiss1 == chainmiss2)
         @test isequal(chainmiss1, chainmiss2)
         @test FlexiChains.has_same_data(chainmiss1, chainmiss2)
-        @test ismissing(FlexiChains.has_same_data(chainmiss1, chainmiss2; strict=true))
+        @test ismissing(FlexiChains.has_same_data(chainmiss1, chainmiss2; strict = true))
     end
 
     @testset "dictionary interface" begin
@@ -101,7 +101,7 @@ using Random: Xoshiro
         # values
         @test collect(values(chain)) ==
             [chain[Parameter(:a)], chain[Extra("hello")], chain[Parameter(:b)]]
-        @test collect(values(chain; parameters_only=true)) ==
+        @test collect(values(chain; parameters_only = true)) ==
             [chain[Parameter(:a)], chain[Parameter(:b)]]
         # pairs
         @test collect(pairs(chain)) == [
@@ -109,7 +109,7 @@ using Random: Xoshiro
             Extra("hello") => chain[Extra("hello")],
             Parameter(:b) => chain[Parameter(:b)],
         ]
-        @test collect(pairs(chain; parameters_only=true)) ==
+        @test collect(pairs(chain; parameters_only = true)) ==
             [:a => chain[Parameter(:a)], :b => chain[Parameter(:b)]]
     end
 
@@ -141,29 +141,29 @@ using Random: Xoshiro
             # Inject some chaos with non-default iter_indices and chain_indices
             iter_range = 3:3:(N_iters * 3)
             chain = FlexiChain{Symbol}(
-                N_iters, 1, dicts; iter_indices=iter_range, chain_indices=[4]
+                N_iters, 1, dicts; iter_indices = iter_range, chain_indices = [4]
             )
 
             @testset "without iter/chain indexing" begin
                 returned_as = chain[Parameter(:a)]
                 @test returned_as isa DD.DimMatrix
                 @test size(returned_as) == (N_iters, 1)
-                @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter},DD.Dim{:chain}}
+                @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter}, DD.Dim{:chain}}
                 @test parent(DD.val(DD.dims(returned_as), :iter)) == iter_range
                 @test parent(DD.val(DD.dims(returned_as), :chain)) == [4]
             end
 
             @testset "with iter/chain indexing" begin
-                returned_as = chain[Parameter(:a), iter=4:5, chain=DD.At([4])]
+                returned_as = chain[Parameter(:a), iter = 4:5, chain = DD.At([4])]
                 @test returned_as isa DD.DimMatrix
                 @test size(returned_as) == (2, 1)
-                @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter},DD.Dim{:chain}}
+                @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter}, DD.Dim{:chain}}
                 @test parent(DD.val(DD.dims(returned_as), :iter)) == iter_range[4:5]
                 @test parent(DD.val(DD.dims(returned_as), :chain)) == [4]
             end
 
             @testset "indexing into single chain" begin
-                returned_as = chain[Parameter(:a), chain=DD.At(4)]
+                returned_as = chain[Parameter(:a), chain = DD.At(4)]
                 @test returned_as isa DD.DimVector
                 @test length(returned_as) == N_iters
                 @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter}}
@@ -171,7 +171,7 @@ using Random: Xoshiro
             end
 
             @testset "indexing into single iter + single chain" begin
-                returned_as = chain[Parameter(:a), iter=DD.At(6), chain=1]
+                returned_as = chain[Parameter(:a), iter = DD.At(6), chain = 1]
                 @test returned_as == 1
             end
         end
@@ -179,9 +179,9 @@ using Random: Xoshiro
         @testset "metadata is correctly constructed" begin
             d = Dict(Parameter(:a) => 1, Extra("hello") => 3.0)
             c = FlexiChain{Symbol}(
-                10, 3, fill(d, 10, 3); sampling_time=randn(3), last_sampler_state=randn(3)
+                10, 3, fill(d, 10, 3); sampling_time = randn(3), last_sampler_state = randn(3)
             )
-            cs = c[chain=2]
+            cs = c[chain = 2]
             @test cs isa FlexiChain{Symbol}
             @test FlexiChains.sampling_time(cs) == [FlexiChains.sampling_time(c)[2]]
             @test FlexiChains.last_sampler_state(cs) ==
@@ -192,10 +192,10 @@ using Random: Xoshiro
             Ni, Nc = 10, 2
             d = Dict(Parameter(:a) => 1)
             structs = [(i, j) for i in 1:Ni, j in 1:Nc]
-            chn = FlexiChain{Symbol}(Ni, Nc, fill(d, Ni, Nc); structures=structs)
-            @test chn[iter=3:5]._structures == structs[3:5, :]
-            @test chn[chain=2]._structures == structs[:, 2:2]
-            @test chn[iter=1:4, chain=1]._structures == structs[1:4, 1:1]
+            chn = FlexiChain{Symbol}(Ni, Nc, fill(d, Ni, Nc); structures = structs)
+            @test chn[iter = 3:5]._structures == structs[3:5, :]
+            @test chn[chain = 2]._structures == structs[:, 2:2]
+            @test chn[iter = 1:4, chain = 1]._structures == structs[1:4, 1:1]
             @test chn[[Parameter(:a)]]._structures == structs
         end
 
@@ -223,8 +223,8 @@ using Random: Xoshiro
                 @test chain[Shay("a")] == fill(1, N_iters, 1)
                 @test chain[Shay("b")] == fill(2, N_iters, 1)
                 @testset "with iter subsetting" begin
-                    @test chain[Shay("a"), iter=4:6] == fill(1, 3, 1)
-                    @test chain[Shay("a"), iter=4:6, chain=DD.At(1)] == fill(1, 3)
+                    @test chain[Shay("a"), iter = 4:6] == fill(1, 3, 1)
+                    @test chain[Shay("a"), iter = 4:6, chain = DD.At(1)] == fill(1, 3)
                 end
             end
 
@@ -236,8 +236,8 @@ using Random: Xoshiro
                 @test_throws KeyError chain[Parameter(Shay("c"))]
                 @test_throws KeyError chain[Extra("world")]
                 @testset "with iter subsetting" begin
-                    @test chain[Parameter(Shay("a")), iter=4:6] == fill(1, 3, 1)
-                    @test chain[Parameter(Shay("a")), iter=4:6, chain=DD.At(1)] ==
+                    @test chain[Parameter(Shay("a")), iter = 4:6] == fill(1, 3, 1)
+                    @test chain[Parameter(Shay("a")), iter = 4:6, chain = DD.At(1)] ==
                         fill(1, 3)
                 end
             end
@@ -254,8 +254,8 @@ using Random: Xoshiro
                 @test chain[:b] == fill(2, N_iters, 1)
 
                 @testset "with iter subsetting" begin
-                    @test chain[:a, iter=4:6] == fill(1, 3, 1)
-                    @test chain[:a, iter=4:6, chain=DD.At(1)] == fill(1, 3)
+                    @test chain[:a, iter = 4:6] == fill(1, 3, 1)
+                    @test chain[:a, iter = 4:6, chain = DD.At(1)] == fill(1, 3)
                 end
             end
 
@@ -284,18 +284,18 @@ using Random: Xoshiro
                 Parameter("b") => fill(2, N_iters),
                 Extra("hello") => hellos,
             )
-            chain = FlexiChain{String}(N_iters, 1, dicts; iter_indices=2:2:(N_iters * 2))
+            chain = FlexiChain{String}(N_iters, 1, dicts; iter_indices = 2:2:(N_iters * 2))
 
             @testset "No argument (should default to colon)" begin
                 @test isequal(chain, chain[])
                 @testset "with iter subsetting" begin
                     # Ordinary indices
-                    c2 = chain[iter=4:6]
+                    c2 = chain[iter = 4:6]
                     @test c2 isa FlexiChain{String}
                     @test size(c2) == (3, 1)
                     @test c2[Parameter("a")] == reshape(4:6, 3, 1)
                     # With DimensionalData selectors
-                    c3 = chain[iter=DD.At([4, 6, 8])]
+                    c3 = chain[iter = DD.At([4, 6, 8])]
                     @test c3 isa FlexiChain{String}
                     @test size(c3) == (3, 1)
                     @test c3[Parameter("a")] == reshape(2:4, 3, 1)
@@ -321,14 +321,14 @@ using Random: Xoshiro
             d = Dict(
                 Parameter(@varname(a)) => 1.0,
                 Parameter(@varname(b)) => [2.0, 3.0],
-                Parameter(@varname(c)) => (x=4.0, y=5.0),
+                Parameter(@varname(c)) => (x = 4.0, y = 5.0),
             )
             chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
 
             @testset "ordinary VarName" begin
                 @test chain[@varname(a)] == fill(1.0, N_iters, 1)
                 @test chain[@varname(b)] == fill([2.0, 3.0], N_iters, 1)
-                @test chain[@varname(c)] == fill((x=4.0, y=5.0), N_iters, 1)
+                @test chain[@varname(c)] == fill((x = 4.0, y = 5.0), N_iters, 1)
                 @test_throws KeyError chain[@varname(d)]
                 @test chain[@varname(b[1])] == fill(2.0, N_iters, 1)
                 @test chain[@varname(b[2])] == fill(3.0, N_iters, 1)
@@ -341,7 +341,7 @@ using Random: Xoshiro
             @testset "using Symbol" begin
                 @test chain[:a] == fill(1.0, N_iters, 1)
                 @test chain[:b] == fill([2.0, 3.0], N_iters, 1)
-                @test chain[:c] == fill((x=4.0, y=5.0), N_iters, 1)
+                @test chain[:c] == fill((x = 4.0, y = 5.0), N_iters, 1)
                 @test_throws KeyError chain[:d]
                 # If you want to do fancy sub-indexing you had better use VarNames
                 @test_throws KeyError chain[Symbol("b[1]")]
@@ -356,7 +356,7 @@ using Random: Xoshiro
                 # The first sample of `a` has `a[1]` only, but the second has
                 # both `a[1]` and `a[2]`
                 d = Dict(Parameter(@varname(a)) => [[1.0], [2.0, 3.0]])
-                chn = FlexiChain{VarName}(2, 1, d; iter_indices=[6, 7])
+                chn = FlexiChain{VarName}(2, 1, d; iter_indices = [6, 7])
                 @test chn[@varname(a)] == reshape([[1.0], [2.0, 3.0]], 2, 1)
                 @test chn[@varname(a[1])] == reshape([1.0, 2.0], 2, 1)
                 # when indexing into `a[2]` we should get a `missing` for the first sample
@@ -365,21 +365,21 @@ using Random: Xoshiro
                 @test_throws KeyError chn[@varname(a[3])]
 
                 # For good measure we'll throw in some iter subsetting too
-                @test chn[@varname(a), iter=2] == [[2.0, 3.0]]
-                @test chn[@varname(a[1]), iter=2] == [2.0]
-                @test isequal(chn[@varname(a[2]), iter=1], [missing])
-                @test chn[@varname(a[2]), iter=2] == [3.0]
-                @test_throws KeyError chn[@varname(a[3]), iter=2]
-                @test chn[@varname(a), iter=DD.At(7)] == [[2.0, 3.0]]
-                @test chn[@varname(a[1]), iter=DD.At(7)] == [2.0]
-                @test isequal(chn[@varname(a[2]), iter=1], [missing])
-                @test chn[@varname(a[2]), iter=DD.At(7)] == [3.0]
-                @test_throws KeyError chn[@varname(a[3]), iter=DD.At(7)]
+                @test chn[@varname(a), iter = 2] == [[2.0, 3.0]]
+                @test chn[@varname(a[1]), iter = 2] == [2.0]
+                @test isequal(chn[@varname(a[2]), iter = 1], [missing])
+                @test chn[@varname(a[2]), iter = 2] == [3.0]
+                @test_throws KeyError chn[@varname(a[3]), iter = 2]
+                @test chn[@varname(a), iter = DD.At(7)] == [[2.0, 3.0]]
+                @test chn[@varname(a[1]), iter = DD.At(7)] == [2.0]
+                @test isequal(chn[@varname(a[2]), iter = 1], [missing])
+                @test chn[@varname(a[2]), iter = DD.At(7)] == [3.0]
+                @test_throws KeyError chn[@varname(a[3]), iter = DD.At(7)]
                 # and chain
-                @test chn[@varname(a), chain=1] == [[1.0], [2.0, 3.0]]
-                @test chn[@varname(a[1]), chain=1] == [1.0, 2.0]
-                @test isequal(chn[@varname(a[2]), chain=1], [missing, 3.0])
-                @test_throws KeyError chn[@varname(a[3]), chain=1]
+                @test chn[@varname(a), chain = 1] == [[1.0], [2.0, 3.0]]
+                @test chn[@varname(a[1]), chain = 1] == [1.0, 2.0]
+                @test isequal(chn[@varname(a[2]), chain = 1], [missing, 3.0])
+                @test_throws KeyError chn[@varname(a[3]), chain = 1]
             end
         end
 
@@ -389,9 +389,9 @@ using Random: Xoshiro
             d = Dict(Parameter(:a) => fill(dimarr, Niters, Nchains))
             chain = FlexiChain{Symbol}(Niters, Nchains, d)
             returned_as = chain[:a]
-            @test returned_as isa DD.DimArray{Float64,4}
+            @test returned_as isa DD.DimArray{Float64, 4}
             @test size(returned_as) == (Niters, Nchains, 3, 3)
-            @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter},DD.Dim{:chain},DD.X,DD.Y}
+            @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter}, DD.Dim{:chain}, DD.X, DD.Y}
             @test parent(DD.val(DD.dims(returned_as), :iter)) ==
                 FlexiChains.iter_indices(chain)
             @test parent(DD.val(DD.dims(returned_as), :chain)) ==
@@ -409,17 +409,17 @@ using Random: Xoshiro
 
         @testset "values_at" begin
             for i in 1:Ni
-                d = FlexiChains.values_at(c; iter=i, chain=1)
+                d = FlexiChains.values_at(c; iter = i, chain = 1)
                 @test d isa OrderedDict
                 @test length(d) == 2
                 @test d[Parameter(:a)] == c[Parameter(:a)][i]
                 @test d[Extra("c")] == c[Extra("c")][i]
-                d = FlexiChains.values_at(c, NamedTuple; iter=i, chain=1)
-                @test d == (a=c[Parameter(:a)][i], c=c[Extra("c")][i])
-                d = FlexiChains.values_at(c, ComponentArray; iter=i, chain=1)
-                @test d == ComponentArray(; a=c[Parameter(:a)][i], c=c[Extra("c")][i])
-                d = FlexiChains.values_at(c, ComponentArray{Real}; iter=i, chain=1)
-                @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i], c=c[Extra("c")][i])
+                d = FlexiChains.values_at(c, NamedTuple; iter = i, chain = 1)
+                @test d == (a = c[Parameter(:a)][i], c = c[Extra("c")][i])
+                d = FlexiChains.values_at(c, ComponentArray; iter = i, chain = 1)
+                @test d == ComponentArray(; a = c[Parameter(:a)][i], c = c[Extra("c")][i])
+                d = FlexiChains.values_at(c, ComponentArray{Real}; iter = i, chain = 1)
+                @test d == ComponentArray{Real}(; a = c[Parameter(:a)][i], c = c[Extra("c")][i])
             end
 
             @testset "default kwargs (all iters/chains)" begin
@@ -428,43 +428,43 @@ using Random: Xoshiro
                     DD.DimMatrix{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
                 @test size(d) == (Ni, Nc)
                 for i in 1:Ni, j in 1:Nc
-                    @test d[i, j] == FlexiChains.values_at(c; iter=i, chain=j)
+                    @test d[i, j] == FlexiChains.values_at(c; iter = i, chain = j)
                 end
             end
 
             @testset "with ranges of indices" begin
                 iters = 1:5
-                d = FlexiChains.values_at(c; iter=iters, chain=1)
+                d = FlexiChains.values_at(c; iter = iters, chain = 1)
                 @test d isa
                     DD.DimVector{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
                 for i in iters
-                    @test d[i] == FlexiChains.values_at(c; iter=i, chain=1)
+                    @test d[i] == FlexiChains.values_at(c; iter = i, chain = 1)
                 end
-                d = FlexiChains.values_at(c; iter=iters, chain=:)
+                d = FlexiChains.values_at(c; iter = iters, chain = :)
                 @test d isa
                     DD.DimMatrix{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
                 for i in iters, j in 1:Nc
-                    @test d[i, j] == FlexiChains.values_at(c; iter=i, chain=j)
+                    @test d[i, j] == FlexiChains.values_at(c; iter = i, chain = j)
                 end
             end
 
             @testset "with vector indices" begin
                 iters = [5, 6]
-                d = FlexiChains.values_at(c; iter=iters, chain=1)
+                d = FlexiChains.values_at(c; iter = iters, chain = 1)
                 @test d isa
                     DD.DimVector{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
                 for i in iters
-                    @test d[At(i)] == FlexiChains.values_at(c; iter=i, chain=1)
+                    @test d[At(i)] == FlexiChains.values_at(c; iter = i, chain = 1)
                 end
             end
 
             @testset "with Not() selector" begin
-                d = FlexiChains.values_at(c; iter=Not(3), chain=1)
+                d = FlexiChains.values_at(c; iter = Not(3), chain = 1)
                 @test d isa
                     DD.DimVector{<:OrderedDict{<:FlexiChains.ParameterOrExtra{<:Symbol}}}
                 @test size(d, 1) == Ni - 1
                 for i in [1, 2, 4, 5, 6, 7, 8, 9, 10]
-                    @test d[At(i)] == FlexiChains.values_at(c; iter=i, chain=1)
+                    @test d[At(i)] == FlexiChains.values_at(c; iter = i, chain = 1)
                 end
             end
 
@@ -477,10 +477,10 @@ using Random: Xoshiro
                     ),
                 )
                 @test_throws ArgumentError FlexiChains.values_at(
-                    c2, NamedTuple; iter=1, chain=1
+                    c2, NamedTuple; iter = 1, chain = 1
                 )
                 @test_throws ArgumentError FlexiChains.values_at(
-                    c2, ComponentArray; iter=1, chain=1
+                    c2, ComponentArray; iter = 1, chain = 1
                 )
             end
 
@@ -490,13 +490,13 @@ using Random: Xoshiro
                 cvn = FlexiChain{VarName}(
                     1, 1, OrderedDict(Parameter(@varname(a)) => rand(1, 1))
                 )
-                vals = FlexiChains.values_at(cvn; iter=1, chain=1)
-                @test vals isa OrderedDict{ParameterOrExtra{<:VarName},Any}
+                vals = FlexiChains.values_at(cvn; iter = 1, chain = 1)
+                @test vals isa OrderedDict{ParameterOrExtra{<:VarName}, Any}
             end
 
             @testset "dispatch on structures" begin
                 struct TestValStructure
-                    tag::Tuple{Int,Int}
+                    tag::Tuple{Int, Int}
                 end
                 FlexiChains.reconstruct_values(
                     ::FlexiChain, ::Any, ::Any, s::TestValStructure
@@ -507,28 +507,28 @@ using Random: Xoshiro
                     Ni_s,
                     Nc_s,
                     OrderedDict(Parameter(:a) => rand(Ni_s, Nc_s));
-                    structures=structs,
+                    structures = structs,
                 )
                 for i in 1:Ni_s, j in 1:Nc_s
-                    @test FlexiChains.values_at(cs; iter=i, chain=j) === structs[i, j]
+                    @test FlexiChains.values_at(cs; iter = i, chain = j) === structs[i, j]
                 end
                 # Explicit type should bypass structures
-                @test FlexiChains.values_at(cs, OrderedDict; iter=1, chain=1) isa
+                @test FlexiChains.values_at(cs, OrderedDict; iter = 1, chain = 1) isa
                     OrderedDict
             end
         end
 
         @testset "parameters_at" begin
             for i in 1:Ni
-                d = FlexiChains.parameters_at(c; iter=i, chain=1)
+                d = FlexiChains.parameters_at(c; iter = i, chain = 1)
                 @test length(d) == 1
                 @test d[:a] == c[Parameter(:a)][i]
-                d = FlexiChains.parameters_at(c, NamedTuple; iter=i, chain=1)
-                @test d == (; a=c[Parameter(:a)][i])
-                d = FlexiChains.parameters_at(c, ComponentArray; iter=i, chain=1)
-                @test d == ComponentArray(; a=c[Parameter(:a)][i])
-                d = FlexiChains.parameters_at(c, ComponentArray{Real}; iter=i, chain=1)
-                @test d == ComponentArray{Real}(; a=c[Parameter(:a)][i])
+                d = FlexiChains.parameters_at(c, NamedTuple; iter = i, chain = 1)
+                @test d == (; a = c[Parameter(:a)][i])
+                d = FlexiChains.parameters_at(c, ComponentArray; iter = i, chain = 1)
+                @test d == ComponentArray(; a = c[Parameter(:a)][i])
+                d = FlexiChains.parameters_at(c, ComponentArray{Real}; iter = i, chain = 1)
+                @test d == ComponentArray{Real}(; a = c[Parameter(:a)][i])
             end
 
             @testset "default kwargs (all iters/chains)" begin
@@ -536,39 +536,39 @@ using Random: Xoshiro
                 @test d isa DD.DimMatrix{<:OrderedDict{Symbol}}
                 @test size(d) == (Ni, Nc)
                 for i in 1:Ni, j in 1:Nc
-                    @test d[i, j] == FlexiChains.parameters_at(c; iter=i, chain=j)
+                    @test d[i, j] == FlexiChains.parameters_at(c; iter = i, chain = j)
                 end
             end
 
             @testset "with ranges of indices" begin
                 iters = 1:5
-                d = FlexiChains.parameters_at(c; iter=iters, chain=1)
+                d = FlexiChains.parameters_at(c; iter = iters, chain = 1)
                 @test d isa DD.DimVector{<:OrderedDict{Symbol}}
                 for i in iters
-                    @test d[i] == FlexiChains.parameters_at(c; iter=i, chain=1)
+                    @test d[i] == FlexiChains.parameters_at(c; iter = i, chain = 1)
                 end
-                d = FlexiChains.parameters_at(c; iter=iters, chain=:)
+                d = FlexiChains.parameters_at(c; iter = iters, chain = :)
                 @test d isa DD.DimMatrix{<:OrderedDict{Symbol}}
                 for i in iters, j in 1:Nc
-                    @test d[i, j] == FlexiChains.parameters_at(c; iter=i, chain=j)
+                    @test d[i, j] == FlexiChains.parameters_at(c; iter = i, chain = j)
                 end
             end
 
             @testset "with vector indices" begin
                 iters = [5, 6]
-                d = FlexiChains.parameters_at(c; iter=iters, chain=1)
+                d = FlexiChains.parameters_at(c; iter = iters, chain = 1)
                 @test d isa DD.DimVector{<:OrderedDict{Symbol}}
                 for i in iters
-                    @test d[At(i)] == FlexiChains.parameters_at(c; iter=i, chain=1)
+                    @test d[At(i)] == FlexiChains.parameters_at(c; iter = i, chain = 1)
                 end
             end
 
             @testset "with Not() selector" begin
-                d = FlexiChains.parameters_at(c; iter=Not(3), chain=1)
+                d = FlexiChains.parameters_at(c; iter = Not(3), chain = 1)
                 @test d isa DD.DimVector{<:OrderedDict{Symbol}}
                 @test size(d, 1) == Ni - 1
                 for i in [1, 2, 4, 5, 6, 7, 8, 9, 10]
-                    @test d[At(i)] == FlexiChains.parameters_at(c; iter=i, chain=1)
+                    @test d[At(i)] == FlexiChains.parameters_at(c; iter = i, chain = 1)
                 end
             end
 
@@ -581,16 +581,16 @@ using Random: Xoshiro
                     ),
                 )
                 @test_throws ArgumentError FlexiChains.parameters_at(
-                    c2, NamedTuple; iter=1, chain=1
+                    c2, NamedTuple; iter = 1, chain = 1
                 )
                 @test_throws ArgumentError FlexiChains.parameters_at(
-                    c2, ComponentArray; iter=1, chain=1
+                    c2, ComponentArray; iter = 1, chain = 1
                 )
             end
 
             @testset "dispatch on structures" begin
                 struct TestParamStructure
-                    tag::Tuple{Int,Int}
+                    tag::Tuple{Int, Int}
                 end
                 FlexiChains.reconstruct_parameters(
                     ::FlexiChain, ::Any, ::Any, s::TestParamStructure
@@ -603,13 +603,13 @@ using Random: Xoshiro
                     OrderedDict(
                         Parameter(:a) => rand(Ni_s, Nc_s), Extra("c") => rand(Ni_s, Nc_s)
                     );
-                    structures=structs,
+                    structures = structs,
                 )
                 for i in 1:Ni_s, j in 1:Nc_s
-                    @test FlexiChains.parameters_at(cs; iter=i, chain=j) === structs[i, j]
+                    @test FlexiChains.parameters_at(cs; iter = i, chain = j) === structs[i, j]
                 end
                 # Explicit type should bypass structures
-                @test FlexiChains.parameters_at(cs, OrderedDict; iter=1, chain=1) isa
+                @test FlexiChains.parameters_at(cs, OrderedDict; iter = 1, chain = 1) isa
                     OrderedDict
             end
         end
@@ -617,13 +617,13 @@ using Random: Xoshiro
         @testset "deprecated positional API" begin
             # Positional arguments should still work but emit a deprecation warning
             d = @test_deprecated FlexiChains.values_at(c, 1, 1)
-            @test d == FlexiChains.values_at(c; iter=1, chain=1)
+            @test d == FlexiChains.values_at(c; iter = 1, chain = 1)
             d = @test_deprecated FlexiChains.values_at(c, 1, 1, NamedTuple)
-            @test d == FlexiChains.values_at(c, NamedTuple; iter=1, chain=1)
+            @test d == FlexiChains.values_at(c, NamedTuple; iter = 1, chain = 1)
             d = @test_deprecated FlexiChains.parameters_at(c, 1, 1)
-            @test d == FlexiChains.parameters_at(c; iter=1, chain=1)
+            @test d == FlexiChains.parameters_at(c; iter = 1, chain = 1)
             d = @test_deprecated FlexiChains.parameters_at(c, 1, 1, NamedTuple)
-            @test d == FlexiChains.parameters_at(c, NamedTuple; iter=1, chain=1)
+            @test d == FlexiChains.parameters_at(c, NamedTuple; iter = 1, chain = 1)
         end
     end
 
@@ -645,10 +645,10 @@ using Random: Xoshiro
                 N_iters,
                 1,
                 fill(dict2, N_iters);
-                iter_indices=ii,
-                chain_indices=ci,
-                sampling_time=sampling_time,
-                last_sampler_state=last_sampler_state,
+                iter_indices = ii,
+                chain_indices = ci,
+                sampling_time = sampling_time,
+                last_sampler_state = last_sampler_state,
             )
             chain3 = merge(chain1, chain2)
 
@@ -657,10 +657,10 @@ using Random: Xoshiro
                     N_iters,
                     1,
                     fill(merge(dict1, dict2), N_iters);
-                    iter_indices=ii,
-                    chain_indices=ci,
-                    sampling_time=sampling_time,
-                    last_sampler_state=last_sampler_state,
+                    iter_indices = ii,
+                    chain_indices = ci,
+                    sampling_time = sampling_time,
+                    last_sampler_state = last_sampler_state,
                 )
                 for k in keys(expected_chain3)
                     @test chain3[k] == expected_chain3[k]
@@ -725,10 +725,10 @@ using Random: Xoshiro
             Ni, Nc = 10, 2
             d1 = Dict(Parameter(:a) => 1)
             d2 = Dict(Parameter(:a) => 2, Parameter(:b) => 3.0)
-            nt_structs1 = [(a=i, b=j) for i in 1:Ni, j in 1:Nc]
-            nt_structs2 = [(b=100, c=200) for _ in 1:Ni, _ in 1:Nc]
-            chn1 = FlexiChain{Symbol}(Ni, Nc, fill(d1, Ni, Nc); structures=nt_structs1)
-            chn2 = FlexiChain{Symbol}(Ni, Nc, fill(d2, Ni, Nc); structures=nt_structs2)
+            nt_structs1 = [(a = i, b = j) for i in 1:Ni, j in 1:Nc]
+            nt_structs2 = [(b = 100, c = 200) for _ in 1:Ni, _ in 1:Nc]
+            chn1 = FlexiChain{Symbol}(Ni, Nc, fill(d1, Ni, Nc); structures = nt_structs1)
+            chn2 = FlexiChain{Symbol}(Ni, Nc, fill(d2, Ni, Nc); structures = nt_structs2)
             merged = merge(chn1, chn2)
             for i in 1:Ni, j in 1:Nc
                 @test merged._structures[i, j] ==
@@ -782,11 +782,11 @@ using Random: Xoshiro
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
             chain1 = FlexiChain{Symbol}(
-                N_iters, 1, fill(d1, N_iters); iter_indices=1:10, chain_indices=[1]
+                N_iters, 1, fill(d1, N_iters); iter_indices = 1:10, chain_indices = [1]
             )
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
             chain2 = FlexiChain{Symbol}(
-                N_iters, 1, fill(d2, N_iters); iter_indices=21:30, chain_indices=[2]
+                N_iters, 1, fill(d2, N_iters); iter_indices = 21:30, chain_indices = [2]
             )
             chain12 = vcat(chain1, chain2)
             @test FlexiChains.iter_indices(chain12) == vcat(1:10, 31:40)
@@ -798,12 +798,12 @@ using Random: Xoshiro
             niters1 = 10
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
             chain1 = FlexiChain{Symbol}(
-                niters1, 1, fill(d1, niters1); sampling_time=[1], last_sampler_state=["foo"]
+                niters1, 1, fill(d1, niters1); sampling_time = [1], last_sampler_state = ["foo"]
             )
             niters2 = 20
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
             chain2 = FlexiChain{Symbol}(
-                niters2, 1, fill(d2, niters2); sampling_time=[2], last_sampler_state=["bar"]
+                niters2, 1, fill(d2, niters2); sampling_time = [2], last_sampler_state = ["bar"]
             )
             chain12 = vcat(chain1, chain2)
 
@@ -817,10 +817,10 @@ using Random: Xoshiro
             Nc = 2
             d1 = Dict(Parameter(:a) => 1)
             structs1 = [(i, j) for i in 1:10, j in 1:Nc]
-            chn1 = FlexiChain{Symbol}(10, Nc, fill(d1, 10, Nc); structures=structs1)
+            chn1 = FlexiChain{Symbol}(10, Nc, fill(d1, 10, Nc); structures = structs1)
             d2 = Dict(Parameter(:a) => 2)
             structs2 = [(i, j) for i in 11:15, j in 1:Nc]
-            chn2 = FlexiChain{Symbol}(5, Nc, fill(d2, 5, Nc); structures=structs2)
+            chn2 = FlexiChain{Symbol}(5, Nc, fill(d2, 5, Nc); structures = structs2)
             @test vcat(chn1, chn2)._structures == vcat(structs1, structs2)
         end
 
@@ -858,9 +858,9 @@ using Random: Xoshiro
         @testset "handling indices" begin
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1, Extra("c") => 3.0)
-            chain1 = FlexiChain{Symbol}(N_iters, 1, fill(d1, N_iters); iter_indices=1:10)
+            chain1 = FlexiChain{Symbol}(N_iters, 1, fill(d1, N_iters); iter_indices = 1:10)
             d2 = Dict(Parameter(:a) => 2, Extra("c") => "foo")
-            chain2 = FlexiChain{Symbol}(N_iters, 1, fill(d2, N_iters); iter_indices=21:30)
+            chain2 = FlexiChain{Symbol}(N_iters, 1, fill(d2, N_iters); iter_indices = 21:30)
 
             @test_logs (:warn, r"different iteration indices") hcat(chain1, chain2)
             chain12 = hcat(chain1, chain2)
@@ -872,11 +872,11 @@ using Random: Xoshiro
             N_iters = 10
             d1 = Dict(Parameter(:a) => 1)
             chain1 = FlexiChain{Symbol}(
-                N_iters, 1, fill(d1, N_iters); sampling_time=[1], last_sampler_state=["foo"]
+                N_iters, 1, fill(d1, N_iters); sampling_time = [1], last_sampler_state = ["foo"]
             )
             d2 = Dict(Parameter(:a) => 2)
             chain2 = FlexiChain{Symbol}(
-                N_iters, 1, fill(d2, N_iters); sampling_time=[2], last_sampler_state=["bar"]
+                N_iters, 1, fill(d2, N_iters); sampling_time = [2], last_sampler_state = ["bar"]
             )
             chain12 = hcat(chain1, chain2)
             @test chain12 isa FlexiChain{Symbol}
@@ -890,10 +890,10 @@ using Random: Xoshiro
             Ni = 10
             d1 = Dict(Parameter(:a) => 1)
             structs1 = [(i, 1) for i in 1:Ni, _ in 1:1]
-            chn1 = FlexiChain{Symbol}(Ni, 1, fill(d1, Ni); structures=structs1)
+            chn1 = FlexiChain{Symbol}(Ni, 1, fill(d1, Ni); structures = structs1)
             d2 = Dict(Parameter(:a) => 2)
             structs2 = [(i, 2) for i in 1:Ni, _ in 1:1]
-            chn2 = FlexiChain{Symbol}(Ni, 1, fill(d2, Ni); structures=structs2)
+            chn2 = FlexiChain{Symbol}(Ni, 1, fill(d2, Ni); structures = structs2)
             @test hcat(chn1, chn2)._structures == hcat(structs1, structs2)
         end
 
@@ -977,20 +977,22 @@ using Random: Xoshiro
         # use OrderedDict so that we can also test order
         d = OrderedDict(
             Parameter(@varname(a)) => 1.0,
-            Parameter(@varname(c)) => (x=4.0, y=5.0),
+            Parameter(@varname(c)) => (x = 4.0, y = 5.0),
             Parameter(@varname(b)) => [2.0, 3.0],
             Extra("hello") => 3.0,
         )
         chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
         chain2 = FlexiChains._split_varnames(chain)
-        @test collect(keys(chain2)) == ([
-            Parameter(@varname(a)),
-            Parameter(@varname(c.x)),
-            Parameter(@varname(c.y)),
-            Parameter(@varname(b[1])),
-            Parameter(@varname(b[2])),
-            Extra("hello"),
-        ])
+        @test collect(keys(chain2)) == (
+            [
+                Parameter(@varname(a)),
+                Parameter(@varname(c.x)),
+                Parameter(@varname(c.y)),
+                Parameter(@varname(b[1])),
+                Parameter(@varname(b[2])),
+                Extra("hello"),
+            ]
+        )
     end
 
     @testset "map_keys" begin
@@ -1074,7 +1076,7 @@ using Random: Xoshiro
         # Test with and without rng
         for args in ((rng,), ())
             @test rand(args..., chn) isa OrderedDict{ParameterOrExtra{<:Symbol}}
-            @test rand(args..., chn; parameters_only=true) isa OrderedDict{Symbol}
+            @test rand(args..., chn; parameters_only = true) isa OrderedDict{Symbol}
             @test rand(args..., chn, 5) isa
                 Vector{<:OrderedDict{ParameterOrExtra{<:Symbol}}}
             @test size(rand(args..., chn, 5)) == (5,)

@@ -12,38 +12,38 @@ const DEFAULT_MARGIN = (8, :mm)
 
 const _TRACEPLOT_SERIESTYPE = :traceplot
 function FC.traceplot(chn::FC.FlexiChain, args...; kwargs...)
-    return plot(chn, args...; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
+    return plot(chn, args...; kwargs..., seriestype = _TRACEPLOT_SERIESTYPE)
 end
 function FC.traceplot!(chn::FC.FlexiChain, args...; kwargs...)
-    return plot!(chn, args; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
+    return plot!(chn, args; kwargs..., seriestype = _TRACEPLOT_SERIESTYPE)
 end
 
 const _MIXEDDENSITY_SERIESTYPE = :mixeddensity
 function FC.mixeddensity(chn::FC.FlexiChain, args...; kwargs...)
-    return plot(chn, args...; kwargs..., seriestype=_MIXEDDENSITY_SERIESTYPE)
+    return plot(chn, args...; kwargs..., seriestype = _MIXEDDENSITY_SERIESTYPE)
 end
 function FC.mixeddensity!(chn::FC.FlexiChain, args...; kwargs...)
-    return plot!(chn, args...; kwargs..., seriestype=_MIXEDDENSITY_SERIESTYPE)
+    return plot!(chn, args...; kwargs..., seriestype = _MIXEDDENSITY_SERIESTYPE)
 end
 
 const _MEANPLOT_SERIESTYPE = :meanplot
 function FC.meanplot(chn::FC.FlexiChain, args...; kwargs...)
-    return plot(chn, args...; kwargs..., seriestype=_MEANPLOT_SERIESTYPE)
+    return plot(chn, args...; kwargs..., seriestype = _MEANPLOT_SERIESTYPE)
 end
 function FC.meanplot!(chn::FC.FlexiChain, args...; kwargs...)
-    return plot!(chn, args...; kwargs..., seriestype=_MEANPLOT_SERIESTYPE)
+    return plot!(chn, args...; kwargs..., seriestype = _MEANPLOT_SERIESTYPE)
 end
 
 const _AUTOCORPLOT_SERIESTYPE = :autocorplot
 function FC.autocorplot(
-    chn::FC.FlexiChain, args...; lags=FC.PlotUtils.default_lags(chn), demean=true, kwargs...
-)
-    return plot(chn, args...; kwargs..., lags, demean, seriestype=_AUTOCORPLOT_SERIESTYPE)
+        chn::FC.FlexiChain, args...; lags = FC.PlotUtils.default_lags(chn), demean = true, kwargs...
+    )
+    return plot(chn, args...; kwargs..., lags, demean, seriestype = _AUTOCORPLOT_SERIESTYPE)
 end
 function FC.autocorplot!(
-    chn::FC.FlexiChain, args...; lags=FC.PlotUtils.default_lags(chn), demean=true, kwargs...
-)
-    return plot!(chn, args...; kwargs..., lags, demean, seriestype=_AUTOCORPLOT_SERIESTYPE)
+        chn::FC.FlexiChain, args...; lags = FC.PlotUtils.default_lags(chn), demean = true, kwargs...
+    )
+    return plot!(chn, args...; kwargs..., lags, demean, seriestype = _AUTOCORPLOT_SERIESTYPE)
 end
 
 const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
@@ -60,12 +60,12 @@ excludes non-parameter, `Extra` keys. `VarName` chains are additionally split up
 constituent real-valued parameters by default.
 """
 @recipe function _(
-    chn::FC.FlexiChain,
-    param_or_params=FC.Parameter.(FC.parameters(chn));
-    lags=nothing,
-    demean=nothing,
-    pool_chains=false,
-)
+        chn::FC.FlexiChain,
+        param_or_params = FC.Parameter.(FC.parameters(chn));
+        lags = nothing,
+        demean = nothing,
+        pool_chains = false,
+    )
     keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
     # When the user calls `plot(chn[, params])` without specifying a `seriestype`, we
     # default to showing a side-by-side traceplot and density/histogram for each parameter.
@@ -122,8 +122,8 @@ Generic fallback recipe when the user specifies a `seriestype` we don't know how
 with.
 """
 @recipe function _(
-    chn::FC.FlexiChain{T}, param::FC.ParameterOrExtra{<:T}, seriestype::Symbol
-) where {T}
+        chn::FC.FlexiChain{T}, param::FC.ParameterOrExtra{<:T}, seriestype::Symbol
+    ) where {T}
     x = FC.iter_indices(chn)
     y = FC._get_raw_data(chn, param)
     FC.PlotUtils.check_eltype_is_real(y)
@@ -134,7 +134,7 @@ end
 """
 Plot a trace plot and a density/histogram plot side by side.
 """
-struct FlexiChainTraceAndMixedDensity{TKey,Tp<:FC.ParameterOrExtra{<:TKey}}
+struct FlexiChainTraceAndMixedDensity{TKey, Tp <: FC.ParameterOrExtra{<:TKey}}
     chn::FC.FlexiChain{TKey}
     param::Tp
 end
@@ -175,7 +175,7 @@ Plot of running mean.
     # Extract data
     x = FC.iter_indices(t.chn)
     data = FC._get_raw_data(t.chn, t.param)
-    y = mapslices(FC.PlotUtils.runningmean, data; dims=1)
+    y = mapslices(FC.PlotUtils.runningmean, data; dims = 1)
     FC.PlotUtils.check_eltype_is_real(y)
     # Set labels
     xguide --> "iteration number"
@@ -193,7 +193,7 @@ Plot of autocorrelation.
     # Extract data
     x = t.lags
     data = FC._get_raw_data(t.chn, t.param)
-    y = StatsBase.autocor(data, t.lags; demean=t.demean)
+    y = StatsBase.autocor(data, t.lags; demean = t.demean)
     FC.PlotUtils.check_eltype_is_real(y)
     # Set labels
     xguide --> "lag"

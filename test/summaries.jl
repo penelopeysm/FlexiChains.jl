@@ -40,58 +40,58 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             Extra("c") => cs,
             Extra("actuallyString") => ds,
         );
-        iter_indices=FlexiChains._make_lookup(4:4:(4 * N_iters)),
-        chain_indices=FlexiChains._make_lookup(1:N_chains),
+        iter_indices = FlexiChains._make_lookup(4:4:(4 * N_iters)),
+        chain_indices = FlexiChains._make_lookup(1:N_chains),
     )
 
     @testset "collapse" begin
         @testset for func in ENABLED_SUMMARY_FUNCS
             @testset "dims=:iter" begin
-                fs = FlexiChains.collapse(chain, [func]; dims=:iter)
+                fs = FlexiChains.collapse(chain, [func]; dims = :iter)
                 @test fs[:a] isa DD.DimMatrix
                 @test parent(parent(DD.dims(fs[:a], :chain))) ==
                     FlexiChains.chain_indices(chain) ==
                     FlexiChains.chain_indices(fs)
-                @test isapprox(fs[:a], vec(func(as; dims=1)); nans=true)
+                @test isapprox(fs[:a], vec(func(as; dims = 1)); nans = true)
 
                 if func in WORKS_ON_STRING
                     # the 1 dim at the end is the stat dim
-                    expected = reshape(func(ds; dims=1), N_chains, 1)
+                    expected = reshape(func(ds; dims = 1), N_chains, 1)
                     @test fs[Extra("actuallyString")] == expected
                 else
                     # the key "actuallyString" should be skipped
                     @test_logs (:warn, r"\"actuallyString\"") FlexiChains.collapse(
-                        chain, [func]; dims=:iter, warn=true
+                        chain, [func]; dims = :iter, warn = true
                     )
                 end
             end
 
             @testset "dims=:chain" begin
-                fs = FlexiChains.collapse(chain, [func]; dims=:chain)
+                fs = FlexiChains.collapse(chain, [func]; dims = :chain)
                 @test fs[:a] isa DD.DimMatrix
                 @test parent(parent(DD.dims(fs[:a], :iter))) ==
                     FlexiChains.iter_indices(chain) ==
                     FlexiChains.iter_indices(fs)
                 @test parent(parent(DD.dims(fs[:a], :stat))) == [Symbol(func)]
-                @test isapprox(fs[:a], vec(func(as; dims=2)); nans=true)
+                @test isapprox(fs[:a], vec(func(as; dims = 2)); nans = true)
 
                 if func in WORKS_ON_STRING
                     # the 1 dim at the end is the stat dim
-                    expected = reshape(func(ds; dims=2), N_iters, 1)
+                    expected = reshape(func(ds; dims = 2), N_iters, 1)
                     @test fs[Extra("actuallyString")] == expected
                 else
                     # the key "actuallyString" should be skipped
                     @test_logs (:warn, r"\"actuallyString\"") FlexiChains.collapse(
-                        chain, [func]; dims=:chain, warn=true
+                        chain, [func]; dims = :chain, warn = true
                     )
                 end
             end
 
             @testset "dims=:both" begin
-                fs = FlexiChains.collapse(chain, [func]; dims=:both)
+                fs = FlexiChains.collapse(chain, [func]; dims = :both)
                 @test fs[:a] isa DD.DimVector
                 @test parent(parent(DD.dims(fs[:a], :stat))) == [Symbol(func)]
-                @test isapprox(only(fs[:a]), func(as); nans=true)
+                @test isapprox(only(fs[:a]), func(as); nans = true)
 
                 if func in WORKS_ON_STRING
                     # the 1 dim at the end is the stat dim
@@ -100,7 +100,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 else
                     # the key "actuallyString" should be skipped
                     @test_logs (:warn, r"\"actuallyString\"") FlexiChains.collapse(
-                        chain, [func]; dims=:both, warn=true
+                        chain, [func]; dims = :both, warn = true
                     )
                 end
             end
@@ -109,41 +109,41 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
     @testset "other summary functions" begin
         @test geomean(chain) isa FlexiSummary
-        @test geomean(chain; dims=:iter) isa FlexiSummary
-        @test geomean(chain; dims=:chain) isa FlexiSummary
+        @test geomean(chain; dims = :iter) isa FlexiSummary
+        @test geomean(chain; dims = :chain) isa FlexiSummary
         @test harmmean(chain) isa FlexiSummary
-        @test harmmean(chain; dims=:iter) isa FlexiSummary
-        @test harmmean(chain; dims=:chain) isa FlexiSummary
+        @test harmmean(chain; dims = :iter) isa FlexiSummary
+        @test harmmean(chain; dims = :chain) isa FlexiSummary
         @test mad(chain) isa FlexiSummary
-        @test mad(chain; dims=:iter) isa FlexiSummary
-        @test mad(chain; dims=:chain) isa FlexiSummary
+        @test mad(chain; dims = :iter) isa FlexiSummary
+        @test mad(chain; dims = :chain) isa FlexiSummary
         @test iqr(chain) isa FlexiSummary
-        @test iqr(chain; dims=:iter) isa FlexiSummary
-        @test iqr(chain; dims=:chain) isa FlexiSummary
+        @test iqr(chain; dims = :iter) isa FlexiSummary
+        @test iqr(chain; dims = :chain) isa FlexiSummary
         @test ess(chain) isa FlexiSummary
-        @test ess(chain; dims=:iter) isa FlexiSummary
-        @test ess(chain; dims=:chain) isa FlexiSummary
-        @test ess(chain; kind=:tail) isa FlexiSummary
-        @test ess(chain; dims=:iter, kind=:tail) isa FlexiSummary
-        @test ess(chain; dims=:chain, kind=:tail) isa FlexiSummary
+        @test ess(chain; dims = :iter) isa FlexiSummary
+        @test ess(chain; dims = :chain) isa FlexiSummary
+        @test ess(chain; kind = :tail) isa FlexiSummary
+        @test ess(chain; dims = :iter, kind = :tail) isa FlexiSummary
+        @test ess(chain; dims = :chain, kind = :tail) isa FlexiSummary
         @test rhat(chain) isa FlexiSummary
-        @test rhat(chain; dims=:iter) isa FlexiSummary
-        @test rhat(chain; dims=:chain) isa FlexiSummary
+        @test rhat(chain; dims = :iter) isa FlexiSummary
+        @test rhat(chain; dims = :chain) isa FlexiSummary
         @test mcse(chain) isa FlexiSummary
-        @test mcse(chain; dims=:iter) isa FlexiSummary
-        @test mcse(chain; dims=:chain) isa FlexiSummary
+        @test mcse(chain; dims = :iter) isa FlexiSummary
+        @test mcse(chain; dims = :chain) isa FlexiSummary
         @test hdi(chain) isa FlexiSummary
-        @test hdi(chain; dims=:iter) isa FlexiSummary
-        @test hdi(chain; dims=:chain) isa FlexiSummary
+        @test hdi(chain; dims = :iter) isa FlexiSummary
+        @test hdi(chain; dims = :chain) isa FlexiSummary
         @test eti(chain) isa FlexiSummary
-        @test eti(chain; dims=:iter) isa FlexiSummary
-        @test eti(chain; dims=:chain) isa FlexiSummary
+        @test eti(chain; dims = :iter) isa FlexiSummary
+        @test eti(chain; dims = :chain) isa FlexiSummary
         @test quantile(chain, 0.5) isa FlexiSummary
-        @test quantile(chain, 0.5; dims=:iter) isa FlexiSummary
-        @test quantile(chain, 0.5; dims=:chain) isa FlexiSummary
+        @test quantile(chain, 0.5; dims = :iter) isa FlexiSummary
+        @test quantile(chain, 0.5; dims = :chain) isa FlexiSummary
         @test quantile(chain, [0.5, 0.9]) isa FlexiSummary
-        @test quantile(chain, [0.5, 0.9]; dims=:iter) isa FlexiSummary
-        @test quantile(chain, [0.5, 0.9]; dims=:chain) isa FlexiSummary
+        @test quantile(chain, [0.5, 0.9]; dims = :iter) isa FlexiSummary
+        @test quantile(chain, [0.5, 0.9]; dims = :chain) isa FlexiSummary
     end
 
     @testset "summarystats" begin
@@ -154,33 +154,33 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
     @testset "warn=false" begin
         # Check that no warnings are issued when warn=false
-        @test_logs min_level = Warn mean(chain; warn=false)
+        @test_logs min_level = Warn mean(chain; warn = false)
         @test_logs min_level = Warn FlexiChains.collapse(
-            chain, [mean]; dims=:both, warn=false
+            chain, [mean]; dims = :both, warn = false
         )
     end
 
     @testset "drop_stat_dim=true" begin
         @testset "iter" begin
-            fs = FlexiChains.collapse(chain, [mean]; dims=:iter, drop_stat_dim=true)
+            fs = FlexiChains.collapse(chain, [mean]; dims = :iter, drop_stat_dim = true)
             @test fs[:a] isa DD.DimVector
             @test parent(parent(DD.dims(fs[:a], :chain))) ==
                 FlexiChains.chain_indices(chain) ==
                 FlexiChains.chain_indices(fs)
-            @test isapprox(fs[:a], vec(mean(as; dims=1)))
+            @test isapprox(fs[:a], vec(mean(as; dims = 1)))
         end
 
         @testset "chain" begin
-            fs = FlexiChains.collapse(chain, [mean]; dims=:chain, drop_stat_dim=true)
+            fs = FlexiChains.collapse(chain, [mean]; dims = :chain, drop_stat_dim = true)
             @test fs[:a] isa DD.DimVector
             @test parent(parent(DD.dims(fs[:a], :iter))) ==
                 FlexiChains.iter_indices(chain) ==
                 FlexiChains.iter_indices(fs)
-            @test isapprox(fs[:a], vec(mean(as; dims=2)))
+            @test isapprox(fs[:a], vec(mean(as; dims = 2)))
         end
 
         @testset "both" begin
-            fs = FlexiChains.collapse(chain, [mean]; dims=:both, drop_stat_dim=true)
+            fs = FlexiChains.collapse(chain, [mean]; dims = :both, drop_stat_dim = true)
             @test fs[:a] isa Float64
             @test isapprox(fs[:a], mean(as))
         end
@@ -193,18 +193,18 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         chain = FlexiChain{Symbol}(N_iters, N_chains, Dict(Parameter(:a) => as))
 
         @testset "iter" begin
-            expected = std(as; dims=1, corrected=false)
-            result = std(chain; dims=:iter, corrected=false)[:a]
+            expected = std(as; dims = 1, corrected = false)
+            result = std(chain; dims = :iter, corrected = false)[:a]
             @test isapprox(result, vec(expected))
         end
         @testset "chain" begin
-            expected = std(as; dims=2, corrected=false)
-            result = std(chain; dims=:chain, corrected=false)[:a]
+            expected = std(as; dims = 2, corrected = false)
+            result = std(chain; dims = :chain, corrected = false)[:a]
             @test isapprox(result, vec(expected))
         end
         @testset "iter + chain" begin
-            expected = std(chain[:a]; corrected=false)
-            result = std(chain; corrected=false)[:a]
+            expected = std(chain[:a]; corrected = false)
+            result = std(chain; corrected = false)[:a]
             @test isapprox(only(result), expected)
         end
     end
@@ -218,9 +218,9 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         ]
         for d in ds
             chain = FlexiChain{Symbol}(10, 3, fill(d, 10, 3))
-            display(mean(chain; dims=:iter))
-            display(median(chain; dims=:chain))
-            display(std(chain; dims=:both))
+            display(mean(chain; dims = :iter))
+            display(median(chain; dims = :chain))
+            display(std(chain; dims = :both))
             display(summarystats(chain))
         end
     end
@@ -245,8 +245,8 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         # functions that _do_ work.
         sm = summarystats(chain)
         @test haskey(sm, Parameter(:x))
-        @test isapprox(sm[:x, stat=DD.At(:mean)], x)
-        @test ismissing(sm[:x, stat=DD.At(:ess_bulk)])
+        @test isapprox(sm[:x, stat = DD.At(:mean)], x)
+        @test ismissing(sm[:x, stat = DD.At(:ess_bulk)])
     end
 
     @testset "getindex on summaries" begin
@@ -264,14 +264,14 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         )
 
         @testset "dims=:iter" begin
-            fs = mean(chain; dims=:iter, split_varnames=false)
+            fs = mean(chain; dims = :iter, split_varnames = false)
 
             @testset "VarName" begin
                 @test fs[@varname(x)] isa DD.DimVector
                 @test parent(parent(DD.dims(fs[@varname(x)], :chain))) ==
                     FlexiChains.chain_indices(chain) ==
                     FlexiChains.chain_indices(fs)
-                @test isapprox(fs[@varname(x)], dropdims(mean(xs; dims=1); dims=1))
+                @test isapprox(fs[@varname(x)], dropdims(mean(xs; dims = 1); dims = 1))
             end
 
             @testset "Symbol" begin
@@ -279,7 +279,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 @test parent(parent(DD.dims(fs[:x], :chain))) ==
                     FlexiChains.chain_indices(chain) ==
                     FlexiChains.chain_indices(fs)
-                @test isapprox(fs[:x], dropdims(mean(xs; dims=1); dims=1))
+                @test isapprox(fs[:x], dropdims(mean(xs; dims = 1); dims = 1))
             end
 
             @testset "sub-VarName" begin
@@ -288,7 +288,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                     FlexiChains.chain_indices(chain) ==
                     FlexiChains.chain_indices(fs)
                 @test isapprox(
-                    fs[@varname(x[1])], dropdims(mean(getindex.(xs, 1); dims=1); dims=1)
+                    fs[@varname(x[1])], dropdims(mean(getindex.(xs, 1); dims = 1); dims = 1)
                 )
             end
 
@@ -311,14 +311,14 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
 
         @testset "dims=:chain" begin
-            fs = mean(chain; dims=:chain, split_varnames=false)
+            fs = mean(chain; dims = :chain, split_varnames = false)
 
             @testset "VarName" begin
                 @test fs[@varname(x)] isa DD.DimVector
                 @test parent(parent(DD.dims(fs[@varname(x)], :iter))) ==
                     FlexiChains.iter_indices(chain) ==
                     FlexiChains.iter_indices(fs)
-                @test isapprox(fs[@varname(x)], dropdims(mean(xs; dims=2); dims=2))
+                @test isapprox(fs[@varname(x)], dropdims(mean(xs; dims = 2); dims = 2))
             end
 
             @testset "Symbol" begin
@@ -326,7 +326,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 @test parent(parent(DD.dims(fs[:x], :iter))) ==
                     FlexiChains.iter_indices(chain) ==
                     FlexiChains.iter_indices(fs)
-                @test isapprox(fs[:x], dropdims(mean(xs; dims=2); dims=2))
+                @test isapprox(fs[:x], dropdims(mean(xs; dims = 2); dims = 2))
             end
 
             @testset "sub-VarName" begin
@@ -335,7 +335,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                     FlexiChains.iter_indices(chain) ==
                     FlexiChains.iter_indices(fs)
                 @test isapprox(
-                    fs[@varname(x[1])], dropdims(mean(getindex.(xs, 1); dims=2); dims=2)
+                    fs[@varname(x[1])], dropdims(mean(getindex.(xs, 1); dims = 2); dims = 2)
                 )
             end
 
@@ -358,7 +358,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
 
         @testset "dims=:both" begin
-            fs = mean(chain; split_varnames=false)
+            fs = mean(chain; split_varnames = false)
 
             @testset "VarName" begin
                 @test fs[@varname(x)] isa Vector{Float64}
@@ -394,11 +394,11 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         end
 
         @testset "with split_varnames" begin
-            fs = mean(chain; dims=:iter)
+            fs = mean(chain; dims = :iter)
             for i in 1:10
                 @test haskey(fs, @varname(x[i]))
                 @test isapprox(
-                    fs[@varname(x[i])], dropdims(mean(getindex.(xs, i); dims=1); dims=1)
+                    fs[@varname(x[i])], dropdims(mean(getindex.(xs, i); dims = 1); dims = 1)
                 )
             end
             @test haskey(fs, @varname(y))
@@ -421,9 +421,9 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             end
 
             @testset "dims=:iter" begin
-                m = mean(chain; dims=:iter)
+                m = mean(chain; dims = :iter)
                 mean_a = m[:a]
-                @test mean_a isa DD.DimArray{Float64,3}
+                @test mean_a isa DD.DimArray{Float64, 3}
                 @test size(mean_a) == (Nchains, 3, 3)
                 @test parent(DD.val(DD.dims(mean_a), :chain)) ==
                     FlexiChains.chain_indices(m)
@@ -431,18 +431,18 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             end
 
             @testset "dims=:chain" begin
-                m = mean(chain; dims=:chain)
+                m = mean(chain; dims = :chain)
                 mean_a = m[:a]
-                @test mean_a isa DD.DimArray{Float64,3}
+                @test mean_a isa DD.DimArray{Float64, 3}
                 @test size(mean_a) == (Niters, 3, 3)
                 @test parent(DD.val(DD.dims(mean_a), :iter)) == FlexiChains.iter_indices(m)
                 @test DD.dims(mean_a)[2:3] == DD.dims(dimarr)[:]
             end
 
             @testset "with multiple statistics" begin
-                ms = FlexiChains.collapse(chain, [mean, std]; dims=:iter)
-                summary_a = ms[:a, stat=DD.At(:mean)]
-                @test summary_a isa DD.DimArray{Float64,3}
+                ms = FlexiChains.collapse(chain, [mean, std]; dims = :iter)
+                summary_a = ms[:a, stat = DD.At(:mean)]
+                @test summary_a isa DD.DimArray{Float64, 3}
                 @test size(summary_a) == (Nchains, 3, 3)
                 @test parent(DD.val(DD.dims(summary_a), :chain)) ==
                     FlexiChains.chain_indices(ms)
@@ -461,48 +461,48 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
 
         @testset "iter and stat collapsed" begin
             # Test that attempting to index in with either `iter=...` or `stat=...` errors
-            fs = mean(chain; dims=:iter, split_varnames=false)
+            fs = mean(chain; dims = :iter, split_varnames = false)
             @test_throws ArgumentError FlexiChains._check_summary_kwargs(
                 fs, Colon(), Colon(), Colon()
             )
-            @test_throws ArgumentError fs[Parameter(@varname(x)), iter=:]
+            @test_throws ArgumentError fs[Parameter(@varname(x)), iter = :]
             @test_throws ArgumentError FlexiChains._check_summary_kwargs(
                 fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), Colon()
             )
-            @test_throws ArgumentError fs[Parameter(@varname(x)), stat=:]
+            @test_throws ArgumentError fs[Parameter(@varname(x)), stat = :]
             # And that omitting both works
             @test FlexiChains._check_summary_kwargs(
                 fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), FlexiChains._UNSPECIFIED_KWARG
-            ) == (chain=Colon(),)
+            ) == (chain = Colon(),)
             @test fs[Parameter(@varname(x))] isa Any
         end
 
         @testset "iter collapsed only" begin
             # Test that attempting to index in with `iter=...` errors, but `stat=...` works
-            fs = FlexiChains.collapse(chain, [mean]; dims=:iter, split_varnames=false)
+            fs = FlexiChains.collapse(chain, [mean]; dims = :iter, split_varnames = false)
             @test_throws ArgumentError FlexiChains._check_summary_kwargs(
                 fs, Colon(), Colon(), Colon()
             )
-            @test_throws ArgumentError fs[Parameter(@varname(x)), iter=:]
+            @test_throws ArgumentError fs[Parameter(@varname(x)), iter = :]
             @test FlexiChains._check_summary_kwargs(
                 fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), Colon()
             ) isa Any
-            @test fs[Parameter(@varname(x)), stat=:] isa Any
+            @test fs[Parameter(@varname(x)), stat = :] isa Any
             @test FlexiChains._check_summary_kwargs(
                 fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), FlexiChains._UNSPECIFIED_KWARG
-            ) == (chain=Colon(), stat=Colon())
+            ) == (chain = Colon(), stat = Colon())
             # check that we can use DD lookups for the stat dimension
-            @test fs[Parameter(@varname(x)), stat=DD.At(:mean)] isa Any
+            @test fs[Parameter(@varname(x)), stat = DD.At(:mean)] isa Any
             @test FlexiChains._check_summary_kwargs(
                 fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), DD.At(:mean)
-            ) == (chain=Colon(), stat=DD.At(:mean))
+            ) == (chain = Colon(), stat = DD.At(:mean))
             @test FlexiChains._check_summary_kwargs(
                 fs, FlexiChains._UNSPECIFIED_KWARG, Colon(), DD.At(:mean)
-            ) == (chain=Colon(), stat=DD.At(:mean))
+            ) == (chain = Colon(), stat = DD.At(:mean))
             # check sub-varname too
             @test isapprox(
-                fs[Parameter(@varname(x[1])), stat=DD.At(:mean)],
-                vec(mean(getindex.(xs, 1); dims=1)),
+                fs[Parameter(@varname(x[1])), stat = DD.At(:mean)],
+                vec(mean(getindex.(xs, 1); dims = 1)),
             )
             # check with no kwargs too
             @test fs[Parameter(@varname(x))] isa Any
