@@ -3,7 +3,7 @@ module FCTuringExtTests
 using AbstractMCMC: AbstractMCMC
 using DimensionalData: DimensionalData as DD
 using DynamicPPL: DynamicPPL
-using FlexiChains: FlexiChains, VNChain, Parameter, Extra
+using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra
 using MCMCChains: MCMCChains
 using OffsetArrays: OffsetArray
 using Random: Random, Xoshiro
@@ -540,12 +540,12 @@ end
         @test parent(parent(DD.dims(rtnd, :chain))) == FlexiChains.chain_indices(chn)
 
         @testset "works even for dists that hasvalue isn't implemented for" begin
-            @model function f()
+            @model function f_product()
                 return x ~ product_distribution((; a = Normal()))
             end
-            model = f()
+            model = f_product()
             chn = sample(model, NUTS(), 100; chain_type = VNChain, verbose = false)
-            rets = returned(f(), chn)
+            rets = returned(f_product(), chn)
             @test chn[@varname(x)] == rets
         end
 
@@ -710,7 +710,7 @@ end
         end
     end
 
-    @testset "MCMCChains conversion" begin
+    @testset "FlexiChain -> MCMCChains" begin
         @model function f()
             x ~ Normal()
             y ~ MvNormal(zeros(3), I)
@@ -741,9 +741,81 @@ end
                 @test Set(new_mcmcc.name_map[k]) == Set(mcmcc.name_map[k])
             end
         end
+
+        @testset "sampling time is preserved" begin
+            @test hasproperty(new_mcmcc.info, :start_time)
+            @test hasproperty(new_mcmcc.info, :stop_time)
+            durations = new_mcmcc.info.stop_time .- new_mcmcc.info.start_time
+            @test durations ≈ FlexiChains.sampling_time(flexic)
+        end
+
+        @testset "sampler state is preserved with save_state=true" begin
+            flexic_with_state = sample(
+                Xoshiro(468), f(), NUTS(), 20;
+                chain_type = VNChain, verbose = false, save_state = true,
+            )
+            mc_with_state = MCMCChains.Chains(flexic_with_state)
+            @test hasproperty(mc_with_state.info, :samplerstate)
+            @test mc_with_state.info.samplerstate ==
+                FlexiChains.last_sampler_state(flexic_with_state)
+        end
+    end
+
+    @testset "MCMCChains -> FlexiChain{Symbol}" begin
+        @model function g()
+            m ~ Normal(0, 1.0)
+            s ~ InverseGamma(2, 3)
+            return 1.5 ~ Normal(m, sqrt(s))
+        end
+
+        @testset "single chain" begin
+            chn = sample(g(), MH(), 100; verbose = false)
+            fc = FlexiChain{Symbol}(chn)
+
+            @test fc isa FlexiChain{Symbol}
+            @test size(fc) == (size(chn, 1), size(chn, 3))
+
+            # Key names & grouping
+            @test Set(FlexiChains.parameters(fc)) == Set(names(chn, :parameters))
+            for name in names(chn, :internals)
+                @test Extra(name) in FlexiChains.extras(fc)
+            end
+            # Data
+            for name in names(chn)
+                k = name in names(chn, :parameters) ? Parameter(name) : Extra(name)
+                @test fc[k] == chn[:, name, :].data
+            end
+            # Iteration indices
+            @test collect(FlexiChains.iter_indices(fc)) == collect(range(chn))
+            # Sampling time
+            @test !any(ismissing, FlexiChains.sampling_time(fc))
+            @test only(FlexiChains.sampling_time(fc)) > 0
+        end
+
+        @testset "multiple chains" begin
+            ni, nc = 100, 3
+            chn = sample(g(), MH(), MCMCSerial(), ni, nc; verbose = false)
+            fc = FlexiChain{Symbol}(chn)
+            @test size(fc) == (ni, nc)
+            for name in names(chn, :parameters)
+                @test fc[Parameter(name)] == chn[:, name, :].data
+            end
+            st = FlexiChains.sampling_time(fc)
+            @test length(st) == nc
+            @test all(t -> t > 0, st)
+        end
+
+        @testset "sampler state is preserved" begin
+            chn = sample(g(), MH(), 50; verbose = false, save_state = true)
+            @test hasproperty(chn.info, :samplerstate)
+            fc = FlexiChain{Symbol}(chn)
+            lss = FlexiChains.last_sampler_state(fc)
+            @test !all(ismissing, lss)
+        end
     end
 
     @testset "Models with variable-length parameters" begin
+        # These tests are mainly to check the interaction of VarNamedTuple with chains.
         @testset "single variable" begin
             @model function varlen_single()
                 n ~ DiscreteUniform(2, 5)
