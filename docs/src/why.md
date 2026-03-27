@@ -18,6 +18,7 @@ In my opinion.
 
 ```@example types
 using Random, Turing, FlexiChains, MCMCChains
+setprogress!(false) # hide
 
 @model function f()
     x ~ Normal()
@@ -76,6 +77,7 @@ As a variant on the above bug with proper type representation, consider the case
 
 ```@example missing
 using Random, Turing, FlexiChains, MCMCChains
+setprogress!(false) # hide
 
 @model function f()
     x ~ Normal()
@@ -110,6 +112,7 @@ Let's see now what happens when we have a truly variable-length parameter:
 
 ```@example varlen
 using Random, Turing, FlexiChains, MCMCChains
+setprogress!(false) # hide
 
 @model function varlen()
     n ~ Poisson(3.5)
@@ -120,9 +123,8 @@ end
 model = varlen()
 cond_model = varlen() | (; y = 2.0)
 
-mchain = sample(Xoshiro(468), cond_model, MH(), 50; chain_type=MCMCChains.Chains);
-fchain = sample(Xoshiro(468), cond_model, MH(), 50; chain_type=FlexiChains.VNChain);
-nothing # hide
+mchain = sample(Xoshiro(468), cond_model, MH(), 50; chain_type=MCMCChains.Chains)
+fchain = sample(Xoshiro(468), cond_model, MH(), 50; chain_type=FlexiChains.VNChain)
 ```
 
 So far, so good; we can sample from everything just fine.
@@ -166,6 +168,7 @@ Even a simple string will fail:
 
 ```@example extraquantities
 using Random, Turing, FlexiChains, MCMCChains
+setprogress!(false) # hide
 
 @model function hasstring()
     x ~ Normal()
@@ -190,7 +193,7 @@ Suppose you have some array-valued parameter.
 
 ```@example reconstruct
 using Random, Turing, FlexiChains, MCMCChains
-setprogress!(false)
+setprogress!(false) # hide
 
 @model lkj() = x ~ LKJCholesky(3, 2.0)
 
@@ -248,6 +251,7 @@ Suppose you have sampled a chain, and you want to use something from it as the s
 
 ```@example interop
 using Random, Turing, FlexiChains, MCMCChains
+setprogress!(false) # hide
 
 @model function twonorm()
     x ~ Normal()
@@ -309,6 +313,7 @@ That means that when you use functions like `returned` or `predict` on a chain, 
 
 ```@example perf
 using Turing, FlexiChains, MCMCChains, Random
+setprogress!(false) # hide
 
 @model function longvec(N)
     m ~ Normal(0)
@@ -348,6 +353,7 @@ But if you have a parameter that _just happens_ to share a name with these, then
 
 ```@example clash
 using Random, Turing, FlexiChains, MCMCChains
+setprogress!(false) # hide
 
 # Oops! This will clash with the actual log prior.
 @model pr() = logprior ~ Normal()

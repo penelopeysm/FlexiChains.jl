@@ -1,3 +1,10 @@
+# 0.4.4
+
+Added a new method `FlexiChain{Symbol}(::MCMCChains.Chains)` to convert a `MCMCChains.Chains` object into a `FlexiChain{Symbol}`.
+(Note that, if you are sampling with Turing, this is a poorer representation of the chain: you can sample directly into a `VNChain` instead, which is a `FlexiChain{VarName}`.)
+
+Also improved the fidelity of the conversion *to* `MCMCChains.Chains` (previously metadata like sampling times and sampler states were dropped; they will now be included).
+
 # 0.4.3
 
 When using `getindex` on a chain or a summary, the returned `DimArray` now has the parameter as its name.
