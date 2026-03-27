@@ -1,6 +1,8 @@
 using AbstractPPL: AbstractPPL, VarName, @varname
 using OrderedCollections: OrderedSet
 
+@public Prefixed
+
 """
 Helper function to apply an optic function to an array. Errors if none of the array elements
 actually can be transformed by the optic. If only some of the array elements can be
@@ -118,6 +120,100 @@ function Base.getindex(
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(vn)); name = string(Parameter(vn)))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
+end
+
+"""
+    Prefixed(vn::VarName)
+
+A struct that represents a VarName that might have an arbitrary prefix. This is useful for
+indexing into a chain with VarNames when the exact prefix is not known (or too verbose to
+construct). For example, with Turing.jl, this allows for data processing code that is
+agnostic towards whether a submodel was used or not.
+
+When indexing into a chain with a `Prefixed{VarName}` key, the chain will be searched for
+any VarName that ends with the target VarName. For example, if the key is
+`Prefixed(@varname(x))`, and the chain contains `@varname(a.x)`, the data corresponding to
+`@varname(a.x)` will be returned. (If there are multiple matches, an error is thrown.)
+
+Note that `Prefixed` is only supported for `VarName`s, and not for general keys.
+"""
+struct Prefixed{T <: VarName}
+    target_vn::T
+end
+Base.show(io::IO, prefixed::Prefixed) = print(io, "Prefixed($(prefixed.target_vn))")
+"""
+    Prefixed(sym::Symbol)
+
+Convenience function for `Prefixed(@varname(sym))`.
+"""
+Prefixed(sym::Symbol) = Prefixed(VarName{sym}())
+
+function shares_tail(vn::VarName, target_vn::VarName)
+    opt = AbstractPPL.varname_to_optic(vn)
+    target_opt = AbstractPPL.varname_to_optic(target_vn)
+    # TODO: Could be micro-optimised by stopping the loop as soon as opt is 'shorter' than
+    # target_opt, but we don't yet have a function that gets the 'length' of a VarName, even
+    # though the notion is quite well-defined.
+    while !(opt isa AbstractPPL.Iden)
+        if opt == target_opt
+            return true
+        else
+            opt = AbstractPPL.otail(opt)
+        end
+    end
+    return false
+end
+function get_vn_matching_prefixed(vns::Set{<:VarName}, prefixed::Prefixed)
+    # TODO(penelopeysm): Fix the case where target_vn is something like @varname(x[1]) and
+    # the chain contains @varname(a.x). To do so, we need to check if the following is
+    # empty, and if so, call this again with `oinit(target_vn)`, etc. etc.
+    target_vn = prefixed.target_vn
+    matching_vns = collect(filter(vn -> shares_tail(vn, target_vn), vns))
+    if isempty(matching_vns)
+        throw(KeyError(prefixed))
+    elseif length(matching_vns) > 1
+        throw(ArgumentError("Multiple matches found for $(prefixed): ($(join(matching_vns, ", ")))"))
+    else
+        return only(matching_vns)
+    end
+end
+
+"""
+    Base.getindex(
+        fchain::FlexiChain{<:VarName}, prefixed::Prefixed{<:VarName};
+        iter=Colon(), chain=Colon()
+    )
+
+Get a parameter from the chain that matches the target VarName but with an arbitrary prefix.
+See [`Prefixed`](@ref) for details.
+"""
+function Base.getindex(
+        fchain::FlexiChain{<:VarName}, prefixed::Prefixed; iter = Colon(), chain = Colon()
+    )
+    vn = get_vn_matching_prefixed(Set(FlexiChains.parameters(fchain)), prefixed)
+    return Base.getindex(fchain, Parameter(vn); iter = iter, chain = chain)
+end
+"""
+    Base.getindex(
+        fs::FlexiSummary{<:VarName},
+        prefixed::Prefixed;
+        [iter=Colon(),]
+        [chain=Colon(),]
+        [stat=Colon()]
+    )
+
+Get a parameter from the summary that matches the target VarName but with an arbitrary
+prefix. See [`Prefixed`](@ref) for details.
+"""
+function Base.getindex(
+        fs::FlexiSummary{<:VarName},
+        prefixed::Prefixed;
+        iter = _UNSPECIFIED_KWARG,
+        chain = _UNSPECIFIED_KWARG,
+        stat = _UNSPECIFIED_KWARG,
+    )
+    vn = get_vn_matching_prefixed(Set(FlexiChains.parameters(fs)), prefixed.target_vn)
+    return Base.getindex(fs, Parameter(vn); iter = iter, chain = chain, stat = stat)
 end
 
 """
