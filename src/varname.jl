@@ -137,8 +137,9 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
     for vn in FlexiChains.parameters(cs)
         d = _get_raw_data(cs, Parameter(vn))
         for i in eachindex(d)
-            vn_leaves = collect(AbstractPPL.varname_leaves(vn, d[i]))
-            union!(vns, vn_leaves)
+            for vn_leaf in AbstractPPL.varname_leaves(vn, d[i])
+                push!(vns, vn_leaf)
+            end
         end
     end
     return cs[[collect(vns)..., FlexiChains.extras(cs)...]]
