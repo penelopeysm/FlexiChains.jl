@@ -3,6 +3,33 @@ using OrderedCollections: OrderedSet
 
 @public Prefixed
 
+
+"""
+    Prefixed(vn::VarName)
+
+A struct that represents a VarName that might have an arbitrary prefix. This is useful for
+indexing into a chain with VarNames when the exact prefix is not known (or too verbose to
+construct). For example, with Turing.jl, this allows for data processing code that is
+agnostic towards whether a submodel was used or not.
+
+When indexing into a chain with a `Prefixed{VarName}` key, the chain will be searched for
+any VarName that ends with the target VarName. For example, if the key is
+`Prefixed(@varname(x))`, and the chain contains `@varname(a.x)`, the data corresponding to
+`@varname(a.x)` will be returned. (If there are multiple matches, an error is thrown.)
+
+Note that `Prefixed` is only supported for `VarName`s, and not for general keys.
+"""
+struct Prefixed{T <: VarName}
+    target_vn::T
+end
+Base.show(io::IO, prefixed::Prefixed) = print(io, "Prefixed($(prefixed.target_vn))")
+"""
+    Prefixed(sym::Symbol)
+
+Convenience function for `Prefixed(@varname(sym))`.
+"""
+Prefixed(sym::Symbol) = Prefixed(VarName{sym}())
+
 """
 Helper function to apply an optic function to an array. Errors if none of the array elements
 actually can be transformed by the optic. If only some of the array elements can be
@@ -11,10 +38,10 @@ transformed, then the transformed elements are returned and the rest are `missin
 `orig_vn` is the VarName that the user attempted to access. It is used only for error
 reporting.
 """
-function _map_optic(::AbstractPPL.Iden, arr::AbstractArray, ::VarName)
+function _map_optic(::AbstractPPL.Iden, arr::AbstractArray, ::Union{VarName, Prefixed})
     return arr
 end
-function _map_optic(optic::AbstractPPL.AbstractOptic, arr::AbstractArray, orig_vn::VarName)
+function _map_optic(optic::AbstractPPL.AbstractOptic, arr::AbstractArray, orig_vn::Union{VarName, Prefixed})
     found = false
     results = map(arr) do elem
         if AbstractPPL.canview(optic, elem)
@@ -45,8 +72,6 @@ function _getindex_optic_and_vn(
         return (optic, vn)
     else
         # Not found -- attempt to reduce.
-        # TODO: This depends on AbstractPPL internals and is prone to breaking.
-        # These should be exported from AbstractPPL.
         o = AbstractPPL.getoptic(vn)
         i, l = AbstractPPL.oinit(o), AbstractPPL.olast(o)
         if l isa AbstractPPL.Iden
@@ -122,32 +147,6 @@ function Base.getindex(
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
-"""
-    Prefixed(vn::VarName)
-
-A struct that represents a VarName that might have an arbitrary prefix. This is useful for
-indexing into a chain with VarNames when the exact prefix is not known (or too verbose to
-construct). For example, with Turing.jl, this allows for data processing code that is
-agnostic towards whether a submodel was used or not.
-
-When indexing into a chain with a `Prefixed{VarName}` key, the chain will be searched for
-any VarName that ends with the target VarName. For example, if the key is
-`Prefixed(@varname(x))`, and the chain contains `@varname(a.x)`, the data corresponding to
-`@varname(a.x)` will be returned. (If there are multiple matches, an error is thrown.)
-
-Note that `Prefixed` is only supported for `VarName`s, and not for general keys.
-"""
-struct Prefixed{T <: VarName}
-    target_vn::T
-end
-Base.show(io::IO, prefixed::Prefixed) = print(io, "Prefixed($(prefixed.target_vn))")
-"""
-    Prefixed(sym::Symbol)
-
-Convenience function for `Prefixed(@varname(sym))`.
-"""
-Prefixed(sym::Symbol) = Prefixed(VarName{sym}())
-
 function shares_tail(vn::VarName, target_vn::VarName)
     opt = AbstractPPL.varname_to_optic(vn)
     target_opt = AbstractPPL.varname_to_optic(target_vn)
@@ -163,18 +162,29 @@ function shares_tail(vn::VarName, target_vn::VarName)
     end
     return false
 end
-function get_vn_matching_prefixed(vns::Set{<:VarName}, prefixed::Prefixed)
-    # TODO(penelopeysm): Fix the case where target_vn is something like @varname(x[1]) and
-    # the chain contains @varname(a.x). To do so, we need to check if the following is
-    # empty, and if so, call this again with `oinit(target_vn)`, etc. etc.
-    target_vn = prefixed.target_vn
+function prefixed_get_key_and_optic(
+        vns::Set{<:VarName}, target_vn::VarName, optic::AbstractPPL.AbstractOptic, original_prefixed::Prefixed
+    )
     matching_vns = collect(filter(vn -> shares_tail(vn, target_vn), vns))
     if isempty(matching_vns)
-        throw(KeyError(prefixed))
+        # No matches found; but maybe we need to strip off some optics from the tail of
+        # Prefixed. For example, if the user tries to access `Prefixed(@varname(x.b[1]))`,
+        # and we have `@varname(a.x)` in the chain, then we should still return the data
+        # corresponding to `@varname(a.x.b[1])` (if it exists).
+        target_vn_optic = AbstractPPL.getoptic(target_vn)
+        if target_vn_optic == AbstractPPL.Iden()
+            # Nothing left to strip
+            throw(KeyError(original_prefixed))
+        else
+            init_optic = AbstractPPL.oinit(target_vn_optic)
+            new_optic = Base.cat(AbstractPPL.olast(target_vn_optic), optic)
+            new_target_vn = VarName{AbstractPPL.getsym(target_vn)}(init_optic)
+            return prefixed_get_key_and_optic(vns, new_target_vn, new_optic, original_prefixed)
+        end
     elseif length(matching_vns) > 1
-        throw(ArgumentError("Multiple matches found for $(prefixed): ($(join(matching_vns, ", ")))"))
+        throw(ArgumentError("Multiple matches found for $(original_prefixed): ($(join(matching_vns, ", ")))"))
     else
-        return only(matching_vns)
+        return only(matching_vns), optic
     end
 end
 
@@ -190,8 +200,13 @@ See [`Prefixed`](@ref) for details.
 function Base.getindex(
         fchain::FlexiChain{<:VarName}, prefixed::Prefixed; iter = Colon(), chain = Colon()
     )
-    vn = get_vn_matching_prefixed(Set(FlexiChains.parameters(fchain)), prefixed)
-    return Base.getindex(fchain, Parameter(vn); iter = iter, chain = chain)
+    vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fchain)), prefixed.target_vn, AbstractPPL.Iden(), prefixed)
+    # We could use get_raw_data here, but we don't need to since we already calculated the
+    # split between vn and optic (get_raw_data would just recalculate it).
+    combined_vn = VarName{AbstractPPL.getsym(vn)}(Base.cat(AbstractPPL.getoptic(vn), optic))
+    raw = fchain._data[Parameter(vn)]
+    raw_with_optic = _map_optic(optic, raw, prefixed)[iter = iter, chain = chain]
+    return _raw_to_user_data(fchain, raw_with_optic; name = string(Parameter(combined_vn)))
 end
 """
     Base.getindex(
@@ -212,8 +227,12 @@ function Base.getindex(
         chain = _UNSPECIFIED_KWARG,
         stat = _UNSPECIFIED_KWARG,
     )
-    vn = get_vn_matching_prefixed(Set(FlexiChains.parameters(fs)), prefixed.target_vn)
-    return Base.getindex(fs, Parameter(vn); iter = iter, chain = chain, stat = stat)
+    relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
+    vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fs)), prefixed.target_vn, AbstractPPL.Iden(), prefixed)
+    raw = fs._data[Parameter(vn)]
+    combined_vn = VarName{AbstractPPL.getsym(vn)}(Base.cat(AbstractPPL.getoptic(vn), optic))
+    user_data = _raw_to_user_data(fs, _map_optic(optic, raw, prefixed); name = string(Parameter(combined_vn)))
+    return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
 """
