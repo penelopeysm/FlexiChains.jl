@@ -284,7 +284,7 @@ using Random: Xoshiro
             @testset "with ambiguity" begin
                 # What happens if you have multiple keys that convert to the same Symbol?
                 struct TurnsToA end
-                Symbol(::TurnsToA) = :a
+                Base.Symbol(::TurnsToA) = :a
 
                 N_iters = 10
                 dicts = fill(Dict(Parameter(TurnsToA()) => 1, Extra("a") => 3.0), N_iters)
