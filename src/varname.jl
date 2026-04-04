@@ -206,7 +206,7 @@ function Base.getindex(
     vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fchain)), prefixed)
     # We could use get_raw_data here, but we don't need to since we already calculated the
     # split between vn and optic (get_raw_data would just recalculate it).
-    combined_vn = VarName{AbstractPPL.getsym(vn)}(Base.cat(AbstractPPL.getoptic(vn), optic))
+    combined_vn = AbstractPPL.append_optic(vn, optic)
     raw = fchain._data[Parameter(vn)]
     raw_with_optic = _map_optic(optic, raw, prefixed)
     return _raw_to_user_data(fchain, raw_with_optic; name = string(Parameter(combined_vn)))[iter = iter, chain = chain]
@@ -233,7 +233,7 @@ function Base.getindex(
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fs)), prefixed)
     raw = fs._data[Parameter(vn)]
-    combined_vn = VarName{AbstractPPL.getsym(vn)}(Base.cat(AbstractPPL.getoptic(vn), optic))
+    combined_vn = AbstractPPL.append_optic(vn, optic)
     user_data = _raw_to_user_data(fs, _map_optic(optic, raw, prefixed); name = string(Parameter(combined_vn)))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
