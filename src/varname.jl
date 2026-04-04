@@ -162,7 +162,7 @@ function shares_tail(vn::VarName, target_vn::VarName)
     end
     return false
 end
-function prefixed_get_key_and_optic(
+function _prefixed_get_key_and_optic(
         vns::Set{<:VarName}, target_vn::VarName, optic::AbstractPPL.AbstractOptic, original_prefixed::Prefixed
     )
     matching_vns = collect(filter(vn -> shares_tail(vn, target_vn), vns))
@@ -179,13 +179,16 @@ function prefixed_get_key_and_optic(
             init_optic = AbstractPPL.oinit(target_vn_optic)
             new_optic = Base.cat(AbstractPPL.olast(target_vn_optic), optic)
             new_target_vn = VarName{AbstractPPL.getsym(target_vn)}(init_optic)
-            return prefixed_get_key_and_optic(vns, new_target_vn, new_optic, original_prefixed)
+            return _prefixed_get_key_and_optic(vns, new_target_vn, new_optic, original_prefixed)
         end
     elseif length(matching_vns) > 1
         throw(ArgumentError("Multiple matches found for $(original_prefixed): ($(join(matching_vns, ", ")))"))
     else
         return only(matching_vns), optic
     end
+end
+function prefixed_get_key_and_optic(vns::Set{<:VarName}, prefixed::Prefixed)
+    return _prefixed_get_key_and_optic(vns, prefixed.target_vn, AbstractPPL.Iden(), prefixed)
 end
 
 """
@@ -200,13 +203,13 @@ See [`Prefixed`](@ref) for details.
 function Base.getindex(
         fchain::FlexiChain{<:VarName}, prefixed::Prefixed; iter = Colon(), chain = Colon()
     )
-    vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fchain)), prefixed.target_vn, AbstractPPL.Iden(), prefixed)
+    vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fchain)), prefixed)
     # We could use get_raw_data here, but we don't need to since we already calculated the
     # split between vn and optic (get_raw_data would just recalculate it).
     combined_vn = VarName{AbstractPPL.getsym(vn)}(Base.cat(AbstractPPL.getoptic(vn), optic))
     raw = fchain._data[Parameter(vn)]
-    raw_with_optic = _map_optic(optic, raw, prefixed)[iter = iter, chain = chain]
-    return _raw_to_user_data(fchain, raw_with_optic; name = string(Parameter(combined_vn)))
+    raw_with_optic = _map_optic(optic, raw, prefixed)
+    return _raw_to_user_data(fchain, raw_with_optic; name = string(Parameter(combined_vn)))[iter = iter, chain = chain]
 end
 """
     Base.getindex(
@@ -228,7 +231,7 @@ function Base.getindex(
         stat = _UNSPECIFIED_KWARG,
     )
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fs)), prefixed.target_vn, AbstractPPL.Iden(), prefixed)
+    vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fs)), prefixed)
     raw = fs._data[Parameter(vn)]
     combined_vn = VarName{AbstractPPL.getsym(vn)}(Base.cat(AbstractPPL.getoptic(vn), optic))
     user_data = _raw_to_user_data(fs, _map_optic(optic, raw, prefixed); name = string(Parameter(combined_vn)))
