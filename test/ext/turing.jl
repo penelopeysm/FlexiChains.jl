@@ -802,7 +802,11 @@ end
             end
             st = FlexiChains.sampling_time(fc)
             @test length(st) == nc
+            # Sometimes this fails on CI. Not sure why; add some logging to check
             @test all(t -> t > 0, st)
+            if !all(t -> t > 0, st)
+                @info "Sampling times: $st"
+            end
         end
 
         @testset "sampler state is preserved" begin
