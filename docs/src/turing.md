@@ -106,32 +106,6 @@ You can also use selectors from DimensionalData.jl to specify which iterations o
 chain[@varname(mu), iter=Not(At(7)), chain=At(1)]
 ```
 
-Finally, if you want to access a variable that has been prefixed (e.g. because it is part of a submodel) but you don't want to specify the full prefix, you can use [`Prefixed`](@ref):
-
-```@example pfx
-using Turing
-using FlexiChains: Prefixed, VNChain
-
-@model inner() = x ~ MvNormal(zeros(2), I)
-
-@model function outer()
-    a ~ to_submodel(inner())
-    return nothing
-end
-
-pfx_chain = sample(outer(), MH(), 5; chain_type=VNChain)
-
-# Inside the chain, the actual key is `@varname(a.x)`;
-# this will pick out that key.
-pfx_chain[Prefixed(@varname(x))]
-```
-
-Sub-VarNames are also supported:
-
-```@example pfx
-pfx_chain[Prefixed(@varname(x[1]))]
-```
-
 The indexing behaviour of FlexiChains is described fully on [the Indexing page](./indexing.md).
 
 ### Other keys
@@ -173,6 +147,34 @@ Likewise, we can omit wrapping `:logjoint` in `Extra(...)`:
 
 ```@example 1
 chain[:logjoint] # other key
+```
+
+### Prefix-agnostic indexing
+
+If you want to access a variable that has been prefixed (e.g. because it is part of a submodel) but you don't want to specify the full prefix, you can use [`Prefixed`](@ref):
+
+```@example pfx
+using Turing
+using FlexiChains: Prefixed, VNChain
+
+@model inner() = x ~ MvNormal(zeros(2), I)
+
+@model function outer()
+    a ~ to_submodel(inner())
+    return nothing
+end
+
+pfx_chain = sample(outer(), MH(), 5; chain_type=VNChain)
+
+# Inside the chain, the actual key is `@varname(a.x)`;
+# this will pick out that key.
+pfx_chain[Prefixed(@varname(x))]
+```
+
+Sub-VarNames are also supported:
+
+```@example pfx
+pfx_chain[Prefixed(@varname(x[1]))]
 ```
 
 ## Summary statistics
