@@ -1,6 +1,6 @@
 # 0.4.5
 
-Adds (and exports) `FlexiChains.Prefixed` as a quick way to access `VarName`s that have an arbitrary prefix.
+Adds `FlexiChains.Prefixed` as a quick way to access `VarName`s that have an arbitrary prefix.
 
 # 0.4.4
 

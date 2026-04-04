@@ -151,7 +151,7 @@ chain[:logjoint] # other key
 
 ### Prefix-agnostic indexing
 
-If you want to access a variable that has been prefixed (e.g. because it is part of a submodel) but you don't want to specify the full prefix, you can use [`Prefixed`](@ref):
+If you want to access a variable that has been prefixed (e.g. because it is part of a submodel) but you don't want to specify the full prefix, you can use [`FlexiChains.Prefixed`](@ref):
 
 ```@example pfx
 using Turing
