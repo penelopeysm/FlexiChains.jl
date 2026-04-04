@@ -93,30 +93,6 @@ That is, if your model has `x ~ dist`, FlexiChains will let you access some fiel
     
     If some samples of `x` have one element and others have two elements, attempting to access `x[2]` will return an array with `missing` values for the samples where `x` only has one element.
 
-!!! note "Sub-variables"
-    
-    You can access _sub-variables_ of a model parameter, but not the other way around. If your model looks like
-    
-    ```julia
-    @model function f()
-        x[1] ~ dist
-        return x[2] ~ dist
-    end
-    ```
-    
-    or alternatively
-    
-    ```julia
-    @model function f()
-        x = Vector{Float64}(undef, 2)
-        # `.~` is essentially `x[i] ~ dist for i in eachindex(x)`
-        return x .~ dist
-    end
-    ```
-    
-    FlexiChains cannot 'reconstruct' `x` from its component elements, because `x` does not exist as a single parameter in the model.
-    You can still call `chain[@varname(x[1])]` and `chain[@varname(x[2])]` and then perform `hcat` or similar to put them together yourself.
-
 You can also use keyword arguments when indexing to specify which chains or iterations you are interested in.
 Note that when using square brackets to index, keyword arguments must be separated from positional arguments by a comma, not a semicolon!
 
@@ -171,6 +147,34 @@ Likewise, we can omit wrapping `:logjoint` in `Extra(...)`:
 
 ```@example 1
 chain[:logjoint] # other key
+```
+
+### Prefix-agnostic indexing
+
+If you want to access a variable that has been prefixed (e.g. because it is part of a submodel) but you don't want to specify the full prefix, you can use [`FlexiChains.Prefixed`](@ref):
+
+```@example pfx
+using Turing
+using FlexiChains: Prefixed, VNChain
+
+@model inner() = x ~ MvNormal(zeros(2), I)
+
+@model function outer()
+    a ~ to_submodel(inner())
+    return nothing
+end
+
+pfx_chain = sample(outer(), MH(), 5; chain_type=VNChain)
+
+# Inside the chain, the actual key is `@varname(a.x)`;
+# this will pick out that key.
+pfx_chain[Prefixed(@varname(x))]
+```
+
+Sub-VarNames are also supported:
+
+```@example pfx
+pfx_chain[Prefixed(@varname(x[1]))]
 ```
 
 ## Summary statistics

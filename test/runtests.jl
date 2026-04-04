@@ -5,6 +5,7 @@ using Test: @testset
     include("chain.jl")
     include("summaries.jl")
     include("interface.jl")
+    include("varname.jl")
     include("ext/turing.jl")
     include("ext/posteriordb.jl")
     include("ext/dimdist.jl")

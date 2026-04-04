@@ -283,12 +283,15 @@ using Random: Xoshiro
 
             @testset "with ambiguity" begin
                 # What happens if you have multiple keys that convert to the same Symbol?
+                struct TurnsToA end
+                Base.Symbol(::TurnsToA) = :a
+
                 N_iters = 10
-                dicts = fill(Dict(Parameter(@varname(a)) => 1, Extra("a") => 3.0), N_iters)
-                chain = FlexiChain{VarName}(N_iters, 1, dicts)
+                dicts = fill(Dict(Parameter(TurnsToA()) => 1, Extra("a") => 3.0), N_iters)
+                chain = FlexiChain{TurnsToA}(N_iters, 1, dicts)
 
                 # getindex with the full key should be fine
-                @test chain[Parameter(@varname(a))] == fill(1, N_iters, 1)
+                @test chain[Parameter(TurnsToA())] == fill(1, N_iters, 1)
                 @test chain[Extra("a")] == fill(3.0, N_iters, 1)
                 # but getindex with the symbol should fail
                 @test_throws KeyError chain[:a]
@@ -335,73 +338,6 @@ using Random: Xoshiro
                 @test c[Extra("hello")] == reshape(hellos, N_iters, 1)
                 @test !haskey(c, Parameter("b"))
                 @test_throws KeyError c[Parameter("b")]
-            end
-        end
-
-        @testset "VarName" begin
-            N_iters = 10
-            d = Dict(
-                Parameter(@varname(a)) => 1.0,
-                Parameter(@varname(b)) => [2.0, 3.0],
-                Parameter(@varname(c)) => (x = 4.0, y = 5.0),
-            )
-            chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
-
-            @testset "ordinary VarName" begin
-                @test chain[@varname(a)] == fill(1.0, N_iters, 1)
-                @test chain[@varname(b)] == fill([2.0, 3.0], N_iters, 1)
-                @test chain[@varname(c)] == fill((x = 4.0, y = 5.0), N_iters, 1)
-                @test_throws KeyError chain[@varname(d)]
-                @test chain[@varname(b[1])] == fill(2.0, N_iters, 1)
-                @test chain[@varname(b[2])] == fill(3.0, N_iters, 1)
-                @test_throws KeyError chain[@varname(b[3])]
-                @test chain[@varname(c.x)] == fill(4.0, N_iters, 1)
-                @test chain[@varname(c.y)] == fill(5.0, N_iters, 1)
-                @test_throws KeyError chain[@varname(c.z)]
-            end
-
-            @testset "using Symbol" begin
-                @test chain[:a] == fill(1.0, N_iters, 1)
-                @test chain[:b] == fill([2.0, 3.0], N_iters, 1)
-                @test chain[:c] == fill((x = 4.0, y = 5.0), N_iters, 1)
-                @test_throws KeyError chain[:d]
-                # If you want to do fancy sub-indexing you had better use VarNames
-                @test_throws KeyError chain[Symbol("b[1]")]
-            end
-
-            @testset "multiple keys" begin
-                cs = chain[[@varname(a), @varname(b[1]), @varname(c.x)]]
-                @test cs isa FlexiChain{VarName}
-            end
-
-            @testset "ragged data e.g. vectors of different lengths" begin
-                # The first sample of `a` has `a[1]` only, but the second has
-                # both `a[1]` and `a[2]`
-                d = Dict(Parameter(@varname(a)) => [[1.0], [2.0, 3.0]])
-                chn = FlexiChain{VarName}(2, 1, d; iter_indices = [6, 7])
-                @test chn[@varname(a)] == reshape([[1.0], [2.0, 3.0]], 2, 1)
-                @test chn[@varname(a[1])] == reshape([1.0, 2.0], 2, 1)
-                # when indexing into `a[2]` we should get a `missing` for the first sample
-                @test isequal(chn[@varname(a[2])], reshape([missing, 3.0], 2, 1))
-                # and if we try to get `a[3]` we should get an error
-                @test_throws KeyError chn[@varname(a[3])]
-
-                # For good measure we'll throw in some iter subsetting too
-                @test chn[@varname(a), iter = 2] == [[2.0, 3.0]]
-                @test chn[@varname(a[1]), iter = 2] == [2.0]
-                @test isequal(chn[@varname(a[2]), iter = 1], [missing])
-                @test chn[@varname(a[2]), iter = 2] == [3.0]
-                @test_throws KeyError chn[@varname(a[3]), iter = 2]
-                @test chn[@varname(a), iter = DD.At(7)] == [[2.0, 3.0]]
-                @test chn[@varname(a[1]), iter = DD.At(7)] == [2.0]
-                @test isequal(chn[@varname(a[2]), iter = 1], [missing])
-                @test chn[@varname(a[2]), iter = DD.At(7)] == [3.0]
-                @test_throws KeyError chn[@varname(a[3]), iter = DD.At(7)]
-                # and chain
-                @test chn[@varname(a), chain = 1] == [[1.0], [2.0, 3.0]]
-                @test chn[@varname(a[1]), chain = 1] == [1.0, 2.0]
-                @test isequal(chn[@varname(a[2]), chain = 1], [missing, 3.0])
-                @test_throws KeyError chn[@varname(a[3]), chain = 1]
             end
         end
 
@@ -506,7 +442,7 @@ using Random: Xoshiro
                 )
             end
 
-            @testset "VarName" begin
+            @testset "chains with abstract type parameter" begin
                 # This doesn't really test `VarName` per se, it's more about testing an
                 # abstract type parameter, as this used to error
                 cvn = FlexiChain{VarName}(
@@ -992,29 +928,6 @@ using Random: Xoshiro
             @test isequal(AbstractMCMC.chainscat(chain1, chain2, chain3), chain123)
             @test isequal(AbstractMCMC.chainsstack([chain1, chain2, chain3]), chain123)
         end
-    end
-
-    @testset "split_varnames" begin
-        N_iters = 10
-        # use OrderedDict so that we can also test order
-        d = OrderedDict(
-            Parameter(@varname(a)) => 1.0,
-            Parameter(@varname(c)) => (x = 4.0, y = 5.0),
-            Parameter(@varname(b)) => [2.0, 3.0],
-            Extra("hello") => 3.0,
-        )
-        chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
-        chain2 = FlexiChains._split_varnames(chain)
-        @test collect(keys(chain2)) == (
-            [
-                Parameter(@varname(a)),
-                Parameter(@varname(c.x)),
-                Parameter(@varname(c.y)),
-                Parameter(@varname(b[1])),
-                Parameter(@varname(b[2])),
-                Extra("hello"),
-            ]
-        )
     end
 
     @testset "map_keys" begin

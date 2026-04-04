@@ -64,6 +64,7 @@ FlexiChains.renumber_chains
 FlexiChains.Parameter
 FlexiChains.Extra
 FlexiChains.ParameterOrExtra
+FlexiChains.Prefixed
 ```
 
 ## Accessing key-value pairs
