@@ -1,3 +1,7 @@
+# 0.4.5
+
+Adds (and exports) `FlexiChains.Prefixed` as a quick way to access `VarName`s that have an arbitrary prefix.
+
 # 0.4.4
 
 Added a new method `FlexiChain{Symbol}(::MCMCChains.Chains)` to convert a `MCMCChains.Chains` object into a `FlexiChain{Symbol}`.
