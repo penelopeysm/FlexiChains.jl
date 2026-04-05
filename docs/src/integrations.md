@@ -50,7 +50,7 @@ FlexiChains.to_vnt_and_stats(::T) = (VarNamedTuple(hello=1.0), (;world=2.0))
 sample(M(), S(), 10; chain_type=FlexiChain{VarName})
 ```
 
-## AdvancedHMC.jl
+## [AdvancedHMC.jl](@id integrations-advancedhmc)
 
 [Documentation for AdvancedHMC.jl](@extref AdvancedHMC :doc:`index`)
 
@@ -87,12 +87,11 @@ Besides, each entry in `chn[:params]` is stored as a `DimVector`, so when you ac
 
 !!! note
     DimensionalDistributions.jl is not yet registered in the Julia package registry; at present you will need to install it from GitHub using `]add https://github.com/sethaxen/DimensionalDistributions.jl`.
-    Furthermore, it is not yet compatible with the latest release of DynamicPPL; hence the code blocks here have been disabled.
 
 In the quickstart guide we saw that FlexiChains, by default, stores vector-valued parameters together.
 For example, `chn[@varname(x)]` here returns a `DimArray` of `Vector`s:
 
-```julia
+```@example dimdist
 using FlexiChains, Turing
 
 @model f() = x ~ MvNormal(zeros(3), I)
@@ -104,7 +103,7 @@ chn[@varname(x)]
 One might like to stack these vectors together, such that `chn[@varname(x)]` returns a three-dimensional `DimArray` instead.
 You can do this manually, for example:
 
-```julia
+```@example dimdist
 using DimensionalData
 school_dim = Dim{:school}([:a, :b, :c])
 permutedims(stack(map(v -> DimVector(v, school_dim), chn[@varname(x)])), (2, 3, 1))
@@ -115,7 +114,7 @@ Unfortunately, there is not much that FlexiChains can do because `MvNormal()` it
 
 But, if you can use the `withdims` wrapper from DimensionalDistributions.jl, you will get a distribution that returns `DimVector`s:
 
-```julia
+```@example dimdist
 using DimensionalDistributions
 dim_mvnormal = withdims(MvNormal(zeros(3), I), school_dim)
 rand(dim_mvnormal)
@@ -123,17 +122,20 @@ rand(dim_mvnormal)
 
 And if you use this in a Turing model, then this information will be carried through all the way to FlexiChains, and indexing into this parameter will automatically give you a stacked `DimArray`:
 
-```julia
+```@example dimdist
 @model f2() = x ~ dim_mvnormal
 chn2 = sample(f2(), MH(), MCMCThreads(), 5, 2; chain_type=VNChain, progress=false)
 chn2[@varname(x)]
 ```
 
-Sub-VarName indexing also works, although you can't use DimensionalData selectors inside a VarName, so only one-based indexing:
+Sub-VarName indexing also works.
 
-```julia
+```@example dimdist
 chn2[@varname(x[1])]
 ```
+
+In principle, you should be able to even use DimensionalData selectors in the VarName, e.g. `chn2[@varname(x[At(:b)])]`; however, support for this is slightly flaky due to incomplete implementations of `Base.checkbounds` for DimensionalData (which is not something that FlexiChains can control).
+If you try this and find that something doesn't work, please do feel free to open an issue and we can help to upstream it.
 
 ## PosteriorDB.jl
 
@@ -212,3 +214,34 @@ Note two things:
    
    Foo([1]) == Foo([1])
    ```
+
+## Stan
+
+FlexiChains has a function to read in chains stored in Stan CSV format:
+
+```@docs
+FlexiChains.from_stan_csv
+```
+
+This of course assumes that you already have the CSV files on disk somewhere, e.g. if you have run Stan externally.
+
+If you are using [StanSample.jl](https://github.com/StanJulia/StanSample.jl) you can also read data directly from a `SampleModel` once you have sampled with it.
+
+!!! note
+    This code block is not run, as running it would necessitate setting up CmdStan on GitHub runners.
+
+```julia
+using StanSample, FlexiChains
+
+sm = SampleModel(...)
+# Note: this mutates `sm` -- StanSample has a rather unconventional interface
+stan_sample(sm; data) 
+
+# The key type has to be `Symbol`.
+chn = FlexiChain{Symbol}(sm)
+```
+
+If you are using [BridgeStan.jl](https://roualdes.us/bridgestan/latest/languages/julia.html) and/or [StanLogDensityProblems.jl](https://sethaxen.github.io/StanLogDensityProblems.jl/stable/) plus a native Julia sampler, you should check whether there is an integration for the sampler in question.
+For example if you use AdvancedHMC.jl then you can pass the `chain_type=FlexiChain{Symbol}` keyword argument (see [above](@ref integrations-advancedhmc)).
+
+(If the sampler in question does *not* have an integration with FlexiChains, please feel free to open an issue!)

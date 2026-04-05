@@ -1,3 +1,7 @@
+# 0.4.8
+
+Adds a new function `FlexiChains.from_stan_csv` to parse Stan CSV files, plus a method `FlexiChain{Symbol}(::StanSample.SampleModel)` to convert from a `SampleModel` to `FlexiChain` (if sampling has already been run on the `SampleModel`).
+
 # 0.4.7
 
 Allow conversion of any `FlexiChain{T}` to `MCMCChains.Chains`, as long as `Symbol(::T)` is defined.

@@ -38,6 +38,7 @@ include("interface/samples.jl")
 include("interface/rand.jl")
 include("varname.jl")
 include("conversions.jl")
+include("stancsv.jl")
 
 # These denote the 'special' keys that we use for Turing.jl return values
 const _LOGJOINT_KEY = Extra(:logjoint)

@@ -1,0 +1,67 @@
+# stan_version_major = 2
+# stan_version_minor = 38
+# stan_version_patch = 0
+# model = eight_schools_centred_model
+# start_datetime = 2026-04-05 21:20:23 UTC
+# method = sample (Default)
+#   sample
+#     num_samples = 20
+#     num_warmup = 10
+#     save_warmup = false (Default)
+#     thin = 2
+#     adapt
+#       engaged = true (Default)
+#       gamma = 0.05 (Default)
+#       delta = 0.8 (Default)
+#       kappa = 0.75 (Default)
+#       t0 = 10 (Default)
+#       init_buffer = 75 (Default)
+#       term_buffer = 50 (Default)
+#       window = 25 (Default)
+#       save_metric = false (Default)
+#     algorithm = hmc (Default)
+#       hmc
+#         engine = nuts (Default)
+#           nuts
+#             max_depth = 10 (Default)
+#         metric = diag_e (Default)
+#         metric_file =  (Default)
+#         stepsize = 1 (Default)
+#         stepsize_jitter = 0 (Default)
+#     num_chains = 1 (Default)
+# id = 4
+# data
+#   file = /var/folders/14/_tpwlcxs6hn1mb1q_j_pfhym0000gt/T/tmptcxkv2tg/jwxcnnp7.json
+# init = 2 (Default)
+# random
+#   seed = 37589
+# output
+#   file = /Users/pyong/ppl/fc/test/stan/eight_schools_centred-20260405222023_4.csv
+#   diagnostic_file =  (Default)
+#   refresh = 100 (Default)
+#   sig_figs = 8 (Default)
+#   profile_file = profile.csv (Default)
+#   save_cmdstan_config = false (Default)
+# num_threads = 1 (Default)
+# stanc_version = stanc3 v2.38.0
+# stancflags = --filename-in-msg=eight_schools_centred.stan
+lp__,accept_stat__,stepsize__,treedepth__,n_leapfrog__,divergent__,energy__,theta.1,theta.2,theta.3,theta.4,theta.5,theta.6,theta.7,theta.8,mu,tau,muplus1
+# Adaptation terminated
+# Step size = 0.196937
+# Diagonal elements of inverse mass matrix:
+# 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+-11.96911,0.99883752,0.19693673,5,63,0,17.659538,1.4236349,1.4450137,1.1402022,3.4668634,-0.65847192,3.1754513,2.8363075,5.4354554,2.5822049,2.590085,3.5822049
+-15.316365,0.97890517,0.19693673,6,63,0,20.115782,2.5703121,6.0083707,8.4080788,1.7171754,0.0046926709,5.4303449,6.3491874,7.5130467,3.3718718,2.7398824,4.3718718
+-14.664312,0.99951002,0.19693673,6,63,0,18.130303,3.2348862,6.6845101,7.6813549,3.0795464,0.408073,8.5921619,5.7365394,7.4495037,4.3427043,3.0550947,5.3427043
+-13.732599,0.97259314,0.19693673,6,63,0,17.837268,7.2202656,3.584768,6.6501386,5.4227611,7.7426975,6.5029182,10.206095,3.1955536,7.4078966,2.7509399,8.4078966
+-13.930267,1,0.19693673,6,63,0,18.46361,6.5896177,7.8405013,6.7983088,7.0595408,3.7342113,6.0850157,9.0369872,1.8840613,4.2807416,3.0019551,5.2807416
+-18.662814,0.92954058,0.19693673,6,63,0,23.222031,7.724,10.541055,15.662971,11.899675,12.186131,9.0718655,12.424154,13.546276,8.5949376,4.3304999,9.5949376
+-14.878852,0.98847963,0.19693673,7,127,0,24.304874,4.5114319,0.054841981,7.4155998,6.1362348,3.5834742,0.39487763,6.7751625,2.1973713,2.5327029,2.667254,3.5327029
+-21.808533,0.98417633,0.19693673,7,135,0,24.214458,11.505194,10.69328,6.543195,8.2350456,7.0183823,6.3841324,19.253245,-0.27950718,9.1803767,9.5621717,10.180377
+-23.598078,0.60205657,0.19693673,6,127,0,32.966311,8.1348057,13.351664,0.065687112,-3.7697062,-1.8643591,0.95619583,14.229644,-9.6627825,3.703834,11.837866,4.703834
+-20.829613,0.999197,0.19693673,7,127,0,31.964452,12.001761,6.3854811,0.75739291,4.0268697,15.820062,11.775591,13.609971,12.377358,6.9847757,5.0417577,7.9847757
+# 
+#  Elapsed Time: 0 seconds (Warm-up)
+#                0.002 seconds (Sampling)
+#                0.002 seconds (Total)
+# 

@@ -5,6 +5,7 @@ Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Chairmarks = "0ca39b1e-fe0b-4e98-acfc-b1656634c4de"
 DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
+DimensionalDistributions = "2d8b4b49-4cda-4573-8194-25db521b04c9"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 DocumenterInterLinks = "d12716ef-a0f6-4df4-a9f1-a5a34e75c656"
@@ -43,3 +44,7 @@ Statistics = "1"
 StatsBase = "0.34"
 StatsPlots = "0.15"
 Turing = "0.43"
+
+[sources]
+DimensionalDistributions = {url = "https://github.com/sethaxen/DimensionalDistributions.jl"}
+
