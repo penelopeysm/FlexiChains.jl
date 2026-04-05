@@ -18,7 +18,6 @@ As a concrete example, let's use the following setup:
 using FlexiChains: FlexiChains, FlexiChain
 using AbstractMCMC
 
-using AbstractMCMC
 struct M <: AbstractMCMC.AbstractModel end
 struct S <: AbstractMCMC.AbstractSampler end
 struct T end
