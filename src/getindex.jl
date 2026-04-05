@@ -175,6 +175,14 @@ function Base.getindex(
     k = _extract_potential_symbol_key(TKey, keys(fchain), sym_key)
     return fchain[k, iter = iter, chain = chain]
 end
+# Have to repeat for TKey = Symbol, otherwise the method for getindex(::FlexiChain{T}, ::T)
+# is considered more specific.
+function Base.getindex(
+        fchain::FlexiChain{Symbol}, sym_key::Symbol; iter = Colon(), chain = Colon()
+    )
+    k = _extract_potential_symbol_key(Symbol, keys(fchain), sym_key)
+    return fchain[k, iter = iter, chain = chain]
+end
 """
     Base.getindex(
         fs::FlexiSummary{TKey},
@@ -198,6 +206,19 @@ function Base.getindex(
         stat = _UNSPECIFIED_KWARG,
     ) where {TKey}
     k = _extract_potential_symbol_key(TKey, keys(fs), sym_key)
+    relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name = string(k))
+    return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
+end
+# Have to repeat for TKey = Symbol, as above
+function Base.getindex(
+        fs::FlexiSummary{Symbol},
+        sym_key::Symbol;
+        iter = _UNSPECIFIED_KWARG,
+        chain = _UNSPECIFIED_KWARG,
+        stat = _UNSPECIFIED_KWARG,
+    )
+    k = _extract_potential_symbol_key(Symbol, keys(fs), sym_key)
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name = string(k))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)

@@ -298,6 +298,23 @@ using Random: Xoshiro
                 # ... with the correct error message
                 @test_throws "multiple keys" chain[:a]
             end
+
+            @testset "on a chain with TKey=Symbol" begin
+                niters, nchains = 10, 3
+                d = Dict(
+                    Parameter(:a) => zeros(niters, nchains),
+                    Parameter(:c) => zeros(niters, nchains),
+                    Extra(:b) => zeros(niters, nchains),
+                    Extra(:c) => zeros(niters, nchains)
+                )
+                chain = FlexiChain{Symbol}(niters, nchains, d)
+                # Check that the unambiguous ones can be accessed (both parameter and extra
+                # -- on old versions of FlexiChains, parameters would work but not extras,
+                # due to Julia's rules on method dispatch).
+                @test all(iszero, chain[:a])
+                @test all(iszero, chain[:b])
+                @test_throws "multiple keys" chain[:c]
+            end
         end
 
         @testset "multiple keys: Colon and AbstractVector" begin
