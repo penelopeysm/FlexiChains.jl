@@ -44,3 +44,7 @@ Statistics = "1"
 StatsBase = "0.34"
 StatsPlots = "0.15"
 Turing = "0.43"
+
+[sources]
+DimensionalDistributions = {url = "https://github.com/sethaxen/DimensionalDistributions.jl"}
+
