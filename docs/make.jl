@@ -66,4 +66,5 @@ if isnothing(old_GKSwstype)
     delete!(ENV, "GKSwstype")
 else
     ENV["GKSwstype"] = old_GKSwstype
-end;
+end
+nothing
