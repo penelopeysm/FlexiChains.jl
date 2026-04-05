@@ -4,6 +4,7 @@ using Turing
 using DimensionalData: DimArray, Dim
 using FlexiChains: FlexiChain, VNChain, Parameter, Extra
 using AbstractMCMC
+using Random: Xoshiro
 using Test
 
 @testset "FlexiChainsMCMCChainsExt" begin
@@ -70,6 +71,9 @@ using Test
         @test size(chn[:params]) == (niters, nchains, nparams)
 
         mc = MCMCChains.Chains(chn)
+        for i in 1:nparams
+            @test Symbol("params[$i]") in keys(mc)
+        end
         # MCMCChains is niters x nparams x nchains
         @test permutedims(mc.value.data, (1, 3, 2)) == chn[:params]
     end
