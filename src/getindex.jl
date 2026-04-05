@@ -175,6 +175,14 @@ function Base.getindex(
     k = _extract_potential_symbol_key(TKey, keys(fchain), sym_key)
     return fchain[k, iter = iter, chain = chain]
 end
+# Have to repeat for TKey = Symbol, otherwise the method for getindex(::FlexiChain{T}, ::T)
+# is considered more specific.
+function Base.getindex(
+        fchain::FlexiChain{Symbol}, sym_key::Symbol; iter = Colon(), chain = Colon()
+    )
+    k = _extract_potential_symbol_key(Symbol, keys(fchain), sym_key)
+    return fchain[k, iter = iter, chain = chain]
+end
 """
     Base.getindex(
         fs::FlexiSummary{TKey},
@@ -202,6 +210,19 @@ function Base.getindex(
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name = string(k))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
+# Have to repeat for TKey = Symbol, as above
+function Base.getindex(
+        fs::FlexiSummary{Symbol},
+        sym_key::Symbol;
+        iter = _UNSPECIFIED_KWARG,
+        chain = _UNSPECIFIED_KWARG,
+        stat = _UNSPECIFIED_KWARG,
+    )
+    k = _extract_potential_symbol_key(Symbol, keys(fs), sym_key)
+    relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name = string(k))
+    return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
+end
 
 ####################
 ### By parameter ###
@@ -218,12 +239,6 @@ Convenience method for retrieving parameters. Equal to `chain[Parameter(paramete
 function Base.getindex(
         fchain::FlexiChain{TKey}, parameter_name::TKey; iter = Colon(), chain = Colon()
     ) where {TKey}
-    return fchain[Parameter(parameter_name), iter = iter, chain = chain]
-end
-function Base.getindex(
-        fchain::FlexiChain{Symbol}, parameter_name::Symbol; iter = Colon(), chain = Colon()
-    )
-    # Explicitly specify the behaviour for TKey==Symbol so that it doesn't direct to the Symbol method above.
     return fchain[Parameter(parameter_name), iter = iter, chain = chain]
 end
 """
@@ -246,18 +261,6 @@ function Base.getindex(
         chain = _UNSPECIFIED_KWARG,
         stat = _UNSPECIFIED_KWARG,
     ) where {TKey}
-    relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)); name = string(Parameter(parameter_name)))
-    return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
-end
-function Base.getindex(
-        fs::FlexiSummary{Symbol},
-        parameter_name::Symbol;
-        iter = _UNSPECIFIED_KWARG,
-        chain = _UNSPECIFIED_KWARG,
-        stat = _UNSPECIFIED_KWARG,
-    )
-    # Explicitly specify the behaviour for TKey==Symbol so that it doesn't direct to the Symbol method above.
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)); name = string(Parameter(parameter_name)))
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
