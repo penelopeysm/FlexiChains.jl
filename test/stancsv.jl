@@ -5,7 +5,7 @@ using DimensionalData: DimensionalData as DD
 using Test
 
 # Test fixture. See test/stan/README.md for details
-const STAN_BASE = joinpath(@__DIR__, "stan", "eight_schools_centred-20260405212610")
+const STAN_BASE = joinpath(@__DIR__, "stan", "eight_schools_centred")
 const STAN_CSV_PATHS = ["$(STAN_BASE)_$(i).csv" for i in 1:4]
 
 @testset verbose = true "from_stan_csv" begin
@@ -18,7 +18,8 @@ const STAN_CSV_PATHS = ["$(STAN_BASE)_$(i).csv" for i in 1:4]
 
         # Check parameters (theta.1, ..., theta.8, mu, tau)
         params = Set(FlexiChains.parameters(chn))
-        @test length(params) == 10
+        @test length(params) == 11
+        @test :muplus1 in params # generated quantity
         @test :mu in params
         @test :tau in params
         for i in 1:8

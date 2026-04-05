@@ -10,15 +10,28 @@ DATA = {
     "J": 8,
 }
 
+DIRNAME = Path(__file__).parent
+
+MODEL_NAME = "eight_schools_centred"
 
 def main():
-    stan_file = Path(__file__).parent / "eight_schools_centred.stan"
+    # Delete all old CSV files
+    for f in DIRNAME.glob("*.csv"):
+        f.unlink()
+    # Sample a new one
+    stan_file = DIRNAME / f"{MODEL_NAME}.stan"
     model = CmdStanModel(stan_file=stan_file)
-    x = time.time()
     fit = model.sample(data=DATA, chains=4, iter_warmup=10, save_warmup=False,
                        iter_sampling=20, thin=1,
-                       output_dir=Path(__file__).parent)
-
+                       output_dir=DIRNAME)
+    # Rename the existing ones
+    for f in DIRNAME.glob("*.csv"):
+        chain_number_dot_csv = f.name.split("_")[-1]
+        new_name = f"{MODEL_NAME}_{chain_number_dot_csv}"
+        f.rename(f.parent / new_name)
+    # Clean up logs
+    for f in DIRNAME.glob("*.txt"):
+        f.unlink()
 
 if __name__ == "__main__":
     main()

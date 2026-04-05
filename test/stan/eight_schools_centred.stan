@@ -14,3 +14,6 @@ model {
   y ~ normal(theta, sigma);
   mu ~ normal(0, 5);
 }
+generated quantities {
+  real muplus1 = mu + 1;
+}
