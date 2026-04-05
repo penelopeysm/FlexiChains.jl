@@ -1,20 +1,43 @@
 using DelimitedFiles: readdlm
 
 """
-    FlexiChains.from_stan_csv(base_path::String, num_chains::Int)
+    FlexiChains.from_stan_csv(base_path::AbstractString, num_chains::Integer)
 
-TODO
+Reads the Stan CSV files from `{base_path}_1.csv` through to `{base_path}_{num_chains}.csv`.
+This is a convenience method that recognises the fact that Stan tends to save its outputs
+in this format.
+
+!!! note
+    You do not need to provide the underscore before the chain number in the filename! That
+    is, if your files are `example_1.csv` etc., then `base_path` should just be `"example"`.
 """
-function from_stan_csv(base_path::String, num_chains::Int)
+function from_stan_csv(base_path::AbstractString, num_chains::Integer)
     if num_chains <= 0
-        throw(ArgumentError("num_chains must be more than 1"))
+        throw(ArgumentError("num_chains must be at least 1"))
     end
+    csv_paths = ["$(base_path)_$(i).csv" for i in 1:num_chains]
+    return from_stan_csv(csv_paths)
+end
+
+"""
+    FlexiChains.from_stan_csv(csv_paths::AbstractVector{<:AbstractString})
+
+Parse a set of Stan CSV files at the given paths.
+
+These files must correspond to a set of compatible chains, i.e., their parameter names,
+lengths (i.e., number of iterations), and other data should be consistent. This will be the
+case if they were all drawn from the same call to Stan's sampling. However, note that
+FlexiChains does only a rudimentary set of checks to ensure consistency: the user should be
+responsible for ensuring that the CSVs read in are valid.
+"""
+function from_stan_csv(csv_paths::AbstractVector{<:AbstractString})
+    isempty(csv_paths) && throw(ArgumentError("no CSV paths provided"))
 
     # Parse sampling settings from the first CSV. This is pretty ugly, but well, it doesn't
     # have to be pretty.
-    first_csv_path = "$(base_path)_chain_1.csv"
+    first_csv_path = first(csv_paths)
     if !isfile(first_csv_path)
-        throw(ArgumentError("expected CSV file for chain 1 not found at path: $first_csv_path. Have you run the sampling process?"))
+        throw(ArgumentError("could not find Stan CSV file for chain 1 at path: $first_csv_path"))
     end
     nsamples = nothing
     thin = nothing
@@ -49,14 +72,24 @@ function from_stan_csv(base_path::String, num_chains::Int)
     # Read chains from CSV files into Dict(Symbol => Vector{Float64})
     header = nothing
     data = []
-    for i in 1:num_chains
-        csv_path = "$(base_path)_chain_$i.csv"
+    for (i, csv_path) in enumerate(csv_paths)
         if !isfile(csv_path)
-            throw(ArgumentError("expected CSV file for chain $i not found at path: $csv_path. Have you run the sampling process?"))
+            throw(ArgumentError("could not find Stan CSV file for chain $i at path: $csv_path"))
         end
-        # data_i is niters x nparams
-        data_i, header = readdlm(csv_path, ','; header = true, comments = true)
-        push!(data, data_i)
+        data_i, header_i = readdlm(csv_path, ','; header = true, comments = true)
+        # data_i should be niters x nparams
+        if i == 1
+            push!(data, data_i)
+            header = header_i
+        else
+            if size(data_i) != size(data[1])
+                throw(ArgumentError("data from chain $i (file: $csv_path) has size $(size(data_i)), which does not match $(size(data[1])) in chain 1 (file: $(csv_paths[1]))"))
+            end
+            if header != header_i
+                throw(ArgumentError("column names from chain $i (file: $csv_path) are not consistent with chain 1 (file: $(csv_paths[1]))"))
+            end
+            push!(data, data_i)
+        end
     end
     data = stack(data) # niters x nparams x nchains
 
@@ -69,5 +102,5 @@ function from_stan_csv(base_path::String, num_chains::Int)
             data_dict[Parameter(Symbol(colname))] = data[:, i, :]
         end
     end
-    return FlexiChain{Symbol}(niters, num_chains, data_dict; iter_indices = iter_indices)
+    return FlexiChain{Symbol}(niters, length(csv_paths), data_dict; iter_indices = iter_indices)
 end

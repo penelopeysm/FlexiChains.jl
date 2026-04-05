@@ -21,7 +21,7 @@ function FlexiChains.FlexiChain{Symbol}(sm::SampleModel)
     if sm.thin > 1
         @info "Note that StanSample.jl does not pass the `thin` argument to CmdStan, so the saved Stan CSV file and the resulting FlexiChain will contain all iterations. If you want to thin the chain, you can do so by indexing, using e.g. `chn[iter=At(1001:4:2000)]`."
     end
-    return FlexiChains.from_stan_csv(sm.output_base, sm.num_chains)
+    return FlexiChains.from_stan_csv(sm.output_base * "_chain", sm.num_chains)
 end
 
 end # module
