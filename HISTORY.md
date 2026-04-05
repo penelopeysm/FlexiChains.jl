@@ -1,3 +1,11 @@
+# 0.4.6
+
+Adds a new function, `FlexiChains.to_nt_and_stats`, which samplers can overload in order to automatically bundle samples into `FlexiChain{Symbol}`.
+
+Also implements the above for AdvancedHMC.jl, meaning that you can define a model that satisfies the LogDensityProblems interface, sample from it with AdvancedHMC, and collect the results in a `FlexiChain{Symbol}`.
+
+See the [integration docs page](https://pysm.dev/FlexiChains.jl/stable/integrations) for more info.
+
 # 0.4.5
 
 Adds `FlexiChains.Prefixed` as a quick way to access `VarName`s that have an arbitrary prefix.

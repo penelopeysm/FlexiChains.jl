@@ -3,6 +3,84 @@
 FlexiChains is most obviously tied to the Turing.jl ecosystem, as described on the previous pages.
 However, it also contains some useful links to other packages (listed here in alphabetical order).
 
+## (Your custom sampler here...!)
+
+If you have written a sampler that conforms to the AbstractMCMC interface, then you can get 'free' support for bundling into a `FlexiChain{VarName}` and a `FlexiChain{Symbol}` respectively by overloading these functions:
+
+```@docs
+FlexiChains.to_vnt_and_stats
+FlexiChains.to_nt_and_stats
+```
+
+As a concrete example, let's use the following setup:
+
+```@example sampler
+using FlexiChains: FlexiChains, FlexiChain
+using AbstractMCMC
+
+struct M <: AbstractMCMC.AbstractModel end
+struct S <: AbstractMCMC.AbstractSampler end
+struct T end
+function AbstractMCMC.step(rng, ::M, ::S, state=nothing; kwargs...)
+    T(), nothing
+end
+```
+
+Here `T` represents what AbstractMCMC calls a 'transition': it is the first return value of `AbstractMCMC.step`.
+Of course, in practice, your transition will carry more information than this.
+
+Now suppose you want to sample with this and obtain a `FlexiChain{Symbol}`.
+As the docstrings above allude to, you will want to overload `to_nt_and_stats`:
+
+```@example sampler
+FlexiChains.to_nt_and_stats(::T) = ((;hello=1.0), (;world=2.0))
+```
+
+Then you can do
+
+```@example sampler
+sample(M(), S(), 10; chain_type=FlexiChain{Symbol})
+```
+
+Likewise for `VarNamedTuple` (although in this case, you should think carefully about whether you *really* need `VarNamedTuple`: if your sampler transition does not carry enough information to justify the richer data type, then it would probably be more meaningful to stick to `NamedTuple` and `FlexiChain{Symbol}`).
+
+```@example sampler
+using DynamicPPL: VarNamedTuple, VarName
+FlexiChains.to_vnt_and_stats(::T) = (VarNamedTuple(hello=1.0), (;world=2.0))
+sample(M(), S(), 10; chain_type=FlexiChain{VarName})
+```
+
+## AdvancedHMC.jl
+
+[Documentation for AdvancedHMC.jl](@extref AdvancedHMC :doc:`index`)
+
+[`FlexiChains.to_nt_and_stats`](@ref) is overloaded for `AdvancedHMC.Transition`, so you can sample with AdvancedHMC into a `FlexiChain{Symbol}`.
+This is a slightly simplified version of the example in the AdvancedHMC README (here we use an analytical gradient rather than automatic differentiation):
+
+```@example advancedhmc
+using AdvancedHMC, AbstractMCMC
+using LogDensityProblems
+using FlexiChains: FlexiChain
+
+# Set up AD-aware log-density function
+struct LogTargetDensity
+    dim::Int
+end
+LogDensityProblems.logdensity(::LogTargetDensity, θ) = -sum(abs2, θ) / 2
+LogDensityProblems.logdensity_and_gradient(::LogTargetDensity, θ) = (-sum(abs2, θ) / 2, -θ)
+LogDensityProblems.dimension(p::LogTargetDensity) = p.dim
+function LogDensityProblems.capabilities(::Type{LogTargetDensity})
+    return LogDensityProblems.LogDensityOrder{1}()
+end
+
+chn = AbstractMCMC.sample(
+    LogTargetDensity(10), AdvancedHMC.NUTS(0.8), 20;
+    n_adapts=10, chain_type=FlexiChain{Symbol},
+)
+```
+
+Besides, each entry in `chn[:params]` is stored as a `DimVector`, so when you access the full set of entries you will get a stacked 3-D `DimArray` of `(iters x chains x parameters)` (see below for more information about the stacking).
+
 ## DimensionalDistributions.jl
 
 [Documentation for DimensionalDistributions.jl](https://github.com/sethaxen/DimensionalDistributions.jl)
