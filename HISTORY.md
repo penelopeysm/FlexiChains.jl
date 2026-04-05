@@ -1,3 +1,8 @@
+# 0.4.7
+
+Allow conversion of any `FlexiChain{T}` to `MCMCChains.Chains`, as long as `Symbol(::T)` is defined.
+Previously this conversion only worked for `T <: VarName`.
+
 # 0.4.6
 
 Adds a new function, `FlexiChains.to_nt_and_stats`, which samplers can overload in order to automatically bundle samples into `FlexiChain{Symbol}`.
