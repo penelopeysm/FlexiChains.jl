@@ -9,4 +9,4 @@ function FlexiChains.to_nt_and_stats(t::AdvancedHMC.Transition)
     return (; params = da), t.stat
 end
 
-end # module FlexiChainsTuringExt
+end # module FlexiChainsAdvancedHMCExt

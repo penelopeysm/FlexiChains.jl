@@ -79,7 +79,7 @@ chn = AbstractMCMC.sample(
 )
 ```
 
-Besides, `chn[:params]` is stored as a `DimVector`, so when you access it you will get a 3-D `DimArray` of `(iters x chains x parameters)` (see below).
+Besides, each entry in `chn[:params]` is stored as a `DimVector`, so when you access the full set of entries you will get a stacked 3-D `DimArray` of `(iters x chains x parameters)` (see below for more information about the stacking).
 
 ## DimensionalDistributions.jl
 
