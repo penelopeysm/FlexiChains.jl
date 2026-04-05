@@ -2,10 +2,12 @@ module FlexiChainsMCMCChainsExtTests
 
 using Turing
 using DimensionalData: DimArray, Dim
-using FlexiChains: FlexiChain, VNChain, Parameter, Extra
+using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra, ParameterOrExtra
 using AbstractMCMC
 using Random: Xoshiro
 using Test
+
+Turing.setprogress!(false)
 
 @testset "FlexiChainsMCMCChainsExt" begin
     @testset "FlexiChain{VarName} -> MCMCChains" begin
@@ -64,18 +66,22 @@ using Test
         # all the other fields.
         niters, nchains, nparams = 10, 3, 5
         rand_da() = DimArray(rand(nparams), Dim{:param}(1:nparams))
-        dict_of_arrays = Dict{Parameter{Symbol}, Matrix}(
-            Parameter(:params) => [rand_da() for _ in 1:niters, _ in 1:nchains]
+        dict_of_arrays = Dict{ParameterOrExtra{Symbol}, Matrix}(
+            Parameter(:params) => [rand_da() for _ in 1:niters, _ in 1:nchains],
+            Extra(:lp) => rand(niters, nchains)
         )
         chn = FlexiChain{Symbol}(niters, nchains, dict_of_arrays)
         @test size(chn[:params]) == (niters, nchains, nparams)
 
         mc = MCMCChains.Chains(chn)
+        mc_params = MCMCChains.get_sections(mc, :parameters)
+        @test :lp in keys(mc)
         for i in 1:nparams
-            @test Symbol("params[$i]") in keys(mc)
+            @test Symbol("params[$i]") in keys(mc_params)
         end
         # MCMCChains is niters x nparams x nchains
-        @test permutedims(mc.value.data, (1, 3, 2)) == chn[:params]
+        @test permutedims(mc_params.value.data, (1, 3, 2)) == chn[:params]
+        @test mc[:lp] == chn[:lp]
     end
 
     @testset "MCMCChains -> FlexiChain{Symbol}" begin
