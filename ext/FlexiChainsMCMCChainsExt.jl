@@ -96,28 +96,31 @@ end
 ############################
 
 """
-    MCMCChains.Chains(chain::FlexiChain{<:VarName})
+    MCMCChains.Chains(chain::FlexiChain)
 
-Convert a `FlexiChain{<:VarName}` to an `MCMCChains.Chains` object.
+Convert a `FlexiChain` to an `MCMCChains.Chains` object.
 
-Array-valued VarNames are split up into their individual real-valued elements, much like the
-output that you get directly from sampling with Turing + MCMCChains.
+Array-valued parameters are split up into their individual real-valued elements, much like
+the output that you get directly from sampling with Turing + MCMCChains.
 """
-function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
-    ni, nc = size(vnchain)
+function MCMCChains.Chains(fchain::FlexiChain{T}) where {T}
+    ni, nc = size(fchain)
     array_of_dicts = [
-        FlexiChains.parameters_at(vnchain; iter = i, chain = j) for i in 1:ni, j in 1:nc
+        FlexiChains.parameters_at(fchain; iter = i, chain = j) for i in 1:ni, j in 1:nc
     ]
-    # Construct array of parameter names and array of values.
-    # Most of this functionality is copied from _params_to_array in
-    # Turing's src/mcmc/Inference.jl.
+    # Construct array of parameter names and array of values. NOTE: Regardless of the type
+    # of `T`, we will always promote to `VarName` here because that allows us to keep track
+    # of sub-parameters correctly.
     names_set = OrderedSet{VarName}()
     # Extract the parameter names and values from each transition.
     split_dicts = map(array_of_dicts) do d
         nms_and_vs = if isempty(d)
             Tuple{VarName, Any}[]
         else
-            iters = map(AbstractPPL.varname_and_value_leaves, Base.keys(d), Base.values(d))
+            # Force conversion of keys to VarNames, so that we can split them up with
+            # varname_and_value_leaves.
+            keys_as_vns = map(_to_varname, collect(Base.keys(d)))
+            iters = map(AbstractPPL.varname_and_value_leaves, keys_as_vns, Base.values(d))
             mapreduce(collect, vcat, iters)
         end
         nms = map(first, nms_and_vs)
@@ -132,13 +135,15 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
     values = [
         get(split_dicts[i, j], key, missing) for i in 1:ni, key in varnames, j in 1:nc
     ]
+    # Once we're done processing the VarNames, we convert them back to Symbols because
+    # that's what will fit into MCMCChains.
     varname_symbols = map(Symbol, varnames)
 
     # Handle non-parameter keys
     internal_keys = Symbol[]
     internal_values = Array{Real, 3}(undef, ni, 0, nc)
-    for k in FlexiChains.extras(vnchain)
-        v = map(identity, vnchain[k])
+    for k in FlexiChains.extras(fchain)
+        v = map(identity, fchain[k])
         if eltype(v) <: Real
             push!(internal_keys, Symbol(k.name))
             internal_values = hcat(internal_values, reshape(v, ni, 1, nc))
@@ -154,12 +159,17 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
     # https://github.com/TuringLang/Turing.jl/issues/2666 for details.
     all_values = MCMCChains.concretize(all_values)
 
-    info = (varname_to_symbol = OrderedDict(zip(varnames, varname_symbols)),)
+    # Bundle Symbol -> VarName Dict if necessary (this is a Turing compatibility shim)
+    info = if T <: VarName
+        (varname_to_symbol = OrderedDict(zip(varnames, varname_symbols)),)
+    else
+        (;)
+    end
 
     # Preserve sampling time as start_time/stop_time if available.
     # MCMCChains stores these as absolute timestamps. FlexiChains only stores durations, so
     # we use 0-based start times...
-    st = FlexiChains.sampling_time(vnchain)
+    st = FlexiChains.sampling_time(fchain)
     if !all(ismissing, st)
         starts = zeros(Float64, nc)
         stops = Float64.(coalesce.(st, 0.0))
@@ -172,7 +182,7 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
     end
 
     # Preserve last sampler state if available.
-    lss = FlexiChains.last_sampler_state(vnchain)
+    lss = FlexiChains.last_sampler_state(fchain)
     if !all(ismissing, lss)
         info = merge(info, (; MCSamplerStateKey => collect(lss)))
     end
@@ -184,8 +194,11 @@ function MCMCChains.Chains(vnchain::FlexiChain{<:VarName})
         # Note that Turing.jl stores all other keys in the 'internals' section.
         (; internals = internal_keys);
         info = info,
-        iterations = FlexiChains.iter_indices(vnchain),
+        iterations = parent(FlexiChains.iter_indices(fchain)),
     )
 end
+
+_to_varname(vn::VarName) = vn
+_to_varname(t) = VarName{Symbol(t)}()
 
 end # module
