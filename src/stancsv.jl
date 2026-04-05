@@ -79,6 +79,7 @@ function from_stan_csv(csv_paths::AbstractVector{<:AbstractString})
     # Read chains from CSV files into Dict(Symbol => Vector{Float64})
     header = nothing
     data = []
+    sampling_times = Union{Float64, Missing}[]
     for (i, csv_path) in enumerate(csv_paths)
         if !isfile(csv_path)
             throw(ArgumentError("could not find Stan CSV file for chain $i at path: $csv_path"))
@@ -97,6 +98,8 @@ function from_stan_csv(csv_paths::AbstractVector{<:AbstractString})
             end
             push!(data, data_i)
         end
+        # Parse sampling time from footer comments
+        push!(sampling_times, _parse_stan_sampling_time(csv_path))
     end
     data = stack(data) # niters x nparams x nchains
 
@@ -109,5 +112,16 @@ function from_stan_csv(csv_paths::AbstractVector{<:AbstractString})
             data_dict[Parameter(Symbol(colname))] = data[:, i, :]
         end
     end
-    return FlexiChain{Symbol}(niters, length(csv_paths), data_dict; iter_indices = iter_indices)
+    return FlexiChain{Symbol}(
+        niters, length(csv_paths), data_dict;
+        iter_indices = iter_indices, sampling_time = sampling_times,
+    )
+end
+
+function _parse_stan_sampling_time(csv_path::AbstractString)
+    for line in Iterators.reverse(eachline(csv_path))
+        m = match(r"([\d.]+)\s*seconds\s*\(Total\)", line)
+        m !== nothing && return parse(Float64, m.captures[1])
+    end
+    return missing
 end

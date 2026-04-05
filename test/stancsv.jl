@@ -39,6 +39,12 @@ const STAN_CSV_PATHS = ["$(STAN_BASE)_$(i).csv" for i in 1:4]
         # Check iteration indices (save_warmup=false, thin=2, num_warmup=10, num_samples=20)
         @test parent(FlexiChains.iter_indices(chn)) == 11:2:30
         @test parent(FlexiChains.chain_indices(chn)) == 1:4
+
+        # Check sampling time is preserved (total elapsed time per chain)
+        st = FlexiChains.sampling_time(chn)
+        @test length(st) == 4
+        @test !any(ismissing, st)
+        @test all(t -> t >= 0, st)
     end
 
     @testset "with base_path" begin
