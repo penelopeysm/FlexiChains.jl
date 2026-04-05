@@ -50,6 +50,37 @@ FlexiChains.to_vnt_and_stats(::T) = (VarNamedTuple(hello=1.0), (;world=2.0))
 sample(M(), S(), 10; chain_type=FlexiChain{VarName})
 ```
 
+## AdvancedHMC.jl
+
+[Documentation for AdvancedHMC.jl](@extref AdvancedHMC :doc:`index`)
+
+[`FlexiChains.to_nt_and_stats`](@ref) is overloaded for `AdvancedHMC.Transition`, so you can sample with AdvancedHMC into a `FlexiChain{Symbol}`.
+This is a slightly simplified version of the example in the AdvancedHMC README (here we use an analytical gradient rather than automatic differentiation):
+
+```@example advancedhmc
+using AdvancedHMC, AbstractMCMC
+using LogDensityProblems
+using FlexiChains: FlexiChain
+
+# Set up AD-aware log-density function
+struct LogTargetDensity
+    dim::Int
+end
+LogDensityProblems.logdensity(::LogTargetDensity, θ) = -sum(abs2, θ) / 2
+LogDensityProblems.logdensity_and_gradient(::LogTargetDensity, θ) = (-sum(abs2, θ) / 2, -θ)
+LogDensityProblems.dimension(p::LogTargetDensity) = p.dim
+function LogDensityProblems.capabilities(::Type{LogTargetDensity})
+    return LogDensityProblems.LogDensityOrder{1}()
+end
+
+chn = AbstractMCMC.sample(
+    LogTargetDensity(10), AdvancedHMC.NUTS(0.8), 20;
+    n_adapts=10, chain_type=FlexiChain{Symbol},
+)
+```
+
+Besides, `chn[:params]` is stored as a `DimVector`, so when you access it you will get a 3-D `DimArray` of `(iters x chains x parameters)` (see below).
+
 ## DimensionalDistributions.jl
 
 [Documentation for DimensionalDistributions.jl](https://github.com/sethaxen/DimensionalDistributions.jl)

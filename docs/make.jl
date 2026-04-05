@@ -14,6 +14,7 @@ using MCMCChains: MCMCChains
 using Turing: Turing
 
 links = InterLinks(
+    "AdvancedHMC" => "https://turinglang.org/AdvancedHMC.jl/stable/",
     "DimensionalData" => "https://rafaqz.github.io/DimensionalData.jl/stable/",
     "DynamicPPL" => "https://turinglang.org/DynamicPPL.jl/stable/",
     "MCMCDiagnosticTools" => "https://turinglang.org/MCMCDiagnosticTools.jl/stable/",
