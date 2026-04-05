@@ -37,7 +37,6 @@ include("interface/mergesubset.jl")
 include("interface/samples.jl")
 include("interface/rand.jl")
 include("varname.jl")
-include("conversions.jl")
 
 # These denote the 'special' keys that we use for Turing.jl return values
 const _LOGJOINT_KEY = Extra(:logjoint)
@@ -48,6 +47,25 @@ struct PointwiseProb{T <: VarName}
     varname::T
 end
 Base.show(io::IO, p::PointwiseProb) = print(io, "PointwiseProb(@varname($(p.varname)))")
+
+# Overloaded in DynamicPPLExt for DynamicPPL.ParamsWithStats
+"""
+    to_vnt_and_stats(transition)::Tuple{VarNamedTuple,NamedTuple}
+
+Convert the _first output_ (i.e. the 'transition') of an AbstractMCMC sampler into a
+`VarNamedTuple` mapping parameter names to their values, plus a `NamedTuple` of any
+additional statistics.
+
+The `VarNamedTuple` will be converted into `Parameter` keys, and the `NamedTuple` into
+`Extra` keys.
+
+If you are writing a custom sampler for Turing.jl and your sampler's implementation of
+`AbstractMCMC.step` returns anything _but_ a `DynamicPPL.ParamsWithStats` or
+`DynamicPPL.VarNamedTuple` as its first return value, then to use FlexiChains with your
+sampler, you will have to overload this function.
+"""
+function to_vnt_and_stats end
+@public to_vnt_and_stats
 
 # Extended in PosteriorDB extension (but not exported)
 function from_posteriordb_ref end
