@@ -1,11 +1,13 @@
 using DelimitedFiles: readdlm
 
 """
-    FlexiChains.from_stan_csv(base_path::AbstractString, num_chains::Integer)
+    FlexiChains.from_stan_csv(
+        base_path::AbstractString, num_chains::Integer
+    )::FlexiChain{Symbol}
 
 Reads the Stan CSV files from `{base_path}_1.csv` through to `{base_path}_{num_chains}.csv`.
-This is a convenience method that recognises the fact that Stan tends to save its outputs
-in this format.
+This is a convenience method that recognises the fact that CmdStan saves its outputs in this
+format.
 
 !!! note
     You do not need to provide the underscore before the chain number in the filename! That
@@ -20,7 +22,9 @@ function from_stan_csv(base_path::AbstractString, num_chains::Integer)
 end
 
 """
-    FlexiChains.from_stan_csv(csv_paths::AbstractVector{<:AbstractString})
+    FlexiChains.from_stan_csv(
+        csv_paths::AbstractVector{<:AbstractString}
+    )::FlexiChain{Symbol}
 
 Parse a set of Stan CSV files at the given paths.
 
@@ -29,6 +33,9 @@ lengths (i.e., number of iterations), and other data should be consistent. This 
 case if they were all drawn from the same call to Stan's sampling. However, note that
 FlexiChains does only a rudimentary set of checks to ensure consistency: the user should be
 responsible for ensuring that the CSVs read in are valid.
+
+Columns that end in double-underscores (`__`) are treated as `Extra`s (the underscores will
+be stripped), and all other columns as `Parameter`s.
 """
 function from_stan_csv(csv_paths::AbstractVector{<:AbstractString})
     isempty(csv_paths) && throw(ArgumentError("no CSV paths provided"))

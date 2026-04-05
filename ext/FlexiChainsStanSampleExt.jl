@@ -3,10 +3,6 @@ module FlexiChainsStanSampleExt
 using FlexiChains: FlexiChains, FlexiChain
 using StanSample: SampleModel
 
-###############################
-# Conversion from SampleModel #
-###############################
-
 """
     FlexiChain{Symbol}(sm::StanSample.SampleModel; thin=true)
 
