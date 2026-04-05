@@ -14,7 +14,7 @@ const STAN_CSV_PATHS = ["$(STAN_BASE)_$(i).csv" for i in 1:4]
     @testset "with Vector{String}" begin
         chn = FlexiChains.from_stan_csv(STAN_CSV_PATHS)
         @test chn isa FlexiChain{Symbol}
-        @test size(chn) == (20, 4)
+        @test size(chn) == (10, 4)
 
         # Check parameters (theta.1, ..., theta.8, mu, tau)
         params = Set(FlexiChains.parameters(chn))
@@ -36,20 +36,20 @@ const STAN_CSV_PATHS = ["$(STAN_BASE)_$(i).csv" for i in 1:4]
         @test Extra(:divergent) in exts
         @test Extra(:energy) in exts
 
-        # Check iteration indices (save_warmup=false, thin=1, num_warmup=10, num_samples=20)
-        @test parent(FlexiChains.iter_indices(chn)) == 11:1:30
+        # Check iteration indices (save_warmup=false, thin=2, num_warmup=10, num_samples=20)
+        @test parent(FlexiChains.iter_indices(chn)) == 11:2:30
         @test parent(FlexiChains.chain_indices(chn)) == 1:4
     end
 
     @testset "with base_path" begin
         chn = FlexiChains.from_stan_csv(STAN_BASE, 4)
         @test chn isa FlexiChain{Symbol}
-        @test size(chn) == (20, 4)
+        @test size(chn) == (10, 4)
     end
 
     @testset "with subset of chains" begin
         chn = FlexiChains.from_stan_csv(STAN_CSV_PATHS[1:2])
-        @test size(chn) == (20, 2)
+        @test size(chn) == (10, 2)
     end
 
     @testset "error handling" begin

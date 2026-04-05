@@ -22,7 +22,7 @@ def main():
     stan_file = DIRNAME / f"{MODEL_NAME}.stan"
     model = CmdStanModel(stan_file=stan_file)
     fit = model.sample(data=DATA, chains=4, iter_warmup=10, save_warmup=False,
-                       iter_sampling=20, thin=1,
+                       iter_sampling=20, thin=2,
                        output_dir=DIRNAME)
     # Rename the existing ones
     for f in DIRNAME.glob("*.csv"):

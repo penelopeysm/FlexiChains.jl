@@ -67,7 +67,6 @@ function from_stan_csv(csv_paths::AbstractVector{<:AbstractString})
         throw(ArgumentError("failed to parse sampling settings from CSV metadata comments; please check the CSV file at $first_csv_path and ensure it contains the expected metadata comments for num_samples, thin, save_warmup, and num_warmup"))
     end
 
-    niters = save_warmup ? nsamples + nwarmup : nsamples
     iter_indices = if save_warmup
         warmup_iters = 1:nwarmup
         sample_iters = range(nwarmup + 1, step = thin, stop = nwarmup + nsamples)
@@ -75,6 +74,7 @@ function from_stan_csv(csv_paths::AbstractVector{<:AbstractString})
     else
         range(nwarmup + 1, step = thin, stop = nwarmup + nsamples)
     end
+    niters = length(iter_indices)
 
     # Read chains from CSV files into Dict(Symbol => Vector{Float64})
     header = nothing

@@ -4,7 +4,7 @@ using FlexiChains: FlexiChains, FlexiChain
 using StanSample: SampleModel
 
 """
-    FlexiChain{Symbol}(sm::StanSample.SampleModel; thin=true)
+    FlexiChain{Symbol}(sm::StanSample.SampleModel)
 
 Convert a `StanSample.SampleModel` object to a `FlexiChain{Symbol}`.
 
