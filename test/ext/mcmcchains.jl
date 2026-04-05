@@ -1,7 +1,10 @@
 module FlexiChainsMCMCChainsExtTests
 
 using Turing
-using FlexiChains
+using DimensionalData: DimArray, Dim
+using FlexiChains: FlexiChain, VNChain, Parameter, Extra
+using AbstractMCMC
+using Test
 
 @testset "FlexiChainsMCMCChainsExt" begin
     @testset "FlexiChain{VarName} -> MCMCChains" begin
@@ -53,6 +56,22 @@ using FlexiChains
             @test mc_with_state.info.samplerstate ==
                 FlexiChains.last_sampler_state(flexic_with_state)
         end
+    end
+
+    @testset "FlexiChain{Symbol} -> MCMCChains" begin
+        # Mostly to test that it works; the VarName test above is responsible for checking
+        # all the other fields.
+        niters, nchains, nparams = 10, 3, 5
+        rand_da() = DimArray(rand(nparams), Dim{:param}(1:nparams))
+        dict_of_arrays = Dict{Parameter{Symbol}, Matrix}(
+            Parameter(:params) => [rand_da() for _ in 1:niters, _ in 1:nchains]
+        )
+        chn = FlexiChain{Symbol}(niters, nchains, dict_of_arrays)
+        @test size(chn[:params]) == (niters, nchains, nparams)
+
+        mc = MCMCChains.Chains(chn)
+        # MCMCChains is niters x nparams x nchains
+        @test permutedims(mc.value.data, (1, 3, 2)) == chn[:params]
     end
 
     @testset "MCMCChains -> FlexiChain{Symbol}" begin
