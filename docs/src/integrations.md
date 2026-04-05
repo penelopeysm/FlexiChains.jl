@@ -128,11 +128,14 @@ chn2 = sample(f2(), MH(), MCMCThreads(), 5, 2; chain_type=VNChain, progress=fals
 chn2[@varname(x)]
 ```
 
-Sub-VarName indexing also works, although you can't use DimensionalData selectors inside a VarName, so only one-based indexing:
+Sub-VarName indexing also works.
 
 ```@example dimdist
 chn2[@varname(x[1])]
 ```
+
+In principle, you should be able to even use DimensionalData selectors in the VarName, e.g. `chn2[@varname(x[At(:b)])]`; however, support for this is slightly flaky due to incomplete implementations of `Base.checkbounds` for DimensionalData (which is not something that FlexiChains can control).
+If you try this and find that something doesn't work, please do feel free to open an issue and we can help to upstream it.
 
 ## PosteriorDB.jl
 
