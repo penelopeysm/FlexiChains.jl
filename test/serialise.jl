@@ -1,0 +1,76 @@
+module FCSerialiseTests
+
+using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra, summarystats
+using JLD2: jldsave, load
+using Serialization: serialize, deserialize
+using Test
+using Turing
+
+Turing.setprogress!(false)
+
+@testset verbose = true "serialise.jl" begin
+    @info "Testing serialise.jl"
+
+    d = Dict(Parameter(:a) => 1, Parameter(:b) => [2.0, 3.0], Extra(:lp) => -1.5)
+    chain = FlexiChain{Symbol}(10, 2, fill(d, 10, 2))
+
+    @testset "Serialization.jl" begin
+        @testset "FlexiChain" begin
+            fname = Base.Filesystem.tempname()
+            serialize(fname, chain)
+            chain2 = deserialize(fname)
+            @test isequal(chain, chain2)
+            @test collect(keys(chain)) == collect(keys(chain2))
+        end
+
+        @testset "FlexiSummary" begin
+            fs = summarystats(chain)
+            fname = Base.Filesystem.tempname()
+            serialize(fname, fs)
+            fs2 = deserialize(fname)
+            @test isequal(fs, fs2)
+            @test collect(keys(fs)) == collect(keys(fs2))
+        end
+
+        @testset "VNChain" begin
+            @model function demomodel(x)
+                m ~ Normal(0, 1.0)
+                x ~ Normal(m, 1.0)
+                return nothing
+            end
+            model = demomodel(1.5)
+            chn = sample(
+                model, NUTS(), MCMCSerial(), 100, 3; chain_type = VNChain, verbose = false
+            )
+            fname = Base.Filesystem.tempname()
+            serialize(fname, chn)
+            chn2 = deserialize(fname)
+            @test isequal(chn, chn2)
+            # also test ordering of keys, since isequal doesn't check that
+            @test collect(keys(chn)) == collect(keys(chn2))
+            # note that we can't test isequal(chn1, chn2) with save_state=true because the
+            # states don't compare equal :( that would need to be fixed upstream in Turing
+        end
+    end
+
+    @testset "JLD2.jl" begin
+        @testset "FlexiChain" begin
+            fname = Base.Filesystem.tempname() * ".jld2"
+            jldsave(fname; chain)
+            chain2 = load(fname, "chain")
+            @test isequal(chain, chain2)
+            @test collect(keys(chain)) == collect(keys(chain2))
+        end
+
+        @testset "FlexiSummary" begin
+            fs = summarystats(chain)
+            fname = Base.Filesystem.tempname() * ".jld2"
+            jldsave(fname; fs)
+            fs2 = load(fname, "fs")
+            @test isequal(fs, fs2)
+            @test collect(keys(fs)) == collect(keys(fs2))
+        end
+    end
+end
+
+end

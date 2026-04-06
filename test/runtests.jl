@@ -9,6 +9,7 @@ using Test: @testset
     include("ext/advancedhmc.jl")
     include("ext/mcmcchains.jl")
     include("ext/turing.jl")
+    include("serialise.jl")
     include("stancsv.jl")
     include("ext/posteriordb.jl")
     include("ext/dimdist.jl")
