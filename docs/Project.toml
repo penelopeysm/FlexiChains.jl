@@ -26,6 +26,7 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [compat]
 AbstractMCMC = "5.14"
+AdvancedHMC = "0.8.3"
 Bijectors = "0.15"
 CairoMakie = "0.15"
 Chairmarks = "1"
@@ -35,6 +36,7 @@ Documenter = "1"
 DocumenterInterLinks = "1"
 DynamicPPL = "0.40"
 FlexiChains = "0.4"
+LogDensityProblems = "2.2.0"
 MCMCChains = "7"
 MCMCDiagnosticTools = "0.3"
 PDMats = "0.11"
@@ -44,7 +46,6 @@ Statistics = "1"
 StatsBase = "0.34"
 StatsPlots = "0.15"
 Turing = "0.43"
-
 [sources]
 DimensionalDistributions = {url = "https://github.com/sethaxen/DimensionalDistributions.jl"}
 
