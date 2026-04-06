@@ -1,12 +1,19 @@
 module FCSerialiseTests
 
-using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra, summarystats
+using FlexiChains: FlexiChains, FlexiChain, FlexiSummary, VNChain, Parameter, Extra, summarystats
 using JLD2: jldsave, load
 using Serialization: serialize, deserialize
 using Test
 using Turing
 
 Turing.setprogress!(false)
+
+function test_isequal_and_same_keys(cs1::Union{FlexiChain, FlexiSummary}, cs2::Union{FlexiChain, FlexiSummary})
+    @test isequal(cs1, cs2)
+    # Check that ordering of keys is the same, because isequal() on FlexiChain/FlexiSummary
+    # doesn't check that (because OrderedDict equality doesn't check order).
+    return @test collect(keys(cs1)) == collect(keys(cs2))
+end
 
 @testset verbose = true "serialise.jl" begin
     @info "Testing serialise.jl"
@@ -19,8 +26,7 @@ Turing.setprogress!(false)
             fname = Base.Filesystem.tempname()
             serialize(fname, chain)
             chain2 = deserialize(fname)
-            @test isequal(chain, chain2)
-            @test collect(keys(chain)) == collect(keys(chain2))
+            test_isequal_and_same_keys(chain, chain2)
         end
 
         @testset "FlexiSummary" begin
@@ -28,8 +34,7 @@ Turing.setprogress!(false)
             fname = Base.Filesystem.tempname()
             serialize(fname, fs)
             fs2 = deserialize(fname)
-            @test isequal(fs, fs2)
-            @test collect(keys(fs)) == collect(keys(fs2))
+            test_isequal_and_same_keys(fs, fs2)
         end
 
         @testset "VNChain" begin
@@ -39,17 +44,15 @@ Turing.setprogress!(false)
                 return nothing
             end
             model = demomodel(1.5)
+            # Note that we can't test for equality with save_state=true because the states
+            # don't compare equal :( That would need to be fixed upstream in Turing.
             chn = sample(
                 model, NUTS(), MCMCSerial(), 100, 3; chain_type = VNChain, verbose = false
             )
             fname = Base.Filesystem.tempname()
             serialize(fname, chn)
             chn2 = deserialize(fname)
-            @test isequal(chn, chn2)
-            # also test ordering of keys, since isequal doesn't check that
-            @test collect(keys(chn)) == collect(keys(chn2))
-            # note that we can't test isequal(chn1, chn2) with save_state=true because the
-            # states don't compare equal :( that would need to be fixed upstream in Turing
+            test_isequal_and_same_keys(chn, chn2)
         end
     end
 
@@ -58,8 +61,7 @@ Turing.setprogress!(false)
             fname = Base.Filesystem.tempname() * ".jld2"
             jldsave(fname; chain)
             chain2 = load(fname, "chain")
-            @test isequal(chain, chain2)
-            @test collect(keys(chain)) == collect(keys(chain2))
+            test_isequal_and_same_keys(chain, chain2)
         end
 
         @testset "FlexiSummary" begin
@@ -67,8 +69,7 @@ Turing.setprogress!(false)
             fname = Base.Filesystem.tempname() * ".jld2"
             jldsave(fname; fs)
             fs2 = load(fname, "fs")
-            @test isequal(fs, fs2)
-            @test collect(keys(fs)) == collect(keys(fs2))
+            test_isequal_and_same_keys(fs, fs2)
         end
     end
 end
