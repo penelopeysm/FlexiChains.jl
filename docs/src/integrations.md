@@ -137,6 +137,13 @@ chn2[@varname(x[1])]
 In principle, you should be able to even use DimensionalData selectors in the VarName, e.g. `chn2[@varname(x[At(:b)])]`; however, support for this is slightly flaky due to incomplete implementations of `Base.checkbounds` for DimensionalData (which is not something that FlexiChains can control).
 If you try this and find that something doesn't work, please do feel free to open an issue and we can help to upstream it.
 
+## JLD2.jl
+
+[Documentation for JLD2.jl](https://juliaio.github.io/JLD2.jl/stable/)
+
+`FlexiChain` and `FlexiSummary` objects can be serialised with JLD2.jl with no fuss.
+See [the Serialization section below](@ref integrations-serialization) for an example.
+
 ## PosteriorDB.jl
 
 [Documentation for PosteriorDB.jl](@extref PosteriorDB :doc:`index`)
@@ -178,7 +185,7 @@ PosteriorStats.hdi(::FlexiChains.FlexiChain; kwargs...)
 PosteriorStats.eti(::FlexiChains.FlexiChain; kwargs...)
 ```
 
-## Serialization.jl
+## [Serialization.jl](@id integrations-serialization)
 
 Calling this an 'integration' is a bit of a stretch, because it simply works out of the box (no extra code needed), but it had to be documented somewhere...
 
@@ -188,13 +195,25 @@ You can serialise and deserialise `FlexiChain` and `FlexiSummary` objects using 
 using FlexiChains, Turing, Serialization
 
 @model f() = x ~ Normal()
-chn = sample(f(), NUTS(), 100; chain_type=VNChain, progress=false)
+chn = sample(f(), NUTS(), 10; chain_type=VNChain, progress=false)
 fname = "mychain"
 serialize(fname, chn)
 ```
 
 ```@example serialization
 chn2 = deserialize(fname)
+isequal(chn, chn2)
+```
+
+Serialisation with JLD2.jl works as well:
+
+```@example serialization
+using JLD2
+
+fname, key = "chain.jld2", "chain"
+save(fname, Dict(key => chn))
+chn2 = load(fname, key)
+
 isequal(chn, chn2)
 ```
 

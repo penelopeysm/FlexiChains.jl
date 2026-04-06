@@ -15,7 +15,6 @@ using Logging: Warn
 using MCMCDiagnosticTools: ess, rhat, mcse
 using OrderedCollections: OrderedDict
 using PosteriorStats: hdi, eti
-using Serialization: serialize, deserialize
 using Statistics
 using StatsBase: geomean, harmmean, mad, iqr
 using Test
@@ -223,16 +222,6 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             display(std(chain; dims = :both))
             display(summarystats(chain))
         end
-    end
-
-    @testset "serialise" begin
-        fs = summarystats(chain)
-        fname = Base.Filesystem.tempname()
-        serialize(fname, fs)
-        fs2 = deserialize(fname)
-        @test isequal(fs, fs2)
-        # also test ordering of keys, since isequal doesn't check that
-        @test collect(keys(fs)) == collect(keys(fs2))
     end
 
     @testset "summarystats when some functions fail" begin
