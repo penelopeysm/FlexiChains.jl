@@ -30,6 +30,7 @@ DimensionalDistributions = {url = "https://github.com/sethaxen/DimensionalDistri
 
 [compat]
 AbstractMCMC = "5.14"
+AdvancedHMC = "0.8.3"
 Bijectors = "0.15"
 CairoMakie = "0.15"
 Chairmarks = "1"
@@ -39,6 +40,8 @@ Documenter = "1"
 DocumenterInterLinks = "1"
 DynamicPPL = "0.40"
 FlexiChains = "0.4"
+JLD2 = "0.6.4"
+LogDensityProblems = "2.2.0"
 MCMCChains = "7"
 MCMCDiagnosticTools = "0.3"
 PDMats = "0.11"
