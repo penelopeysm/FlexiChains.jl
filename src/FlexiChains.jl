@@ -27,6 +27,7 @@ end
 
 include("chain.jl")
 include("summary.jl")
+include("collective_stats.jl")
 include("getindex.jl")
 include("interface/equal.jl")
 include("interface/size.jl")
@@ -69,7 +70,7 @@ export mean, median, std, var, quantile
 using StatsBase: summarystats, mad
 export summarystats, mad
 using MCMCDiagnosticTools: ess, rhat, mcse
-export ess, rhat, mcse
+export ess, rhat, mcse, gelmandiag, gelmandiag_multivariate
 # For maximum ease of use with Turing...
 const VNChain = FlexiChain{VarName}
 export VarName, @varname, VNChain
