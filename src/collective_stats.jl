@@ -1,14 +1,14 @@
 using MCMCDiagnosticTools: MCMCDiagnosticTools
 
 """
-    _to_3darray(chain::FlexiChain{TKey}; warn) where {TKey}
+    _to_3darray(chain::FlexiChain{TKey}; warn=true, eltype_filter=Real) where {TKey}
 
-Split array-valued parameters into scalar leaves, then extract all scalar Real-valued
-parameters from a `FlexiChain` and return them as a `DimArray` with dimensions
+Split array-valued parameters into scalar leaves, then extract all scalar parameters whose
+element type subtypes `eltype_filter` and return them as a `DimArray` with dimensions
 `(:iter, :chain, :param)`.
 
-Parameters whose values are not `<:Real` after splitting are skipped (with a warning if
-`warn=true`).
+Parameters whose values do not subtype `eltype_filter` after splitting are skipped (with a
+warning if `warn=true`).
 """
 function _to_3darray(
         chain::FlexiChain{TKey}; warn::Bool = true, eltype_filter::Type{T} = Real,
