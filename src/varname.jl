@@ -264,19 +264,19 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
 end
 
 """
-    FlexiChains._split_varnames(cs::ChainOrSummary{TKey}) where {TKey}
+    FlexiChains._split_varnames(cs::ChainOrSummary{Symbol})
 
-For non-`VarName` chains (e.g. `Symbol`), convert keys to `VarName`, split array-valued
-parameters into scalar leaves, then convert the keys back to `TKey`.
+For `Symbol`-keyed chains, convert keys to `VarName`, split array-valued parameters into
+scalar leaves, then convert the keys back to `Symbol`.
 """
-function _split_varnames(cs::ChainOrSummary{TKey}) where {TKey}
+function _split_varnames(cs::ChainOrSummary{Symbol})
     N = cs isa FlexiChain ? 2 : 3
     new_data = OrderedDict{ParameterOrExtra{<:VarName}, Array{<:Any, N}}()
     for (k, v) in cs._data
-        new_key = k isa Parameter ? Parameter(VarName{Symbol(k.name)}()) : k
+        new_key = k isa Parameter ? Parameter(VarName{k.name}()) : k
         new_data[new_key] = v
     end
     vn_cs = FlexiChains._replace_data(cs, VarName, new_data)
     split_cs = _split_varnames(vn_cs)
-    return FlexiChains.map_parameters(k -> TKey(Symbol(k)), split_cs)
+    return FlexiChains.map_parameters(k -> Symbol(k), split_cs)
 end

@@ -150,3 +150,21 @@ There are two things worth mentioning, which we will note in passing here withou
 1. If there is only one function provided, you can additionally pass `drop_stat_dim=true` to remove the `:stat` dimension from the result, much like what `mean(chain)` et al. do.
 
 2. The name of the statistic is inferred from the function. Sometimes this doesn't work out nicely, for example if you pass an anonymous function. In this case you can provide a tuple of `(:name, function)` instead of just the function.
+
+## MCMC diagnostics
+
+There are a number of functions in MCMCDiagnosticTools.jl which do not nicely fit the notion of 'collapse over one or more dimensions'.
+For example, quantities like the Gelman diagnostic are calculated over the entire dataset.
+
+For these functions, you can simply pass a FlexiChain to them:
+
+```@example stats
+gelmandiag(chain)
+```
+
+The available functions are:
+
+```@docs
+MCMCDiagnosticTools.gelmandiag(::FlexiChains.FlexiChain)
+MCMCDiagnosticTools.gelmandiag_multivariate(::FlexiChains.FlexiChain)
+```
