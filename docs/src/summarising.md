@@ -167,4 +167,5 @@ The available functions are:
 ```@docs
 MCMCDiagnosticTools.gelmandiag(::FlexiChains.FlexiChain)
 MCMCDiagnosticTools.gelmandiag_multivariate(::FlexiChains.FlexiChain)
+MCMCDiagnosticTools.discretediag(::FlexiChains.FlexiChain)
 ```

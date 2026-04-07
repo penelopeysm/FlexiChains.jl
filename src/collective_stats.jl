@@ -10,20 +10,27 @@ parameters from a `FlexiChain` and return them as a `DimArray` with dimensions
 Parameters whose values are not `<:Real` after splitting are skipped (with a warning if
 `warn=true`).
 """
-function _to_3darray(chain::FlexiChain{TKey}; warn::Bool = true) where {TKey}
+function _to_3darray(
+        chain::FlexiChain{TKey}; warn::Bool = true, eltype_filter::Type{T} = Real,
+    ) where {TKey, T}
     chain = FlexiChains._split_varnames(chain)
     kept_keys = ParameterOrExtra{<:TKey}[]
     kept_data = Matrix{<:Real}[]
+    skipped_keys = ParameterOrExtra{<:TKey}[]
     for (k, v) in chain._data
-        if eltype(v) <: Real
+        if eltype(v) <: T
             push!(kept_keys, k)
             push!(kept_data, v)
-        elseif warn
-            @warn "skipping key `$k` as its values are not Real-valued"
+        else
+            push!(skipped_keys, k)
         end
     end
+    if warn && !isempty(skipped_keys)
+        skipped_str = join(("`$k`" for k in skipped_keys), ", ")
+        @warn "skipping keys $skipped_str as their values do not subtype $T"
+    end
     if isempty(kept_keys)
-        throw(ArgumentError("no Real-valued parameters found"))
+        throw(ArgumentError("no parameters with values subtyping $T found"))
     end
     arr = stack(kept_data)
     dims = (
@@ -129,7 +136,7 @@ Returns a `NamedTuple` with two fields:
   `:pvalue`) per parameter and per chain
 
 The `FlexiChain` must contain at least 2 chains. Array-valued parameters are automatically
-split into their constituent scalars. Non-`Real`-valued keys are skipped with a warning
+split into their constituent scalars. Non-`Integer`-valued keys are skipped with a warning
 (which can be suppressed via `warn=false`).
 
 Other keyword arguments are forwarded to
@@ -140,7 +147,7 @@ function MCMCDiagnosticTools.discretediag(
         warn::Bool = true,
         kwargs...,
     ) where {TKey}
-    dimarr = _to_3darray(chain; warn = warn)
+    dimarr = _to_3darray(chain; warn = warn, eltype_filter = Integer)
     between_vals, within_vals = MCMCDiagnosticTools.discretediag(
         parent(dimarr); kwargs...
     )

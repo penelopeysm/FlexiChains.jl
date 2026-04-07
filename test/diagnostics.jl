@@ -1,18 +1,15 @@
 module FCDiagnosticsTests
 
-using DimensionalData: DimensionalData as DD
 using FlexiChains:
     FlexiChains,
     FlexiChain,
     FlexiSummary,
     Parameter,
-    ParameterOrExtra,
     Extra,
     VarName,
     @varname
-using Logging: Warn
-using MCMCDiagnosticTools: gelmandiag, gelmandiag_multivariate, discretediag
-using OrderedCollections: OrderedDict
+using MCMCDiagnosticTools: MCMCDiagnosticTools, gelmandiag, gelmandiag_multivariate,
+    discretediag
 using Test
 
 @testset verbose = true "diagnostics.jl" begin
@@ -33,6 +30,12 @@ using Test
             @test haskey(gd, Parameter(:b))
             @test length(gd[:a]) == 2  # psrf and psrfci
             @test all(gd[:a] .> 0)
+
+            # Round-trip: values should match calling MCMCDiagnosticTools directly
+            raw = stack([as, bs]; dims = 3)
+            ref = MCMCDiagnosticTools.gelmandiag(raw)
+            @test gd[:a] == [ref.psrf[1], ref.psrfci[1]]
+            @test gd[:b] == [ref.psrf[2], ref.psrfci[2]]
         end
 
         @testset "Symbol chain, array-valued params" begin
@@ -70,7 +73,7 @@ using Test
                     Extra("str") => fill("hello", N_iters, N_chains),
                 ),
             )
-            gd = @test_logs (:warn, r"str") gelmandiag(chain)
+            gd = @test_logs (:warn, r"str.*Real") gelmandiag(chain)
             @test haskey(gd, Parameter(:a))
             @test !haskey(gd, Extra("str"))
             @test_logs gelmandiag(chain; warn = false)
@@ -131,6 +134,16 @@ using Test
             @test haskey(result.within, Parameter(:a))
             @test haskey(result.within, Parameter(:b))
             @test size(result.within[:a]) == (N_chains, 3)
+
+            # Round-trip: values should match calling MCMCDiagnosticTools directly
+            raw = stack([as, bs]; dims = 3)
+            ref_between, ref_within = MCMCDiagnosticTools.discretediag(raw)
+            @test result.between[:a] ==
+                [ref_between.stat[1], ref_between.df[1], ref_between.pvalue[1]]
+            @test result.between[:b] ==
+                [ref_between.stat[2], ref_between.df[2], ref_between.pvalue[2]]
+            @test result.within[:a] ==
+                hcat(ref_within.stat[1, :], ref_within.df[1, :], ref_within.pvalue[1, :])
         end
 
         @testset "Symbol chain, array-valued params" begin
@@ -160,16 +173,18 @@ using Test
             @test haskey(result.between, @varname(y))
         end
 
-        @testset "non-Real params skipped with warning" begin
+        @testset "non-Integer params skipped with warning" begin
             chain = FlexiChain{Symbol}(
                 N_iters, N_chains,
                 Dict(
                     Parameter(:a) => as,
+                    Parameter(:f) => randn(N_iters, N_chains),
                     Extra("str") => fill("hello", N_iters, N_chains),
                 ),
             )
-            result = @test_logs (:warn, r"str") discretediag(chain)
+            result = @test_logs (:warn, r"f.*str.*Integer") discretediag(chain)
             @test haskey(result.between, Parameter(:a))
+            @test !haskey(result.between, Parameter(:f))
             @test !haskey(result.between, Extra("str"))
             @test_logs discretediag(chain; warn = false)
         end
@@ -180,6 +195,13 @@ using Test
             )
             result = discretediag(chain; method = :hangartner)
             @test result.between isa FlexiSummary{Symbol}
+        end
+
+        @testset "errors with single chain" begin
+            chain = FlexiChain{Symbol}(
+                N_iters, 1, Dict(Parameter(:a) => rand(1:5, N_iters, 1))
+            )
+            @test_throws Exception discretediag(chain)
         end
 
         @testset "within-chain has correct chain indices" begin
