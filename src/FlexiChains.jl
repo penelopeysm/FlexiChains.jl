@@ -69,8 +69,8 @@ using Statistics: mean, median, std, var, quantile
 export mean, median, std, var, quantile
 using StatsBase: summarystats, mad
 export summarystats, mad
-using MCMCDiagnosticTools: ess, rhat, mcse
-export ess, rhat, mcse, gelmandiag, gelmandiag_multivariate
+using MCMCDiagnosticTools: ess, rhat, mcse, gelmandiag, gelmandiag_multivariate, discretediag
+export ess, rhat, mcse, gelmandiag, gelmandiag_multivariate, discretediag
 # For maximum ease of use with Turing...
 const VNChain = FlexiChain{VarName}
 export VarName, @varname, VNChain

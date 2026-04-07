@@ -1,3 +1,5 @@
+using MCMCDiagnosticTools: MCMCDiagnosticTools
+
 """
     _to_3darray(chain::FlexiChain{TKey}; warn) where {TKey}
 
@@ -46,7 +48,7 @@ function _gelmandiag_summary(
 end
 
 """
-    gelmandiag(
+    MCMCDiagnosticTools.gelmandiag(
         chain::FlexiChain{TKey};
         warn::Bool=true,
         kwargs...
@@ -65,7 +67,7 @@ split into their constituent scalars. Non-`Real`-valued keys are skipped with a 
 Other keyword arguments are forwarded to
 [`MCMCDiagnosticTools.gelmandiag`](@extref).
 """
-function gelmandiag(
+function MCMCDiagnosticTools.gelmandiag(
         chain::FlexiChain{TKey};
         warn::Bool = true,
         kwargs...,
@@ -76,7 +78,7 @@ function gelmandiag(
 end
 
 """
-    gelmandiag_multivariate(
+    MCMCDiagnosticTools.gelmandiag_multivariate(
         chain::FlexiChain{TKey};
         warn::Bool=true,
         kwargs...
@@ -97,7 +99,7 @@ Non-`Real`-valued keys are skipped with a warning (which can be suppressed via
 Other keyword arguments are forwarded to
 [`MCMCDiagnosticTools.gelmandiag_multivariate`](@extref).
 """
-function gelmandiag_multivariate(
+function MCMCDiagnosticTools.gelmandiag_multivariate(
         chain::FlexiChain{TKey};
         warn::Bool = true,
         kwargs...,
@@ -108,4 +110,66 @@ function gelmandiag_multivariate(
         TKey, DD.lookup(dimarr, :param), result.psrf, result.psrfci
     )
     return (; summary, psrf_multivariate = result.psrfmultivariate)
+end
+
+"""
+    MCMCDiagnosticTools.discretediag(
+        chain::FlexiChain{TKey};
+        warn::Bool=true,
+        kwargs...
+    ) where {TKey}
+
+Compute the discrete diagnostic for each parameter in the chain. This diagnostic is designed
+for discrete (categorical) MCMC samples.
+
+Returns a `NamedTuple` with two fields:
+- `between`: a [`FlexiSummary`](@ref) with between-chain diagnostics (`:stat`, `:df`,
+  `:pvalue`) per parameter
+- `within`: a [`FlexiSummary`](@ref) with within-chain diagnostics (`:stat`, `:df`,
+  `:pvalue`) per parameter and per chain
+
+The `FlexiChain` must contain at least 2 chains. Array-valued parameters are automatically
+split into their constituent scalars. Non-`Real`-valued keys are skipped with a warning
+(which can be suppressed via `warn=false`).
+
+Other keyword arguments are forwarded to
+[`MCMCDiagnosticTools.discretediag`](@extref).
+"""
+function MCMCDiagnosticTools.discretediag(
+        chain::FlexiChain{TKey};
+        warn::Bool = true,
+        kwargs...,
+    ) where {TKey}
+    dimarr = _to_3darray(chain; warn = warn)
+    between_vals, within_vals = MCMCDiagnosticTools.discretediag(
+        parent(dimarr); kwargs...
+    )
+    kept_keys = DD.lookup(dimarr, :param)
+    stat_names = _make_categorical([:stat, :df, :pvalue])
+
+    # Between-chain summary: both iter and chain dimensions collapsed
+    between_data = OrderedDict{ParameterOrExtra{<:TKey}, Array{Float64, 3}}()
+    for (i, k) in enumerate(kept_keys)
+        between_data[k] = reshape(
+            Float64[between_vals.stat[i], between_vals.df[i], between_vals.pvalue[i]],
+            1, 1, 3,
+        )
+    end
+    between = FlexiSummary{TKey}(between_data, nothing, nothing, stat_names)
+
+    # Within-chain summary: iter dimension collapsed, chain dimension kept
+    num_chains = length(FlexiChains.chain_indices(chain))
+    within_data = OrderedDict{ParameterOrExtra{<:TKey}, Array{Float64, 3}}()
+    for (i, k) in enumerate(kept_keys)
+        vals = Array{Float64, 3}(undef, 1, num_chains, 3)
+        vals[1, :, 1] = within_vals.stat[i, :]
+        vals[1, :, 2] = within_vals.df[i, :]
+        vals[1, :, 3] = within_vals.pvalue[i, :]
+        within_data[k] = vals
+    end
+    within = FlexiSummary{TKey}(
+        within_data, nothing, FlexiChains.chain_indices(chain), stat_names,
+    )
+
+    return (; between, within)
 end
