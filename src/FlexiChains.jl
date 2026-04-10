@@ -27,7 +27,7 @@ end
 
 include("chain.jl")
 include("summary.jl")
-include("collective_stats.jl")
+include("diagnostics.jl")
 include("getindex.jl")
 include("interface/equal.jl")
 include("interface/size.jl")
