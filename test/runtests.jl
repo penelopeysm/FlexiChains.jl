@@ -4,6 +4,7 @@ using Test: @testset
     include("Aqua.jl")
     include("chain.jl")
     include("summaries.jl")
+    include("diagnostics.jl")
     include("interface.jl")
     include("varname.jl")
     include("ext/advancedhmc.jl")

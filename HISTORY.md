@@ -1,3 +1,7 @@
+# 0.4.9
+
+Implemented `MCMCDiagnosticTools.gelmandiag`, `MCMCDiagnosticTools.gelmandiag_multivariate`, and `MCMCDiagnosticTools.discretediag` for `FlexiChain`s.
+
 # 0.4.8
 
 Adds a new function `FlexiChains.from_stan_csv` to parse Stan CSV files, plus a method `FlexiChain{Symbol}(::StanSample.SampleModel)` to convert from a `SampleModel` to `FlexiChain` (if sampling has already been run on the `SampleModel`).
