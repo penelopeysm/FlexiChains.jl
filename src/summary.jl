@@ -743,7 +743,7 @@ resulting `FlexiSummary`, and a warning issued. The warning can be suppressed by
 `warn=false`.
 """
 function StatsBase.summarystats(
-        chain::FlexiChain{TKey}; split_varnames::Bool = (TKey <: VarName), warn::Bool = true
+        chain::FlexiChain{TKey}; split_varnames::Bool = true, warn::Bool = true
     ) where {TKey}
     _DEFAULT_SUMMARYSTAT_FUNCTIONS = [
         (:mean, Statistics.mean),
