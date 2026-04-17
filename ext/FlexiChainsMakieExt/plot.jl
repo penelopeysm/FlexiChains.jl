@@ -9,7 +9,8 @@ function Makie.plot(
         legend = (;),
         kwargs...,
     )
-    keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
+    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nrows, ncols = if isnothing(layout)
         length(keys_to_plot), 2

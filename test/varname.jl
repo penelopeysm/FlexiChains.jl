@@ -86,26 +86,80 @@ using Test
     end
 
     @testset "split_varnames" begin
-        N_iters = 10
-        # use OrderedDict so that we can also test order
-        d = OrderedDict(
-            Parameter(@varname(a)) => 1.0,
-            Parameter(@varname(c)) => (x = 4.0, y = 5.0),
-            Parameter(@varname(b)) => [2.0, 3.0],
-            Extra("hello") => 3.0,
-        )
-        chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
-        chain2 = FlexiChains._split_varnames(chain)
-        @test collect(keys(chain2)) == (
-            [
-                Parameter(@varname(a)),
-                Parameter(@varname(c.x)),
-                Parameter(@varname(c.y)),
-                Parameter(@varname(b[1])),
-                Parameter(@varname(b[2])),
-                Extra("hello"),
-            ]
-        )
+        @testset "TKey = VarName" begin
+            N_iters = 10
+            # use OrderedDict so that we can also test order
+            d = OrderedDict(
+                Parameter(@varname(a)) => 1.0,
+                Parameter(@varname(c)) => (x = 4.0, y = 5.0),
+                Parameter(@varname(b)) => [2.0, 3.0],
+                Extra("hello") => 3.0,
+            )
+            chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
+            chain2 = FlexiChains._split_varnames(chain)
+            @test collect(keys(chain2)) == (
+                [
+                    Parameter(@varname(a)),
+                    Parameter(@varname(c.x)),
+                    Parameter(@varname(c.y)),
+                    Parameter(@varname(b[1])),
+                    Parameter(@varname(b[2])),
+                    Extra("hello"),
+                ]
+            )
+        end
+
+        @testset "TKey = Symbol" begin
+            N_iters = 10
+            # use OrderedDict so that we can also test order
+            d = OrderedDict(
+                Parameter(:a) => 1.0,
+                Parameter(:c) => (x = 4.0, y = 5.0),
+                Parameter(:b) => [2.0, 3.0],
+                Extra("hello") => 3.0,
+            )
+            chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
+            chain2 = FlexiChains._split_varnames(chain)
+            @test collect(keys(chain2)) == (
+                [
+                    Parameter(:a),
+                    Parameter(Symbol("c.x")),
+                    Parameter(Symbol("c.y")),
+                    Parameter(Symbol("b[1]")),
+                    Parameter(Symbol("b[2]")),
+                    Extra("hello"),
+                ]
+            )
+        end
+
+        @testset "other unsupported keys" begin
+            N_iters = 10
+            # just a dummy wrapper
+            struct K
+                k::Symbol
+            end
+
+            @testset "if everything is already scalar" begin
+                # Should be a no-op
+                d = OrderedDict(
+                    Parameter(K(:a)) => 1.0,
+                    Parameter(K(:b)) => 2.0,
+                    Extra("hello") => 3.0,
+                )
+                chain = FlexiChain{K}(N_iters, 1, fill(d, N_iters))
+                @test isequal(FlexiChains._split_varnames(chain), chain)
+                # check order of keys are unchanged
+                @test collect(keys(FlexiChains._split_varnames(chain))) == collect(keys(chain))
+            end
+
+            @testset "if there are non-scalar values" begin
+                d = OrderedDict(
+                    Parameter(K(:b)) => [2.0, 3.0],
+                )
+                chain = FlexiChain{K}(N_iters, 1, fill(d, N_iters))
+                @test_throws ArgumentError FlexiChains._split_varnames(chain)
+            end
+        end
     end
 
 

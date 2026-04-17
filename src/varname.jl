@@ -281,6 +281,20 @@ function _split_varnames(cs::ChainOrSummary{Symbol})
     return FlexiChains.map_parameters(k -> Symbol(k), split_cs)
 end
 
-function _is_type_that_can_be_split(::Type{T}) where {T}
-    return T <: VarName || T <: Symbol
+"""
+    FlexiChains._split_varnames(cs::ChainOrSummary)
+
+For all other chains that are not keyed by `VarName` or `Symbol`, we check if all keys are
+real-valued anyway. If they are, then we can just return the original chain. If not, this
+throws an error.
+"""
+function _split_varnames(cs::ChainOrSummary)
+    for (k, v) in cs._data
+        if eltype(v) <: Real
+            continue
+        else
+            throw(ArgumentError("key $(k) in the chain has data of type $(eltype(v)), which is not scalar-valued; variable names cannot be split for this chain. Please use a chain with key type VarName or Symbol if you want to use variable name splitting."))
+        end
+    end
+    return cs
 end
