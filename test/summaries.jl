@@ -232,7 +232,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         # because they can't handle vector-valued data. For example, ESS will fail.
         # We just want to check that summarystats still works and returns the results for the
         # functions that _do_ work.
-        sm = summarystats(chain)
+        sm = summarystats(chain; split_varnames = false)
         @test haskey(sm, Parameter(:x))
         @test isapprox(sm[:x, stat = DD.At(:mean)], x)
         @test ismissing(sm[:x, stat = DD.At(:ess_bulk)])
@@ -409,7 +409,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             chain = FlexiChain{Symbol}(Niters, Nchains, d)
 
             @testset "dims=:both" begin
-                m = mean(chain)
+                m = mean(chain; split_varnames = false)
                 mean_a = m[:a]
                 @test mean_a isa DD.DimMatrix{Float64}
                 @test size(mean_a) == (3, 3)
@@ -417,7 +417,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             end
 
             @testset "dims=:iter" begin
-                m = mean(chain; dims = :iter)
+                m = mean(chain; dims = :iter, split_varnames = false)
                 mean_a = m[:a]
                 @test mean_a isa DD.DimArray{Float64, 3}
                 @test size(mean_a) == (Nchains, 3, 3)
@@ -427,7 +427,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             end
 
             @testset "dims=:chain" begin
-                m = mean(chain; dims = :chain)
+                m = mean(chain; dims = :chain, split_varnames = false)
                 mean_a = m[:a]
                 @test mean_a isa DD.DimArray{Float64, 3}
                 @test size(mean_a) == (Niters, 3, 3)
@@ -436,7 +436,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             end
 
             @testset "with multiple statistics" begin
-                ms = FlexiChains.collapse(chain, [mean, std]; dims = :iter)
+                ms = FlexiChains.collapse(chain, [mean, std]; dims = :iter, split_varnames = false)
                 summary_a = ms[:a, stat = DD.At(:mean)]
                 @test summary_a isa DD.DimArray{Float64, 3}
                 @test size(summary_a) == (Nchains, 3, 3)
@@ -516,7 +516,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             3,
         )
         chain = FlexiChain{Symbol}(10, 3, dicts)
-        smy = FlexiChains.summarystats(chain)
+        smy = FlexiChains.summarystats(chain; split_varnames = false)
 
         @testset "trivial identity mapping" begin
             idsmy = FlexiChains.map_keys(identity, smy)
