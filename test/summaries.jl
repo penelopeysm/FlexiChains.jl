@@ -558,7 +558,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             3,
         )
         chain = FlexiChain{Symbol}(10, 3, dicts)
-        smy = FlexiChains.summarystats(chain)
+        smy = FlexiChains.summarystats(chain; split_varnames = false)
 
         @testset "trivial identity mapping" begin
             idsmy = FlexiChains.map_parameters(identity, smy)
