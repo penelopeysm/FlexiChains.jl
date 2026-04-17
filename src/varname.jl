@@ -280,3 +280,7 @@ function _split_varnames(cs::ChainOrSummary{Symbol})
     split_cs = _split_varnames(vn_cs)
     return FlexiChains.map_parameters(k -> Symbol(k), split_cs)
 end
+
+function _is_type_that_can_be_split(::Type{T}) where {T}
+    return T <: VarName || T <: Symbol
+end
