@@ -10,7 +10,7 @@ function Makie.plot(
         kwargs...,
     )
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
-    keys_to_plot = keys(chn)
+    keys_to_plot = collect(keys(chn))
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nrows, ncols = if isnothing(layout)
         length(keys_to_plot), 2

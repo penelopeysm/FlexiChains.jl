@@ -4,6 +4,11 @@ Plotting functionality with Makie.jl is currently in a very early stage of devel
 However, there is some custom code to generate (e.g.) shared legends, which leads to perhaps slightly nicer plots than for Plots.jl.
 Many parts of the Makie integration in FlexiChains are heavily lifted from [the (unreleased) ChainsMakie.jl package](https://simonsteiger.github.io/ChainsMakie.jl/dev/).
 
+!!! note
+    You can also use Makie as a backend to make pair plots! This requires loading a Makie
+    backend as well as PairPlots.jl. Please see the [PairPlots.jl integration section](@ref
+    integrations-pairplots) for more details.
+
 ## General interface
 
 For all functions `plotfunc` shown in the table of [the plotting page](./plotting.md), you can use the following invocation:

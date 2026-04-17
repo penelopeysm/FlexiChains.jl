@@ -11,6 +11,7 @@ using PosteriorStats: PosteriorStats
 using AbstractMCMC: AbstractMCMC
 using DynamicPPL: DynamicPPL
 using MCMCChains: MCMCChains
+using PairPlots: PairPlots
 using Turing: Turing
 
 links = InterLinks(
@@ -31,6 +32,7 @@ modules = [
     Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsExt),
     Base.get_extension(FlexiChains, :FlexiChainsDynamicPPLExt),
     Base.get_extension(FlexiChains, :FlexiChainsMakieExt),
+    Base.get_extension(FlexiChains, :FlexiChainsPairPlotsExt),
     Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt),
     Base.get_extension(FlexiChains, :FlexiChainsTuringExt),
 ]

@@ -35,6 +35,7 @@ end
     PairPlots.pairplot(
         chn::FlexiChain[, param_or_params];
         pool_chains::Bool=false,
+        kwargs...
     )
 
 Create a pair plot for the given chain. Note that PairPlots.jl uses Makie.jl as its plotting

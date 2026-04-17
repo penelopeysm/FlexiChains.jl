@@ -144,6 +144,47 @@ If you try this and find that something doesn't work, please do feel free to ope
 `FlexiChain` and `FlexiSummary` objects can be serialised with JLD2.jl with no fuss.
 See [the Serialization section below](@ref integrations-serialization) for an example.
 
+## [PairPlots.jl](@id integrations-pairplots)
+
+[Documentation for PairPlots.jl](https://sefffal.github.io/PairPlots.jl/dev/)
+
+FlexiChains provides two ways to interact with PairPlots.jl.
+
+Firstly, you can directly call `pairplot(chn[, param_or_params])` on a `FlexiChain`.
+
+```@docs
+PairPlots.pairplot
+```
+
+```@example pairplots
+using PairPlots, FlexiChains, Turing, CairoMakie
+
+@model function f()
+    x ~ Normal()
+    y ~ Normal(x)
+    z ~ Normal(y)
+    1.0 ~ Normal(z)
+end
+chn = sample(f(), MH(), MCMCSerial(), 2000, 3; chain_type=VNChain)
+
+pairplot(chn)
+Makie.save("pairplot.png", ans); # hide
+
+# Specify which parameters to plot
+# pairplot(chn, [@varname(x), @varname(y)])
+
+# Pool all chains together
+# pairplot(chn; pool_chains=true)
+```
+
+![Pair plot of the sampled chain](pairplot.png)
+
+For more low-level control, you can also convert a `FlexiChain` into a `PairPlots.Series`, so that you can combine it with other data or fixed values in custom plots.
+
+```@docs
+PairPlots.Series
+```
+
 ## PosteriorDB.jl
 
 [Documentation for PosteriorDB.jl](@extref PosteriorDB :doc:`index`)

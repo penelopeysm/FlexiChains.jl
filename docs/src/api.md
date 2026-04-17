@@ -10,6 +10,12 @@ FlexiChains also guarantees that any changes to these APIs will be reflected wit
 
 The `FlexiChain` and `FlexiSummary` types are technically marked as public, but you should not handle them or their fields directly.
 For dispatch purposes, it is guaranteed that the first type parameter is always the key type; this should typically be all you need.
+
+```@docs
+FlexiChains.FlexiChain
+FlexiChains.FlexiSummary
+```
+
 Both types have extra type parameters, but they are considered internal and may change at any time.
 
 You can also use `Base.keytype`:
@@ -22,7 +28,8 @@ If you ever need to construct a `FlexiChain` from scratch, there are exactly two
 One is to pass an array of dictionaries (i.e., one dictionary per iteration); the other is to pass a dictionary of arrays (i.e., the values for each key are already grouped together).
 
 ```@docs
-FlexiChains.FlexiChain{TKey}(data)
+FlexiChains.FlexiChain{TKey}(niters::Int, nchains::Int, array_of_dicts::AbstractArray{<:AbstractDict}) where TKey
+FlexiChains.FlexiChain{TKey}(niters::Int, nchains::Int, dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}}) where {TKey,N}
 ```
 
 Note that, although the dictionaries themselves may have loose types, the key type of the `FlexiChain` must be specified (and the keys of the dictionaries will be checked against this).
