@@ -132,6 +132,29 @@ using Test
             )
         end
 
+        @testset "TKey = String" begin
+            N_iters = 10
+            # use OrderedDict so that we can also test order
+            d = OrderedDict(
+                Parameter("a") => 1.0,
+                Parameter("c") => (x = 4.0, y = 5.0),
+                Parameter("b") => [2.0, 3.0],
+                Extra("hello") => 3.0,
+            )
+            chain = FlexiChain{String}(N_iters, 1, fill(d, N_iters))
+            chain2 = FlexiChains._split_varnames(chain)
+            @test collect(keys(chain2)) == (
+                [
+                    Parameter("a"),
+                    Parameter("c.x"),
+                    Parameter("c.y"),
+                    Parameter("b[1]"),
+                    Parameter("b[2]"),
+                    Extra("hello"),
+                ]
+            )
+        end
+
         @testset "other unsupported keys" begin
             N_iters = 10
             # just a dummy wrapper
