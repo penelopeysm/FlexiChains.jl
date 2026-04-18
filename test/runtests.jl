@@ -14,5 +14,6 @@ using Test: @testset
     include("serialise.jl")
     include("stancsv.jl")
     include("ext/posteriordb.jl")
+    include("ext/posteriorstats.jl")
     include("ext/dimdist.jl")
 end

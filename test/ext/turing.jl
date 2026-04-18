@@ -6,6 +6,7 @@ using DynamicPPL: DynamicPPL
 using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra
 using MCMCChains: MCMCChains
 using OffsetArrays: OffsetArray
+using PosteriorStats: PosteriorStats
 using Random: Random, Xoshiro
 using StableRNGs: StableRNG
 using Test
@@ -779,6 +780,18 @@ end
             end
             @test @varname(y) in FlexiChains.parameters(pdns)
         end
+    end
+
+    @testset "PosteriorStats.loo with Turing" begin
+        @model function f(y)
+            x ~ Normal()
+            y .~ Normal(x)
+        end
+        model = f(randn(10))
+        chain = sample(model, NUTS(), MCMCSerial(), 500, 3; chain_type = VNChain)
+        result = PosteriorStats.loo(model, chain)
+        @test result.param_names == [@varname(y[i]) for i in 1:10]
+        @test result.loo isa PosteriorStats.PSISLOOResult
     end
 end
 
