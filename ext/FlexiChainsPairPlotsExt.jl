@@ -34,10 +34,10 @@ end
 """
     PairPlots.pairplot(
         chn::FlexiChain[, param_or_params];
-        args=(),
+        args::Tuple=(),
         pool_chains::Bool=false,
         divergences=nothing,
-        divergences_kwargs=(; markersize=3, color=:red),
+        divergences_kwargs::NamedTuple=(; markersize=3, color=:red),
         kwargs...
     )
 
@@ -70,10 +70,10 @@ Other keyword arguments are passed to `PairPlots.pairplot`.
 function PairPlots.pairplot(
         chn::FC.FlexiChain,
         param_or_params = FC.Parameter.(FC.parameters(chn));
-        args = (),
+        args::Tuple = (),
         pool_chains::Bool = false,
         divergences = nothing,
-        divergences_kwargs = (; markersize = 3, color = :red),
+        divergences_kwargs::NamedTuple = (; markersize = 3, color = :red),
         kwargs...
     )
     # Get the divergences first, before we subset the chain
