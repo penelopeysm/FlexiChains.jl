@@ -1,6 +1,6 @@
 # 0.5.2
 
-Added `MCMCDiagnosticTools.bfmi(::FlexiChain)` to compute the Bayesian fraction of missing information (BFMI) for a chain.
+Added a method `MCMCDiagnosticTools.bfmi(chn::FlexiChain, energy_key)` to compute the Bayesian fraction of missing information (BFMI) for a chain.
 
 # 0.5.1
 
