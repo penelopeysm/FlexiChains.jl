@@ -1,6 +1,31 @@
-# Plotting
+# Plotting overview
 
 FlexiChains contains some support for visualising chains with Plots.jl and Makie.jl.
+
+## Available functions
+
+Here is a rough overview of the current status:
+
+| Type of plot                     | Plots.jl                              | Makie.jl                                                |
+| :------------------------------- | :------------------------------------ | :------------------------------------------------------ |
+| Trace + mixed density (default)  | ✅ `Plots.plot`                       | ✅ [`Makie.plot`](@ref)                                 |
+| Pair / corner plots              | 🐌                                    | ✅ [`PairPlots.pairplot`](@ref integrations-pairplots)  |
+| Trace plots                      | ✅ [`FlexiChains.traceplot`](@ref)    | ✅ [`FlexiChains.mtraceplot`](@ref)                     |
+| Density plots                    | ✅ `Plots.density`                    | ✅ [`Makie.density`](@ref)                              |
+| Histograms                       | ✅ `Plots.histogram`                  | ✅ [`Makie.hist`](@ref) and [`Makie.stephist`](@ref)    |
+| Mixed density plots              | ✅ [`FlexiChains.mixeddensity`](@ref) | ✅ [`FlexiChains.mmixeddensity`](@ref)                  |
+| Running mean plots               | ✅ [`FlexiChains.meanplot`](@ref)     | 🐌                                                      |
+| Autocorrelation plots            | ✅ [`FlexiChains.autocorplot`](@ref)  | 🐌                                                      |
+| Rank plots                       | ✅ [`FlexiChains.rankplot`](@ref)     | ✅ [`FlexiChains.mrankplot`](@ref)                      |
+| Violin plots                     | 🐌                                    | 🐌                                                      |
+| Energy plots                     | 🐌                                    | 🐌                                                      |
+| Forest plots                     | 🐌                                    | 🐌                                                      |
+| Predictive check plots           | 🐌                                    | 🐌                                                      |
+
+All of the above functions have 'mutating' versions with a `!` suffix.
+
+Notice that for the functions provided by FlexiChains, the corresponding Makie.jl version is prefixed with `m`.
+This is necessary for disambiguation, much like how `Plots.plot()` and `Makie.plot()` are different functions.
 
 ## Compositionality
 
@@ -39,28 +64,3 @@ However, I'm not the most experienced user of either Plots.jl or Makie.jl, so so
 This may especially be so with Makie.jl because it is quite a bit more difficult to write extensions for Makie than it is for Plots (which has a very powerful recipe system).
 
 Please do feel free to open issues or pull requests to improve the plotting functionality!
-
-## Available functions
-
-Here is a rough overview of the current status:
-
-| Type of plot                    | Plots.jl                   | Makie.jl                          |
-| --------------                  | ----------                 | ----------                        |
-| Trace + mixed density (default) | `Plots.plot`               | `Makie.plot`                      |
-| Pair / corner plots             | not yet implemented        | `PairPlots.pairplot`              |
-| Trace plots                     | `FlexiChains.traceplot`    | `FlexiChains.mtraceplot`          |
-| Density plots                   | `Plots.density`            | `Makie.density`                   |
-| Histograms                      | `Plots.histogram`          | `Makie.hist` and `Makie.stephist` |
-| Mixed density plots             | `FlexiChains.mixeddensity` | `FlexiChains.mmixeddensity`       |
-| Running mean plots              | `FlexiChains.meanplot`     | not yet implemented               |
-| Autocorrelation plots           | `FlexiChains.autocorplot`  | not yet implemented               |
-| Rank plots                      | `FlexiChains.rankplot`     | `FlexiChains.mrankplot`           |
-| Violin plots                    | not yet implemented        | not yet implemented               |
-| Energy plots                    | not yet implemented        | not yet implemented               |
-| Forest plots                    | not yet implemented        | not yet implemented               |
-| Predictive check plots          | not yet implemented        | not yet implemented               |
-
-All of the above functions have 'mutating' versions with a `!` suffix.
-
-Notice that for the functions provided by FlexiChains, the corresponding Makie.jl version is prefixed with `m`.
-This is necessary for disambiguation, much like how `Plots.plot()` and `Makie.plot()` are different functions.
