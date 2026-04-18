@@ -8,6 +8,7 @@ using FlexiChains:
     Extra,
     VarName,
     @varname
+import DimensionalData as DD
 using MCMCDiagnosticTools: MCMCDiagnosticTools, gelmandiag, gelmandiag_multivariate,
     discretediag, bfmi
 using Test
@@ -229,8 +230,9 @@ using Test
 
         @testset "matches MCMCDiagnosticTools on raw values" begin
             result = bfmi(chain, Extra(:hamiltonian_energy))
+            @test result isa DD.DimVector
             ref = MCMCDiagnosticTools.bfmi(energy)
-            @test result == ref
+            @test parent(result) == ref
         end
 
         @testset "Symbol shorthand gives same result" begin
