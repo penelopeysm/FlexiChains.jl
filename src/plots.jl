@@ -6,6 +6,8 @@ function _PARAM_DOCSTRING(funcname)
     """
 end
 
+const _PLOTS_KWARGS_DOCSTRING = "Other keyword arguments are forwarded to the underlying Plots.jl functions."
+
 ######################
 # Plots.jl overloads #
 ######################
@@ -15,11 +17,12 @@ end
         kwargs...
     )
 
-Create a trace plot of the specified parameter(s) in the given `FlexiChain` using Plots.jl.
+Plot the sample values against iteration number for the specified parameter(s) in the given
+`FlexiChain` using Plots.jl.
 
 $(_PARAM_DOCSTRING("traceplot"))
 
-Keyword arguments are forwarded to Plots.jl's functions.
+$(_PLOTS_KWARGS_DOCSTRING)
 """
 function traceplot end
 
@@ -39,11 +42,13 @@ function traceplot! end
         kwargs...
     )
 
-Create either a density plot, or a histogram, of the specified parameter(s) in the given
-`FlexiChain` using Plots.jl. Continuous-valued parameters are plotted using density plots,
-discrete-valued parameters with histograms.
+Plot a density estimate or histogram for the specified parameter(s) in the given
+`FlexiChain` using Plots.jl. Continuous-valued parameters are plotted as density estimates,
+discrete-valued parameters as histograms.
 
 $(_PARAM_DOCSTRING("mixeddensity"))
+
+$(_PLOTS_KWARGS_DOCSTRING)
 """
 function mixeddensity end
 
@@ -67,6 +72,8 @@ Plot the running mean of the specified parameter(s) in the given `FlexiChain` us
 Plots.jl.
 
 $(_PARAM_DOCSTRING("meanplot"))
+
+$(_PLOTS_KWARGS_DOCSTRING)
 """
 function meanplot end
 
@@ -92,8 +99,11 @@ Plots.jl.
 
 $(_PARAM_DOCSTRING("rankplot"))
 
-If `overlay` is `false`, a separate histogram is plotted for each chain. If `true`, the
-histograms for each chain are overlaid on top of each other, with different colours.
+If `overlay` is `false` (the default), a separate histogram is plotted for each chain.
+If `true`, the histograms for all chains are overlaid on a single plot with different
+colours.
+
+$(_PLOTS_KWARGS_DOCSTRING)
 """
 function rankplot end
 
@@ -119,15 +129,16 @@ function rankplot! end
 Plot the autocorrelation of the specified parameter(s) in the given `FlexiChain` using
 Plots.jl.
 
-The `lags` keyword argument can be used to specify which lags to plot. If `nothing` is
-passed (the default), this is set to the integers from 1 to `min(niters-1,
-round(Int,10*log10(niters)))` where `niters` is the number of iterations in the chain. This
-mimics the default behaviour of [`StatsBase.autocor`](@extref).
-
-The `demean` keyword argument specifies whether to subtract the mean of the parameter before
-computing the autocorrelation, and is passed to [`StatsBase.autocor`](@extref).
-
 $(_PARAM_DOCSTRING("autocorplot"))
+
+The `lags` keyword argument specifies which lags to plot. By default, this is set to the
+integers from 1 to `min(niters-1, round(Int,10*log10(niters)))`, mimicking the default
+behaviour of [`StatsBase.autocor`](@extref).
+
+The `demean` keyword argument specifies whether to subtract the mean before computing the
+autocorrelation (default `true`), and is passed to [`StatsBase.autocor`](@extref).
+
+$(_PLOTS_KWARGS_DOCSTRING)
 """
 function autocorplot end
 

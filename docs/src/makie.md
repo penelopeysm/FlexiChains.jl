@@ -52,7 +52,7 @@ The intention is to allow you to build more complex figures using these as build
 ## Setup
 
 Here, we create a model with different types of parameters (continuous, discrete, and vector-valued).
-This is the same model as used on the Plots.jl documentation page, so we will not repeat the explanations.
+This is the same model as used on the Plots.jl documentation page.
 
 ```@example 1
 using FlexiChains, CairoMakie, Turing

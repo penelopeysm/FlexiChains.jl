@@ -29,7 +29,7 @@ The following series types are supported for `FlexiChain` objects.
 !!! note "Feature parity with MCMCChains.jl"
     There are still somewhat fewer options than in MCMCChains.jl. Other plot types will be added over time, but in the meantime if you need features from MCMCChains, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using `MCMCChains.Chains(chn)`. Help with adding new plots is very much welcome!
 
-## Signature
+## General interface
 
 The above plotting functions should be called with the following signature:
 
@@ -55,7 +55,7 @@ plotfunc(
 
 - Other keyword arguments are passed through to the underlying Plots.jl functions which allow you to, for example, control the appearance of the plot.
 
-## Gallery
+## Setup
 
 Here, we demonstrate the plotting features with a typical chain sampled from a Turing model.
 However, the general principles are applicable to any `FlexiChain` object.
@@ -77,8 +77,13 @@ chn = sample(
 )
 ```
 
+## Default plot
+
+Calling `plot(chn)` produces a trace plot and mixed density side-by-side for each parameter.
+
 Notice that the chain has not split `z` up into `z[1]` and `z[2]`.
-However, when plotting, it will be automatically split up for you:
+However, when plotting, it will be automatically split up for you.
+Also notice that `Extra` keys, like the log probabilities, are not plotted by default.
 
 ```@example 1
 plot(chn)
@@ -87,7 +92,6 @@ savefig("plot1.svg"); nothing # hide
 
 ![Trace and density plots of the sampled chain](plot1.svg)
 
-Notice that `Extra` keys, like the log probabilities, are not plotted by default.
 If you want to plot specific parameter(s), you can specify them as the second positional argument.
 In general, the second argument can be _anything_ that you can index into a chain with.
 This means a symbol, a parameter, a `FlexiChains.Extra`, a sub-VarName, or a vector thereof:
@@ -99,20 +103,7 @@ savefig("plot2.svg"); nothing # hide
 
 ![Trace and density plots of x and the logjoint](plot2.svg)
 
-While the density plots above are useful for comparing whether the chains have mixed well, the overlapping histograms are harder to make sense of.
-You can combine the histograms by setting `pool_chains=true`.
-We'll also hide the legend to reduce clutter (keyword arguments like `legend` are simply passed through to Plots.jl):
-
-```@example 1
-plot(chn; pool_chains=true, legend=false)
-savefig("plot3.svg"); nothing # hide
-```
-
-![Trace and pooled density plots of the sampled chain](plot3.svg)
-
-## Docstrings
-
-Note that these are only the functions which FlexiChains defines: a number of Plots.jl's actual functions (like `histogram` and `density`) also work with `FlexiChain` objects, as described in the table above, but their docstrings are not included here.
+## Trace plots
 
 ```@docs
 FlexiChains.traceplot
@@ -125,6 +116,8 @@ savefig("traceplot.svg"); nothing # hide
 
 ![Trace plots of the sampled chain](traceplot.svg)
 
+## Running mean plots
+
 ```@docs
 FlexiChains.meanplot
 ```
@@ -135,6 +128,8 @@ savefig("meanplot.svg"); nothing # hide
 ```
 
 ![Running mean plots of the sampled chain](meanplot.svg)
+
+## Rank plots
 
 ```@docs
 FlexiChains.rankplot
@@ -147,6 +142,8 @@ savefig("rankplot.svg"); nothing # hide
 
 ![Rank plots of the sampled chain](rankplot.svg)
 
+## Autocorrelation plots
+
 ```@docs
 FlexiChains.autocorplot
 ```
@@ -157,6 +154,8 @@ savefig("autocorplot.svg"); nothing # hide
 ```
 
 ![Autocorrelation plots of the sampled chain](autocorplot.svg)
+
+## Mixed density plots
 
 ```@docs
 FlexiChains.mixeddensity
