@@ -7,6 +7,20 @@ function _default_rankplot_axis(k::FC.ParameterOrExtra, chn_idx)
     return (xlabel = "rank", title = title)
 end
 
+"""
+    FlexiChains.mrankplot(
+        chn::FC.FlexiChain[, param_or_params];
+        overlay::Bool=false,
+        kwargs...,
+    )
+
+Create rank plots for the specified parameters in the chain. If `param_or_params` is not
+provided, plots all parameters in the chain.
+
+If `overlay` is true, then the histograms for all chains are plotted on the same axis.
+
+$(MAKIE_KWARGS_DOCSTRING)
+"""
 function FC.mrankplot(
         chn::FC.FlexiChain,
         param_or_params = FC.Parameter.(FC.parameters(chn));
@@ -52,15 +66,15 @@ function FC.mrankplot(
     return Makie.FigureAxisPlot(figure, a, p)
 end
 
-"""
-This handles plotting onto a single Axis.
-"""
+########################
+# Single axis plotting #
+########################
 function FC.mrankplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
     return FC.mrankplot!(
-        Makie.Axis(grid; _default_rankplot_axis(k)..., axis...), chn, param; kwargs...
+        Makie.Axis(grid; _default_rankplot_axis(k, nothing)..., axis...), chn, param; kwargs...
     )
 end
 function FC.mrankplot!(ax::Makie.Axis, chn::FC.FlexiChain, param; overlay = false, kwargs...)

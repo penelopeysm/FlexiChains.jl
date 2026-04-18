@@ -181,7 +181,7 @@ end
     yticks --> nothing
     yshowaxis --> false
     title --> "$(FC.get_name(r.param)) (chain $(r.chn_idx))"
-    bins --> 50
+    bins --> 25
     normalize --> :pdf
     label --> nothing
     return rank_vec
@@ -196,7 +196,7 @@ end
             yshowaxis --> false
             title --> "$(FC.get_name(r.param))"
             label --> "chain $chn_idx"
-            bins --> 50
+            bins --> 25
             normalize --> :pdf
             rank_vec
         end

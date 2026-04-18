@@ -1,3 +1,21 @@
+"""
+    Makie.plot(
+        chn::FC.FlexiChain,
+        param_or_params = FC.Parameter.(FC.parameters(chn));
+        layout::Union{Tuple{Int,Int},Nothing}=nothing,
+        pool_chains::Bool=false,
+        figure=(;),
+        axis=(;),
+        legend=(;),
+        legend_position::Symbol=:bottom,
+        kwargs...,
+    )
+
+Plot the parameters in a `FlexiChain` using `Makie`. For each parameter, a trace plot and a
+density plot are created.
+
+$(MAKIE_KWARGS_DOCSTRING)
+"""
 function Makie.plot(
         chn::FC.FlexiChain,
         param_or_params = FC.Parameter.(FC.parameters(chn));

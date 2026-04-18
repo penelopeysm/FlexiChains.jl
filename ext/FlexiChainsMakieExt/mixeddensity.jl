@@ -4,7 +4,17 @@ function isdiscrete(chn::FC.FlexiChain{T}, k::FC.ParameterOrExtra{<:T}) where {T
 end
 
 """
-This handles plotting onto a full Figure.
+    FlexiChains.mmixeddensity(
+        chn::FC.FlexiChain[, param_or_params];
+        pool_chains::Bool=false,
+        kwargs...,
+    )
+
+Create mixed density plots (i.e., density plots for continuous parameters and histograms for
+discrete parameters) for the specified parameters in the chain. If `param_or_params` is not
+provided, plots all parameters in the chain.
+
+$(MAKIE_KWARGS_DOCSTRING)
 """
 function FC.mmixeddensity(
         chn::FC.FlexiChain,
@@ -44,9 +54,9 @@ function FC.mmixeddensity(
     return Makie.FigureAxisPlot(figure, a, p)
 end
 
-"""
-This handles plotting onto a single Axis.
-"""
+########################
+# Single axis plotting #
+########################
 function FC.mmixeddensity(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96

@@ -2,13 +2,38 @@ function _default_histogram_axis(k::FC.ParameterOrExtra)
     return (xlabel = "value", ylabel = "probability", title = string(k.name))
 end
 
+HIST_DOCSTRING = """
+    Makie.hist(
+        chn::FC.FlexiChain[, param_or_params];
+        pool_chains::Bool=false,
+        kwargs...,
+    )
+
+Create a histogram for the specified parameters in the chain. If `param_or_params` is not
+provided, plots all parameters in the chain.
+
+$(MAKIE_KWARGS_DOCSTRING)
+"""
+
+STEPHIST_DOCSTRING = """
+    Makie.stephist(
+        chn::FC.FlexiChain[, param_or_params];
+        pool_chains::Bool=false,
+        kwargs...,
+    )
+
+Create a step histogram for the specified parameters in the chain. If`param_or_params` is
+not provided, plots all parameters in the chain.
+
+$(MAKIE_KWARGS_DOCSTRING)
+"""
+
 for f in (:hist, :stephist)
     f! = Symbol(f, '!')
+    docstr = f === :hist ? HIST_DOCSTRING : STEPHIST_DOCSTRING
 
     expr = quote
-        """
-        This handles plotting onto a full Figure.
-        """
+        @doc $docstr
         function Makie.$f(
                 chn::FC.FlexiChain,
                 param_or_params = FC.Parameter.(FC.parameters(chn));
@@ -42,9 +67,9 @@ for f in (:hist, :stephist)
             return Makie.FigureAxisPlot(figure, a, p)
         end
 
-        """
-        This handles plotting onto a single Axis.
-        """
+        ########################
+        # Single axis plotting #
+        ########################
         function Makie.$f(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
             # TODO: Error if there is already something at the grid position?
             # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96

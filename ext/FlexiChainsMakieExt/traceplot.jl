@@ -3,7 +3,15 @@ function _default_traceplot_axis(k::FC.ParameterOrExtra)
 end
 
 """
-This handles plotting onto a full Figure.
+    FlexiChains.mtraceplot(
+        chn::FC.FlexiChain[, param_or_params];
+        kwargs...,
+    )
+
+Create trace plots for the specified parameters in the chain. If `param_or_params` is not
+provided, plots all parameters in the chain.
+
+$(MAKIE_KWARGS_DOCSTRING)
 """
 function FC.mtraceplot(
         chn::FC.FlexiChain,
@@ -35,9 +43,9 @@ function FC.mtraceplot(
     return Makie.FigureAxisPlot(figure, a, p)
 end
 
-"""
-This handles plotting onto a single Axis.
-"""
+########################
+# Single axis plotting #
+########################
 function FC.mtraceplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96

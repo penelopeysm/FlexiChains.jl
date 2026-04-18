@@ -122,9 +122,11 @@ Makie.save("rankplot_makie.png", ans.figure); # hide
 
 ## Docstrings
 
-Note that these are only the functions which FlexiChains defines: a number of Makie.jl's actual functions (like `hist` and `density`) also work with `FlexiChain` objects, as described in the table above, but their docstrings are not included here.
-
 ```@docs
+Makie.plot
+Makie.hist
+Makie.stephist
+Makie.density
 FlexiChains.mtraceplot
 FlexiChains.mmixeddensity
 FlexiChains.mrankplot
