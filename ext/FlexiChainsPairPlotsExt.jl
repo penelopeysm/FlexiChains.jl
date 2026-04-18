@@ -12,7 +12,7 @@ column for each key in the chain.
 
 Note that this function will include *all* keys in the chain, including `Extra` keys. If you
 only want to include a subset of keys, you should first subset the chain, for example with
-`chn[[key1, key2, ...]]]`, and then pass that subsetted chain in.
+`chn[[key1, key2, ...]]`, and then pass that subsetted chain in.
 
 If `split_varnames` is `true`, then parameters in the chain will be split into their
 constituent real-valued elements. This is necessary for plotting. In practice there should
