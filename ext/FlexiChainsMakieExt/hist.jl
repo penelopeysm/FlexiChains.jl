@@ -9,9 +9,13 @@ HIST_DOCSTRING = """
         kwargs...,
     )
 
-Create a histogram for the specified parameters in the chain. If `param_or_params` is not
-provided, plots all parameters in the chain.
+Create histograms for the specified parameters in the chain.
 
+$(FC._PARAM_DOCSTRING("Makie.hist"))
+
+# Keyword arguments
+
+- `pool_chains::Bool`: whether to pool data from all chains into a single plot, or to plot each chain separately. Defaults to `false`.
 $(MAKIE_KWARGS_DOCSTRING)
 """
 
@@ -22,9 +26,13 @@ STEPHIST_DOCSTRING = """
         kwargs...,
     )
 
-Create a step histogram for the specified parameters in the chain. If`param_or_params` is
-not provided, plots all parameters in the chain.
+Create a step histogram for the specified parameters in the chain.
 
+$(FC._PARAM_DOCSTRING("Makie.stephist"))
+
+# Keyword arguments
+
+- `pool_chains::Bool`: whether to pool data from all chains into a single plot, or to plot each chain separately. Defaults to `false`.
 $(MAKIE_KWARGS_DOCSTRING)
 """
 

@@ -14,11 +14,14 @@ end
         kwargs...,
     )
 
-Create rank plots for the specified parameters in the chain. If `param_or_params` is not
-provided, plots all parameters in the chain.
+Create rank plots for the specified parameters in the chain.
 
-If `overlay` is true, then the histograms for all chains are plotted on the same axis.
+$(FC._PARAM_DOCSTRING("FlexiChains.mrankplot"))
 
+# Keyword arguments
+
+- `overlay::Bool`: whether to overlay the histograms for all chains on the same axis, or to
+  plot each chain separately. Defaults to `false`.
 $(MAKIE_KWARGS_DOCSTRING)
 """
 function FC.mrankplot(

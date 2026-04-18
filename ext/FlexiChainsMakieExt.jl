@@ -7,7 +7,7 @@ using Makie: ColorTypes
 const FC = FlexiChains
 const MakieGrids = Union{Makie.GridPosition, Makie.GridSubposition}
 
-const MAKIE_KWARGS_DOCSTRING = """- `pool_chains::Bool`: whether to pool data from all chains into a single plot, or to plot each chain separately. Defaults to `false`.
+const MAKIE_KWARGS_DOCSTRING = """
 - `figure::NamedTuple`: Additional keyword arguments passed to the `Makie.Figure` constructor.
 - `axis::NamedTuple`: Additional keyword arguments passed to the `Makie.Axis` constructor for each subplot.
 - `legend::NamedTuple`: Additional keyword arguments passed to the `Makie.Legend` constructor, if the legend is added.

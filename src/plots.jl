@@ -145,16 +145,6 @@ function autocorplot! end
 # Makie overloads #
 ###################
 
-"""
-    FlexiChains.mtraceplot(
-        chn::FlexiChain{TKey}[, param_or_params];
-        kwargs...
-    )
-
-Create a trace plot of the specified parameter(s) in the given `FlexiChain` using Makie.jl.
-
-$(_PARAM_DOCSTRING("mtraceplot"))
-"""
 function mtraceplot end
 
 """
@@ -164,17 +154,6 @@ Mutating version of `mtraceplot`, for use with existing Makie.Axis objects.
 """
 function mtraceplot! end
 
-"""
-    FlexiChains.mrankplot(
-        chn::FlexiChain{TKey}[, param_or_params];
-        overlay::Bool=false,
-        kwargs...
-    )
-
-Create a rank plot of the specified parameter(s) in the given `FlexiChain` using Makie.jl.
-
-$(_PARAM_DOCSTRING("mrankplot"))
-"""
 function mrankplot end
 
 """
@@ -184,18 +163,6 @@ Mutating version of `mrankplot`, for use with existing Makie.Axis objects.
 """
 function mrankplot! end
 
-"""
-    FlexiChains.mmixeddensity(
-        chn::FlexiChain{TKey}[, param_or_params];
-        kwargs...
-    )
-
-Create a mixed density plot of the specified parameter(s) in the given `FlexiChain` using
-Makie.jl: if the parameter is continuous-valued, a density plot is created; if
-discrete-valued, a histogram is created.
-
-$(_PARAM_DOCSTRING("mmixeddensity"))
-"""
 function mmixeddensity end
 
 """

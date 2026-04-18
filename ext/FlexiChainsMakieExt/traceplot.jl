@@ -8,8 +8,11 @@ end
         kwargs...,
     )
 
-Create trace plots for the specified parameters in the chain. If `param_or_params` is not
-provided, plots all parameters in the chain.
+Create trace plots for the specified parameters in the chain.
+
+$(FC._PARAM_DOCSTRING("FlexiChains.mtraceplot"))
+
+# Keyword arguments
 
 $(MAKIE_KWARGS_DOCSTRING)
 """

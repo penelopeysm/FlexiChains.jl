@@ -9,9 +9,13 @@ end
         kwargs...,
     )
 
-Create density plots for the specified parameters in the chain. If `param_or_params` is not
-provided, plots all parameters in the chain.
+Create density plots for the specified parameters in the chain.
 
+$(FC._PARAM_DOCSTRING("Makie.density"))
+
+# Keyword arguments
+
+- `pool_chains::Bool`: whether to pool data from all chains into a single plot, or to plot each chain separately. Defaults to `false`.
 $(MAKIE_KWARGS_DOCSTRING)
 """
 function Makie.density(

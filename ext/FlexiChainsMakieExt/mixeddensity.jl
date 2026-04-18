@@ -11,9 +11,13 @@ end
     )
 
 Create mixed density plots (i.e., density plots for continuous parameters and histograms for
-discrete parameters) for the specified parameters in the chain. If `param_or_params` is not
-provided, plots all parameters in the chain.
+discrete parameters) for the specified parameters in the chain.
 
+$(FC._PARAM_DOCSTRING("FlexiChains.mmixeddensity"))
+
+# Keyword arguments
+
+- `pool_chains::Bool`: whether to pool data from all chains into a single plot, or to plot each chain separately. Defaults to `false`.
 $(MAKIE_KWARGS_DOCSTRING)
 """
 function FC.mmixeddensity(
