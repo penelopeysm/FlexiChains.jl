@@ -81,6 +81,34 @@ Same as `FlexiChains.meanplot`, but uses `plot!` instead of `plot`.
 function meanplot! end
 
 """
+    FlexiChains.rankplot(
+        chn::FlexiChain{TKey}[, param_or_params];
+        overlay::Bool=false,
+        kwargs...
+    )
+
+Plot a histogram of ranks for the specified parameter(s) in the given `FlexiChain` using
+Plots.jl.
+
+$(_PARAM_DOCSTRING("rankplot"))
+
+If `overlay` is `false`, a separate histogram is plotted for each chain. If `true`, the
+histograms for each chain are overlaid on top of each other, with different colours.
+"""
+function rankplot end
+
+"""
+    FlexiChains.rankplot!(
+        chn::FlexiChain{TKey}[, param_or_params];
+        overlay::Bool=false,
+        kwargs...
+    )
+
+Same as `FlexiChains.rankplot`, but uses `plot!` instead of `plot`.
+"""
+function rankplot! end
+
+"""
     FlexiChains.autocorplot(
         chn::FlexiChain{TKey}[, param_or_params];
         lags=1:min(niters(chn)-1, round(Int,10*log10(niters(chn)))),
@@ -169,6 +197,7 @@ module PlotUtils
     const DEFAULT_HEIGHT = 250
 
     using ..FlexiChains:
+        FlexiChains,
         FlexiChain,
         ParameterOrExtra,
         VarName,
@@ -176,6 +205,8 @@ module PlotUtils
         niters,
         _get_multi_keys,
         _get_multi_key
+    import DimensionalData as DD
+    import StatsBase
 
     """
     Return a chain that has been:
@@ -222,6 +253,25 @@ module PlotUtils
     struct FlexiChainTrace{TKey, Tp <: ParameterOrExtra{<:TKey}}
         chn::FlexiChain{TKey}
         param::Tp
+    end
+
+    struct FlexiChainRank{TKey, Tp <: ParameterOrExtra{<:TKey}}
+        chn::FlexiChain{TKey}
+        param::Tp
+        # indicates which one to plot
+        chn_idx
+        # indexed by iter/chain -- note this matrix contains ranks for all chains because we
+        # need to calculate ranks across all chains, even if we only plot one.
+        ranks::DD.DimMatrix{<:Real}
+    end
+    function get_ranks(chn::FlexiChain{TKey}, param::Tp) where {TKey, Tp <: ParameterOrExtra{<:TKey}}
+        return StatsBase.tiedrank(chn[param])
+    end
+
+    struct FlexiChainRankOverlay{TKey, Tp <: ParameterOrExtra{<:TKey}}
+        chn::FlexiChain{TKey}
+        param::Tp
+        ranks::DD.DimMatrix{<:Real} # same as above
     end
 
     struct FlexiChainHistogram{TKey, Tp <: ParameterOrExtra{<:TKey}}

@@ -47,13 +47,14 @@ Here is a rough overview of the current status:
 | Type of plot                    | Plots.jl                   | Makie.jl                          |
 | --------------                  | ----------                 | ----------                        |
 | Trace + mixed density (default) | `Plots.plot`               | `Makie.plot`                      |
+| Pair / corner plots             | not yet implemented        | `PairPlots.pairplot`              |
 | Trace plots                     | `FlexiChains.traceplot`    | `FlexiChains.mtraceplot`          |
 | Density plots                   | `Plots.density`            | `Makie.density`                   |
 | Histograms                      | `Plots.histogram`          | `Makie.hist` and `Makie.stephist` |
 | Mixed density plots             | `FlexiChains.mixeddensity` | `FlexiChains.mmixeddensity`       |
 | Running mean plots              | `FlexiChains.meanplot`     | not yet implemented               |
 | Autocorrelation plots           | `FlexiChains.autocorplot`  | not yet implemented               |
-| Corner plots                    | not yet implemented        | not yet implemented               |
+| Rank plots                      | `FlexiChains.rankplot`     | not yet implemented               |
 | Violin plots                    | not yet implemented        | not yet implemented               |
 | Energy plots                    | not yet implemented        | not yet implemented               |
 | Forest plots                    | not yet implemented        | not yet implemented               |
@@ -63,5 +64,3 @@ All of the above functions have 'mutating' versions with a `!` suffix.
 
 Notice that for the functions provided by FlexiChains, the corresponding Makie.jl version is prefixed with `m`.
 This is necessary for disambiguation, much like how `Plots.plot()` and `Makie.plot()` are different functions.
-
-Feature parity with MCMCChains.jl is not yet complete, but is planned for the near future.
