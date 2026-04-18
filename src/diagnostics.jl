@@ -6,7 +6,7 @@ function _gelmandiag_summary(
     ) where {TKey}
     data = OrderedDict{ParameterOrExtra{<:TKey}, Array{Float64, 3}}()
     for (i, k) in enumerate(kept_keys)
-        data[k] = reshape([psrf[i], psrfci[i]], 1, 1, 2)
+        data[Parameter(k)] = reshape([psrf[i], psrfci[i]], 1, 1, 2)
     end
     return FlexiSummary{TKey}(
         data, nothing, nothing, _make_categorical([:psrf, :psrfci])
@@ -116,7 +116,7 @@ function MCMCDiagnosticTools.discretediag(
     # Between-chain summary: both iter and chain dimensions collapsed
     between_data = OrderedDict{ParameterOrExtra{<:TKey}, Array{Float64, 3}}()
     for (i, k) in enumerate(kept_keys)
-        between_data[k] = reshape(
+        between_data[Parameter(k)] = reshape(
             Float64[between_vals.stat[i], between_vals.df[i], between_vals.pvalue[i]],
             1, 1, 3,
         )
@@ -131,7 +131,7 @@ function MCMCDiagnosticTools.discretediag(
         vals[1, :, 1] = within_vals.stat[i, :]
         vals[1, :, 2] = within_vals.df[i, :]
         vals[1, :, 3] = within_vals.pvalue[i, :]
-        within_data[k] = vals
+        within_data[Parameter(k)] = vals
     end
     within = FlexiSummary{TKey}(
         within_data, nothing, FlexiChains.chain_indices(chain), stat_names,

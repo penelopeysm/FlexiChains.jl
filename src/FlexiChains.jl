@@ -67,8 +67,8 @@ include("plots.jl")
 @public mrankplot, mrankplot!
 
 # Convenience re-exports.
-using DimensionalData: At, Near, Contains, (..), Touches, Where, Not
-export At, Near, Contains, (..), Touches, Where, Not
+using DimensionalData: At, Near, Contains, (..), Touches, Where, Not, DimArray
+export At, Near, Contains, (..), Touches, Where, Not, DimArray
 using Statistics: mean, median, std, var, quantile
 export mean, median, std, var, quantile
 using StatsBase: summarystats, mad
