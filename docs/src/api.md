@@ -126,7 +126,7 @@ FlexiChains.subset_extras
 ## Converting to flattened arrays
 
 ```@docs
-DimensionalData.DimArray(::FlexiChain; kwargs...)
+DimensionalData.DimArray(::FlexiChains.FlexiChain; kwargs...)
 ```
 
 ## Extracting per-iteration samples

@@ -114,7 +114,8 @@ function DD.DimArray(
     else
         ParameterOrExtra{<:TKey}[]
     end
-    kept_data = Matrix{<:Real}[]
+    ni, nc = size(chain)
+    kept_data = Array{eltype_filter}(undef, ni, nc, 0)
     skipped_keys = ParameterOrExtra{<:TKey}[]
     for (k, v) in chain._data
         if eltype(v) <: T && (!parameters_only || k isa Parameter)
@@ -124,27 +125,26 @@ function DD.DimArray(
                 k
             end
             push!(kept_keys, k)
-            push!(kept_data, v)
+            kept_data = cat(kept_data, reshape(v, ni, nc, 1); dims = 3)
         else
-            push!(skipped_keys, k)
+            if !(parameters_only && k isa Extra)
+                push!(skipped_keys, k)
+            end
         end
     end
     if warn && !isempty(skipped_keys)
         skipped_str = join(("`$k`" for k in skipped_keys), ", ")
         @warn "skipping keys $skipped_str as their values do not subtype $T"
     end
-    ni, nc = size(chain)
-    arr = if isempty(kept_data)
-        # Gracefully return empty 3D array.
+    if isempty(kept_data)
         @warn "no keys with values subtyping $T found"
-        Array{Float64, 3}(undef, ni, nc, 0)
-    else
-        stack(kept_data)
     end
+    # Concretise as far as possible.
+    kept_data = [x for x in kept_data]
     dims = (
         DD.Dim{ITER_DIM_NAME}(iter_indices(chain)),
         DD.Dim{CHAIN_DIM_NAME}(chain_indices(chain)),
         DD.Dim{PARAM_DIM_NAME}(kept_keys),
     )
-    return DD.DimArray(arr, dims)
+    return DD.DimArray(kept_data, dims)
 end

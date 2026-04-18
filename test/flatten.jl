@@ -25,9 +25,10 @@ using Test
                 Extra(:lp) => -3.0,
             )
             chain = FlexiChain{Symbol}(N_iters, N_chains, fill(d, N_iters, N_chains))
+
             # test that parameters_only=true by default
             da = DD.DimArray(chain; warn = false)
-            @test da isa DD.DimArray
+            @test da isa DD.DimArray{Float64, 3}
             @test size(da) == (N_iters, N_chains, 2)
             @test val(DD.dims(da, :iter)) == val(iter_indices(chain))
             @test val(DD.dims(da, :chain)) == val(chain_indices(chain))
@@ -38,6 +39,7 @@ using Test
 
             # test parameters_only=false
             da_all = DD.DimArray(chain; parameters_only = false, warn = false)
+            @test da isa DD.DimArray{Float64, 3}
             @test size(da_all) == (N_iters, N_chains, 3)
             @test val(DD.dims(da_all, :iter)) == val(iter_indices(chain))
             @test val(DD.dims(da_all, :chain)) == val(chain_indices(chain))
@@ -46,6 +48,19 @@ using Test
             @test all(x -> x == -3.0, da_all[:, :, At(Extra(:lp))])
             param_keys = collect(val(DD.dims(da_all, :param)))
             @test param_keys == [Parameter(:a), Parameter(:b), Extra(:lp)]
+        end
+
+        @testset "avoid over-concretisation of eltype" begin
+            N_iters, N_chains = 10, 2
+            d = OrderedDict(
+                Parameter(:a) => 1.0,
+                Parameter(:b) => false,
+            )
+            chain = FlexiChain{Symbol}(N_iters, N_chains, fill(d, N_iters, N_chains))
+            da = DD.DimArray(chain; warn = false)
+            @test eltype(da) == Real
+            @test eltype(map(identity, da[param = 1])) == Float64
+            @test eltype(map(identity, da[param = 2])) == Bool
         end
 
         @testset "VarName-keyed chain with array-valued param" begin
@@ -101,6 +116,7 @@ using Test
             da = @test_logs (:warn,) (:warn, r"no keys") DD.DimArray(
                 chain; eltype_filter = Float64
             )
+            @test da isa DD.DimArray{Float64, 3}
             @test size(da) == (N_iters, 1, 0)
         end
 
