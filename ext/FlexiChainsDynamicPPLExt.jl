@@ -133,6 +133,22 @@ function AbstractMCMC.from_samples(
         size(params_and_stats, 1), size(params_and_stats, 2), dicts; structures = structures
     )
 end
+"""
+    AbstractMCMC.from_samples(
+        ::Type{<:VNChain},
+        params_and_stats::AbstractMatrix{<:DynamicPPL.VarNamedTuple}
+    )::VNChain
+
+Convert a matrix of [`DynamicPPL.VarNamedTuple`](@extref) to a `VNChain`.
+"""
+function AbstractMCMC.from_samples(
+        ::Type{<:VNChain}, vnts::AbstractMatrix{<:DynamicPPL.VarNamedTuple}
+    )::VNChain
+    pwss = map(vnts) do vnt
+        DynamicPPL.ParamsWithStats(vnt, (;))
+    end
+    return AbstractMCMC.from_samples(VNChain, pwss)
+end
 
 """
     AbstractMCMC.to_samples(
@@ -181,6 +197,12 @@ function AbstractMCMC.to_samples(
     end
     return FlexiChains._raw_to_user_data(chain, pwss)
 end
+function AbstractMCMC.to_samples(
+        ::Type{DynamicPPL.VarNamedTuple}, chain::FlexiChain{T}, model::DynamicPPL.Model
+    )::DD.DimMatrix{<:DynamicPPL.VarNamedTuple} where {T <: VarName}
+    pwss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, chain, model)
+    return map(pws -> pws.params, pwss)
+end
 
 function AbstractMCMC.to_samples(
         ::Type{DynamicPPL.ParamsWithStats}, chain::FlexiChain{T}
@@ -208,6 +230,12 @@ function AbstractMCMC.to_samples(
         end
     end
     return FlexiChains._raw_to_user_data(chain, pwss)
+end
+function AbstractMCMC.to_samples(
+        ::Type{DynamicPPL.VarNamedTuple}, chain::FlexiChain{T},
+    )::DD.DimMatrix{<:DynamicPPL.VarNamedTuple} where {T <: VarName}
+    pwss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, chain)
+    return map(pws -> pws.params, pwss)
 end
 
 # This method will make `bundle_samples` 'just work'

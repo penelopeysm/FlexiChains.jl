@@ -14,6 +14,8 @@ Implemented a PairPlots.jl extension for FlexiChains.
 You can now call `pairplot(chn[, param_or_params])` to get a pair plot of the parameters in a chain.
 Note that this requires PairPlots.jl as well as a Makie backend (e.g. GLMakie or CairoMakie) to be loaded.
 
+Added methods for `AbstractMCMC.from_samples` and `AbstractMCMC.to_samples` to convert `FlexiChain{VarName}` to and from `DynamicPPL.VarNamedTuple`.
+
 # 0.4.9
 
 Implemented `MCMCDiagnosticTools.gelmandiag`, `MCMCDiagnosticTools.gelmandiag_multivariate`, and `MCMCDiagnosticTools.discretediag` for `FlexiChain`s.
