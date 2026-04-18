@@ -140,7 +140,7 @@ end
     )::VNChain
 
 Convert a matrix of [`DynamicPPL.VarNamedTuple`](@extref
-`DynamicPPL.VarNamedTuples.VarNamedTuple) to a `VNChain`.
+DynamicPPL.VarNamedTuples.VarNamedTuple) to a `VNChain`.
 """
 function AbstractMCMC.from_samples(
         ::Type{<:VNChain}, vnts::AbstractMatrix{<:DynamicPPL.VarNamedTuple}
