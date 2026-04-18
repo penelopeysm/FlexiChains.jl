@@ -145,7 +145,7 @@ FlexiChains.rankplot(chn)
 savefig("rankplot.svg"); nothing # hide
 ```
 
-![Rank plots of the sampled chain](meanplot.svg)
+![Rank plots of the sampled chain](rankplot.svg)
 
 ```@docs
 FlexiChains.autocorplot

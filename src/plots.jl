@@ -197,7 +197,6 @@ module PlotUtils
     const DEFAULT_HEIGHT = 250
 
     using ..FlexiChains:
-        FlexiChains,
         FlexiChain,
         ParameterOrExtra,
         VarName,

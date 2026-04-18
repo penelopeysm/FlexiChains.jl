@@ -14,14 +14,14 @@ macro overload_plot_func(plotfuncname, seriestype)
     plotfuncname! = if Meta.isexpr(plotfuncname, :., 2) && plotfuncname.args[2] isa QuoteNode
         :($(plotfuncname.args[1]).$(Symbol(plotfuncname.args[2].value, "!")))
     else
-        error("expected plotfuncname to be of the form `Module.plotfunc` or `Module.plotfunc!`")
+        error("expected plotfuncname to be of the form `Module.plotfunc`")
     end
     return quote
         function $(plotfuncname)(chn::FC.FlexiChain, args...; kwargs...)
             return plot(chn, args...; kwargs..., seriestype = $(seriestype))
         end
         function $(plotfuncname!)(chn::FC.FlexiChain, args...; kwargs...)
-            return plot!(chn, args; kwargs..., seriestype = $(seriestype))
+            return plot!(chn, args...; kwargs..., seriestype = $(seriestype))
         end
     end
 end
