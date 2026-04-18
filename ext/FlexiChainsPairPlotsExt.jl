@@ -105,7 +105,7 @@ function PairPlots.pairplot(
         )
     end
     # Identify divergent samples
-    divergence_arg = if divergence_mask !== nothing
+    divergence_arg = if divergence_mask !== nothing && any(divergence_mask)
         samples = NamedTuple(Symbol(FC.get_name(k)) => chn[k][divergence_mask] for k in keys(chn))
         # Can't plot Series => (Scatter,): see
         # https://github.com/sefffal/PairPlots.jl/issues/80
