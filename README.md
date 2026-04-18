@@ -76,7 +76,7 @@ Finally, functions in Turing.jl which take chains as input work out of the box, 
 returned(model, chain)                 # model's return value for each iteration
 predict(model, chain)                  # posterior predictions
 logjoint(model, chain)                 # log joint probability
-pointwise_logdensities(model, chain)   # log density for each observation
+pointwise_logdensities(model, chain)   # log densities for each tilde-statement
 ```
 
 

@@ -180,3 +180,20 @@ function MCMCDiagnosticTools.discretediag(
 
     return (; between, within)
 end
+
+"""
+    MCMCDiagnosticTools.bfmi(
+        chain::FlexiChain,
+        energy_key
+    )
+
+Calculate the Bayesian fraction of missing information (BFMI) from the given chain, using
+the specified `energy_key` to identify the key in the chain that corresponds to the
+Hamiltonian energy. Returns a `DimVector` of BFMI values, one per chain (note that even if
+there is only one chain, the result will still be a vector of length 1).
+
+For chains sampled with Turing.jl's HMC/NUTS, the energy key is `:hamiltonian_energy`.
+"""
+function MCMCDiagnosticTools.bfmi(chain::FlexiChain, energy_key)
+    return MCMCDiagnosticTools.bfmi(chain[energy_key])
+end
