@@ -207,7 +207,7 @@ module PlotUtils
     function subset_and_split_chain(
             chn::FlexiChain{TKey}, param_or_params
         )::FlexiChain where {TKey}
-        parameters_to_plot = if param_or_params isa AbstractVector
+        parameters_to_plot = if param_or_params isa Union{AbstractVector, Colon}
             _get_multi_keys(TKey, keys(chn), param_or_params)
         else
             # Assume it's a single key. No, don't ask what happens if the key type is an
