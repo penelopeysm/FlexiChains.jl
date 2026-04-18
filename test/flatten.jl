@@ -25,8 +25,19 @@ using Test
                 Extra(:lp) => -3.0,
             )
             chain = FlexiChain{Symbol}(N_iters, N_chains, fill(d, N_iters, N_chains))
+            # test that parameters_only=true by default
             da = DD.DimArray(chain; warn = false)
             @test da isa DD.DimArray
+            @test size(da) == (N_iters, N_chains, 2)
+            @test val(DD.dims(da, :iter)) == val(iter_indices(chain))
+            @test val(DD.dims(da, :chain)) == val(chain_indices(chain))
+            @test all(x -> x == 1.0, da[:, :, At(:a)])
+            @test all(x -> x == 2.0, da[:, :, At(:b)])
+            param_keys = collect(val(DD.dims(da, :param)))
+            @test param_keys == [:a, :b]
+
+            # test parameters_only=false
+            da_all = DD.DimArray(chain; parameters_only = false, warn = false)
             @test size(da) == (N_iters, N_chains, 3)
             @test val(DD.dims(da, :iter)) == val(iter_indices(chain))
             @test val(DD.dims(da, :chain)) == val(chain_indices(chain))
@@ -42,34 +53,12 @@ using Test
             d = OrderedDict(
                 Parameter(@varname(a)) => 1.0,
                 Parameter(@varname(b)) => [2.0, 3.0],
-                Extra(:lp) => -1.0,
             )
             chain = FlexiChain{VarName}(N_iters, N_chains, fill(d, N_iters))
             da = DD.DimArray(chain; warn = false)
-            @test size(da) == (N_iters, N_chains, 4)
+            @test size(da) == (N_iters, N_chains, 3)
             param_keys = collect(val(DD.dims(da, :param)))
-            @test param_keys == [
-                Parameter(@varname(a)),
-                Parameter(@varname(b[1])),
-                Parameter(@varname(b[2])),
-                Extra(:lp),
-            ]
-        end
-
-        @testset "parameters_only=true" begin
-            N_iters, N_chains = 6, 2
-            d = OrderedDict(
-                Parameter(:x) => 1.0,
-                Parameter(:y) => 2.0,
-                Extra(:lp) => -5.0,
-            )
-            chain = FlexiChain{Symbol}(N_iters, N_chains, fill(d, N_iters, N_chains))
-            da = DD.DimArray(chain; parameters_only = true, warn = false)
-            @test size(da) == (N_iters, N_chains, 2)
-            param_keys = collect(val(DD.dims(da, :param)))
-            @test param_keys == [:x, :y]
-            @test all(x -> x == 1.0, da[:, :, At(:x)])
-            @test all(x -> x == 2.0, da[:, :, At(:y)])
+            @test param_keys == [@varname(a), @varname(b[1]), @varname(b[2])]
         end
 
         @testset "eltype_filter" begin
@@ -82,7 +71,7 @@ using Test
             chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
             da = DD.DimArray(chain; eltype_filter = Float64, warn = false)
             param_keys = collect(val(DD.dims(da, :param)))
-            @test param_keys == [Parameter(:a), Extra(:lp)]
+            @test param_keys == [:a]
         end
 
         @testset "warns about skipped keys" begin

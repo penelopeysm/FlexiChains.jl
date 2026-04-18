@@ -80,7 +80,7 @@ end
         chain::FlexiChain{TKey};
         warn::Bool=true,
         eltype_filter=Any,
-        parameters_only::Bool=false
+        parameters_only::Bool=true,
     ) where {TKey}
 
 Convert a FlexiChain into a 3-dimensional `DimArray` with dimensions `(:iter, :chain,
@@ -93,9 +93,11 @@ all scalar parameters whose element type subtypes `eltype_filter` and stacking t
 Keys whose values do not subtype `eltype_filter` after splitting are skipped (with a warning
 if `warn=true`).
 
-If `parameters_only=true`, then two things happen:
+If `parameters_only=true` (the default), then two things happen:
 
-- Only parameters (not extras) are considered for inclusion in the `DimArray`.
+- Only parameters (not extras) are included in the `DimArray`. Otherwise, both
+  parameters and extras are included.
+
 - The keys in the `:param` dimension of the resulting `DimArray` are just
   `TKey`, i.e., the `Parameter` wrapper is removed. Otherwise, the keys will
   be `Union{Parameter{<:TKey},Extra}`.
@@ -104,7 +106,7 @@ function DD.DimArray(
         chain::FlexiChain{TKey};
         warn::Bool = true,
         eltype_filter::Type{T} = Any,
-        parameters_only::Bool = false
+        parameters_only::Bool = true,
     ) where {TKey, T}
     chain = FlexiChains._split_varnames(chain)
     kept_keys = if parameters_only
