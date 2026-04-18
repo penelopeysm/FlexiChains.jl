@@ -54,7 +54,7 @@ Here is a rough overview of the current status:
 | Mixed density plots             | `FlexiChains.mixeddensity` | `FlexiChains.mmixeddensity`       |
 | Running mean plots              | `FlexiChains.meanplot`     | not yet implemented               |
 | Autocorrelation plots           | `FlexiChains.autocorplot`  | not yet implemented               |
-| Rank plots                      | `FlexiChains.rankplot`     | not yet implemented               |
+| Rank plots                      | `FlexiChains.rankplot`     | `FlexiChains.mrankplot`           |
 | Violin plots                    | not yet implemented        | not yet implemented               |
 | Energy plots                    | not yet implemented        | not yet implemented               |
 | Forest plots                    | not yet implemented        | not yet implemented               |

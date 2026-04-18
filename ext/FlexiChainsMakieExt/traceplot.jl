@@ -18,15 +18,7 @@ function FC.mtraceplot(
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
-    nrows, ncols = if isnothing(layout)
-        length(keys_to_plot), 1
-    else
-        layout
-    end
-    figure = Makie.Figure(;
-        size = (FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
-        figure...,
-    )
+    nrows, ncols, figure = setup_figure_and_layout(length(keys_to_plot), 1, layout, figure)
     a, p = nothing, nothing
     # This order means that plots go from left to right before going to the next row
     indices = Iterators.product(1:ncols, 1:nrows)

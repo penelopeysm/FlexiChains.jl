@@ -63,6 +63,7 @@ include("plots.jl")
 @public autocorplot, autocorplot!
 # Extended in Makie extension
 @public mtraceplot, mtraceplot!
+@public mrankplot, mrankplot!
 
 # Convenience re-exports.
 using DimensionalData: At, Near, Contains, (..), Touches, Where, Not

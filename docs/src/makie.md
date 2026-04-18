@@ -109,7 +109,16 @@ FlexiChains.mtraceplot(chn, [@varname(x), @varname(y)];
 Makie.save("traceplot_makie.png", ans.figure); # hide
 ```
 
-![Trace plots of the sampled chain, with a red/blue/green colour scheme](density_makie.png)
+![Density plots of the sampled chain, with a red/blue/green colour scheme](density_makie.png)
+
+Rank plots:
+
+```@example 1
+FlexiChains.mrankplot(chn; overlay=true)
+Makie.save("rankplot_makie.png", ans.figure); # hide
+```
+
+![Rank plots of the sampled chain](rankplot_makie.png)
 
 ## Docstrings
 
@@ -118,4 +127,5 @@ Note that these are only the functions which FlexiChains defines: a number of Ma
 ```@docs
 FlexiChains.mtraceplot
 FlexiChains.mmixeddensity
+FlexiChains.mrankplot
 ```

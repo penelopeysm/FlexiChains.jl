@@ -165,6 +165,26 @@ Mutating version of `mtraceplot`, for use with existing Makie.Axis objects.
 function mtraceplot! end
 
 """
+    FlexiChains.mrankplot(
+        chn::FlexiChain{TKey}[, param_or_params];
+        overlay::Bool=false,
+        kwargs...
+    )
+
+Create a rank plot of the specified parameter(s) in the given `FlexiChain` using Makie.jl.
+
+$(_PARAM_DOCSTRING("mrankplot"))
+"""
+function mrankplot end
+
+"""
+    FlexiChains.mrankplot!
+
+Mutating version of `mrankplot`, for use with existing Makie.Axis objects.
+"""
+function mrankplot! end
+
+"""
     FlexiChains.mmixeddensity(
         chn::FlexiChain{TKey}[, param_or_params];
         kwargs...

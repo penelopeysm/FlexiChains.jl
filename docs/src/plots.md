@@ -24,7 +24,7 @@ The following series types are supported for `FlexiChain` objects.
 | `:rankplot_overlay`      | [`FlexiChains.rankplot(...; overlay=true)`](@ref FlexiChains.rankplot)  | Rank plot with all chains' data overlaid                                                |
 
 !!! warning "Identifier conflicts"
-    Please note that the identifiers `traceplot`, `meanplot`, `mixeddensity`, and `autocorplot` are also exported by MCMCChains.jl and [also currently re-exported by Turing.jl](https://github.com/TuringLang/Turing.jl/issues/2681). To make sure you are using the FlexiChains versions, you must prefix them with the module name: `FlexiChains.traceplot(...)`. Otherwise, you may run into unexpected errors. 
+    Please note that the identifiers `traceplot`, `meanplot`, `mixeddensity`, and `autocorplot` are also exported by MCMCChains.jl and [also currently re-exported by Turing.jl](https://github.com/TuringLang/Turing.jl/issues/2681). For this reason, FlexiChains does not export them, although they are part of the public API. To make sure you are using the FlexiChains versions, you must prefix them with the module name: `FlexiChains.traceplot(...)`. Otherwise, you may run into unexpected errors. 
 
 !!! note "Feature parity with MCMCChains.jl"
     There are still somewhat fewer options than in MCMCChains.jl. Other plot types will be added over time, but in the meantime if you need features from MCMCChains, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using `MCMCChains.Chains(chn)`. Help with adding new plots is very much welcome!
