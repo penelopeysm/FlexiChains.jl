@@ -65,7 +65,11 @@ const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 ###############################
 
 @doc """
-    plot(chn::FlexiChain[, param_or_params]; seriestype=:traceplot_and_density, pool_chains=false, kwargs...)
+    Plots.plot(
+        chn::FlexiChain[, param_or_params];
+        pool_chains=false,
+        kwargs...
+    )
 
 Plot a `FlexiChain` using Plots.jl. By default, this produces a trace plot and mixed density
 side-by-side for each parameter.
