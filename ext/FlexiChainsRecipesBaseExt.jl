@@ -64,12 +64,17 @@ const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 # The actual plotting recipes #
 ###############################
 
-"""
-Main entry point for plotting.
+@doc """
+    plot(chn::FlexiChain[, param_or_params]; seriestype=:traceplot_and_density, pool_chains=false, kwargs...)
 
-If parameters are unspecified, all parameters in the chain will be plotted. Note that this
-excludes non-parameter, `Extra` keys.
-"""
+Plot a `FlexiChain` using Plots.jl. By default, this produces a trace plot and mixed density
+side-by-side for each parameter.
+
+$(FC._PARAM_DOCSTRING("plot"))
+
+$(FC._PLOTS_KWARGS_DOCSTRING)
+""" RecipesBase.plot
+
 @recipe function _(
         chn::FC.FlexiChain,
         param_or_params = FC.Parameter.(FC.parameters(chn));

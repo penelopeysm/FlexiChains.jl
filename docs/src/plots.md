@@ -12,14 +12,14 @@ In fact, calling `histogram(...)` simply redirects to `plot(..., seriestype=:his
 The following series types are supported for `FlexiChain` objects.
 
 | `seriestype=`            | Equivalent function                                                     | Description                                                                             |
-| -------------            | ---------------------                                                   | -------------                                                                           |
-| `:traceplot`             | `FlexiChains.traceplot()`                                               | Trace plot of samples                                                                   |
+| :----------------------- | :---------------------------------------------------------------------- | :-------------------------------------------------------------------------------------  |
+| `:traceplot`             | [`FlexiChains.traceplot()`](@ref FlexiChains.traceplot)                 | Trace plot of samples                                                                   |
 | `:histogram`             | `Plots.histogram()`                                                     | Histogram of samples                                                                    |
 | `:density`               | `Plots.density()`                                                       | Kernel density estimate of samples                                                      |
-| `:mixeddensity`          | [`FlexiChains.mixeddensity()`](@ref)                                    | Density plot or histogram, depending on whether the parameter is continuous or discrete |
-| `:meanplot`              | [`FlexiChains.meanplot()`](@ref)                                        | Running mean of samples                                                                 |
-| `:autocorplot`           | [`FlexiChains.autocorplot()`](@ref)                                     | Autocorrelation of samples                                                              |
-| `:traceplot_and_density` | `Plots.plot()` (with no `seriestype` argument)                          | Trace plot and mixed density side-by-side                                               |
+| `:mixeddensity`          | [`FlexiChains.mixeddensity()`](@ref FlexiChains.mixeddensity)           | Density plot or histogram, depending on whether the parameter is continuous or discrete |
+| `:meanplot`              | [`FlexiChains.meanplot()`](@ref FlexiChains.meanplot)                   | Running mean of samples                                                                 |
+| `:autocorplot`           | [`FlexiChains.autocorplot()`](@ref FlexiChains.autocorplot)             | Autocorrelation of samples                                                              |
+| `:traceplot_and_density` | [`Plots.plot()`](@ref plot) (with no `seriestype` argument)             | Trace plot and mixed density side-by-side                                               |
 | `:rankplot`              | [`FlexiChains.rankplot(...; overlay=false)`](@ref FlexiChains.rankplot) | Rank plot with separate histograms per chain                                            |
 | `:rankplot_overlay`      | [`FlexiChains.rankplot(...; overlay=true)`](@ref FlexiChains.rankplot)  | Rank plot with all chains' data overlaid                                                |
 
@@ -62,7 +62,7 @@ However, the general principles are applicable to any `FlexiChain` object.
 
 We'll make a model with different types of parameters (continuous, discrete, and vector-valued).
 
-```@example 1
+```@example plotsjl
 using FlexiChains, StatsPlots, Turing
 
 @model function f()
@@ -85,7 +85,11 @@ Notice that the chain has not split `z` up into `z[1]` and `z[2]`.
 However, when plotting, it will be automatically split up for you.
 Also notice that `Extra` keys, like the log probabilities, are not plotted by default.
 
-```@example 1
+```@docs
+Plots.plot
+```
+
+```@example plotsjl
 plot(chn)
 savefig("plot1.svg"); nothing # hide
 ```
@@ -96,7 +100,7 @@ If you want to plot specific parameter(s), you can specify them as the second po
 In general, the second argument can be _anything_ that you can index into a chain with.
 This means a symbol, a parameter, a `FlexiChains.Extra`, a sub-VarName, or a vector thereof:
 
-```@example 1
+```@example plotsjl
 plot(chn, [@varname(x), :logjoint])
 savefig("plot2.svg"); nothing # hide
 ```
@@ -109,12 +113,40 @@ savefig("plot2.svg"); nothing # hide
 FlexiChains.traceplot
 ```
 
-```@example 1
+```@example plotsjl
 FlexiChains.traceplot(chn)
 savefig("traceplot.svg"); nothing # hide
 ```
 
 ![Trace plots of the sampled chain](traceplot.svg)
+
+## Density plots
+
+Density plots are produced using the standard `Plots.density` function, which works with `FlexiChain` objects.
+
+!!! note
+    Since `density` is exported by Plots.jl, we can't add a docstring for it without introducing a dependency on Plots itself, which is not ideal. Thus, there is no docstring here—but the function has exactly the same signature as described above, including the `pool_chains` argument.
+
+```@example plotsjl
+density(chn)
+savefig("density.svg"); nothing # hide
+```
+
+![Density plots of the sampled chain](density.svg)
+
+## Histograms
+
+Similarly, `Plots.histogram` works with `FlexiChain` objects:
+
+!!! note
+    Since `histogram` is exported by Plots.jl, we can't add a docstring for it without introducing a dependency on Plots itself, which is not ideal. Thus, there is no docstring here—but the function has exactly the same signature as described above, including the `pool_chains` argument.
+
+```@example plotsjl
+histogram(chn)
+savefig("histogram.svg"); nothing # hide
+```
+
+![Histograms of the sampled chain](histogram.svg)
 
 ## Running mean plots
 
@@ -122,7 +154,7 @@ savefig("traceplot.svg"); nothing # hide
 FlexiChains.meanplot
 ```
 
-```@example 1
+```@example plotsjl
 FlexiChains.meanplot(chn)
 savefig("meanplot.svg"); nothing # hide
 ```
@@ -135,7 +167,7 @@ savefig("meanplot.svg"); nothing # hide
 FlexiChains.rankplot
 ```
 
-```@example 1
+```@example plotsjl
 FlexiChains.rankplot(chn)
 savefig("rankplot.svg"); nothing # hide
 ```
@@ -148,7 +180,7 @@ savefig("rankplot.svg"); nothing # hide
 FlexiChains.autocorplot
 ```
 
-```@example 1
+```@example plotsjl
 FlexiChains.autocorplot(chn)
 savefig("autocorplot.svg"); nothing # hide
 ```
@@ -161,7 +193,7 @@ savefig("autocorplot.svg"); nothing # hide
 FlexiChains.mixeddensity
 ```
 
-```@example 1
+```@example plotsjl
 FlexiChains.mixeddensity(chn)
 savefig("mixeddensity.svg"); nothing # hide
 ```
