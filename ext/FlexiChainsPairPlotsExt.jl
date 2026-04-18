@@ -57,7 +57,8 @@ function PairPlots.pairplot(
     )
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     series = if pool_chains
-        (PairPlots.Series(chn),)
+        # already split above, so don't need to split again here
+        (PairPlots.Series(chn; split_varnames = false),)
     else
         # Need to manually specify colours here because PairPlots
         # doesn't add them when directly plotting Series objects

@@ -264,7 +264,7 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
 end
 
 """
-    FlexiChains._split_varnames(cs::ChainOrSummary{Union{Symbol,<:AbstractString}}})
+    FlexiChains._split_varnames(cs::ChainOrSummary{Union{Symbol,<:AbstractString}})
 
 For `Symbol`-keyed chains, convert keys to `VarName`, split array-valued parameters into
 scalar leaves, then convert the keys back to `Symbol`.
