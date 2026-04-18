@@ -125,7 +125,7 @@ savefig("traceplot.svg"); nothing # hide
 Density plots are produced using the standard `Plots.density` function, which works with `FlexiChain` objects.
 
 !!! note
-    Since `density` is exported by Plots.jl, we can't add a docstring for it without introducing a dependency on Plots itself, which is not ideal. Thus, there is no docstring here—but the function has exactly the same signature as described above, including the `pool_chains` argument.
+    Since `density` is defined in Plots.jl, we can't add a docstring for it without introducing a dependency on Plots itself, which is not ideal. Thus, there is no docstring here—but the function has exactly the same signature as described above, including the `pool_chains` argument.
 
 ```@example plotsjl
 density(chn)
@@ -139,7 +139,7 @@ savefig("density.svg"); nothing # hide
 Similarly, `Plots.histogram` works with `FlexiChain` objects:
 
 !!! note
-    Since `histogram` is exported by Plots.jl, we can't add a docstring for it without introducing a dependency on Plots itself, which is not ideal. Thus, there is no docstring here—but the function has exactly the same signature as described above, including the `pool_chains` argument.
+    Since `histogram` is defined in Plots.jl, we can't add a docstring for it without introducing a dependency on Plots itself, which is not ideal. Thus, there is no docstring here—but the function has exactly the same signature as described above, including the `pool_chains` argument.
 
 ```@example plotsjl
 histogram(chn)
