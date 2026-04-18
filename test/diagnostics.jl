@@ -8,8 +8,9 @@ using FlexiChains:
     Extra,
     VarName,
     @varname
+import DimensionalData as DD
 using MCMCDiagnosticTools: MCMCDiagnosticTools, gelmandiag, gelmandiag_multivariate,
-    discretediag
+    discretediag, bfmi
 using Test
 
 @testset verbose = true "diagnostics.jl" begin
@@ -213,6 +214,30 @@ using Test
             result = discretediag(chain)
             @test FlexiChains.chain_indices(result.within) ==
                 FlexiChains.chain_indices(chain)
+        end
+    end
+
+    @testset "bfmi" begin
+        N_iters, N_chains = 100, 3
+        energy = randn(N_iters, N_chains)
+        chain = FlexiChain{Symbol}(
+            N_iters, N_chains,
+            Dict(
+                Parameter(:a) => randn(N_iters, N_chains),
+                Extra(:hamiltonian_energy) => energy,
+            ),
+        )
+
+        @testset "matches MCMCDiagnosticTools on raw values" begin
+            result = bfmi(chain, Extra(:hamiltonian_energy))
+            @test result isa DD.DimVector
+            ref = MCMCDiagnosticTools.bfmi(energy)
+            @test parent(result) == ref
+        end
+
+        @testset "Symbol shorthand gives same result" begin
+            @test bfmi(chain, :hamiltonian_energy) ==
+                bfmi(chain, Extra(:hamiltonian_energy))
         end
     end
 end

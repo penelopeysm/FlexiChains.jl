@@ -1,3 +1,7 @@
+# 0.5.2
+
+Added `MCMCDiagnosticTools.bfmi(::FlexiChain)` to compute the Bayesian fraction of missing information (BFMI) for a chain.
+
 # 0.5.1
 
 Added the `divergences` and `divergences_kwargs` keyword arguments to `pairplot` to additionally superimpose a scatter plot of divergent transitions, as well as a keyword argument `args` that allows passing extra positional arguments to `pairplot`.

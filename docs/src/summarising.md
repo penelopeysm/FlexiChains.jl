@@ -165,7 +165,8 @@ gelmandiag(chain)
 The available functions are:
 
 ```@docs
-MCMCDiagnosticTools.gelmandiag(::FlexiChains.FlexiChain)
-MCMCDiagnosticTools.gelmandiag_multivariate(::FlexiChains.FlexiChain)
-MCMCDiagnosticTools.discretediag(::FlexiChains.FlexiChain)
+MCMCDiagnosticTools.gelmandiag
+MCMCDiagnosticTools.gelmandiag_multivariate
+MCMCDiagnosticTools.discretediag
+MCMCDiagnosticTools.bfmi
 ```
