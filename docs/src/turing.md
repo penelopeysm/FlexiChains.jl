@@ -309,6 +309,8 @@ returned(model, chain)
 
 `pointwise_logdensities`, `pointwise_loglikelihoods`, and `pointwise_prior_logdensities` are also supported, and will return a new FlexiChain containing the log-probabilities for each variable.
 
+LOO-CV is also supported if you load PosteriorStats.jl: see the [PosteriorStats.jl integration](@ref integrations-posteriorstats) for more details.
+
 ## Plotting
 
 FlexiChains contains a few recipes for plotting with Plots.jl and Makie.jl; please see the [plotting pages](./plotting.md) for more details.

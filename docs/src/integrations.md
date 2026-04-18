@@ -218,7 +218,7 @@ summarystats(chn)
 FlexiChains.from_posteriordb_ref
 ```
 
-## PosteriorStats.jl
+## [PosteriorStats.jl](@id integrations-posteriorstats)
 
 [Documentation for PosteriorStats.jl](@extref PosteriorStats :doc:`index`)
 
@@ -231,6 +231,14 @@ Note however that you will need to import PosteriorStats.jl explicitly to use th
 ```@docs
 PosteriorStats.hdi(::FlexiChains.FlexiChain; kwargs...)
 PosteriorStats.eti(::FlexiChains.FlexiChain; kwargs...)
+```
+
+`PosteriorStats.loo`, which computes Pareto-smoothed importance sampling leave-one-out cross-validation (PSIS-LOO), is also overloaded for `FlexiChain` objects.
+You can either pass a chain of log-likelihood values, or (perhaps more easily) a Turing model plus a posterior chain:
+
+```@docs
+PosteriorStats.loo(::FlexiChains.FlexiChain; kwargs...)
+PosteriorStats.loo(model::DynamicPPL.Model, posterior_chn::FlexiChains.FlexiChain; kwargs...)
 ```
 
 ## [Serialization.jl](@id integrations-serialization)
