@@ -156,13 +156,14 @@ There are two things worth mentioning, which we will note in passing here withou
 There are a number of functions in MCMCDiagnosticTools.jl which do not nicely fit the notion of 'collapse over one or more dimensions'.
 For example, quantities like the Gelman diagnostic are calculated over the entire dataset.
 
-For these functions, you can simply pass a FlexiChain to them:
+For these functions, you can simply pass a FlexiChain to them.
+For example:
 
 ```@example stats
 gelmandiag(chain)
 ```
 
-The available functions are:
+The available functions are as follows (and FlexiChains reexports all of these too, for convenience).
 
 ```@docs
 MCMCDiagnosticTools.gelmandiag
