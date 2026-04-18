@@ -44,6 +44,7 @@ ENV["GKSwstype"] = "100"
 
 makedocs(;
     sitename = "FlexiChains.jl",
+    format = Documenter.HTML(; assets = ["assets/custom.css"]),
     modules = modules,
     pages = [
         "index.md",
