@@ -7,6 +7,17 @@ using Makie: ColorTypes
 const FC = FlexiChains
 const MakieGrids = Union{Makie.GridPosition, Makie.GridSubposition}
 
+const MAKIE_KWARGS_DOCSTRING = """
+- `figure::NamedTuple`: Additional keyword arguments passed to the `Makie.Figure` constructor.
+- `axis::NamedTuple`: Additional keyword arguments passed to the `Makie.Axis` constructor for each subplot.
+- `legend::NamedTuple`: Additional keyword arguments passed to the `Makie.Legend` constructor, if the legend is added.
+- `legend_position::Symbol`: Position of the legend. This can be either `:right`, `:bottom` or `:none` for no legend.
+- `layout`: either `nothing` (the default), or a tuple of `(nrows, ncols)` specifying the grid layout for the subplots.
+
+Extra keyword arguments are passed to Makie's plotting functions, which allow you to
+customise the appearance of the plot.
+"""
+
 """
 Adds a legend to the given `fig` for the chains in `chn` using the provided `colors`.
 
@@ -92,10 +103,28 @@ function determine_color_kwargs(nchains::Int, kwargs::NamedTuple)::Vector{NamedT
     return color_kwargs
 end
 
+"""
+This function sets up the figure and layout for the given number of rows and columns, unless
+the user has manually specified a layout, in which case it uses that instead.
+"""
+function setup_figure_and_layout(nrows_default::Int, ncols_default::Int, layout::Union{Nothing, Tuple{Int, Int}}, figure)
+    nrows, ncols = if isnothing(layout)
+        nrows_default, ncols_default
+    else
+        layout
+    end
+    figure = Makie.Figure(;
+        size = (FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
+        figure...,
+    )
+    return nrows, ncols, figure
+end
+
 include("FlexiChainsMakieExt/density.jl")
 include("FlexiChainsMakieExt/hist.jl")
 include("FlexiChainsMakieExt/mixeddensity.jl")
 include("FlexiChainsMakieExt/traceplot.jl")
 include("FlexiChainsMakieExt/plot.jl")
+include("FlexiChainsMakieExt/rankplot.jl")
 
 end

@@ -33,6 +33,7 @@ modules = [
     Base.get_extension(FlexiChains, :FlexiChainsDynamicPPLExt),
     Base.get_extension(FlexiChains, :FlexiChainsMakieExt),
     Base.get_extension(FlexiChains, :FlexiChainsPairPlotsExt),
+    Base.get_extension(FlexiChains, :FlexiChainsRecipesBaseExt),
     Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt),
     Base.get_extension(FlexiChains, :FlexiChainsTuringExt),
 ]
@@ -43,6 +44,7 @@ ENV["GKSwstype"] = "100"
 
 makedocs(;
     sitename = "FlexiChains.jl",
+    format = Documenter.HTML(; assets = ["assets/custom.css"]),
     modules = modules,
     pages = [
         "index.md",

@@ -3,7 +3,20 @@ function _default_density_axis(k::FC.ParameterOrExtra)
 end
 
 """
-This handles plotting onto a full Figure.
+    Makie.density(
+        chn::FC.FlexiChain[, param_or_params];
+        pool_chains::Bool=false,
+        kwargs...,
+    )
+
+Create density plots for the specified parameters in the chain.
+
+$(FC._PARAM_DOCSTRING("Makie.density"))
+
+# Keyword arguments
+
+- `pool_chains::Bool`: whether to pool data from all chains into a single plot, or to plot each chain separately. Defaults to `false`.
+$(MAKIE_KWARGS_DOCSTRING)
 """
 function Makie.density(
         chn::FC.FlexiChain,
@@ -19,15 +32,7 @@ function Makie.density(
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
-    nrows, ncols = if isnothing(layout)
-        length(keys_to_plot), 1
-    else
-        layout
-    end
-    figure = Makie.Figure(;
-        size = (FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
-        figure...,
-    )
+    nrows, ncols, figure = setup_figure_and_layout(length(keys_to_plot), 1, layout, figure)
     a, p = nothing, nothing
     # This order means that plots go from left to right before going to the next row
     indices = Iterators.product(1:ncols, 1:nrows)
@@ -46,9 +51,9 @@ function Makie.density(
     return Makie.FigureAxisPlot(figure, a, p)
 end
 
-"""
-This handles plotting onto a single Axis.
-"""
+########################
+# Single axis plotting #
+########################
 function Makie.density(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96

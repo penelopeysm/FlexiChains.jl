@@ -9,7 +9,7 @@ Many parts of the Makie integration in FlexiChains are heavily lifted from [the 
     backend as well as PairPlots.jl. Please see the [PairPlots.jl integration section](@ref
     integrations-pairplots) for more details.
 
-## General interface
+## [General interface](@id makie-interface)
 
 For all functions `plotfunc` shown in the table of [the plotting page](./plotting.md), you can use the following invocation:
 
@@ -27,17 +27,8 @@ For all functions `plotfunc` shown in the table of [the plotting page](./plottin
    `param_or_params` can be anything used to index into a chain (single parameters are also accepted).
    If not specified, all parameters in the chain will be plotted.
 
-   There are special keyword arguments:
-
-    - The `figure`, `axis`, and `legend` arguments (which can be, e.g., `NamedTuple`s) allow you to pass extra options to the `Figure`, `Axis`, and `Legend` constructors.
-
-    - You can pass `legend_position` to specify where the legend should be placed (default is `:bottom`; `:right` is also supported, and `:none` disables the legend).
-
-    - To control the colours used for separate chains, you can pass either (but not both) of the `color` or `colormap` keyword arguments. `color` can be anything usually passed to Makie; but you can also specify a vector of colours, one per chain. For `colormap`, it is expected that you will pass a categorical colormap such as `:tab10`. Continuous colormaps like `:viridis` will not give you the desired result since it will use the first `n` colours of the colormap, which are all very similar!
-
-    - The layout of the plot is usually fixed to a single column. You can change this by passing a tuple of `(nrows, ncols)` as the `layout` keyword argument. This mimics Plots.jl's `layout` argument.
-
-   Other keyword arguments (`kwargs...`) are passed to the plotting function used internally (e.g., `lines!`, `scatter!`, etc.).
+   Most keyword arguments are passed to the underlying Makie plotting functions, but there are some special ones which are handled by FlexiChains.
+   For more information about these, see the [customisation section below](@ref makie-customisation).
 
 For functions which create only a single plot per parameter (e.g. `density`, or `mtraceplot`), the following options are also available.
 The intention is to allow you to build more complex figures using these as building blocks:
@@ -58,11 +49,10 @@ The intention is to allow you to build more complex figures using these as build
    plotfunc!(gp, chn, param; axis=(;), kwargs...)
    ```
 
-## Gallery
+## Setup
 
 Here, we create a model with different types of parameters (continuous, discrete, and vector-valued).
-
-This is the same model as used on the Plots.jl documentation page, so we will not repeat the explanations.
+This is the same model as used on the Plots.jl documentation page.
 
 ```@example 1
 using FlexiChains, CairoMakie, Turing
@@ -79,43 +69,134 @@ chn = sample(
 )
 ```
 
-Standard plot:
+## Default plot
+
+Calling `Makie.plot(chn)` produces a trace plot and mixed density side-by-side for each parameter.
+
+```@docs
+Makie.plot
+```
 
 ```@example 1
 Makie.plot(chn)
-Makie.save("standard_makie.png", ans.figure); # hide
+Makie.save("plot_makie.png", ans.figure); # hide
 ```
 
-![Trace and density plots of the sampled chain](standard_makie.png)
+![Default trace and density plots of the sampled chain](plot_makie.png)
 
-Plot density estimates of all parameters:
-
-```@example 1
-Makie.density(chn;
-    layout=(2, 2), alpha=0.7
-)
-Makie.save("density_makie.png", ans.figure); # hide
-```
-
-![Density plots of the sampled chain, with a 2x2 layout](density_makie.png)
-
-Trace plots for just two parameters (with a rather ugly colour scheme):
-
-```@example 1
-FlexiChains.mtraceplot(chn, [@varname(x), @varname(y)];
-    legend_position=:right,
-    color=[(:red, 0.6), (:blue, 0.6), (:green, 0.6)],
-)
-Makie.save("traceplot_makie.png", ans.figure); # hide
-```
-
-![Trace plots of the sampled chain, with a red/blue/green colour scheme](density_makie.png)
-
-## Docstrings
-
-Note that these are only the functions which FlexiChains defines: a number of Makie.jl's actual functions (like `hist` and `density`) also work with `FlexiChain` objects, as described in the table above, but their docstrings are not included here.
+## Trace plots
 
 ```@docs
 FlexiChains.mtraceplot
+```
+
+```@example 1
+FlexiChains.mtraceplot(chn)
+Makie.save("traceplot_makie.png", ans.figure); # hide
+```
+
+![Trace plots of the sampled chain](traceplot_makie.png)
+
+## Density plots
+
+```@docs
+Makie.density
+```
+
+```@example 1
+Makie.density(chn)
+Makie.save("density_makie.png", ans.figure); # hide
+```
+
+![Density plots of the sampled chain](density_makie.png)
+
+## Histograms
+
+```@docs
+Makie.hist
+Makie.stephist
+```
+
+```@example 1
+Makie.hist(chn)
+Makie.save("hist_makie.png", ans.figure); # hide
+```
+
+![Histograms of the sampled chain](hist_makie.png)
+
+## Mixed density plots
+
+```@docs
 FlexiChains.mmixeddensity
 ```
+
+```@example 1
+FlexiChains.mmixeddensity(chn)
+Makie.save("mixeddensity_makie.png", ans.figure); # hide
+```
+
+![Mixed density plots of the sampled chain](mixeddensity_makie.png)
+
+## Rank plots
+
+```@docs
+FlexiChains.mrankplot
+```
+
+```@example 1
+FlexiChains.mrankplot(chn)
+Makie.save("rankplot_makie.png", ans.figure); # hide
+```
+
+![Rank plots of the sampled chain](rankplot_makie.png)
+
+## [Customisation](@id makie-customisation)
+
+As described in the [general interface section above](@ref makie-interface), all of the above functions accept keyword arguments to control the appearance of the plot.
+
+The `figure`, `axis`, and `legend` arguments (which can be, e.g., `NamedTuple`s) allow you to pass extra keyword arguments to the `Figure`, `Axis`, and `Legend` constructors.
+Then, most other keyword arguments are forwarded to the underlying Makie plotting functions; please refer to the Makie documentation for more details on these.
+
+Finally, there are also some special keyword arguments which are handled by FlexiChains.
+Here are some examples of these in action.
+
+### Custom layout
+
+By default, plots are arranged with one parameter per row.
+You can pass a tuple of `(nrows, ncols)` as the `layout` keyword argument to change this:
+
+```@example 1
+Makie.density(chn; layout=(2, 2))
+Makie.save("custom_layout_makie.png", ans.figure); # hide
+```
+
+![Density plots with a 2x2 layout](custom_layout_makie.png)
+
+### Custom colours
+
+Pass a vector of colours (one per chain) via the `color` keyword, or a categorical colormap via `colormap`:
+
+```@example 1
+FlexiChains.mtraceplot(chn, [@varname(x), @varname(y)];
+    color=[(:red, 0.6), (:blue, 0.6), (:green, 0.6)],
+    # or e.g. colormap=:tab10
+)
+Makie.save("custom_colors_makie.png", ans.figure); # hide
+```
+
+![Trace plots with custom colours](custom_colors_makie.png)
+
+!!! note
+    To get the best effects with `colormap`, you should pass a categorical colormap such as `:tab10`.
+    Continuous colormaps like `:viridis` will give poor results since it will use the first `n` colours of the colormap, which are all very similar!
+
+### Legend position
+
+Use `legend_position` to move the legend (`:bottom`, `:right`, or `:none`):
+
+```@example 1
+FlexiChains.mtraceplot(chn; legend_position=:right)
+Makie.save("custom_legend_makie.png", ans.figure); # hide
+```
+
+![Trace plots with the legend on the right](custom_legend_makie.png)

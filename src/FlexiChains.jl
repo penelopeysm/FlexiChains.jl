@@ -54,13 +54,16 @@ Base.show(io::IO, p::PointwiseProb) = print(io, "PointwiseProb(@varname($(p.varn
 # Extended in PosteriorDB extension (but not exported)
 function from_posteriordb_ref end
 @public from_posteriordb_ref
-# Extended in RecipesBase extension
 include("plots.jl")
+# Extended in RecipesBase extension
 @public traceplot, traceplot!
 @public mixeddensity, mixeddensity!
 @public meanplot, meanplot!
+@public rankplot, rankplot!
 @public autocorplot, autocorplot!
+# Extended in Makie extension
 @public mtraceplot, mtraceplot!
+@public mrankplot, mrankplot!
 
 # Convenience re-exports.
 using DimensionalData: At, Near, Contains, (..), Touches, Where, Not

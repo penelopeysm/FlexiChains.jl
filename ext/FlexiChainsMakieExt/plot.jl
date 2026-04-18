@@ -1,3 +1,20 @@
+"""
+    Makie.plot(
+        chn::FC.FlexiChain,
+        param_or_params = FC.Parameter.(FC.parameters(chn));
+        kwargs...,
+    )
+
+Plot the parameters in a `FlexiChain` using `Makie`. For each parameter, a trace plot and a
+density plot are created.
+
+$(FC._PARAM_DOCSTRING("Makie.plot"))
+
+# Keyword arguments
+
+- `pool_chains::Bool`: whether to pool data from all chains into a single plot, or to plot each chain separately. Defaults to `false`.
+$(MAKIE_KWARGS_DOCSTRING)
+"""
 function Makie.plot(
         chn::FC.FlexiChain,
         param_or_params = FC.Parameter.(FC.parameters(chn));
@@ -12,15 +29,7 @@ function Makie.plot(
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = collect(keys(chn))
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
-    nrows, ncols = if isnothing(layout)
-        length(keys_to_plot), 2
-    else
-        layout
-    end
-    figure = Makie.Figure(;
-        size = (FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
-        figure...,
-    )
+    nrows, ncols, figure = setup_figure_and_layout(length(keys_to_plot), 2, layout, figure)
     a, p = nothing, nothing
     # This order means that plots go from left to right before going to the next row
     indices = Iterators.product(1:ncols, 1:nrows)

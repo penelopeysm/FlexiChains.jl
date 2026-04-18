@@ -6,6 +6,8 @@ function _PARAM_DOCSTRING(funcname)
     """
 end
 
+const _PLOTS_KWARGS_DOCSTRING = "Other keyword arguments are forwarded to the underlying Plots.jl functions."
+
 ######################
 # Plots.jl overloads #
 ######################
@@ -15,11 +17,12 @@ end
         kwargs...
     )
 
-Create a trace plot of the specified parameter(s) in the given `FlexiChain` using Plots.jl.
+Plot the sample values against iteration number for the specified parameter(s) in the given
+`FlexiChain` using Plots.jl.
 
 $(_PARAM_DOCSTRING("traceplot"))
 
-Keyword arguments are forwarded to Plots.jl's functions.
+$(_PLOTS_KWARGS_DOCSTRING)
 """
 function traceplot end
 
@@ -39,11 +42,13 @@ function traceplot! end
         kwargs...
     )
 
-Create either a density plot, or a histogram, of the specified parameter(s) in the given
-`FlexiChain` using Plots.jl. Continuous-valued parameters are plotted using density plots,
-discrete-valued parameters with histograms.
+Plot a density estimate or histogram for the specified parameter(s) in the given
+`FlexiChain` using Plots.jl. Continuous-valued parameters are plotted as density estimates,
+discrete-valued parameters as histograms.
 
 $(_PARAM_DOCSTRING("mixeddensity"))
+
+$(_PLOTS_KWARGS_DOCSTRING)
 """
 function mixeddensity end
 
@@ -67,6 +72,8 @@ Plot the running mean of the specified parameter(s) in the given `FlexiChain` us
 Plots.jl.
 
 $(_PARAM_DOCSTRING("meanplot"))
+
+$(_PLOTS_KWARGS_DOCSTRING)
 """
 function meanplot end
 
@@ -81,6 +88,37 @@ Same as `FlexiChains.meanplot`, but uses `plot!` instead of `plot`.
 function meanplot! end
 
 """
+    FlexiChains.rankplot(
+        chn::FlexiChain{TKey}[, param_or_params];
+        overlay::Bool=false,
+        kwargs...
+    )
+
+Plot a histogram of ranks for the specified parameter(s) in the given `FlexiChain` using
+Plots.jl.
+
+$(_PARAM_DOCSTRING("rankplot"))
+
+If `overlay` is `false` (the default), a separate histogram is plotted for each chain.
+If `true`, the histograms for all chains are overlaid on a single plot with different
+colours.
+
+$(_PLOTS_KWARGS_DOCSTRING)
+"""
+function rankplot end
+
+"""
+    FlexiChains.rankplot!(
+        chn::FlexiChain{TKey}[, param_or_params];
+        overlay::Bool=false,
+        kwargs...
+    )
+
+Same as `FlexiChains.rankplot`, but uses `plot!` instead of `plot`.
+"""
+function rankplot! end
+
+"""
     FlexiChains.autocorplot(
         chn::FlexiChain{TKey}[, param_or_params];
         lags=1:min(niters(chn)-1, round(Int,10*log10(niters(chn)))),
@@ -91,15 +129,16 @@ function meanplot! end
 Plot the autocorrelation of the specified parameter(s) in the given `FlexiChain` using
 Plots.jl.
 
-The `lags` keyword argument can be used to specify which lags to plot. If `nothing` is
-passed (the default), this is set to the integers from 1 to `min(niters-1,
-round(Int,10*log10(niters)))` where `niters` is the number of iterations in the chain. This
-mimics the default behaviour of [`StatsBase.autocor`](@extref).
-
-The `demean` keyword argument specifies whether to subtract the mean of the parameter before
-computing the autocorrelation, and is passed to [`StatsBase.autocor`](@extref).
-
 $(_PARAM_DOCSTRING("autocorplot"))
+
+The `lags` keyword argument specifies which lags to plot. By default, this is set to the
+integers from 1 to `min(niters-1, round(Int,10*log10(niters)))`, mimicking the default
+behaviour of [`StatsBase.autocor`](@extref).
+
+The `demean` keyword argument specifies whether to subtract the mean before computing the
+autocorrelation (default `true`), and is passed to [`StatsBase.autocor`](@extref).
+
+$(_PLOTS_KWARGS_DOCSTRING)
 """
 function autocorplot end
 
@@ -117,16 +156,6 @@ function autocorplot! end
 # Makie overloads #
 ###################
 
-"""
-    FlexiChains.mtraceplot(
-        chn::FlexiChain{TKey}[, param_or_params];
-        kwargs...
-    )
-
-Create a trace plot of the specified parameter(s) in the given `FlexiChain` using Makie.jl.
-
-$(_PARAM_DOCSTRING("mtraceplot"))
-"""
 function mtraceplot end
 
 """
@@ -136,18 +165,15 @@ Mutating version of `mtraceplot`, for use with existing Makie.Axis objects.
 """
 function mtraceplot! end
 
-"""
-    FlexiChains.mmixeddensity(
-        chn::FlexiChain{TKey}[, param_or_params];
-        kwargs...
-    )
+function mrankplot end
 
-Create a mixed density plot of the specified parameter(s) in the given `FlexiChain` using
-Makie.jl: if the parameter is continuous-valued, a density plot is created; if
-discrete-valued, a histogram is created.
-
-$(_PARAM_DOCSTRING("mmixeddensity"))
 """
+    FlexiChains.mrankplot!
+
+Mutating version of `mrankplot`, for use with existing Makie.Axis objects.
+"""
+function mrankplot! end
+
 function mmixeddensity end
 
 """
@@ -176,6 +202,8 @@ module PlotUtils
         niters,
         _get_multi_keys,
         _get_multi_key
+    import DimensionalData as DD
+    import StatsBase
 
     """
     Return a chain that has been:
@@ -190,7 +218,7 @@ module PlotUtils
     function subset_and_split_chain(
             chn::FlexiChain{TKey}, param_or_params
         )::FlexiChain where {TKey}
-        parameters_to_plot = if param_or_params isa AbstractVector
+        parameters_to_plot = if param_or_params isa Union{AbstractVector, Colon}
             _get_multi_keys(TKey, keys(chn), param_or_params)
         else
             # Assume it's a single key. No, don't ask what happens if the key type is an
@@ -222,6 +250,25 @@ module PlotUtils
     struct FlexiChainTrace{TKey, Tp <: ParameterOrExtra{<:TKey}}
         chn::FlexiChain{TKey}
         param::Tp
+    end
+
+    struct FlexiChainRank{TKey, Tp <: ParameterOrExtra{<:TKey}}
+        chn::FlexiChain{TKey}
+        param::Tp
+        # indicates which one to plot
+        chn_idx
+        # indexed by iter/chain -- note this matrix contains ranks for all chains because we
+        # need to calculate ranks across all chains, even if we only plot one.
+        ranks::DD.DimMatrix{<:Real}
+    end
+    function get_ranks(chn::FlexiChain{TKey}, param::Tp) where {TKey, Tp <: ParameterOrExtra{<:TKey}}
+        return StatsBase.tiedrank(chn[param])
+    end
+
+    struct FlexiChainRankOverlay{TKey, Tp <: ParameterOrExtra{<:TKey}}
+        chn::FlexiChain{TKey}
+        param::Tp
+        ranks::DD.DimMatrix{<:Real} # same as above
     end
 
     struct FlexiChainHistogram{TKey, Tp <: ParameterOrExtra{<:TKey}}

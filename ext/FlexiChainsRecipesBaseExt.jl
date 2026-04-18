@@ -1,7 +1,7 @@
 module FlexiChainsRecipesBaseExt
 
 using FlexiChains: FlexiChains as FC
-using RecipesBase: @recipe, @userplot, @series, plot, plot!
+using RecipesBase: RecipesBase, @recipe, @userplot, @series, plot, plot!
 using StatsBase: StatsBase
 
 const DEFAULT_MARGIN = (8, :mm)
@@ -10,28 +10,40 @@ const DEFAULT_MARGIN = (8, :mm)
 # custom overloads #
 ####################
 
+macro overload_plot_func(plotfuncname, seriestype)
+    plotfuncname! = if Meta.isexpr(plotfuncname, :., 2) && plotfuncname.args[2] isa QuoteNode
+        :($(plotfuncname.args[1]).$(Symbol(plotfuncname.args[2].value, "!")))
+    else
+        error("expected plotfuncname to be of the form `Module.plotfunc`")
+    end
+    return quote
+        function $(plotfuncname)(chn::FC.FlexiChain, args...; kwargs...)
+            return plot(chn, args...; kwargs..., seriestype = $(seriestype))
+        end
+        function $(plotfuncname!)(chn::FC.FlexiChain, args...; kwargs...)
+            return plot!(chn, args...; kwargs..., seriestype = $(seriestype))
+        end
+    end
+end
+
 const _TRACEPLOT_SERIESTYPE = :traceplot
-function FC.traceplot(chn::FC.FlexiChain, args...; kwargs...)
-    return plot(chn, args...; kwargs..., seriestype = _TRACEPLOT_SERIESTYPE)
-end
-function FC.traceplot!(chn::FC.FlexiChain, args...; kwargs...)
-    return plot!(chn, args; kwargs..., seriestype = _TRACEPLOT_SERIESTYPE)
-end
+@overload_plot_func(FC.traceplot, _TRACEPLOT_SERIESTYPE)
 
 const _MIXEDDENSITY_SERIESTYPE = :mixeddensity
-function FC.mixeddensity(chn::FC.FlexiChain, args...; kwargs...)
-    return plot(chn, args...; kwargs..., seriestype = _MIXEDDENSITY_SERIESTYPE)
-end
-function FC.mixeddensity!(chn::FC.FlexiChain, args...; kwargs...)
-    return plot!(chn, args...; kwargs..., seriestype = _MIXEDDENSITY_SERIESTYPE)
-end
+@overload_plot_func(FC.mixeddensity, _MIXEDDENSITY_SERIESTYPE)
 
 const _MEANPLOT_SERIESTYPE = :meanplot
-function FC.meanplot(chn::FC.FlexiChain, args...; kwargs...)
-    return plot(chn, args...; kwargs..., seriestype = _MEANPLOT_SERIESTYPE)
+@overload_plot_func(FC.meanplot, _MEANPLOT_SERIESTYPE)
+
+const _RANKPLOT_SERIESTYPE = :rankplot
+const _RANKOVERLAY_SERIESTYPE = :rankplot_overlay
+function FC.rankplot(chn::FC.FlexiChain, args...; overlay = false, kwargs...)
+    seriestype = overlay ? _RANKOVERLAY_SERIESTYPE : _RANKPLOT_SERIESTYPE
+    return plot(chn, args...; kwargs..., seriestype = seriestype)
 end
-function FC.meanplot!(chn::FC.FlexiChain, args...; kwargs...)
-    return plot!(chn, args...; kwargs..., seriestype = _MEANPLOT_SERIESTYPE)
+function FC.rankplot!(chn::FC.FlexiChain, args...; overlay = false, kwargs...)
+    seriestype = overlay ? _RANKOVERLAY_SERIESTYPE : _RANKPLOT_SERIESTYPE
+    return plot!(chn, args...; kwargs..., seriestype = seriestype)
 end
 
 const _AUTOCORPLOT_SERIESTYPE = :autocorplot
@@ -52,12 +64,21 @@ const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 # The actual plotting recipes #
 ###############################
 
-"""
-Main entry point for plotting.
+@doc """
+    Plots.plot(
+        chn::FlexiChain[, param_or_params];
+        pool_chains=false,
+        kwargs...
+    )
 
-If parameters are unspecified, all parameters in the chain will be plotted. Note that this
-excludes non-parameter, `Extra` keys.
-"""
+Plot a `FlexiChain` using Plots.jl. By default, this produces a trace plot and mixed density
+side-by-side for each parameter.
+
+$(FC._PARAM_DOCSTRING("plot"))
+
+$(FC._PLOTS_KWARGS_DOCSTRING)
+""" RecipesBase.plot
+
 @recipe function _(
         chn::FC.FlexiChain,
         param_or_params = FC.Parameter.(FC.parameters(chn));
@@ -74,9 +95,15 @@ excludes non-parameter, `Extra` keys.
     # the layout, and dispatch to the appropriate recipe.
     seriestype = get(plotattributes, :seriestype, _TRACEPLOT_AND_DENSITY_SERIESTYPE)
     # Determine number of rows / columns in layout
-    nplottypes = seriestype === _TRACEPLOT_AND_DENSITY_SERIESTYPE ? 2 : 1
+    nplots_per_key = if seriestype === _TRACEPLOT_AND_DENSITY_SERIESTYPE
+        2
+    elseif seriestype === _RANKPLOT_SERIESTYPE
+        FC.nchains(chn)
+    else
+        1
+    end
     nkeys = length(keys_to_plot)
-    given_layout = get(plotattributes, :layout, (nkeys, nplottypes))
+    given_layout = get(plotattributes, :layout, (nkeys, nplots_per_key))
     layout --> given_layout
     nrows, ncols = given_layout
     # Determine plot size
@@ -94,6 +121,14 @@ excludes non-parameter, `Extra` keys.
                 subplot := 2i
                 FC.PlotUtils.FlexiChainMixedDensity(chn, k, pool_chains)
             end
+        elseif seriestype === _RANKPLOT_SERIESTYPE
+            ranks = FC.PlotUtils.get_ranks(chn, k)
+            for (j, cidx) in enumerate(FC.chain_indices(chn))
+                @series begin
+                    subplot := nplots_per_key * (i - 1) + j
+                    FC.PlotUtils.FlexiChainRank(chn, k, cidx, ranks)
+                end
+            end
         else
             @series begin
                 subplot := i
@@ -107,6 +142,9 @@ excludes non-parameter, `Extra` keys.
                     return FC.PlotUtils.FlexiChainHistogram(chn, k, pool_chains)
                 elseif seriestype === _MEANPLOT_SERIESTYPE
                     return FC.PlotUtils.FlexiChainMean(chn, k)
+                elseif seriestype === _RANKOVERLAY_SERIESTYPE
+                    ranks = FC.PlotUtils.get_ranks(chn, k)
+                    return FC.PlotUtils.FlexiChainRankOverlay(chn, k, ranks)
                 elseif seriestype === _AUTOCORPLOT_SERIESTYPE
                     return FC.PlotUtils.FlexiChainAutoCor(chn, k, lags, demean)
                 else
@@ -131,28 +169,6 @@ with.
     return x, y
 end
 
-"""
-Plot a trace plot and a density/histogram plot side by side.
-"""
-struct FlexiChainTraceAndMixedDensity{TKey, Tp <: FC.ParameterOrExtra{<:TKey}}
-    chn::FC.FlexiChain{TKey}
-    param::Tp
-end
-@recipe function _(tad::FlexiChainTraceAndMixedDensity)
-    layout := (1, 2)  # 1 row and 2 columns
-    size := (FC.PlotUtils.DEFAULT_WIDTH * 2, FC.PlotUtils.DEFAULT_HEIGHT)
-    left_margin := DEFAULT_MARGIN
-    bottom_margin := DEFAULT_MARGIN
-    @series begin
-        subplot := 1
-        FC.PlotUtils.FlexiChainTrace(tad.chn, tad.param)
-    end
-    @series begin
-        subplot := 2
-        FC.PlotUtils.FlexiChainMixedDensity(tad.chn, tad.param)
-    end
-end
-
 @recipe function _(t::FC.PlotUtils.FlexiChainTrace)
     seriestype := :line
     # Extract data
@@ -165,6 +181,35 @@ end
     label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(t.chn)))
     title --> t.param.name
     return x, y
+end
+
+@recipe function _(r::FC.PlotUtils.FlexiChainRank)
+    rank_vec = r.ranks[chain = r.chn_idx]
+    seriestype := :histogram
+    xguide --> "rank"
+    yticks --> nothing
+    yshowaxis --> false
+    title --> "$(FC.get_name(r.param)) (chain $(r.chn_idx))"
+    bins --> 25
+    normalize --> :pdf
+    label --> nothing
+    return rank_vec
+end
+
+@recipe function _(r::FC.PlotUtils.FlexiChainRankOverlay)
+    for (rank_vec, chn_idx) in zip(eachcol(r.ranks), FC.chain_indices(r.chn))
+        @series begin
+            seriestype := :stephist
+            xguide --> "rank"
+            yticks --> nothing
+            yshowaxis --> false
+            title --> "$(FC.get_name(r.param))"
+            label --> "chain $chn_idx"
+            bins --> 25
+            normalize --> :pdf
+            rank_vec
+        end
+    end
 end
 
 """

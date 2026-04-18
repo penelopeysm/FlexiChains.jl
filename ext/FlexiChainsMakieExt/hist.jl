@@ -2,13 +2,46 @@ function _default_histogram_axis(k::FC.ParameterOrExtra)
     return (xlabel = "value", ylabel = "probability", title = string(k.name))
 end
 
+HIST_DOCSTRING = """
+    Makie.hist(
+        chn::FC.FlexiChain[, param_or_params];
+        pool_chains::Bool=false,
+        kwargs...,
+    )
+
+Create histograms for the specified parameters in the chain.
+
+$(FC._PARAM_DOCSTRING("Makie.hist"))
+
+# Keyword arguments
+
+- `pool_chains::Bool`: whether to pool data from all chains into a single plot, or to plot each chain separately. Defaults to `false`.
+$(MAKIE_KWARGS_DOCSTRING)
+"""
+
+STEPHIST_DOCSTRING = """
+    Makie.stephist(
+        chn::FC.FlexiChain[, param_or_params];
+        pool_chains::Bool=false,
+        kwargs...,
+    )
+
+Create a step histogram for the specified parameters in the chain.
+
+$(FC._PARAM_DOCSTRING("Makie.stephist"))
+
+# Keyword arguments
+
+- `pool_chains::Bool`: whether to pool data from all chains into a single plot, or to plot each chain separately. Defaults to `false`.
+$(MAKIE_KWARGS_DOCSTRING)
+"""
+
 for f in (:hist, :stephist)
     f! = Symbol(f, '!')
+    docstr = f === :hist ? HIST_DOCSTRING : STEPHIST_DOCSTRING
 
     expr = quote
-        """
-        This handles plotting onto a full Figure.
-        """
+        @doc $docstr
         function Makie.$f(
                 chn::FC.FlexiChain,
                 param_or_params = FC.Parameter.(FC.parameters(chn));
@@ -23,18 +56,7 @@ for f in (:hist, :stephist)
             chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
             keys_to_plot = keys(chn)
             isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
-            nrows, ncols = if isnothing(layout)
-                length(keys_to_plot), 1
-            else
-                layout
-            end
-            figure = Makie.Figure(;
-                size = (
-                    FC.PlotUtils.DEFAULT_WIDTH * ncols,
-                    FC.PlotUtils.DEFAULT_HEIGHT * nrows,
-                ),
-                figure...,
-            )
+            nrows, ncols, figure = setup_figure_and_layout(length(keys_to_plot), 1, layout, figure)
             a, p = nothing, nothing
             # This order means that plots go from left to right before going to the next row
             indices = Iterators.product(1:ncols, 1:nrows)
@@ -53,9 +75,9 @@ for f in (:hist, :stephist)
             return Makie.FigureAxisPlot(figure, a, p)
         end
 
-        """
-        This handles plotting onto a single Axis.
-        """
+        ########################
+        # Single axis plotting #
+        ########################
         function Makie.$f(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
             # TODO: Error if there is already something at the grid position?
             # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96

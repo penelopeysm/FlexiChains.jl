@@ -11,23 +11,25 @@ In fact, calling `histogram(...)` simply redirects to `plot(..., seriestype=:his
 
 The following series types are supported for `FlexiChain` objects.
 
-| `seriestype=`            | Equivalent function                            | Description                                                                             |
-| -------------            | ---------------------                          | -------------                                                                           |
-| `:traceplot`             | `FlexiChains.traceplot()`                      | Trace plot of samples                                                                   |
-| `:histogram`             | `Plots.histogram()`                            | Histogram of samples                                                                    |
-| `:density`               | `Plots.density()`                              | Kernel density estimate of samples                                                      |
-| `:mixeddensity`          | [`FlexiChains.mixeddensity()`](@ref)           | Density plot or histogram, depending on whether the parameter is continuous or discrete |
-| `:meanplot`              | [`FlexiChains.meanplot()`](@ref)               | Running mean of samples                                                                 |
-| `:autocorplot`           | [`FlexiChains.autocorplot()`](@ref)            | Autocorrelation of samples                                                              |
-| `:traceplot_and_density` | `Plots.plot()` (with no `seriestype` argument) | Trace plot and mixed density side-by-side                                               |
+| `seriestype=`            | Equivalent function                                                     | Description                                                                             |
+| :----------------------- | :---------------------------------------------------------------------- | :-------------------------------------------------------------------------------------  |
+| `:traceplot`             | [`FlexiChains.traceplot`](@ref)                                         | Trace plot of samples                                                                   |
+| `:histogram`             | [`Plots.histogram`](@ref plots-histogram)                               | Histogram of samples                                                                    |
+| `:density`               | [`Plots.density`](@ref plots-density)                                   | Kernel density estimate of samples                                                      |
+| `:mixeddensity`          | [`FlexiChains.mixeddensity`](@ref)                                      | Density plot or histogram, depending on whether the parameter is continuous or discrete |
+| `:meanplot`              | [`FlexiChains.meanplot`](@ref)                                          | Running mean of samples                                                                 |
+| `:autocorplot`           | [`FlexiChains.autocorplot`](@ref)                                       | Autocorrelation of samples                                                              |
+| `:traceplot_and_density` | [`Plots.plot`](@ref) (with no `seriestype` argument)                    | Trace plot and mixed density side-by-side                                               |
+| `:rankplot`              | [`FlexiChains.rankplot`](@ref) with `overlay=false`                     | Rank plot with separate histograms per chain                                            |
+| `:rankplot_overlay`      | [`FlexiChains.rankplot`](@ref) with `overlay=true`                      | Rank plot with all chains' data overlaid                                                |
 
 !!! warning "Identifier conflicts"
-    Please note that the identifiers `traceplot`, `meanplot`, `mixeddensity`, and `autocorplot` are also exported by MCMCChains.jl and [also currently re-exported by Turing.jl](https://github.com/TuringLang/Turing.jl/issues/2681). The FlexiChains versions are marked as public but not exported. To make sure you are using the FlexiChains versions, you must prefix them with the module name: `FlexiChains.traceplot(...)`. Otherwise, you may run into unexpected errors. 
+    Please note that the identifiers `traceplot`, `meanplot`, `mixeddensity`, and `autocorplot` are also exported by MCMCChains.jl and [also currently re-exported by Turing.jl](https://github.com/TuringLang/Turing.jl/issues/2681). For this reason, FlexiChains does not export them, although they are part of the public API. To make sure you are using the FlexiChains versions, you must prefix them with the module name: `FlexiChains.traceplot(...)`. Otherwise, you may run into unexpected errors. 
 
 !!! note "Feature parity with MCMCChains.jl"
-    There are still substantially fewer options than in MCMCChains.jl. Other plot types will be added over time, but in the meantime if you need features from MCMCChains, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using `MCMCChains.Chains(chn)`.
+    There are still somewhat fewer options than in MCMCChains.jl. Other plot types will be added over time, but in the meantime if you need features from MCMCChains, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using `MCMCChains.Chains(chn)`. Help with adding new plots is very much welcome!
 
-## Signature
+## General interface
 
 The above plotting functions should be called with the following signature:
 
@@ -49,16 +51,18 @@ plotfunc(
 - If `pool_chains=true`, then samples from all chains are concatenated before plotting densities or histograms.
   Otherwise, each chain is plotted separately.
 
-- Other keyword arguments are passed through to the underlying Plots.jl functions. If you find one that does not work as intended, please open an issue.
+- Some plotting functions like `autocorplot` and `rankplot` have additional keyword arguments which control the details of the plot; please see the docstrings for those functions for more details.
 
-## Gallery
+- Other keyword arguments are passed through to the underlying Plots.jl functions which allow you to, for example, control the appearance of the plot.
+
+## Setup
 
 Here, we demonstrate the plotting features with a typical chain sampled from a Turing model.
 However, the general principles are applicable to any `FlexiChain` object.
 
 We'll make a model with different types of parameters (continuous, discrete, and vector-valued).
 
-```@example 1
+```@example plotsjl
 using FlexiChains, StatsPlots, Turing
 
 @model function f()
@@ -73,81 +77,125 @@ chn = sample(
 )
 ```
 
-Notice that the chain has not split `z` up into `z[1]` and `z[2]`.
-However, when plotting, it will be automatically split up for you:
+## Default plot
 
-```@example 1
+Calling `plot(chn)` produces a trace plot and mixed density side-by-side for each parameter.
+
+Notice that the chain has not split `z` up into `z[1]` and `z[2]`.
+However, when plotting, it will be automatically split up for you.
+Also notice that `Extra` keys, like the log probabilities, are not plotted by default.
+
+```@docs
+Plots.plot
+```
+
+```@example plotsjl
 plot(chn)
 savefig("plot1.svg"); nothing # hide
 ```
 
 ![Trace and density plots of the sampled chain](plot1.svg)
 
-Notice that `Extra` keys, like the log probabilities, are not plotted by default.
 If you want to plot specific parameter(s), you can specify them as the second positional argument.
 In general, the second argument can be _anything_ that you can index into a chain with.
 This means a symbol, a parameter, a `FlexiChains.Extra`, a sub-VarName, or a vector thereof:
 
-```@example 1
+```@example plotsjl
 plot(chn, [@varname(x), :logjoint])
 savefig("plot2.svg"); nothing # hide
 ```
 
 ![Trace and density plots of x and the logjoint](plot2.svg)
 
-While the density plots above are useful for comparing whether the chains have mixed well, the overlapping histograms are harder to make sense of.
-You can combine the histograms by setting `pool_chains=true`.
-We'll also hide the legend to reduce clutter (keyword arguments like `legend` are simply passed through to Plots.jl):
-
-```@example 1
-plot(chn; pool_chains=true, legend=false)
-savefig("plot3.svg"); nothing # hide
-```
-
-![Trace and pooled density plots of the sampled chain](plot3.svg)
-
-## Docstrings
-
-Note that these are only the functions which FlexiChains defines: a number of Plots.jl's actual functions (like `histogram` and `density`) also work with `FlexiChain` objects, as described in the table above, but their docstrings are not included here.
+## Trace plots
 
 ```@docs
 FlexiChains.traceplot
 ```
 
-```@example 1
+```@example plotsjl
 FlexiChains.traceplot(chn)
 savefig("traceplot.svg"); nothing # hide
 ```
 
 ![Trace plots of the sampled chain](traceplot.svg)
 
+## [Density plots](@id plots-density)
+
+Density plots are produced using the standard `Plots.density` function, which works with `FlexiChain` objects.
+
+!!! note
+    Since `density` is defined in Plots.jl, we can't add a docstring for it without introducing a dependency on Plots itself, which is not ideal.
+    Thus, there is no docstring here—but the function has exactly the same signature as for [`Plots.plot`](@ref) above, including the `pool_chains` argument.
+
+```@example plotsjl
+density(chn)
+savefig("density.svg"); nothing # hide
+```
+
+![Density plots of the sampled chain](density.svg)
+
+## [Histograms](@id plots-histogram)
+
+Similarly, `Plots.histogram` works with `FlexiChain` objects:
+
+!!! note
+    Since `histogram` is defined in Plots.jl, we can't add a docstring for it without introducing a dependency on Plots itself, which is not ideal.
+    Thus, there is no docstring here—but the function has exactly the same signature as for [`Plots.plot`](@ref) above, including the `pool_chains` argument.
+
+```@example plotsjl
+histogram(chn)
+savefig("histogram.svg"); nothing # hide
+```
+
+![Histograms of the sampled chain](histogram.svg)
+
+## Running mean plots
+
 ```@docs
 FlexiChains.meanplot
 ```
 
-```@example 1
+```@example plotsjl
 FlexiChains.meanplot(chn)
 savefig("meanplot.svg"); nothing # hide
 ```
 
 ![Running mean plots of the sampled chain](meanplot.svg)
 
+## Rank plots
+
+```@docs
+FlexiChains.rankplot
+```
+
+```@example plotsjl
+FlexiChains.rankplot(chn)
+savefig("rankplot.svg"); nothing # hide
+```
+
+![Rank plots of the sampled chain](rankplot.svg)
+
+## Autocorrelation plots
+
 ```@docs
 FlexiChains.autocorplot
 ```
 
-```@example 1
+```@example plotsjl
 FlexiChains.autocorplot(chn)
 savefig("autocorplot.svg"); nothing # hide
 ```
 
 ![Autocorrelation plots of the sampled chain](autocorplot.svg)
 
+## Mixed density plots
+
 ```@docs
 FlexiChains.mixeddensity
 ```
 
-```@example 1
+```@example plotsjl
 FlexiChains.mixeddensity(chn)
 savefig("mixeddensity.svg"); nothing # hide
 ```
