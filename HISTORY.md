@@ -2,6 +2,8 @@
 
 Added the `FlexiChains.rankplot` function for creating rank plots with Plots.jl backend.
 
+Also fixed a bug where `plotfunc(chn, :)` errored (for all plotting functions).
+
 # 0.5.2
 
 Added a method `MCMCDiagnosticTools.bfmi(chn::FlexiChain, energy_key)` to compute the Bayesian fraction of missing information (BFMI) for a chain.
