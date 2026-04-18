@@ -1,7 +1,7 @@
 module FlexiChainsRecipesBaseExt
 
 using FlexiChains: FlexiChains as FC
-using RecipesBase: @recipe, @userplot, @series, plot, plot!
+using RecipesBase: RecipesBase, @recipe, @userplot, @series, plot, plot!
 using StatsBase: StatsBase
 
 const DEFAULT_MARGIN = (8, :mm)
