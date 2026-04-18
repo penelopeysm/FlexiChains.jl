@@ -38,6 +38,7 @@ include("interface/mergesubset.jl")
 include("interface/samples.jl")
 include("interface/rand.jl")
 include("varname.jl")
+include("flatten.jl")
 include("conversions.jl")
 include("stancsv.jl")
 

@@ -1,3 +1,7 @@
+# 0.5.4
+
+Added a method, `DimensionalData.DimArray(::FlexiChain)`, to convert a `FlexiChain` into a 3D `DimArray` with dimensions (iters, chains, parameters).
+
 # 0.5.3
 
 Added the `FlexiChains.rankplot` function for creating rank plots with Plots.jl backend.

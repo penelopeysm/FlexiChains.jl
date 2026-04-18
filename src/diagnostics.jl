@@ -1,46 +1,5 @@
 using MCMCDiagnosticTools: MCMCDiagnosticTools
 
-"""
-    _to_3darray(chain::FlexiChain{TKey}; warn=true, eltype_filter=Real) where {TKey}
-
-Split array-valued parameters into scalar leaves, then extract all scalar parameters whose
-element type subtypes `eltype_filter` and return them as a `DimArray` with dimensions
-`(:iter, :chain, :param)`.
-
-Parameters whose values do not subtype `eltype_filter` after splitting are skipped (with a
-warning if `warn=true`).
-"""
-function _to_3darray(
-        chain::FlexiChain{TKey}; warn::Bool = true, eltype_filter::Type{T} = Real,
-    ) where {TKey, T}
-    chain = FlexiChains._split_varnames(chain)
-    kept_keys = ParameterOrExtra{<:TKey}[]
-    kept_data = Matrix{<:Real}[]
-    skipped_keys = ParameterOrExtra{<:TKey}[]
-    for (k, v) in chain._data
-        if eltype(v) <: T
-            push!(kept_keys, k)
-            push!(kept_data, v)
-        else
-            push!(skipped_keys, k)
-        end
-    end
-    if warn && !isempty(skipped_keys)
-        skipped_str = join(("`$k`" for k in skipped_keys), ", ")
-        @warn "skipping keys $skipped_str as their values do not subtype $T"
-    end
-    if isempty(kept_keys)
-        throw(ArgumentError("no parameters with values subtyping $T found"))
-    end
-    arr = stack(kept_data)
-    dims = (
-        DD.Dim{ITER_DIM_NAME}(iter_indices(chain)),
-        DD.Dim{CHAIN_DIM_NAME}(chain_indices(chain)),
-        DD.Dim{:param}(kept_keys),
-    )
-    return DD.DimArray(arr, dims)
-end
-
 # Convert the output of `MCMCDiagnosticTools.gelmandiag` into a FlexiSummary
 function _gelmandiag_summary(
         ::Type{TKey}, kept_keys, psrf, psrfci
@@ -79,7 +38,7 @@ function MCMCDiagnosticTools.gelmandiag(
         warn::Bool = true,
         kwargs...,
     ) where {TKey}
-    dimarr = _to_3darray(chain; warn = warn)
+    dimarr = DD.DimArray(chain; warn = warn, eltype_filter = Real, parameters_only = true)
     result = MCMCDiagnosticTools.gelmandiag(parent(dimarr); kwargs...)
     return _gelmandiag_summary(TKey, DD.lookup(dimarr, :param), result.psrf, result.psrfci)
 end
@@ -111,7 +70,7 @@ function MCMCDiagnosticTools.gelmandiag_multivariate(
         warn::Bool = true,
         kwargs...,
     ) where {TKey}
-    dimarr = _to_3darray(chain; warn = warn)
+    dimarr = DD.DimArray(chain; warn = warn, eltype_filter = Real, parameters_only = true)
     result = MCMCDiagnosticTools.gelmandiag_multivariate(parent(dimarr); kwargs...)
     summary = _gelmandiag_summary(
         TKey, DD.lookup(dimarr, :param), result.psrf, result.psrfci
@@ -147,7 +106,7 @@ function MCMCDiagnosticTools.discretediag(
         warn::Bool = true,
         kwargs...,
     ) where {TKey}
-    dimarr = _to_3darray(chain; warn = warn, eltype_filter = Integer)
+    dimarr = DD.DimArray(chain; warn = warn, eltype_filter = Integer, parameters_only = true)
     between_vals, within_vals = MCMCDiagnosticTools.discretediag(
         parent(dimarr); kwargs...
     )
