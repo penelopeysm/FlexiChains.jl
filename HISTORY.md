@@ -1,3 +1,21 @@
+# 0.5.0
+
+## Breaking changes
+
+There are no breaking changes if you are only using `FlexiChain{VarName}` (i.e., `VNChain`).
+
+When plotting or summarising `FlexiChain{Symbol}` and `FlexiChain{AbstractString}`, the keys will now be split up into their individual scalar-valued components, if possible.
+For example, if you have a parameter `:x` which is a vector of length 3, then the keys `Symbol("x[1]")`, `Symbol("x[2]")`, and `Symbol("x[3]")` will be automatically generated and used when plotting and summarising.
+Although this could arguably be called a new feature, this has been released as a breaking change in case users were relying on the old behaviour.
+
+## New features
+
+Implemented a PairPlots.jl extension for FlexiChains.
+You can now call `pairplot(chn[, param_or_params])` to get a pair plot of the parameters in a chain.
+Note that this requires PairPlots.jl as well as a Makie backend (e.g. GLMakie or CairoMakie) to be loaded.
+
+Added methods for `AbstractMCMC.from_samples` and `AbstractMCMC.to_samples` to convert `FlexiChain{VarName}` to and from `DynamicPPL.VarNamedTuple`.
+
 # 0.4.9
 
 Implemented `MCMCDiagnosticTools.gelmandiag`, `MCMCDiagnosticTools.gelmandiag_multivariate`, and `MCMCDiagnosticTools.discretediag` for `FlexiChain`s.

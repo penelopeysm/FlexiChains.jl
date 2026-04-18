@@ -300,6 +300,14 @@ end
         @test c[@varname(x)] == map(p -> p.params[@varname(x)], ps)
         @test c[@varname(y)] == c[@varname(x)] .+ 1
         @test logpdf.(Normal(), c[@varname(x)]) ≈ c[Extra(:logprior)]
+
+        # test with VarNamedTuple
+        vnts = [rand(model) for _ in 1:100, _ in 1:3]
+        c2 = AbstractMCMC.from_samples(VNChain, vnts)
+        @test c2 isa VNChain
+        @test size(c2) == (100, 3)
+        @test Set(FlexiChains.parameters(c2)) == Set(keys(rand(model)))
+        @test c2[@varname(x)] == map(vnt -> vnt[@varname(x)], vnts)
     end
 
     @testset "parameters_at and values_at" begin
@@ -373,10 +381,14 @@ end
             # errors when run.
             arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c, newmodel())
             @test arr_pss == ps
+            arr_pss = AbstractMCMC.to_samples(DynamicPPL.VarNamedTuple, c, newmodel())
+            @test arr_pss == map(p -> p.params, ps)
         end
         @testset "without model" begin
             arr_pss = AbstractMCMC.to_samples(DynamicPPL.ParamsWithStats, c)
             @test arr_pss == ps
+            arr_pss = AbstractMCMC.to_samples(DynamicPPL.VarNamedTuple, c)
+            @test arr_pss == map(p -> p.params, ps)
         end
     end
 

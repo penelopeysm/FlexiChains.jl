@@ -79,6 +79,7 @@ struct Parameter{T}
     name::T
 end
 Base.show(io::IO, p::Parameter) = print(io, "Parameter(", repr(p.name), ")")
+get_name(p::Parameter) = p.name
 
 """
     Extra(name::Any)
@@ -90,6 +91,7 @@ struct Extra{T}
     name::T
 end
 Base.show(io::IO, e::Extra) = print(io, "Extra(", repr(e.name), ")")
+get_name(e::Extra) = e.name
 
 """
     ParameterOrExtra{T}

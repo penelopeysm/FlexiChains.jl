@@ -487,15 +487,10 @@ function collapse(
         funcs::AbstractVector;
         dims::Symbol = :both,
         warn::Bool = true,
-        split_varnames::Bool = (TKey <: VarName),
+        split_varnames::Bool = true,
         drop_stat_dim::Bool = false,
     ) where {TKey}
     if split_varnames
-        TKey <: VarName || throw(
-            ArgumentError(
-                "`split_varnames=true` is only supported for chains with `TKey<:VarName`",
-            ),
-        )
         chain = FlexiChains._split_varnames(chain)
     end
     data = OrderedDict{ParameterOrExtra{<:TKey}, AbstractArray{<:Any, 3}}()
@@ -562,7 +557,7 @@ function _stat_docstring(func_name, short_name)
             chain::FlexiChain{TKey};
             dims::Symbol=:both,
             warn::Bool=true,
-            split_varnames::Bool=(TKey<:VarName),
+            split_varnames::Bool=true,
             kwargs...
         ) where {TKey}
 
@@ -575,9 +570,11 @@ function _stat_docstring(func_name, short_name)
     of `:both` collapses both the iteration and chain dimensions. Other valid values are
     `:iter` or `:chain`, which respectively collapse only the iteration or chain dimension.
 
-    The `split_varnames` keyword argument, if `true`, will first split up `VarName`s in the
-    chain such that each `VarName` corresponds to a single scalar value. This is only supported
-    for chains with `TKey<:VarName`.
+    The `split_varnames` keyword argument, if `true`, will first split up variables in the
+    chain such that each key corresponds to a single scalar value. This is only supported
+    for chains with `TKey<:VarName` or `TKey==Symbol`; for other key types this will be a
+    no-op as long as the data already contain scalar values for every key, but will error if
+    the data contain non-scalar values.
 
     Other keyword arguments are forwarded to [`$(func_name)`](@extref); please see its
     documentation for details of supported keyword arguments.
@@ -595,7 +592,7 @@ macro _forward_stat(func)
                 chn::FlexiChain{TKey};
                 dims::Symbol = :both,
                 warn::Bool = true,
-                split_varnames::Bool = (TKey <: VarName),
+                split_varnames::Bool = true,
                 kwargs...,
             ) where {TKey}
             return collapse(
@@ -678,7 +675,7 @@ $(_stat_docstring("StatsBase.iqr", "interquartile range"))
         p;
         dims::Symbol=:both,
         warn::Bool=true,
-        split_varnames::Bool=(TKey<:VarName),
+        split_varnames::Bool=true,
         kwargs...
     ) where {TKey}
 
@@ -699,7 +696,7 @@ function Statistics.quantile(
         p;
         dims::Symbol = :both,
         warn::Bool = true,
-        split_varnames::Bool = (TKey <: VarName),
+        split_varnames::Bool = true,
         kwargs...,
     ) where {TKey}
     funcs = if dims == :both
@@ -720,7 +717,7 @@ end
 """
     StatsBase.summarystats(
         chain::FlexiChain{TKey};
-        split_varnames::Bool=(TKey<:VarName),
+        split_varnames::Bool=true,
         warn::Bool=true,
     ) where {TKey}
 
@@ -734,9 +731,11 @@ Compute a standard set of summary statistics for each key in the `chain`. The st
 - R-hat diagnostic ([`MCMCDiagnosticTools.rhat`](@extref))
 - 5th, 50th (median), and 95th percentiles ([`Statistics.quantile`](@extref))
 
-The `split_varnames` keyword argument, if `true`, will first split up `VarName`s in the
-chain such that each `VarName` corresponds to a single scalar value. This is only supported
-for chains with `TKey<:VarName`.
+The `split_varnames` keyword argument, if `true`, will first split up variables in the chain
+such that each key corresponds to a single scalar value. The splitting is only supported for
+chains with `TKey<:VarName` or `TKey==Symbol`; for other key types, this will be a no-op as
+long as the data already contain scalar values for every key, but will error if the data
+contain non-scalar values.
 
 If any of the statistics cannot be computed for a key, a `missing` value is returned. If
 _none_ of the statistics can be computed for a key, that key will be dropped from the
@@ -744,7 +743,7 @@ resulting `FlexiSummary`, and a warning issued. The warning can be suppressed by
 `warn=false`.
 """
 function StatsBase.summarystats(
-        chain::FlexiChain{TKey}; split_varnames::Bool = (TKey <: VarName), warn::Bool = true
+        chain::FlexiChain{TKey}; split_varnames::Bool = true, warn::Bool = true
     ) where {TKey}
     _DEFAULT_SUMMARYSTAT_FUNCTIONS = [
         (:mean, Statistics.mean),

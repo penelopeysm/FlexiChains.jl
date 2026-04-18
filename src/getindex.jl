@@ -338,14 +338,14 @@ function _get_multi_keys(
         ::Type{TKey}, all_keys::Base.KeySet, ::Colon
     )::Vector{ParameterOrExtra{<:TKey}} where {TKey}
     # TODO: `all_keys` has too loose a type.
-    # https://github.com/JuliaLang/julia/issues/59626jg
+    # https://github.com/JuliaLang/julia/issues/59626
     return collect(all_keys)
 end
 function _get_multi_keys(
         ::Type{TKey}, all_keys::Base.KeySet, keyvec::AbstractVector
     )::Vector{ParameterOrExtra{<:TKey}} where {TKey}
     # TODO: `all_keys` has too loose a type.
-    # https://github.com/JuliaLang/julia/issues/59626jg
+    # https://github.com/JuliaLang/julia/issues/59626
     return map(k -> _get_multi_key(TKey, all_keys, k), keyvec)
 end
 

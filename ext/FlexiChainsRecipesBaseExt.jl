@@ -56,8 +56,7 @@ const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 Main entry point for plotting.
 
 If parameters are unspecified, all parameters in the chain will be plotted. Note that this
-excludes non-parameter, `Extra` keys. `VarName` chains are additionally split up into
-constituent real-valued parameters by default.
+excludes non-parameter, `Extra` keys.
 """
 @recipe function _(
         chn::FC.FlexiChain,
@@ -66,7 +65,8 @@ constituent real-valued parameters by default.
         demean = nothing,
         pool_chains = false,
     )
-    keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
+    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    keys_to_plot = keys(chn)
     # When the user calls `plot(chn[, params])` without specifying a `seriestype`, we
     # default to showing a side-by-side traceplot and density/histogram for each parameter.
     # Otherwise, if the user calls `traceplot`, `density`, `histogram`, etc. then there will

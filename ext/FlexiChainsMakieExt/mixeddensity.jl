@@ -17,7 +17,8 @@ function FC.mmixeddensity(
         legend = (;),
         kwargs...,
     )
-    keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
+    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nrows, ncols = if isnothing(layout)
         length(keys_to_plot), 1
@@ -57,7 +58,8 @@ This handles plotting onto a single Axis.
 function FC.mmixeddensity(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96
-    k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
+    chn = FC.PlotUtils.subset_and_split_chain(chn, param)
+    k = only(keys(chn))
     axis_kwargs = if isdiscrete(chn, k)
         _default_histogram_axis(k)
     else
@@ -70,7 +72,8 @@ end
 function FC.mmixeddensity!(
         ax::Makie.Axis, chn::FC.FlexiChain, param; pool_chains::Bool = false, kwargs...
     )
-    k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
+    chn = FC.PlotUtils.subset_and_split_chain(chn, param)
+    k = only(keys(chn))
     a, p = FC.mmixeddensity!(
         ax, FC.PlotUtils.FlexiChainMixedDensity(chn, k, pool_chains); kwargs...
     )

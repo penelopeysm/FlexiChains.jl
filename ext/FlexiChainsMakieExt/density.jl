@@ -16,7 +16,8 @@ function Makie.density(
         legend = (;),
         kwargs...,
     )
-    keys_to_plot = FC.PlotUtils.get_keys_to_plot(chn, param_or_params)
+    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nrows, ncols = if isnothing(layout)
         length(keys_to_plot), 1
@@ -51,7 +52,8 @@ This handles plotting onto a single Axis.
 function Makie.density(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96
-    k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
+    chn = FC.PlotUtils.subset_and_split_chain(chn, param)
+    k = only(keys(chn))
     return Makie.density!(
         Makie.Axis(grid; _default_density_axis(k)..., axis...), chn, param; kwargs...
     )
@@ -59,7 +61,8 @@ end
 function Makie.density!(
         ax::Makie.Axis, chn::FC.FlexiChain, param; pool_chains::Bool = false, kwargs...
     )
-    k = only(FC.PlotUtils.get_keys_to_plot(chn, param))
+    chn = FC.PlotUtils.subset_and_split_chain(chn, param)
+    k = only(keys(chn))
     a, p = Makie.density!(
         ax, FC.PlotUtils.FlexiChainDensity(chn, k, pool_chains); kwargs...
     )

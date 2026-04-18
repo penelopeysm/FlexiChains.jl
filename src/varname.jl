@@ -264,10 +264,13 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
 end
 
 """
-    FlexiChains._split_varnames(cs::ChainOrSummary{Symbol})
+    FlexiChains._split_varnames(cs::ChainOrSummary{Union{Symbol,<:AbstractString}})
 
 For `Symbol`-keyed chains, convert keys to `VarName`, split array-valued parameters into
 scalar leaves, then convert the keys back to `Symbol`.
+
+Likewise for `AbstractString`-keyed chains; the keys are converted back to standard
+`String`.
 """
 function _split_varnames(cs::ChainOrSummary{Symbol})
     N = cs isa FlexiChain ? 2 : 3
@@ -279,4 +282,33 @@ function _split_varnames(cs::ChainOrSummary{Symbol})
     vn_cs = FlexiChains._replace_data(cs, VarName, new_data)
     split_cs = _split_varnames(vn_cs)
     return FlexiChains.map_parameters(k -> Symbol(k), split_cs)
+end
+function _split_varnames(cs::ChainOrSummary{<:AbstractString})
+    N = cs isa FlexiChain ? 2 : 3
+    new_data = OrderedDict{ParameterOrExtra{<:VarName}, Array{<:Any, N}}()
+    for (k, v) in cs._data
+        new_key = k isa Parameter ? Parameter(VarName{Symbol(k.name)}()) : k
+        new_data[new_key] = v
+    end
+    vn_cs = FlexiChains._replace_data(cs, VarName, new_data)
+    split_cs = _split_varnames(vn_cs)
+    return FlexiChains.map_parameters(k -> String(Symbol(k)), split_cs)
+end
+
+"""
+    FlexiChains._split_varnames(cs::ChainOrSummary)
+
+For all other chains that are not keyed by `VarName` or `Symbol`, we check if all keys are
+real-valued anyway. If they are, then we can just return the original chain. If not, this
+throws an error.
+"""
+function _split_varnames(cs::ChainOrSummary)
+    for (k, v) in cs._data
+        if eltype(v) <: Real
+            continue
+        else
+            throw(ArgumentError("key $(k) in the chain has data of type $(eltype(v)), which is not scalar-valued; variable names cannot be split for this chain. Please use a chain with key type VarName or Symbol if you want to use variable name splitting."))
+        end
+    end
+    return cs
 end

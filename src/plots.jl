@@ -178,11 +178,18 @@ module PlotUtils
         _get_multi_key
 
     """
-    Figure out which keys to plot. Most of the heavy lifting here is done by `_get_multi_keys`
-    which is the same as for indexing. However, this function is also responsible for splitting
-    VarName chains up into constituent leaf VarNames before plotting.
+    Return a chain that has been:
+
+    1. Subsetted to just the parameters we want to plot; and
+
+    2. Split up such that each key corresponds to a single real-valued parameter.
+
+    This ensures that each plotting function can simply loop over the keys of the returned chain
+    and plot each one, without needing to worry about the structure of the data.
     """
-    function get_keys_to_plot(chn::FlexiChain{TKey}, param_or_params) where {TKey}
+    function subset_and_split_chain(
+            chn::FlexiChain{TKey}, param_or_params
+        )::FlexiChain where {TKey}
         parameters_to_plot = if param_or_params isa AbstractVector
             _get_multi_keys(TKey, keys(chn), param_or_params)
         else
@@ -194,19 +201,9 @@ module PlotUtils
         # would just directly return `keys_to_plot`. However, there are some subtle
         # considerations when using VarName chains. See below for a full explanation.
         chn = chn[parameters_to_plot]
-        # Now, we split VarNames into real-valued parameters if requested.
-        if TKey <: VarName
-            chn = _split_varnames(chn)
-        end
-        # Re-calculate which keys need to be plotted. Now, in the general case, `keys_to_plot`
-        # will _already_ be the same as `keys(chn)` because of the subsetting above. However, if
-        # it's a VarName chain and a VarName has been split up, it's possible that they may be
-        # different. For example, consider a chain with `@varname(x)` being a length-2 vector.
-        # If the user calls `plot(chn, [@varname(x)])`, then `keys_to_plot` will initially be
-        # `[@varname(x)]`. BUT this line is what allows us to reassign the value of
-        # `keys_to_plot` to be `[@varname(x[1]), @varname(x[2])]` after the split. If we didn't
-        # do this, it would error in mystifying ways.
-        return collect(keys(chn))
+        # Split into real-valued parameters if possible.
+        chn = _split_varnames(chn)
+        return chn
     end
 
     """
