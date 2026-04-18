@@ -38,13 +38,13 @@ using Test
 
             # test parameters_only=false
             da_all = DD.DimArray(chain; parameters_only = false, warn = false)
-            @test size(da) == (N_iters, N_chains, 3)
-            @test val(DD.dims(da, :iter)) == val(iter_indices(chain))
-            @test val(DD.dims(da, :chain)) == val(chain_indices(chain))
-            @test all(x -> x == 1.0, da[:, :, At(Parameter(:a))])
-            @test all(x -> x == 2.0, da[:, :, At(Parameter(:b))])
-            @test all(x -> x == -3.0, da[:, :, At(Extra(:lp))])
-            param_keys = collect(val(DD.dims(da, :param)))
+            @test size(da_all) == (N_iters, N_chains, 3)
+            @test val(DD.dims(da_all, :iter)) == val(iter_indices(chain))
+            @test val(DD.dims(da_all, :chain)) == val(chain_indices(chain))
+            @test all(x -> x == 1.0, da_all[:, :, At(Parameter(:a))])
+            @test all(x -> x == 2.0, da_all[:, :, At(Parameter(:b))])
+            @test all(x -> x == -3.0, da_all[:, :, At(Extra(:lp))])
+            param_keys = collect(val(DD.dims(da_all, :param)))
             @test param_keys == [Parameter(:a), Parameter(:b), Extra(:lp)]
         end
 
@@ -114,7 +114,7 @@ using Test
             da = DD.DimArray(chain; warn = false)
             @test size(da) == (N_iters, 1, 3)
             param_keys = collect(val(DD.dims(da, :param)))
-            @test param_keys == [Parameter("a"), Parameter("b[1]"), Parameter("b[2]")]
+            @test param_keys == ["a", "b[1]", "b[2]"]
         end
     end
 end
