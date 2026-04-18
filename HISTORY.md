@@ -1,3 +1,7 @@
+# 0.5.1
+
+Added the `divergences` and `divergences_kwargs` keyword argument to `pairplot` to additionally superimpose a scatter plot of divergent transitions.
+
 # 0.5.0
 
 ## Breaking changes

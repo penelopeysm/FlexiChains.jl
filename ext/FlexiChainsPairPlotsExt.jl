@@ -44,8 +44,20 @@ backend, so you will additionally need to load a Makie backend (e.g. with `using
 
 $(FC._PARAM_DOCSTRING("pairplot"))
 
-The `pool_chains` keyword argument controls whether to pool all chains together into a
-single series, or to plot each chain separately.
+## Keyword arguments
+
+- `pool_chains`: controls whether to pool all chains together into a single series, or to
+  plot each chain separately.
+
+- `divergences`: specifies a key name in the chain that contains a boolean array indicating
+  which samples are divergences. If provided, divergent samples will be highlighted in the
+  plot. Note that for **Turing.jl** HMC/NUTS chains, the key name for divergences is (as of
+  Turing v0.43) `:numerical_error`. By default this is `nothing`, which disables plotting of
+  divergences (because not all chains will have this information).
+
+- `divergences_kwargs`: a `NamedTuple` of keyword arguments which is eventually passed to
+  `Makie.scatter`, which can be used to control the appearance of the points.
+  Defaults to `(; markersize=3, color=:red)`.
 
 Other keyword arguments are passed to `PairPlots.pairplot`.
 """
@@ -53,8 +65,20 @@ function PairPlots.pairplot(
         chn::FC.FlexiChain,
         param_or_params = FC.Parameter.(FC.parameters(chn));
         pool_chains::Bool = false,
+        divergences = nothing,
+        divergences_kwargs = (; markersize = 3, color = :red),
         kwargs...
     )
+    # Get the divergences first, before we subset the chain
+    divergence_mask = if divergences !== nothing
+        m = chn[divergences]
+        if !isa(m, AbstractMatrix{Bool})
+            throw(ArgumentError("The `divergences` key must correspond to a boolean array."))
+        end
+        m
+    else
+        nothing
+    end
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     series = if pool_chains
         # already split above, so don't need to split again here
@@ -73,7 +97,17 @@ function PairPlots.pairplot(
                 ) for (i, ci) in enumerate(FC.chain_indices(chn))
         )
     end
-    return PairPlots.pairplot(series...; kwargs...)
+    # Identify divergent samples
+    divergence_arg = if divergence_mask !== nothing
+        samples = NamedTuple(Symbol(FC.get_name(k)) => chn[k][divergence_mask] for k in keys(chn))
+        # Can't plot Series => (Scatter,): see
+        # https://github.com/sefffal/PairPlots.jl/issues/80
+        # (PairPlots.Series(samples; label="divergences", color=:red, strokecolor=:red) => (PairPlots.Scatter(; divergences_kwargs...),),)
+        (samples => (PairPlots.Scatter(; divergences_kwargs...),),)
+    else
+        ()
+    end
+    return PairPlots.pairplot(series..., divergence_arg...; kwargs...)
 end
 
 end # module
