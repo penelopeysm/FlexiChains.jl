@@ -126,7 +126,7 @@ Density plots are produced using the standard `Plots.density` function, which wo
 
 !!! note
     Since `density` is defined in Plots.jl, we can't add a docstring for it without introducing a dependency on Plots itself, which is not ideal.
-    Thus, there is no docstring here—but the function has exactly the same signature as for [`Plots.plot` above](@ref RecipesBase.plot), including the `pool_chains` argument.
+    Thus, there is no docstring here—but the function has exactly the same signature as for [`Plots.plot`](@ref) above, including the `pool_chains` argument.
 
 ```@example plotsjl
 density(chn)
@@ -141,7 +141,7 @@ Similarly, `Plots.histogram` works with `FlexiChain` objects:
 
 !!! note
     Since `histogram` is defined in Plots.jl, we can't add a docstring for it without introducing a dependency on Plots itself, which is not ideal.
-    Thus, there is no docstring here—but the function has exactly the same signature as for [`Plots.plot` above](@ref RecipesBase.plot), including the `pool_chains` argument.
+    Thus, there is no docstring here—but the function has exactly the same signature as for [`Plots.plot`](@ref) above, including the `pool_chains` argument.
 
 ```@example plotsjl
 histogram(chn)
