@@ -34,7 +34,10 @@ end
 """
     PairPlots.pairplot(
         chn::FlexiChain[, param_or_params];
+        args=(),
         pool_chains::Bool=false,
+        divergences=nothing,
+        divergences_kwargs=(; markersize=3, color=:red),
         kwargs...
     )
 
@@ -46,14 +49,17 @@ $(FC._PARAM_DOCSTRING("pairplot"))
 
 ## Keyword arguments
 
+- `args`: a tuple of additional arguments to pass to `PairPlots.pairplot`. This can be used
+  to specify additional series to plot, for example.
+
 - `pool_chains`: controls whether to pool all chains together into a single series, or to
   plot each chain separately.
 
 - `divergences`: specifies a key name in the chain that contains a boolean array indicating
   which samples are divergences. If provided, divergent samples will be highlighted in the
-  plot. Note that for **Turing.jl** HMC/NUTS chains, the key name for divergences is (as of
-  Turing v0.43) `:numerical_error`. By default this is `nothing`, which disables plotting of
-  divergences (because not all chains will have this information).
+  plot. Note that for HMC/NUTS chains sampled with Turing.jl, the key name for divergences
+  is (as of Turing v0.43) `:numerical_error`. By default this is `nothing`, which disables
+  plotting of divergences (because not all chains will have this information).
 
 - `divergences_kwargs`: a `NamedTuple` of keyword arguments which is eventually passed to
   `Makie.scatter`, which can be used to control the appearance of the points.
@@ -64,6 +70,7 @@ Other keyword arguments are passed to `PairPlots.pairplot`.
 function PairPlots.pairplot(
         chn::FC.FlexiChain,
         param_or_params = FC.Parameter.(FC.parameters(chn));
+        args = (),
         pool_chains::Bool = false,
         divergences = nothing,
         divergences_kwargs = (; markersize = 3, color = :red),
@@ -107,7 +114,7 @@ function PairPlots.pairplot(
     else
         ()
     end
-    return PairPlots.pairplot(series..., divergence_arg...; kwargs...)
+    return PairPlots.pairplot(series..., divergence_arg..., args...; kwargs...)
 end
 
 end # module
