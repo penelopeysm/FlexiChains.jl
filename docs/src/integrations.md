@@ -174,6 +174,9 @@ end
 model = eightsch(J, y, sigma)
 chn = sample(model, NUTS(), MCMCThreads(), 2000, 4; chain_type=VNChain)
 
+# For Turing.jl HMC/NUTS chains, whether or not the transition was divergent
+# is stored in the `:numerical_error` key. If you have a different sampler
+# you just need to specify the appropriate key.
 vns = [@varname(tau), @varname(theta[1]), @varname(theta[2])]
 pairplot(chn, vns; divergences=:numerical_error)
 Makie.save("pairplot.png", ans); # hide
