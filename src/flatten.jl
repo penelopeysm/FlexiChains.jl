@@ -148,3 +148,26 @@ function DD.DimArray(
     )
     return DD.DimArray(kept_data, dims)
 end
+
+"""
+    Base.Array(
+        chain::FlexiChain;
+        kwargs...
+    )
+
+Convert a `FlexiChain` into a standard `Array` with dimensions `(iter, chain, param)`. This
+is the same as the conversion to [`DimensionalData.DimArray`](@ref), except that the
+dimension data is discarded.
+
+See [`DimensionalData.DimArray`](@ref) for more details on the conversion process and
+available keyword arguments.
+"""
+function Base.Array(
+        chain::FlexiChain{TKey};
+        warn::Bool = true,
+        eltype_filter::Type{T} = Any,
+        parameters_only::Bool = true,
+    ) where {TKey, T}
+    da = DD.DimArray(chain; warn, eltype_filter, parameters_only)
+    return parent(da)
+end

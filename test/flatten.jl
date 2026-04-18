@@ -16,8 +16,8 @@ using Test
 @testset verbose = true "flatten.jl" begin
     @info "Testing flatten.jl"
 
-    @testset "DimArray conversion" begin
-        @testset "Symbol-keyed chain with scalar params" begin
+    @testset "Array conversion" begin
+        @testset "basic test case" begin
             N_iters, N_chains = 10, 2
             d = OrderedDict(
                 Parameter(:a) => 1.0,
@@ -26,28 +26,38 @@ using Test
             )
             chain = FlexiChain{Symbol}(N_iters, N_chains, fill(d, N_iters, N_chains))
 
-            # test that parameters_only=true by default
-            da = DD.DimArray(chain; warn = false)
-            @test da isa DD.DimArray{Float64, 3}
-            @test size(da) == (N_iters, N_chains, 2)
-            @test val(DD.dims(da, :iter)) == val(iter_indices(chain))
-            @test val(DD.dims(da, :chain)) == val(chain_indices(chain))
-            @test all(x -> x == 1.0, da[:, :, At(:a)])
-            @test all(x -> x == 2.0, da[:, :, At(:b)])
-            param_keys = collect(val(DD.dims(da, :param)))
-            @test param_keys == [:a, :b]
+            @testset "parameters_only=true (default)" begin
+                da = DD.DimArray(chain; warn = false)
+                @test da isa DD.DimArray{Float64, 3}
+                @test size(da) == (N_iters, N_chains, 2)
+                @test val(DD.dims(da, :iter)) == val(iter_indices(chain))
+                @test val(DD.dims(da, :chain)) == val(chain_indices(chain))
+                @test all(x -> x == 1.0, da[:, :, At(:a)])
+                @test all(x -> x == 2.0, da[:, :, At(:b)])
+                param_keys = collect(val(DD.dims(da, :param)))
+                @test param_keys == [:a, :b]
+            end
 
-            # test parameters_only=false
-            da_all = DD.DimArray(chain; parameters_only = false, warn = false)
-            @test da isa DD.DimArray{Float64, 3}
-            @test size(da_all) == (N_iters, N_chains, 3)
-            @test val(DD.dims(da_all, :iter)) == val(iter_indices(chain))
-            @test val(DD.dims(da_all, :chain)) == val(chain_indices(chain))
-            @test all(x -> x == 1.0, da_all[:, :, At(Parameter(:a))])
-            @test all(x -> x == 2.0, da_all[:, :, At(Parameter(:b))])
-            @test all(x -> x == -3.0, da_all[:, :, At(Extra(:lp))])
-            param_keys = collect(val(DD.dims(da_all, :param)))
-            @test param_keys == [Parameter(:a), Parameter(:b), Extra(:lp)]
+            @testset "parameters_only=false" begin
+                da_all = DD.DimArray(chain; parameters_only = false, warn = false)
+                @test da_all isa DD.DimArray{Float64, 3}
+                @test size(da_all) == (N_iters, N_chains, 3)
+                @test val(DD.dims(da_all, :iter)) == val(iter_indices(chain))
+                @test val(DD.dims(da_all, :chain)) == val(chain_indices(chain))
+                @test all(x -> x == 1.0, da_all[:, :, At(Parameter(:a))])
+                @test all(x -> x == 2.0, da_all[:, :, At(Parameter(:b))])
+                @test all(x -> x == -3.0, da_all[:, :, At(Extra(:lp))])
+                param_keys = collect(val(DD.dims(da_all, :param)))
+                @test param_keys == [Parameter(:a), Parameter(:b), Extra(:lp)]
+            end
+
+            @testset "Base.Array instead of DimArray" begin
+                arr = Array(chain; warn = false)
+                @test arr isa Array{Float64, 3}
+                @test size(arr) == (N_iters, N_chains, 2)
+                @test all(x -> x == 1.0, arr[:, :, 1])
+                @test all(x -> x == 2.0, arr[:, :, 2])
+            end
         end
 
         @testset "avoid over-concretisation of eltype" begin
