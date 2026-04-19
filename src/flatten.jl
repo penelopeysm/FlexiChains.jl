@@ -115,7 +115,7 @@ function DD.DimArray(
         ParameterOrExtra{<:TKey}[]
     end
     ni, nc = size(chain)
-    kept_data = Array{eltype_filter}(undef, ni, nc, 0)
+    kept_matrices = Matrix[]
     skipped_keys = ParameterOrExtra{<:TKey}[]
     for (k, v) in chain._data
         if eltype(v) <: T && (!parameters_only || k isa Parameter)
@@ -125,7 +125,7 @@ function DD.DimArray(
                 k
             end
             push!(kept_keys, k)
-            kept_data = cat(kept_data, reshape(v, ni, nc, 1); dims = 3)
+            push!(kept_matrices, v)
         else
             if !(parameters_only && k isa Extra)
                 push!(skipped_keys, k)
@@ -136,8 +136,15 @@ function DD.DimArray(
         skipped_str = join(("`$k`" for k in skipped_keys), ", ")
         @warn "skipping keys $skipped_str as their values do not subtype $T"
     end
-    if isempty(kept_data)
-        @warn "no keys with values subtyping $T found"
+    np = length(kept_matrices)
+    np == 0 && @warn "no keys with values subtyping $T found"
+    # Here we could call `stack(kept_matrices)` to do mostly the same thing. Unfortunately
+    # `stack` aggressively promotes element types, so if there are e.g. continuous
+    # and discrete parameters it will promote everything to `Float64`. We work
+    # around that by manually filling in an array.
+    kept_data = Array{eltype_filter}(undef, ni, nc, np)
+    for (i, m) in enumerate(kept_matrices)
+        kept_data[:, :, i] = m
     end
     # Concretise as far as possible.
     kept_data = [x for x in kept_data]
