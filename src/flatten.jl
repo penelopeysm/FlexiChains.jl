@@ -157,7 +157,7 @@ end
 
 Convert a `FlexiChain` into a standard `Array` with dimensions `(iter, chain, param)`. This
 is the same as the conversion to [`DimensionalData.DimArray`](@ref), except that the
-dimension data is discarded.
+dimension metadata is discarded.
 
 See [`DimensionalData.DimArray`](@ref) for more details on the conversion process and
 available keyword arguments.
