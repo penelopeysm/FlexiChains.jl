@@ -1,3 +1,14 @@
+# 0.5.5
+
+Added a new keyword argument `stack` to `getindex` on `FlexiChain`.
+For array-valued parameters, `chain[key, stack=true]` will now return a stacked `DimArray` instead of a `DimArray{AbstractArray}`.
+Conversely, `chain[key, stack=false]` will return a `DimArray{Array}` as before.
+
+The same keyword argument can be used for indexing into `FlexiSummary` as well, with exactly the same implications.
+
+The default value for `stack` is `false`, *except* for the case where the parameter is a `DimArray` of `DimArray`s, in which case the stacking happens by default, but with a deprecation warning.
+In a future version this automatic stacking will be disabled, and to stack `DimArray`s you will have to explicitly set `stack=true`.
+
 # 0.5.4
 
 Added a method, `DimensionalData.DimArray(::FlexiChain, kwargs...)`, to convert a `FlexiChain` into a 3D `DimArray` with dimensions `(iters, chains, parameters)`.
