@@ -71,12 +71,12 @@ using Test
                 N_iters, N_chains,
                 Dict(
                     Parameter(:a) => as,
-                    Extra("str") => fill("hello", N_iters, N_chains),
+                    Parameter(:str) => fill("hello", N_iters, N_chains),
                 ),
             )
             gd = @test_logs (:warn, r"str.*Real") gelmandiag(chain)
             @test haskey(gd, Parameter(:a))
-            @test !haskey(gd, Extra("str"))
+            @test !haskey(gd, Parameter(:str))
             @test_logs gelmandiag(chain; warn = false)
         end
 
