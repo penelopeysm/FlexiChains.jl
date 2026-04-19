@@ -71,12 +71,12 @@ using Test
                 N_iters, N_chains,
                 Dict(
                     Parameter(:a) => as,
-                    Extra("str") => fill("hello", N_iters, N_chains),
+                    Parameter(:str) => fill("hello", N_iters, N_chains),
                 ),
             )
             gd = @test_logs (:warn, r"str.*Real") gelmandiag(chain)
             @test haskey(gd, Parameter(:a))
-            @test !haskey(gd, Extra("str"))
+            @test !haskey(gd, Parameter(:str))
             @test_logs gelmandiag(chain; warn = false)
         end
 
@@ -183,7 +183,7 @@ using Test
                     Extra("str") => fill("hello", N_iters, N_chains),
                 ),
             )
-            result = @test_logs (:warn, r"f.*str.*Integer") discretediag(chain)
+            result = @test_logs (:warn, r"not subtype Integer") discretediag(chain)
             @test haskey(result.between, Parameter(:a))
             @test !haskey(result.between, Parameter(:f))
             @test !haskey(result.between, Extra("str"))

@@ -1,6 +1,10 @@
+using Pkg: Pkg
+Pkg.develop(Pkg.PackageSpec(; path = dirname(@__DIR__)))
+
 using Documenter
 using DocumenterInterLinks
 using FlexiChains
+using DimensionalData: DimensionalData
 using CairoMakie: CairoMakie, Makie
 using StatsPlots: Plots
 using Statistics: Statistics
@@ -33,6 +37,7 @@ modules = [
     Base.get_extension(FlexiChains, :FlexiChainsDynamicPPLExt),
     Base.get_extension(FlexiChains, :FlexiChainsMakieExt),
     Base.get_extension(FlexiChains, :FlexiChainsPairPlotsExt),
+    Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsDynamicPPLExt),
     Base.get_extension(FlexiChains, :FlexiChainsRecipesBaseExt),
     Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt),
     Base.get_extension(FlexiChains, :FlexiChainsTuringExt),

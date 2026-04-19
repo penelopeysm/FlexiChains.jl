@@ -4,6 +4,7 @@
 
 const ITER_DIM_NAME = :iter
 const CHAIN_DIM_NAME = :chain
+const PARAM_DIM_NAME = :param
 
 """
     _make_lookup(AbstractRange)::DimensionalData.Lookup
