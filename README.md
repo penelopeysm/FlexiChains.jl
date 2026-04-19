@@ -21,7 +21,7 @@ using FlexiChains
     z ~ MvNormal(zeros(2), I)
 end
 model = f()
-chain = sample(model, NUTS(), MCMCThreads(), 1000, 3; chain_type=VNChain)
+chain = sample(model, MH(), MCMCThreads(), 1000, 3; chain_type=VNChain)
 ```
 
 Alternatively, you can construct a `VNChain` from a matrix of `VarNamedTuple`s:
