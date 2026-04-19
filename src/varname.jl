@@ -116,10 +116,11 @@ in the chain, then that will be returned. If not, then `@varname(x)` will be che
 and if that is a vector-valued parameter then all of its first entries will be returned.
 """
 function Base.getindex(
-        fchain::FlexiChain{<:VarName}, vn::VarName; iter = Colon(), chain = Colon()
+        fchain::FlexiChain{<:VarName}, vn::VarName;
+        iter = Colon(), chain = Colon(), stack = nothing
     )
     raw = _get_raw_data(fchain, Parameter(vn))
-    return _raw_to_user_data(fchain, raw; name = string(Parameter(vn)))[iter = iter, chain = chain]
+    return _raw_to_user_data(fchain, raw; name = string(Parameter(vn)), stack = stack)[iter = iter, chain = chain]
 end
 """
     Base.getindex(
@@ -141,9 +142,10 @@ function Base.getindex(
         iter = _UNSPECIFIED_KWARG,
         chain = _UNSPECIFIED_KWARG,
         stat = _UNSPECIFIED_KWARG,
+        stack = nothing,
     )
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(vn)); name = string(Parameter(vn)))
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(vn)); name = string(Parameter(vn)), stack = stack)
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
@@ -201,7 +203,8 @@ Get a parameter from the chain that matches the target VarName but with an arbit
 See [`Prefixed`](@ref) for details.
 """
 function Base.getindex(
-        fchain::FlexiChain{<:VarName}, prefixed::Prefixed; iter = Colon(), chain = Colon()
+        fchain::FlexiChain{<:VarName}, prefixed::Prefixed;
+        iter = Colon(), chain = Colon(), stack = nothing
     )
     vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fchain)), prefixed)
     # We could use get_raw_data here, but we don't need to since we already calculated the
@@ -209,7 +212,7 @@ function Base.getindex(
     combined_vn = AbstractPPL.append_optic(vn, optic)
     raw = fchain._data[Parameter(vn)]
     raw_with_optic = _map_optic(optic, raw, prefixed)
-    return _raw_to_user_data(fchain, raw_with_optic; name = string(Parameter(combined_vn)))[iter = iter, chain = chain]
+    return _raw_to_user_data(fchain, raw_with_optic; name = string(Parameter(combined_vn)), stack = stack)[iter = iter, chain = chain]
 end
 """
     Base.getindex(
@@ -229,11 +232,12 @@ function Base.getindex(
         iter = _UNSPECIFIED_KWARG,
         chain = _UNSPECIFIED_KWARG,
         stat = _UNSPECIFIED_KWARG,
+        stack = nothing,
     )
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fs)), prefixed)
     raw = fs._data[Parameter(vn)]
     combined_vn = AbstractPPL.append_optic(vn, optic)
-    user_data = _raw_to_user_data(fs, _map_optic(optic, raw, prefixed); name = string(Parameter(combined_vn)))
+    user_data = _raw_to_user_data(fs, _map_optic(optic, raw, prefixed); name = string(Parameter(combined_vn)), stack = stack)
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end

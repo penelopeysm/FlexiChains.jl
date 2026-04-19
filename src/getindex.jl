@@ -73,9 +73,10 @@ The `iter` and `chain` keyword arguments further allow you to extract specific
 iterations or chains from the data corresponding to the given `key`.
 """
 function Base.getindex(
-        fchain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey}; iter = Colon(), chain = Colon()
+        fchain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey};
+        iter = Colon(), chain = Colon(), stack = nothing
     ) where {TKey}
-    return _raw_to_user_data(fchain, _get_raw_data(fchain, key); name = string(key))[iter = iter, chain = chain]
+    return _raw_to_user_data(fchain, _get_raw_data(fchain, key); name = string(key), stack = stack)[iter = iter, chain = chain]
 end
 """
     Base.getindex(
@@ -98,9 +99,10 @@ function Base.getindex(
         iter = _UNSPECIFIED_KWARG,
         chain = _UNSPECIFIED_KWARG,
         stat = _UNSPECIFIED_KWARG,
+        stack = nothing,
     ) where {TKey, TIIdx, TCIdx}
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, key); name = string(key))
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, key); name = string(key), stack = stack)
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
@@ -170,18 +172,20 @@ If there are multiple matches: for example, if you have a `Parameter(:x)` and al
 it using the actual key.
 """
 function Base.getindex(
-        fchain::FlexiChain{TKey}, sym_key::Symbol; iter = Colon(), chain = Colon()
+        fchain::FlexiChain{TKey}, sym_key::Symbol;
+        iter = Colon(), chain = Colon(), stack = nothing
     ) where {TKey}
     k = _extract_potential_symbol_key(TKey, keys(fchain), sym_key)
-    return fchain[k, iter = iter, chain = chain]
+    return fchain[k, iter = iter, chain = chain, stack = stack]
 end
 # Have to repeat for TKey = Symbol, otherwise the method for getindex(::FlexiChain{T}, ::T)
 # is considered more specific.
 function Base.getindex(
-        fchain::FlexiChain{Symbol}, sym_key::Symbol; iter = Colon(), chain = Colon()
+        fchain::FlexiChain{Symbol}, sym_key::Symbol;
+        iter = Colon(), chain = Colon(), stack = nothing
     )
     k = _extract_potential_symbol_key(Symbol, keys(fchain), sym_key)
-    return fchain[k, iter = iter, chain = chain]
+    return fchain[k, iter = iter, chain = chain, stack = stack]
 end
 """
     Base.getindex(
@@ -204,10 +208,11 @@ function Base.getindex(
         iter = _UNSPECIFIED_KWARG,
         chain = _UNSPECIFIED_KWARG,
         stat = _UNSPECIFIED_KWARG,
+        stack = nothing,
     ) where {TKey}
     k = _extract_potential_symbol_key(TKey, keys(fs), sym_key)
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name = string(k))
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name = string(k), stack = stack)
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 # Have to repeat for TKey = Symbol, as above
@@ -217,10 +222,11 @@ function Base.getindex(
         iter = _UNSPECIFIED_KWARG,
         chain = _UNSPECIFIED_KWARG,
         stat = _UNSPECIFIED_KWARG,
+        stack = nothing,
     )
     k = _extract_potential_symbol_key(Symbol, keys(fs), sym_key)
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name = string(k))
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name = string(k), stack = stack)
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
@@ -237,9 +243,10 @@ end
 Convenience method for retrieving parameters. Equal to `chain[Parameter(parameter_name)]`.
 """
 function Base.getindex(
-        fchain::FlexiChain{TKey}, parameter_name::TKey; iter = Colon(), chain = Colon()
+        fchain::FlexiChain{TKey}, parameter_name::TKey;
+        iter = Colon(), chain = Colon(), stack = nothing
     ) where {TKey}
-    return fchain[Parameter(parameter_name), iter = iter, chain = chain]
+    return fchain[Parameter(parameter_name), iter = iter, chain = chain, stack = stack]
 end
 """
     Base.getindex(
@@ -260,9 +267,10 @@ function Base.getindex(
         iter = _UNSPECIFIED_KWARG,
         chain = _UNSPECIFIED_KWARG,
         stat = _UNSPECIFIED_KWARG,
+        stack = nothing,
     ) where {TKey}
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)); name = string(Parameter(parameter_name)))
+    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(parameter_name)); name = string(Parameter(parameter_name)), stack = stack)
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
