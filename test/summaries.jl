@@ -402,47 +402,131 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             @test fs[@varname(x[1])] isa DD.DimVector
         end
 
-        @testset "DimArray element type" begin
-            dimarr = rand(DD.X([:a, :b, :c]), DD.Y(100.0:50:200.0))
-            Niters, Nchains = 100, 3
-            d = Dict(Parameter(:a) => fill(dimarr, Niters, Nchains))
+        @testset "stack keyword" begin
+            arr = [1.0, 2.0, 3.0]
+            dimarr = DD.DimArray([10.0, 20.0, 30.0], DD.X([:a, :b, :c]))
+            Niters, Nchains = 10, 3
+            d = Dict(
+                Parameter(:arr) => fill(arr, Niters, Nchains),
+                Parameter(:dimarr) => fill(dimarr, Niters, Nchains),
+                Parameter(:scalar) => rand(Niters, Nchains),
+            )
             chain = FlexiChain{Symbol}(Niters, Nchains, d)
 
-            @testset "dims=:both" begin
+            @testset "dims=:both (all collapsed)" begin
                 m = mean(chain; split_varnames = false)
-                mean_a = m[:a]
-                @test mean_a isa DD.DimMatrix{Float64}
-                @test size(mean_a) == (3, 3)
-                @test DD.dims(mean_a) == DD.dims(dimarr)
+
+                @testset "scalar" begin
+                    @test m[:scalar] isa Float64
+                    @test m[:scalar, stack = true] isa Float64
+                    @test m[:scalar, stack = false] isa Float64
+                end
+
+                @testset "Array parameter" begin
+                    @test m[:arr, stack = false] == arr
+                    @test m[:arr, stack = true] == arr
+                    @test m[:arr] == arr
+                end
+
+                @testset "DimArray parameter" begin
+                    @test m[:dimarr, stack = false] == dimarr
+                    @test m[:dimarr, stack = true] == dimarr
+                    # no warning because there is no stacking going on
+                    @test m[:dimarr] == dimarr
+                end
             end
 
             @testset "dims=:iter" begin
                 m = mean(chain; dims = :iter, split_varnames = false)
-                mean_a = m[:a]
-                @test mean_a isa DD.DimArray{Float64, 3}
-                @test size(mean_a) == (Nchains, 3, 3)
-                @test parent(DD.val(DD.dims(mean_a), :chain)) ==
-                    FlexiChains.chain_indices(m)
-                @test DD.dims(mean_a)[2:3] == DD.dims(dimarr)[:]
-            end
 
-            @testset "dims=:chain" begin
-                m = mean(chain; dims = :chain, split_varnames = false)
-                mean_a = m[:a]
-                @test mean_a isa DD.DimArray{Float64, 3}
-                @test size(mean_a) == (Niters, 3, 3)
-                @test parent(DD.val(DD.dims(mean_a), :iter)) == FlexiChains.iter_indices(m)
-                @test DD.dims(mean_a)[2:3] == DD.dims(dimarr)[:]
+                @testset "scalar" begin
+                    s_default = m[:scalar]
+                    s_true = m[:scalar, stack = true]
+                    s_false = m[:scalar, stack = false]
+                    @test s_default isa DD.DimVector{Float64}
+                    @test s_true isa DD.DimVector{Float64}
+                    @test s_false isa DD.DimVector{Float64}
+                    @test s_default == s_true == s_false
+                end
+
+                @testset "Array parameter" begin
+                    result = m[:arr, stack = false]
+                    @test result isa DD.DimVector{Vector{Float64}}
+                    @test size(result) == (Nchains,)
+                    @test result[1] == arr
+
+                    result = m[:arr, stack = true]
+                    @test result isa DD.DimArray{Float64, 2}
+                    @test size(result) == (Nchains, 3)
+                    @test DD.dims(result) isa Tuple{DD.Dim{:chain}, DD.AnonDim}
+                    @test result[1, :] == arr
+
+                    result = m[:arr]
+                    @test result isa DD.DimVector{Vector{Float64}}
+                end
+
+                @testset "DimArray parameter" begin
+                    result = m[:dimarr, stack = false]
+                    @test result isa DD.DimVector{<:DD.DimArray}
+                    @test size(result) == (Nchains,)
+                    @test result[1] == dimarr
+
+                    result = m[:dimarr, stack = true]
+                    @test result isa DD.DimArray{Float64, 2}
+                    @test size(result) == (Nchains, 3)
+                    @test DD.dims(result) isa Tuple{DD.Dim{:chain}, DD.X}
+                    @test result[1, :] == parent(dimarr)
+
+                    result = @test_logs(
+                        (:warn, FlexiChains._STACK_DEPWARN_MSG),
+                        m[:dimarr],
+                    )
+                    @test result isa DD.DimArray{Float64, 2}
+                    @test size(result) == (Nchains, 3)
+                end
             end
 
             @testset "with multiple statistics" begin
-                ms = FlexiChains.collapse(chain, [mean, std]; dims = :iter, split_varnames = false)
-                summary_a = ms[:a, stat = DD.At(:mean)]
-                @test summary_a isa DD.DimArray{Float64, 3}
-                @test size(summary_a) == (Nchains, 3, 3)
-                @test parent(DD.val(DD.dims(summary_a), :chain)) ==
-                    FlexiChains.chain_indices(ms)
-                @test DD.dims(summary_a)[2:3] == DD.dims(dimarr)[:]
+                ms = FlexiChains.collapse(
+                    chain, [mean, std]; dims = :iter, split_varnames = false
+                )
+
+                @testset "Array parameter" begin
+                    result = ms[:arr, stack = true, stat = DD.At(:mean)]
+                    @test result isa DD.DimArray{Float64, 2}
+                    @test size(result) == (Nchains, 3)
+                    @test DD.dims(result) isa Tuple{DD.Dim{:chain}, DD.AnonDim}
+                    @test result[1, :] == arr
+
+                    result = ms[:arr, stack = true]
+                    @test result isa DD.DimArray{Float64, 3}
+                    @test size(result) == (Nchains, 2, 3)
+                    @test DD.dims(result) isa
+                        Tuple{DD.Dim{:chain}, DD.Dim{:stat}, DD.AnonDim}
+
+                    result = ms[:arr, stack = false, stat = DD.At(:mean)]
+                    @test result isa DD.DimVector{Vector{Float64}}
+                end
+
+                @testset "DimArray parameter" begin
+                    result = ms[:dimarr, stack = true, stat = DD.At(:mean)]
+                    @test result isa DD.DimArray{Float64, 2}
+                    @test size(result) == (Nchains, 3)
+                    @test DD.dims(result) isa Tuple{DD.Dim{:chain}, DD.X}
+
+                    result = ms[:dimarr, stack = true]
+                    @test result isa DD.DimArray{Float64, 3}
+                    @test size(result) == (Nchains, 2, 3)
+                    @test DD.dims(result) isa
+                        Tuple{DD.Dim{:chain}, DD.Dim{:stat}, DD.X}
+
+                    result = @test_logs(
+                        (:warn, FlexiChains._STACK_DEPWARN_MSG),
+                        ms[:dimarr, stat = DD.At(:mean)],
+                    )
+                    @test result isa DD.DimArray{Float64, 2}
+                    @test size(result) == (Nchains, 3)
+                end
             end
         end
     end
