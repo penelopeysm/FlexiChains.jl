@@ -183,7 +183,7 @@ using Test
                     Extra("str") => fill("hello", N_iters, N_chains),
                 ),
             )
-            result = @test_logs (:warn, r"f.*str.*Integer") discretediag(chain)
+            result = @test_logs (:warn, r"not subtype Integer") discretediag(chain)
             @test haskey(result.between, Parameter(:a))
             @test !haskey(result.between, Parameter(:f))
             @test !haskey(result.between, Extra("str"))
