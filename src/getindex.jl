@@ -1,14 +1,33 @@
 const ChainOrSummary{TKey} = Union{FlexiChain{TKey}, FlexiSummary{TKey}}
 
-const SUMMARY_GETINDEX_KWARGS = """
-!!! note "Keyword arguments"
+const STACK_KWARG_DOC = """
+The `stack` keyword argument lets you control whether array-valued parameters are
+returned as arrays of arrays (`stack=false`, the default) or a single stacked array
+(`stack=true`). Note that when stacking, the dimensions of the inner array will be
+placed at the end of the returned array. For non-array parameters, or when only one
+sample is being accessed, this is ignored.
+"""
 
-    The `iter`, `chain`, and `stat` keyword arguments further allow you to extract specific
-    iterations, chains, or statistics from the data corresponding to the given `key`. Note
-    that these keyword arguments can only be used if the corresponding dimension exists (for
-    example, if the summary statistic has been calculated over all iterations, then the
-    `iter` dimension will not exist and using the `iter` keyword argument will throw an
-    error).
+const CHAIN_GETINDEX_KWARGS = """
+## Keyword arguments
+
+The `iter` and `chain` keyword arguments further allow you to extract specific
+iterations or chains from the data corresponding to the given `key`.
+
+$(STACK_KWARG_DOC)
+"""
+
+const SUMMARY_GETINDEX_KWARGS = """
+## Keyword arguments
+
+The `iter`, `chain`, and `stat` keyword arguments further allow you to extract specific
+iterations, chains, or statistics from the data corresponding to the given `key`. Note
+that these keyword arguments can only be used if the corresponding dimension exists (for
+example, if the summary statistic has been calculated over all iterations, then the
+`iter` dimension will not exist and using the `iter` keyword argument will throw an
+error).
+
+$(STACK_KWARG_DOC)
 """
 
 const _UNSPECIFIED_KWARG = gensym("kwarg")
@@ -61,7 +80,7 @@ end
 """
     Base.getindex(
         fchain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey};
-        iter=Colon(), chain=Colon()
+        iter=Colon(), chain=Colon(), stack=nothing
     ) where {TKey}
 
 Unambiguously access the data corresponding to the given `key` in the chain.
@@ -69,8 +88,7 @@ Unambiguously access the data corresponding to the given `key` in the chain.
 You will need to use this method if you have multiple keys that convert to the
 same `Symbol`, such as a `Parameter(:x)` and an `Extra(:x)`.
 
-The `iter` and `chain` keyword arguments further allow you to extract specific
-iterations or chains from the data corresponding to the given `key`.
+$(CHAIN_GETINDEX_KWARGS)
 """
 function Base.getindex(
         fchain::FlexiChain{TKey}, key::ParameterOrExtra{<:TKey};
@@ -83,7 +101,8 @@ end
         fs::FlexiSummary{TKey}, key::ParameterOrExtra{<:TKey};
         [iter=Colon(),]
         [chain=Colon(),]
-        [stat=Colon()]
+        [stat=Colon(),]
+        stack=nothing
     ) where {TKey}
 
 Unambiguously access the data corresponding to the given `key` in the summary.
@@ -154,7 +173,7 @@ end
 """
     Base.getindex(
         chain::FlexiChain, sym_key::Symbol;
-        iter=Colon(), chain=Colon()
+        iter=Colon(), chain=Colon(), stack=nothing
     )
 
 The least verbose method to index into a `FlexiChain` is using `Symbol`.
@@ -170,6 +189,8 @@ If there is, then we can return that data. If there are no valid matches, then w
 If there are multiple matches: for example, if you have a `Parameter(:x)` and also an
 `Extra(:x)`, then this method will also throw a `KeyError`. You will then have to index into
 it using the actual key.
+
+$(CHAIN_GETINDEX_KWARGS)
 """
 function Base.getindex(
         fchain::FlexiChain{TKey}, sym_key::Symbol;
@@ -193,7 +214,8 @@ end
         key::Symbol;
         [iter=Colon(),]
         [chain=Colon(),]
-        [stat=Colon()]
+        [stat=Colon(),]
+        stack=nothing
     ) where {TKey}
 
 Index into a summary using an unambiguous `Symbol` key. This requires that the summary has a
@@ -237,10 +259,12 @@ end
 """
     Base.getindex(
         fchain::FlexiChain{TKey}, parameter_name::TKey;
-        iter=Colon(), chain=Colon()
+        iter=Colon(), chain=Colon(), stack=nothing
     ) where {TKey}
 
 Convenience method for retrieving parameters. Equal to `chain[Parameter(parameter_name)]`.
+
+$(CHAIN_GETINDEX_KWARGS)
 """
 function Base.getindex(
         fchain::FlexiChain{TKey}, parameter_name::TKey;
@@ -254,7 +278,8 @@ end
         parameter_name::TKey;
         [iter=Colon(),]
         [chain=Colon(),]
-        [stat=Colon()]
+        [stat=Colon(),]
+        stack=nothing
     ) where {TKey}
 
 Convenience method for retrieving parameters. Equal to `summary[Parameter(parameter_name)]`.

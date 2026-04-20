@@ -80,7 +80,7 @@ MCMCChains by default will break vector-valued parameters into multiple scalar-v
     If you want to access `theta` as a 3D array of shape `(num_iterations, num_chains, length(theta))`, you can also pass the keyword argument `stack=true` to `getindex`:
 
     ```@example 1
-    chain[@varname(theta); stack=true]
+    chain[@varname(theta), stack=true]
     ```
 
 If you want to obtain only the first element of `theta`, you don't need to manipulate the `DimMatrix`.
