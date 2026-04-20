@@ -343,7 +343,9 @@ the `param` column.
 $(WIDE_LONG_KWARGS_DOC)
 
 Additionally, when `parameters_only=true` (the default), the `Parameter` wrapper is stripped
-from keys. Otherwise, the `Parameter`/`Extra` wrappers are retained.
+from keys. Otherwise, the `Parameter`/`Extra` wrappers are retained. If you want to unwrap
+them, you can use [`FlexiChains.get_name`](@ref) on the `param` column of the resulting
+table.
 """
 struct Long{F <: FlexiChain, K <: Tuple}
     chn::F
