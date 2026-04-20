@@ -550,7 +550,6 @@ function _stack_arrays(dimarr::DD.DimArray{<:AbstractArray{<:Any, NInner}, NOute
     end
     # Base.stack always places the outer dimensions (iter/chain in this case) at the end
     # so we need to permute them back to the front.
-    # at the end.
     stacked = stack(dimarr)
     perm = ((NInner + 1):(NInner + NOuter)..., (1:NInner)...)
     permuted = permutedims(stacked, perm)
