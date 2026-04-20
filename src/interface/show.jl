@@ -34,19 +34,17 @@ function _box_width(io::IO)
     return min(displaysize(io)[2], _MAX_BOX_WIDTH)
 end
 
-function _box_header(io::IO, left::Char, right::Char, width::Int, segments::Vector{_Segment})
-    printstyled(io, left, "─"; color = _BOX_COLOR)
-    used = 2
-    for seg in segments
-        used += _print_segment(io, seg)
-    end
+function _box_header(io::IO, width::Int, title::AbstractString)
+    printstyled(io, '╭', "─"; color = _BOX_COLOR)
+    printstyled(io, title; bold = true)
+    used = 2 + textwidth(title)
     fill = max(width - used - 1, 0)
     if fill > 1
         printstyled(io, " ", "─"^(fill - 1); color = _BOX_COLOR)
     elseif fill == 1
         printstyled(io, " "; color = _BOX_COLOR)
     end
-    return printstyled(io, right; color = _BOX_COLOR)
+    return printstyled(io, '╮'; color = _BOX_COLOR)
 end
 
 function _box_content(f::Function, io::IO, width::Int)
@@ -132,18 +130,30 @@ function _print_dims(io::IO, chain::FlexiChain, width::Int)
     return
 end
 
-function _print_eltype_groups(
-        io::IO, cs::ChainOrSummary, entries::AbstractVector, width::Int,
-    )
+function _eltype_groups(cs::ChainOrSummary, kind::Symbol)
+    entries = if kind === :parameters
+        pnames = parameters(cs)
+        zip(Parameter.(pnames), string.(pnames))
+    elseif kind === :extras
+        enames = extras(cs)
+        zip(enames, [string(e.name) for e in enames])
+    else
+        throw(ArgumentError("kind must be :parameters or :extras"))
+    end
     groups = OrderedDict{String, Vector{String}}()
     for (key, display_name) in entries
-        T = eltype(cs._data[key])
-        tstr = string(T)
+        tstr = string(eltype(cs._data[key]))
         if !haskey(groups, tstr)
             groups[tstr] = String[]
         end
         push!(groups[tstr], display_name)
     end
+    return groups
+end
+
+function _print_eltype_groups(
+        io::IO, groups::OrderedDict{String, Vector{String}}, width::Int,
+    )
 
     max_type_cap = max(width ÷ 3, 12)
     raw_tw = maximum(textwidth(t) for t in keys(groups))
@@ -178,8 +188,8 @@ function _print_eltype_groups(
 end
 
 function _print_section(
-        io::IO, cs::ChainOrSummary, width::Int,
-        title::String, entries::AbstractVector;
+        io::IO, width::Int, title::String,
+        eltype_groups::OrderedDict{String, Vector{String}};
         subtitle::String = "",
     )
     _box_empty(io, width)
@@ -190,11 +200,11 @@ function _print_section(
     end
     _box_content(io, width, segments)
     println(io)
-    return if isempty(entries)
+    return if isempty(eltype_groups)
         _box_content(io, width, [_Segment(" (none)"; color = :light_black)])
         println(io)
     else
-        _print_eltype_groups(io, cs, entries, width)
+        _print_eltype_groups(io, eltype_groups, width)
     end
 end
 
@@ -205,24 +215,21 @@ function Base.show(io::IO, ::MIME"text/plain", chain::FlexiChain{TKey}) where {T
     width = _box_width(io)
 
     title = "FlexiChain ($ni iteration$(_maybe_s(ni)), $nc chain$(_maybe_s(nc)))"
-    _box_header(io, '╭', '╮', width, [_Segment(title; bold = true)])
+    _box_header(io, width, title)
     println(io)
 
     _print_dims(io, chain, width)
 
-    param_names = parameters(chain)
     _print_section(
-        io, chain, width,
-        "Parameters ($(length(param_names)))",
-        [(Parameter(n), string(n)) for n in param_names];
+        io, width,
+        "Parameters ($(length(parameters(chain))))",
+        _eltype_groups(chain, :parameters);
         subtitle = " ── $TKey",
     )
 
-    extra_names = extras(chain)
     _print_section(
-        io, chain, width,
-        "Extras ($(length(extra_names)))",
-        [(e, string(e.name)) for e in extra_names],
+        io, width, "Extras ($(length(extras(chain))))",
+        _eltype_groups(chain, :extras)
     )
 
     _box_bottom(io, width)
@@ -378,24 +385,21 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
         "FlexiSummary ($(join(parts, ", ")))"
     end
 
-    _box_header(io, '╭', '╮', width, [_Segment(title; bold = true)])
+    _box_header(io, width, title)
     println(io)
 
     _print_summary_dims(io, summary, width)
 
     param_names = parameters(summary)
     _print_section(
-        io, summary, width,
-        "Parameters ($(length(param_names)))",
-        [(Parameter(n), string(n)) for n in param_names];
+        io, width,
+        "Parameters ($(length(param_names)))", _eltype_groups(summary, :parameters);
         subtitle = " ── $TKey",
     )
 
-    extra_names = extras(summary)
     _print_section(
-        io, summary, width,
-        "Extras ($(length(extra_names)))",
-        [(e, string(e.name)) for e in extra_names],
+        io, width,
+        "Extras ($(length(extras(summary))))", _eltype_groups(summary, :extras),
     )
 
     if isnothing(ii) && isnothing(ci) && !isempty(param_names)
