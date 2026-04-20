@@ -1,3 +1,7 @@
+# 0.5.6
+
+Implemented a Tables.jl interface for FlexiChains, along with `Wide` and `Long` wrappers to control the output format.
+
 # 0.5.5
 
 Added a new keyword argument `stack` to `getindex` on `FlexiChain`.

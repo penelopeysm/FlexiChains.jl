@@ -1,4 +1,5 @@
 # Utilities for 'flattening' chains.
+import Tables
 
 """
     FlexiChains._split_varnames(cs::ChainOrSummary{<:VarName})
@@ -178,3 +179,184 @@ function Base.Array(
     da = DD.DimArray(chain; warn, eltype_filter, parameters_only)
     return parent(da)
 end
+
+## Tables.jl interface
+
+for S in (:Wide, :Long)
+    @eval begin
+        struct $S{F <: FlexiChain, N <: NamedTuple}
+            # The stored chain inside here must already have been processed according to the
+            # `split_varnames` and `parameters_only` options, so that we don't have to worry
+            # about that in the table interface methods.
+            chn::F
+            # A precomputed mapping from Symbol(k) => k for all keys in `chn`.
+            symbol_to_keys::N
+
+            function $S(chn::FlexiChain; split_varnames::Bool = true, parameters_only::Bool = true)
+                if parameters_only
+                    chn = FlexiChains.subset_parameters(chn)
+                end
+                if split_varnames
+                    chn = FlexiChains._split_varnames(chn)
+                end
+                # note that we always strip parameter/extra. This is lossy, but it is a
+                # requirement for Tables to work since it only takes Symbol column names.
+                ks = Tuple(FlexiChains.get_name.(keys(chn)))
+                symbol_to_keys = NamedTuple{Symbol.(ks)}(ks)
+                return new{typeof(chn), typeof(symbol_to_keys)}(chn, symbol_to_keys)
+            end
+        end
+
+        Tables.istable(::Type{$S}) = true
+        Tables.columnaccess(::Type{$S}) = true
+    end
+end
+
+const WIDE_LONG_KWARGS_DOC = """
+## Keyword arguments
+
+- `split_varnames`: whether to split array-valued parameters into scalar leaves. If `true`
+  (the default), then array-valued parameters are split into scalar leaves, e.g. a
+  vector-valued parameter `x` would be split into `x[1]`, `x[2]`, etc.
+
+- `parameters_only`: whether to include only parameters (and skip extras) in the resulting
+  table. Defaults to `true`.
+"""
+
+@doc """
+    FlexiChains.Wide(
+        chn::FlexiChain;
+        split_varnames::Bool=true,
+        parameters_only::Bool=true
+    )
+
+A wrapper struct indicating that a `FlexiChain` should be converted to a 'wide' table
+format, where each parameter is a separate column.
+
+## Example
+
+```julia
+using Turing, FlexiChains, DataFrames
+
+@model function f()
+    x ~ Normal()
+    b ~ Bernoulli()
+end
+chn = sample(f(), Prior(), MCMCThreads(), 10, 2; chain_type=VNChain)
+
+df = DataFrame(FlexiChains.Wide(chn))
+```
+
+returns a DataFrame that looks like the following. Each parameter is a different column, and
+the `iter` and `chain` dimensions are represented as separate columns as well; `iter` varies
+faster than `chain`.
+
+```
+20×4 DataFrame
+ Row │ iter   chain  x          b
+     │ Int64  Int64  Float64    Bool
+─────┼────────────────────────────────
+   1 │     1      1  -1.38809   false
+   2 │     2      1  -0.511805   true
+   3 │     3      1  -1.37277   false
+  ⋮  │   ⋮      ⋮        ⋮        ⋮
+  18 │     8      2   2.31312   false
+  19 │     9      2   1.58254    true
+  20 │    10      2  -1.14516   false
+```
+
+$(WIDE_LONG_KWARGS_DOC)
+""" Wide
+
+@doc """
+    FlexiChains.Long(
+        chn::FlexiChain;
+        split_varnames::Bool=true,
+        parameters_only::Bool=true
+    )
+
+A wrapper struct indicating that a `FlexiChain` should be converted to a 'long' table
+format, where all values are stacked into a single column, and there is an additional column
+indicating the parameter name.
+
+!!! note
+    Because all parameter values are stacked into a single column, note that the resulting
+    element type of the `value` column will be the common supertype of all parameter values.
+    This can cause data to be promoted to a type that is not the same as its original type.
+    For example, the `b` parameter below is converted to `Float64`.
+
+## Example
+
+```julia
+using Turing, FlexiChains, DataFrames
+
+@model function f()
+    x ~ Normal()
+    b ~ Bernoulli()
+end
+chn = sample(f(), Prior(), MCMCThreads(), 10, 2; chain_type=VNChain)
+
+df = DataFrame(FlexiChains.Long(chn))
+```
+
+returns a DataFrame that looks like the following. The `iter` and `chain` dimensions are
+represented as separate columns as before, but now the parameter names are stacked into a
+single `param` column, and the values are stacked into a single `value` column.
+
+The `iter` column varies faster than the `chain` column, which in turn varies faster than
+the `param` column.
+
+```
+40×4 DataFrame
+ Row │ iter   chain  param   value
+     │ Int64  Int64  Symbol  Float64
+─────┼─────────────────────────────────
+   1 │     1      1  x       -1.38809
+   2 │     2      1  x       -0.511805
+   3 │     3      1  x       -1.37277
+  ⋮  │   ⋮      ⋮      ⋮         ⋮
+  38 │     8      2  b        0.0
+  39 │     9      2  b        1.0
+  40 │    10      2  b        0.0
+```
+
+$(WIDE_LONG_KWARGS_DOC)
+""" Long
+
+# Default Tables.jl implementation for FlexiChain itself
+Tables.columns(chn::FlexiChain) = Wide(chn; split_varnames = true, parameters_only = true)
+
+# Wide
+Tables.columnnames(s::Wide) = [FlexiChains.ITER_DIM_NAME, FlexiChains.CHAIN_DIM_NAME, keys(s.symbol_to_keys)...]
+function Tables.getcolumn(s::Wide, col::Symbol)
+    return if col === FlexiChains.ITER_DIM_NAME
+        repeat(iter_indices(s.chn); outer = FlexiChains.nchains(s.chn))
+    elseif col === FlexiChains.CHAIN_DIM_NAME
+        repeat(chain_indices(s.chn); inner = FlexiChains.niters(s.chn))
+    else
+        vec(s.chn[s.symbol_to_keys[col]])
+    end
+end
+Tables.getcolumn(s::Wide, col::Int) = Tables.getcolumn(s, Tables.columnnames(s)[col])
+Tables.columns(s::Wide) = s
+
+# Long
+VALUE_COL_NAME = :value
+Tables.columnnames(::Long) = [FlexiChains.ITER_DIM_NAME, FlexiChains.CHAIN_DIM_NAME, FlexiChains.PARAM_DIM_NAME, VALUE_COL_NAME]
+function Tables.getcolumn(s::Long, col::Symbol)
+    return if col === FlexiChains.ITER_DIM_NAME
+        repeat(iter_indices(s.chn); outer = FlexiChains.nchains(s.chn) * length(keys(s.symbol_to_keys)))
+    elseif col === FlexiChains.CHAIN_DIM_NAME
+        repeat(chain_indices(s.chn); inner = FlexiChains.niters(s.chn), outer = length(keys(s.symbol_to_keys)))
+    elseif col === FlexiChains.PARAM_DIM_NAME
+        repeat(collect(keys(s.symbol_to_keys)); inner = FlexiChains.niters(s.chn) * FlexiChains.nchains(s.chn))
+    elseif col === VALUE_COL_NAME
+        mapreduce(vcat, keys(s.symbol_to_keys)) do k
+            vec(s.chn[s.symbol_to_keys[k]])
+        end
+    end
+end
+function Tables.getcolumn(s::Long, col::Int)
+    return Tables.getcolumn(s, Tables.columnnames(s)[col])
+end
+Tables.columns(s::Long) = s
