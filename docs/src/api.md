@@ -128,6 +128,8 @@ FlexiChains.subset_extras
 ```@docs
 DimensionalData.DimArray
 Base.Array
+Wide
+Long
 ```
 
 ## Extracting per-iteration samples
