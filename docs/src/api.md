@@ -70,6 +70,7 @@ FlexiChains.renumber_chains
 ```@docs
 FlexiChains.Parameter
 FlexiChains.Extra
+FlexiChains.get_name
 FlexiChains.ParameterOrExtra
 FlexiChains.Prefixed
 ```

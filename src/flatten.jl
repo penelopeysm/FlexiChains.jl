@@ -182,52 +182,33 @@ end
 
 ## Tables.jl interface
 
-for S in (:Wide, :Long)
-    @eval begin
-        struct $S{F <: FlexiChain, N <: NamedTuple}
-            # The stored chain inside here must already have been processed according to the
-            # `split_varnames` and `parameters_only` options, so that we don't have to worry
-            # about that in the table interface methods.
-            chn::F
-            # A precomputed mapping from Symbol(k) => k for all keys in `chn`.
-            symbol_to_keys::N
+function _prepare_chain(chn::FlexiChain; split_varnames::Bool = true, parameters_only::Bool = true)
+    if parameters_only
+        chn = FlexiChains.subset_parameters(chn)
+    end
+    if split_varnames
+        chn = FlexiChains._split_varnames(chn)
+    end
+    return chn
+end
 
-            function $S(chn::FlexiChain; split_varnames::Bool = true, parameters_only::Bool = true)
-                if parameters_only
-                    chn = FlexiChains.subset_parameters(chn)
-                end
-                if split_varnames
-                    chn = FlexiChains._split_varnames(chn)
-                end
-                # note that we always strip parameter/extra. This is lossy, but it is a
-                # requirement for Tables to work since it only takes Symbol column names.
-                ks = Tuple(FlexiChains.get_name.(keys(chn)))
-                sym_ks = Symbol.(ks)
-                # Check for duplicate keys
-                seen = Set{Symbol}()
-                duplicates = Symbol[]
-                for s in sym_ks
-                    if s in seen
-                        push!(duplicates, s)
-                    else
-                        push!(seen, s)
-                    end
-                end
-                if !isempty(duplicates)
-                    throw(
-                        ArgumentError(
-                            "duplicate column names after converting keys to Symbols: " *
-                                join(unique(duplicates), ", "),
-                        )
-                    )
-                end
-                symbol_to_keys = NamedTuple{sym_ks}(ks)
-                return new{typeof(chn), typeof(symbol_to_keys)}(chn, symbol_to_keys)
-            end
+function _check_duplicate_keys(ks)
+    seen = Set{eltype(ks)}()
+    duplicates = eltype(ks)[]
+    for k in ks
+        if k in seen
+            push!(duplicates, k)
+        else
+            push!(seen, k)
         end
-
-        Tables.istable(::Type{<:$S}) = true
-        Tables.columnaccess(::Type{<:$S}) = true
+    end
+    return if !isempty(duplicates)
+        throw(
+            ArgumentError(
+                "duplicate column names after converting keys to Symbols: " *
+                    join(unique(duplicates), ", "),
+            )
+        )
     end
 end
 
@@ -242,7 +223,7 @@ const WIDE_LONG_KWARGS_DOC = """
   table. Defaults to `true`.
 """
 
-@doc """
+"""
     FlexiChains.Wide(
         chn::FlexiChain;
         split_varnames::Bool=true,
@@ -270,6 +251,11 @@ returns a DataFrame that looks like the following. Each parameter is a different
 the `iter` and `chain` dimensions are represented as separate columns as well; `iter` varies
 faster than `chain`.
 
+!!! note
+    Because all parameter names must be converted to `Symbol` for column names, this
+    may lead to clashes between e.g. parameters and extras which convert to the same
+    `Symbol`. FlexiChains will error in such a situation.
+
 ```
 20×4 DataFrame
  Row │ iter   chain  x          b
@@ -285,9 +271,24 @@ faster than `chain`.
 ```
 
 $(WIDE_LONG_KWARGS_DOC)
-""" Wide
+"""
+struct Wide{F <: FlexiChain, N <: NamedTuple}
+    chn::F
+    # A precomputed mapping from Symbol(k) => k for all keys in `chn`.
+    symbol_to_keys::N
 
-@doc """
+    function Wide(chn::FlexiChain; split_varnames::Bool = true, parameters_only::Bool = true)
+        chn = _prepare_chain(chn; split_varnames, parameters_only)
+        # Strip parameter/extra wrappers and convert to Symbol for column names.
+        ks = Tuple(FlexiChains.get_name.(keys(chn)))
+        sym_ks = Symbol.(ks)
+        _check_duplicate_keys(sym_ks)
+        symbol_to_keys = NamedTuple{sym_ks}(ks)
+        return new{typeof(chn), typeof(symbol_to_keys)}(chn, symbol_to_keys)
+    end
+end
+
+"""
     FlexiChains.Long(
         chn::FlexiChain;
         split_varnames::Bool=true,
@@ -327,20 +328,44 @@ the `param` column.
 
 ```
 40×4 DataFrame
- Row │ iter   chain  param   value
-     │ Int64  Int64  Symbol  Float64
+ Row │ iter   chain  param     value
+     │ Int64  Int64  VarName…  Float64
 ─────┼─────────────────────────────────
-   1 │     1      1  x       -1.38809
-   2 │     2      1  x       -0.511805
-   3 │     3      1  x       -1.37277
+   1 │     1      1  x         -1.38809
+   2 │     2      1  x         -0.511805
+   3 │     3      1  x         -1.37277
   ⋮  │   ⋮      ⋮      ⋮         ⋮
-  38 │     8      2  b        0.0
-  39 │     9      2  b        1.0
-  40 │    10      2  b        0.0
+  38 │     8      2  b          0.0
+  39 │     9      2  b          1.0
+  40 │    10      2  b          0.0
 ```
 
 $(WIDE_LONG_KWARGS_DOC)
-""" Long
+
+Additionally, when `parameters_only=true` (the default), the `Parameter` wrapper is stripped
+from keys. Otherwise, the `Parameter`/`Extra` wrappers are retained.
+"""
+struct Long{F <: FlexiChain, K <: Tuple}
+    chn::F
+    # The keys for the param column: unwrapped if parameters_only, wrapped otherwise.
+    original_keys::K
+
+    function Long(chn::FlexiChain; split_varnames::Bool = true, parameters_only::Bool = true)
+        chn = _prepare_chain(chn; split_varnames, parameters_only)
+        original_keys = if parameters_only
+            Tuple(FlexiChains.get_name.(keys(chn)))
+        else
+            Tuple(keys(chn))
+        end
+        _check_duplicate_keys(original_keys)
+        return new{typeof(chn), typeof(original_keys)}(chn, original_keys)
+    end
+end
+
+Tables.istable(::Type{<:Wide}) = true
+Tables.istable(::Type{<:Long}) = true
+Tables.columnaccess(::Type{<:Wide}) = true
+Tables.columnaccess(::Type{<:Long}) = true
 
 # Default Tables.jl implementation for FlexiChain itself
 Tables.columns(chn::FlexiChain) = Wide(chn; split_varnames = true, parameters_only = true)
@@ -363,15 +388,16 @@ Tables.columns(s::Wide) = s
 const VALUE_COL_NAME = :value
 Tables.columnnames(::Long) = [FlexiChains.ITER_DIM_NAME, FlexiChains.CHAIN_DIM_NAME, FlexiChains.PARAM_DIM_NAME, VALUE_COL_NAME]
 function Tables.getcolumn(s::Long, col::Symbol)
+    nkeys = length(s.original_keys)
     return if col === FlexiChains.ITER_DIM_NAME
-        repeat(iter_indices(s.chn); outer = FlexiChains.nchains(s.chn) * length(keys(s.symbol_to_keys)))
+        repeat(iter_indices(s.chn); outer = FlexiChains.nchains(s.chn) * nkeys)
     elseif col === FlexiChains.CHAIN_DIM_NAME
-        repeat(chain_indices(s.chn); inner = FlexiChains.niters(s.chn), outer = length(keys(s.symbol_to_keys)))
+        repeat(chain_indices(s.chn); inner = FlexiChains.niters(s.chn), outer = nkeys)
     elseif col === FlexiChains.PARAM_DIM_NAME
-        repeat(collect(keys(s.symbol_to_keys)); inner = FlexiChains.niters(s.chn) * FlexiChains.nchains(s.chn))
+        repeat(collect(s.original_keys); inner = FlexiChains.niters(s.chn) * FlexiChains.nchains(s.chn))
     elseif col === VALUE_COL_NAME
-        mapreduce(vcat, keys(s.symbol_to_keys)) do k
-            vec(s.chn[s.symbol_to_keys[k]])
+        mapreduce(vcat, s.original_keys) do k
+            vec(s.chn[k])
         end
     else
         throw(ArgumentError("unknown column name: $col"))

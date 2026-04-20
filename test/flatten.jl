@@ -185,13 +185,13 @@ using Test
                 a_rows = df.param .== :a
                 b_rows = df.param .== :b
                 @test all(df.value[a_rows] .== 1.0)
-                @test all(df.value[b_rows] .== 0.0) # promoted from false
+                @test all(df.value[b_rows] .== 0.0)
             end
 
             @testset "parameters_only=false" begin
                 df = DataFrame(Long(chain; parameters_only = false))
                 @test nrow(df) == N_iters * N_chains * 3
-                @test :lp in df.param
+                @test Extra(:lp) in df.param
             end
         end
 
@@ -235,7 +235,9 @@ using Test
             )
             dup_chain = FlexiChain{Any}(5, 1, fill(d_dup, 5))
             @test_throws ArgumentError Wide(dup_chain; parameters_only = false)
-            @test_throws ArgumentError Long(dup_chain; parameters_only = false)
+            # Long preserves original keys, so Parameter("s") and Extra(:s) are distinct
+            df = DataFrame(Long(dup_chain; parameters_only = false))
+            @test nrow(df) == 5 * 1 * 2
         end
     end
 end

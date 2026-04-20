@@ -1,6 +1,7 @@
 @public FlexiChain, Parameter, Extra, ParameterOrExtra
 @public iter_indices, chain_indices, renumber_iters, renumber_chains
 @public sampling_time, last_sampler_state
+@public get_name
 
 const ITER_DIM_NAME = :iter
 const CHAIN_DIM_NAME = :chain
@@ -80,10 +81,16 @@ struct Parameter{T}
     name::T
 end
 Base.show(io::IO, p::Parameter) = print(io, "Parameter(", repr(p.name), ")")
+"""
+    FlexiChains.get_name(p::Parameter{T})::T
+    FlexiChains.get_name(e::Extra{T})::T
+
+Unwrap the `Parameter` or `Extra` to get its name.
+"""
 get_name(p::Parameter) = p.name
 
 """
-    Extra(name::Any)
+    Extra{T}(name::T)
 
 A key in a `FlexiChain` that is not a parameter. The name of the key itself can be of any
 type and is not constrained by the type of the `FlexiChain`.
