@@ -202,7 +202,26 @@ for S in (:Wide, :Long)
                 # note that we always strip parameter/extra. This is lossy, but it is a
                 # requirement for Tables to work since it only takes Symbol column names.
                 ks = Tuple(FlexiChains.get_name.(keys(chn)))
-                symbol_to_keys = NamedTuple{Symbol.(ks)}(ks)
+                sym_ks = Symbol.(ks)
+                # Check for duplicate keys
+                seen = Set{Symbol}()
+                duplicates = Symbol[]
+                for s in sym_ks
+                    if s in seen
+                        push!(duplicates, s)
+                    else
+                        push!(seen, s)
+                    end
+                end
+                if !isempty(duplicates)
+                    throw(
+                        ArgumentError(
+                            "duplicate column names after converting keys to Symbols: " *
+                                join(unique(duplicates), ", "),
+                        )
+                    )
+                end
+                symbol_to_keys = NamedTuple{sym_ks}(ks)
                 return new{typeof(chn), typeof(symbol_to_keys)}(chn, symbol_to_keys)
             end
         end
@@ -244,7 +263,7 @@ using Turing, FlexiChains, DataFrames
 end
 chn = sample(f(), Prior(), MCMCThreads(), 10, 2; chain_type=VNChain)
 
-df = DataFrame(FlexiChains.Wide(chn))
+df = DataFrame(Wide(chn))
 ```
 
 returns a DataFrame that looks like the following. Each parameter is a different column, and
@@ -296,7 +315,7 @@ using Turing, FlexiChains, DataFrames
 end
 chn = sample(f(), Prior(), MCMCThreads(), 10, 2; chain_type=VNChain)
 
-df = DataFrame(FlexiChains.Long(chn))
+df = DataFrame(Long(chn))
 ```
 
 returns a DataFrame that looks like the following. The `iter` and `chain` dimensions are
@@ -341,7 +360,7 @@ Tables.getcolumn(s::Wide, col::Int) = Tables.getcolumn(s, Tables.columnnames(s)[
 Tables.columns(s::Wide) = s
 
 # Long
-VALUE_COL_NAME = :value
+const VALUE_COL_NAME = :value
 Tables.columnnames(::Long) = [FlexiChains.ITER_DIM_NAME, FlexiChains.CHAIN_DIM_NAME, FlexiChains.PARAM_DIM_NAME, VALUE_COL_NAME]
 function Tables.getcolumn(s::Long, col::Symbol)
     return if col === FlexiChains.ITER_DIM_NAME
