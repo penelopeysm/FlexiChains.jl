@@ -321,7 +321,7 @@ First let's sample a chain as usual:
 using FlexiChains, Turing, DataFrames
 
 @model function f()
-    x ~ Normal()
+    x ~ Normal(10.0)
     y ~ Bernoulli()
     z ~ MvNormal(zeros(2), I)
 end

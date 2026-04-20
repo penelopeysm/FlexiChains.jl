@@ -226,8 +226,8 @@ for S in (:Wide, :Long)
             end
         end
 
-        Tables.istable(::Type{$S}) = true
-        Tables.columnaccess(::Type{$S}) = true
+        Tables.istable(::Type{<:$S}) = true
+        Tables.columnaccess(::Type{<:$S}) = true
     end
 end
 
@@ -373,6 +373,8 @@ function Tables.getcolumn(s::Long, col::Symbol)
         mapreduce(vcat, keys(s.symbol_to_keys)) do k
             vec(s.chn[s.symbol_to_keys[k]])
         end
+    else
+        throw(ArgumentError("unknown column name: $col"))
     end
 end
 function Tables.getcolumn(s::Long, col::Int)
