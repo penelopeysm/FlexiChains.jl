@@ -358,21 +358,109 @@ using Random: Xoshiro
             end
         end
 
-        @testset "DimArray element type" begin
-            dimarr = rand(DD.X([:a, :b, :c]), DD.Y(100.0:50:200.0))
-            Niters, Nchains = 100, 3
-            d = Dict(Parameter(:a) => fill(dimarr, Niters, Nchains))
+        @testset "stack keyword" begin
+            arr = [1.0, 2.0, 3.0]
+            dimarr = DD.DimArray([10.0, 20.0, 30.0], DD.X([:a, :b, :c]))
+            Niters, Nchains = 10, 3
+            d = Dict(
+                Parameter(:arr) => fill(arr, Niters, Nchains),
+                Parameter(:dimarr) => fill(dimarr, Niters, Nchains),
+                Parameter(:scalar) => rand(Niters, Nchains),
+            )
             chain = FlexiChain{Symbol}(Niters, Nchains, d)
-            returned_as = chain[:a]
-            @test returned_as isa DD.DimArray{Float64, 4}
-            @test size(returned_as) == (Niters, Nchains, 3, 3)
-            @test DD.dims(returned_as) isa Tuple{DD.Dim{:iter}, DD.Dim{:chain}, DD.X, DD.Y}
-            @test parent(DD.val(DD.dims(returned_as), :iter)) ==
-                FlexiChains.iter_indices(chain)
-            @test parent(DD.val(DD.dims(returned_as), :chain)) ==
-                FlexiChains.chain_indices(chain)
-            @test parent(DD.val(DD.dims(returned_as), :X)) == [:a, :b, :c]
-            @test parent(DD.val(DD.dims(returned_as), :Y)) == collect(100.0:50:200.0)
+
+            @testset "scalar parameter is unaffected by stack" begin
+                s_default = chain[:scalar]
+                s_true = chain[:scalar, stack = true]
+                s_false = chain[:scalar, stack = false]
+                @test s_default isa DD.DimMatrix{Float64}
+                @test s_true isa DD.DimMatrix{Float64}
+                @test s_false isa DD.DimMatrix{Float64}
+                @test s_default == s_true == s_false
+            end
+
+            @testset "Array parameter" begin
+                @testset "stack=false" begin
+                    result = chain[:arr, stack = false]
+                    @test result isa DD.DimMatrix{Vector{Float64}}
+                    @test size(result) == (Niters, Nchains)
+                    @test result[1, 1] == arr
+                end
+                @testset "stack=true" begin
+                    result = chain[:arr, stack = true]
+                    @test result isa DD.DimArray{Float64, 3}
+                    @test size(result) == (Niters, Nchains, 3)
+                    @test DD.dims(result) isa
+                        Tuple{DD.Dim{:iter}, DD.Dim{:chain}, DD.AnonDim}
+                    @test result[1, 1, :] == arr
+                end
+                @testset "default (no stack kwarg)" begin
+                    result = chain[:arr]
+                    @test result isa DD.DimMatrix{Vector{Float64}}
+                    @test size(result) == (Niters, Nchains)
+                    @test result[1, 1] == arr
+                end
+            end
+
+            @testset "DimArray parameter" begin
+                @testset "stack=false" begin
+                    result = chain[:dimarr, stack = false]
+                    @test result isa DD.DimMatrix{<:DD.DimArray}
+                    @test size(result) == (Niters, Nchains)
+                    @test result[1, 1] == dimarr
+                end
+                @testset "stack=true" begin
+                    result = chain[:dimarr, stack = true]
+                    @test result isa DD.DimArray{Float64, 3}
+                    @test size(result) == (Niters, Nchains, 3)
+                    @test DD.dims(result) isa
+                        Tuple{DD.Dim{:iter}, DD.Dim{:chain}, DD.X}
+                    @test DD.lookup(DD.dims(result, DD.X)) ==
+                        DD.lookup(DD.dims(dimarr, DD.X))
+                    @test result[1, 1, :] == parent(dimarr)
+                end
+                @testset "default (no stack kwarg) emits deprecation warning" begin
+                    result = @test_logs(
+                        (:warn, FlexiChains._STACK_DEPWARN_MSG),
+                        chain[:dimarr],
+                    )
+                    @test result isa DD.DimArray{Float64, 3}
+                    @test size(result) == (Niters, Nchains, 3)
+                end
+            end
+
+            @testset "stack=true with mismatched sizes errors" begin
+                arr1 = [1.0, 2.0]
+                arr2 = [1.0, 2.0, 3.0]
+                mat = hcat(fill([arr1, arr2], 3)...)
+                d_bad = Dict(Parameter(:x) => mat)
+                bad_chain = FlexiChain{Symbol}(2, 3, d_bad)
+                @test_throws DimensionMismatch bad_chain[:x, stack = true]
+                result = bad_chain[:x, stack = false]
+                @test result isa DD.DimMatrix
+                @test result[1, 1] == arr1
+                @test result[2, 1] == arr2
+            end
+
+            @testset "stack with iter/chain subsetting" begin
+                result = chain[:arr, stack = true, iter = 1:3, chain = DD.At(1)]
+                @test result isa DD.DimArray{Float64, 2}
+                @test size(result) == (3, 3)
+                @test result[1, :] == arr
+
+                result = chain[:dimarr, stack = true, iter = 1:3, chain = DD.At(1)]
+                @test result isa DD.DimArray{Float64, 2}
+                @test size(result) == (3, 3)
+                @test result[1, :] == parent(dimarr)
+            end
+
+            @testset "stack with both dims collapsed" begin
+                result = chain[:arr, stack = true, iter = DD.At(1), chain = DD.At(1)]
+                @test result == arr
+
+                result = chain[:dimarr, stack = true, iter = DD.At(1), chain = DD.At(1)]
+                @test result == dimarr
+            end
         end
     end
 

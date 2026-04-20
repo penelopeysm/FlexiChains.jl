@@ -318,7 +318,7 @@ function _get_summary_dims(
     return new_dims, dim_indices_to_drop
 end
 """
-    _raw_to_user_data(summary::FlexiSummary, data::AbstractArray)
+    _raw_to_user_data(summary::FlexiSummary, data::AbstractArray; stack=nothing)
 
 Convert `data`, which is a raw 3D array of samples, to either:
 
@@ -326,40 +326,33 @@ Convert `data`, which is a raw 3D array of samples, to either:
   are one or more non-collapsed dimensions; or
 - a single value, if all dimensions are collapsed.
 
+The `stack` keyword argument controls stacking of array-valued elements; see
+[`_raw_to_user_data(::FlexiChain, ...)`](@ref) for details.
+
 !!! important
     This function performs no checks to make sure that the lengths of the indices stored in
 the chain line up with the size of the matrix.
 """
 function _raw_to_user_data(
-        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}, arr::Array{T, 3};
-        name = DD.NoName()
-    ) where {TKey, TIIdx, TCIdx, TSIdx, T}
+        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx},
+        arr::Array{<:Any, 3};
+        name = DD.NoName(),
+        stack = nothing
+    ) where {TKey, TIIdx, TCIdx, TSIdx}
     new_dims, dim_indices_to_drop = _get_summary_dims(fs)
     dropped_arr = dropdims(arr; dims = dim_indices_to_drop)
-    return if isempty(new_dims)
-        # Scalar value; dropped_arr will be a 0-dimensional array
-        dropped_arr[]
-    else
-        DD.DimArray(dropped_arr, tuple(new_dims...); name = name)
+    # If dropped_arr is a 0-dimensional array, return the scalar itself
+    isempty(new_dims) && return dropped_arr[]
+    # Otherwise we need to check if we need to stack it
+    dimarr = DD.DimArray(dropped_arr, tuple(new_dims...); name = name)
+    if eltype(dropped_arr) <: DD.DimArray && stack === nothing
+        @warn _STACK_DEPWARN_MSG
+        stack = true
     end
-end
-function _raw_to_user_data(
-        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}, arr::Array{<:DD.DimArray{<:Any, Ndims}, 3};
-        name = DD.NoName()
-    ) where {TKey, TIIdx, TCIdx, TSIdx, Ndims}
-    new_dims, dim_indices_to_drop = _get_summary_dims(fs)
-    dropped_arr = dropdims(arr; dims = dim_indices_to_drop)
-    return if isempty(new_dims)
-        dropped_arr[]
+    return if stack === true && eltype(dropped_arr) <: AbstractArray
+        _stack_arrays(dimarr; name = name)
     else
-        n_new_dims = length(new_dims) # between 1 and 3, iter/chain/stat
-        arr_of_arr = DD.DimArray(dropped_arr, tuple(new_dims...))
-        stacked_arr = stack(arr_of_arr)
-        # iter/chain/stat will be the final dimensions. We want them to be the first
-        return DD.rebuild(
-            permutedims(stacked_arr, ((Ndims + 1):(Ndims + n_new_dims)..., (1:Ndims)...));
-            name = name
-        )
+        dimarr
     end
 end
 

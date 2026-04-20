@@ -534,39 +534,88 @@ function _default_dims(chain::FlexiChain)
     )
 end
 """
-    _raw_to_user_data(chain::FlexiChain, data::Matrix)
+    _stack_arrays(dimarr::DimArray{<:AbstractArray}; name)
+
+Stack a `DimArray` of same-sized `AbstractArray` elements into a single higher-dimensional
+`DimArray`, with the original dimensions placed first and `AnonDim` dimensions for the
+inner array axes. `name` is forwarded to the `DimArray` constructor as the array name.
+"""
+function _stack_arrays(dimarr::DD.DimArray{<:AbstractArray{<:Any, NInner}, NOuter}; name = DD.NoName()) where {NInner, NOuter}
+    # Check that dimensions can be stacked
+    sz = size(first(dimarr))
+    if !all(x -> size(x) == sz, dimarr)
+        throw(
+            DimensionMismatch("cannot stack arrays of different sizes; to return unstacked data, use `stack=false`"),
+        )
+    end
+    # Base.stack always places the outer dimensions (iter/chain in this case) at the end
+    # so we need to permute them back to the front.
+    # at the end.
+    stacked = stack(dimarr)
+    perm = ((NInner + 1):(NInner + NOuter)..., (1:NInner)...)
+    permuted = permutedims(stacked, perm)
+    return if eltype(dimarr) <: DD.DimArray
+        # stack on a DimArray of DimArray will return a DimArray, so we are done here
+        DD.rebuild(permuted; name = name)
+    else
+        # stack on a DimArray of Array will return an Array, so we need to regenerate
+        # the right axes
+        # TODO: This might *lose* information e.g. if the inner arrays have some form of
+        # named axes. We could attempt to preserve this information by dispatching on the
+        # type of the inner array.
+        inner_dims = ntuple(i -> DD.AnonDim(Base.OneTo(sz[i])), NInner)
+        outer_dims = DD.dims(dimarr)
+        all_dims = (outer_dims..., inner_dims...)
+        DD.DimArray(permuted, all_dims; name = name)
+    end
+end
+
+const _STACK_DEPWARN_MSG = (
+    "Implicit stacking of `DimArray` elements will be removed in a" *
+        " future release of FlexiChains. Please either pass `stack=true`" *
+        " to explicitly opt-in, or `stack=false` to disable. The default" *
+        " will change to `false` in a future version."
+)
+
+"""
+    _raw_to_user_data(chain::FlexiChain, data::Matrix; stack=nothing)
 
 Convert `data`, which is a raw matrix of samples, to a `DimensionalData.DimArray` using the
 indices stored in in the `FlexiChain`. This is the format that users expect to obtain when
 indexing into a `FlexiChain`.
 
+The `stack` keyword argument controls stacking of array-valued elements:
+
+- `nothing` (default): auto-stack `DimArray` elements (deprecated; will change to `false`).
+- `true`: stack all `AbstractArray` elements into a higher-dimensional `DimArray` as long as
+  they are all the same size
+- `false`: never stack; return a `DimArray` whose elements are arrays.
+
 !!! important
     This function performs no checks to make sure that the lengths of the indices stored in
 the chain line up with the size of the matrix.
 """
-function _raw_to_user_data(chain::FlexiChain, mat::Matrix; name = DD.NoName())
-    return DD.DimMatrix(mat, _default_dims(chain); name = name)
+function _raw_to_user_data(chain::FlexiChain, mat::Matrix; name = DD.NoName(), stack = nothing)
+    dimmat = DD.DimMatrix(mat, _default_dims(chain); name = name)
+    return _raw_to_user_data(chain, dimmat; name = name, stack = stack)
 end
 function _raw_to_user_data(
-        chain::FlexiChain, mat_of_dimarr::Matrix{<:DD.DimArray{<:Any, Ndims}};
-        name = DD.NoName()
-    ) where {Ndims}
-    dimmat_of_dimarr = DD.DimMatrix(mat_of_dimarr, _default_dims(chain))
-    # This stacked matrix will have the iter and chain dims at the end.
-    stacked_dimarr = stack(dimmat_of_dimarr)
-    return DD.rebuild(permutedims(stacked_dimarr, (Ndims + 1, Ndims + 2, 1:Ndims...)); name = name)
-end
-function _raw_to_user_data(
-        ::FlexiChain, dimmat_of_dimarr::DD.DimMatrix{<:DD.DimArray{<:Any, Ndims}};
-        name = DD.NoName()
-    ) where {Ndims}
-    # assume that the DimMat already has the right iter/chain dims
-    stacked_dimarr = stack(dimmat_of_dimarr)
-    return DD.rebuild(permutedims(stacked_dimarr, (Ndims + 1, Ndims + 2, 1:Ndims...)); name = name)
-end
-function _raw_to_user_data(::FlexiChain, dimmat::DD.DimMatrix; name = DD.NoName())
-    # assume that the DimMat already has the right iter/chain dims
-    return DD.rebuild(dimmat; name = name)
+        ::FlexiChain, dimmat::DD.DimMatrix;
+        name = DD.NoName(), stack = nothing
+    )
+    if !(eltype(dimmat) <: AbstractArray)
+        return DD.rebuild(dimmat; name = name)
+    end
+    if stack === nothing
+        is_dimmat = eltype(dimmat) <: DD.DimArray
+        is_dimmat && @warn _STACK_DEPWARN_MSG
+        stack = is_dimmat
+    end
+    return if stack === false
+        DD.rebuild(dimmat; name = name)
+    else
+        _stack_arrays(dimmat; name = name)
+    end
 end
 
 """

@@ -79,8 +79,6 @@ chn = AbstractMCMC.sample(
 )
 ```
 
-Besides, each entry in `chn[:params]` is stored as a `DimVector`, so when you access the full set of entries you will get a stacked 3-D `DimArray` of `(iters x chains x parameters)` (see below for more information about the stacking).
-
 ## DimensionalDistributions.jl
 
 [Documentation for DimensionalDistributions.jl](https://github.com/sethaxen/DimensionalDistributions.jl)
@@ -88,45 +86,32 @@ Besides, each entry in `chn[:params]` is stored as a `DimVector`, so when you ac
 !!! note
     DimensionalDistributions.jl is not yet registered in the Julia package registry; at present you will need to install it from GitHub using `]add https://github.com/sethaxen/DimensionalDistributions.jl`.
 
-In the quickstart guide we saw that FlexiChains, by default, stores vector-valued parameters together.
-For example, `chn[@varname(x)]` here returns a `DimArray` of `Vector`s:
+DimensionalDistributions.jl provides a `withdims` wrapper which lets you create a distribution that returns `DimVector`s:
 
 ```@example dimdist
-using FlexiChains, Turing
-
-@model f() = x ~ MvNormal(zeros(3), I)
-chn = sample(f(), MH(), MCMCThreads(), 5, 2; chain_type=VNChain, progress=false)
-
-chn[@varname(x)]
-```
-
-One might like to stack these vectors together, such that `chn[@varname(x)]` returns a three-dimensional `DimArray` instead.
-You can do this manually, for example:
-
-```@example dimdist
-using DimensionalData
-school_dim = Dim{:school}([:a, :b, :c])
-permutedims(stack(map(v -> DimVector(v, school_dim), chn[@varname(x)])), (2, 3, 1))
-```
-
-This is of course a bit tedious.
-Unfortunately, there is not much that FlexiChains can do because `MvNormal()` itself returns plain `Vector`s that do not carry any dimensional information.
-
-But, if you can use the `withdims` wrapper from DimensionalDistributions.jl, you will get a distribution that returns `DimVector`s:
-
-```@example dimdist
+using Turing # reexports MvNormal and I
+using DimensionalData: Dim
 using DimensionalDistributions
+
+school_dim = Dim{:school}([:a, :b, :c])
 dim_mvnormal = withdims(MvNormal(zeros(3), I), school_dim)
 rand(dim_mvnormal)
 ```
 
-And if you use this in a Turing model, then this information will be carried through all the way to FlexiChains, and indexing into this parameter will automatically give you a stacked `DimArray`:
+If you use this in a Turing model, then this information will be carried through all the way to FlexiChains, and indexing into this parameter will let you get a `DimArray` of `DimVector`s.
+This leads to a particularly elegant outcome when accessing this parameter with the `stack=true` keyword argument: FlexiChains will return a 3-dimensional `DimArray` with full dimensional information retained.
 
 ```@example dimdist
-@model f2() = x ~ dim_mvnormal
-chn2 = sample(f2(), MH(), MCMCThreads(), 5, 2; chain_type=VNChain, progress=false)
-chn2[@varname(x)]
+using FlexiChains
+@model f() = x ~ dim_mvnormal
+chn2 = sample(f(), MH(), MCMCThreads(), 5, 2; chain_type=VNChain, progress=false)
+chn2[@varname(x), stack=true]
 ```
+
+!!! note "Default behaviour"
+    For `DimArray`-valued parameters, the `stack=true` keyword argument is not necessary in the current version of FlexiChains as stacking happens by default.
+    However in a future version this will be changed such that the default behaviour even for `DimArray`s is to not stack.
+    Thus it is recommended that you explicitly specify `stack=true` if you want this behaviour.
 
 Sub-VarName indexing also works.
 

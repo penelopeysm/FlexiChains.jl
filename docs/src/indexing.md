@@ -138,6 +138,8 @@ If a positional argument is not specified, it defaults to `:`.
 
 ## Keyword arguments: chains
 
+### `iter` and `chain`
+
 In addition to the positional argument, you can also specify the `iter` and `chain` keyword arguments when indexing into the `FlexiChain` object.
 (`FlexiSummary` objects are covered right below this.)
 Both of these are optional, and exist to allow you to select data from specific iterations and/or chains.
@@ -187,6 +189,18 @@ Nonetheless, you can still use all the same selectors as described above, e.g. `
 
 For more information about DimensionalData's selectors, please see [their docs](@extref DimensionalData Selectors).
 
+### `stack`
+
+The `stack` keyword argument only affects parameters which are arrays; other parameters ignore it.
+
+If `stack=false` (the default), then accessing an array-valued parameter will return a `DimArray` of `Array`s.
+If `stack=true`, then the array-valued parameter will be stacked into a single `DimArray`.
+Note that the parameter's axes will be placed at the *end* of the returned DimArray.
+Thus, for example if the parameter `:x` is a `Vector{T}`, then `chn[:x]` will return a `DimArray{T,3}` with shape `(iters, chains, length(x))`.
+
+!!! note "DimArray"
+    In the current version of FlexiChains, for DimArray-valued parameters the stacking happens by default. This will be removed in a future version: you will have to explicitly specify `stack=true` to get this behaviour.
+
 ## Keyword arguments: summaries
 
 !!! note "Positional arguments"
@@ -220,3 +234,7 @@ Thus, for example, if you have a summary that contains the `mean` and `std` of t
 | `1`              | the first statistic, i.e. `:mean`      |
 | `At(:mean)`      | the `:mean` statistic                  |
 | `Not(At(:mean))` | everything but the `:mean` statistic   |
+
+### `stack`
+
+The `stack` keyword argument behaves the same as for `FlexiChain` objects.

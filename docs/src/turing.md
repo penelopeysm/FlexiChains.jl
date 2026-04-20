@@ -77,7 +77,11 @@ chain[@varname(theta)]
 MCMCChains by default will break vector-valued parameters into multiple scalar-valued parameters called `theta[1]`, `theta[2]`, etc., whereas FlexiChains keeps them together as they were defined in the model.
 
 !!! tip "If you want a 3D array..."
-    If you want to access `theta` as a 3D array of shape `(num_iterations, num_chains, vector_length)`, you can manually perform (for example) `stack` and `permutedims`. Alternatively, you can use a distribution that returns `DimVector`s: in this case FlexiChains will automatically convert `theta` as a 3D array for you! Please see [the DimensionalDistributions.jl integration](@ref DimensionalDistributions.jl) for the details.
+    If you want to access `theta` as a 3D array of shape `(num_iterations, num_chains, length(theta))`, you can also pass the keyword argument `stack=true` to `getindex`:
+
+    ```@example 1
+    chain[@varname(theta), stack=true]
+    ```
 
 If you want to obtain only the first element of `theta`, you don't need to manipulate the `DimMatrix`.
 You can just index into the chain with the corresponding `VarName`:
