@@ -70,6 +70,7 @@ FlexiChains.renumber_chains
 ```@docs
 FlexiChains.Parameter
 FlexiChains.Extra
+FlexiChains.get_name
 FlexiChains.ParameterOrExtra
 FlexiChains.Prefixed
 ```
@@ -128,6 +129,8 @@ FlexiChains.subset_extras
 ```@docs
 DimensionalData.DimArray
 Base.Array
+Wide
+Long
 ```
 
 ## Extracting per-iteration samples

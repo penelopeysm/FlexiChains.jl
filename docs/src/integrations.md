@@ -305,3 +305,41 @@ If you are using [BridgeStan.jl](https://roualdes.us/bridgestan/latest/languages
 For example if you use AdvancedHMC.jl then you can pass the `chain_type=FlexiChain{Symbol}` keyword argument (see [above](@ref integrations-advancedhmc)).
 
 (If the sampler in question does *not* have an integration with FlexiChains, please feel free to open an issue!)
+
+## Tables.jl
+
+[Documentation for Tables.jl](https://tables.juliadata.org/stable/)
+
+FlexiChains implements a Tables.jl interface which allows you to easily convert a `FlexiChain` into any type that consumes tabular data, e.g., a `DataFrame`.
+
+In fact, FlexiChains implements *two* different Tables.jl interfaces: one for wide data and one for long data.
+
+This is best demonstrated with an example.
+First let's sample a chain as usual:
+
+```@example tables
+using FlexiChains, Turing, DataFrames
+
+@model function f()
+    x ~ Normal(10.0)
+    y ~ Bernoulli()
+    z ~ MvNormal(zeros(2), I)
+end
+
+chn = sample(f(), MH(), MCMCThreads(), 4, 2; chain_type=VNChain, progress=false)
+```
+
+Now we can convert this into a `DataFrame` in wide format (this is also the default for unwrapped `FlexiChain`s, so you technically don't have to wrap `chn` in `Wide` if you don't want to):
+
+```@example tables
+DataFrame(Wide(chn))
+```
+
+or long format (although notice that this will promote `y` to `Float64`):
+
+```@example tables
+DataFrame(Long(chn))
+```
+
+Both the [`Wide`](@ref) and [`Long`](@ref) wrapper structs accept keyword arguments which determine whether array-valued parameters (like `z`) are split up, and whether or not to include the `Extra` keys in the chain as well, like Turing log-probabilities.
+Please see the docstrings for more information.

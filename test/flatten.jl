@@ -5,10 +5,13 @@ using FlexiChains:
     FlexiChain,
     Parameter,
     Extra,
+    Wide,
+    Long,
     VarName,
     @varname,
     iter_indices,
     chain_indices
+using DataFrames: DataFrame, names, nrow, ncol
 using DimensionalData: DimensionalData as DD, val, At
 using OrderedCollections: OrderedDict
 using Test
@@ -141,6 +144,100 @@ using Test
             @test size(da) == (N_iters, 1, 3)
             param_keys = collect(val(DD.dims(da, :param)))
             @test param_keys == ["a", "b[1]", "b[2]"]
+        end
+    end
+
+    @testset "Tables.jl interface" begin
+        N_iters, N_chains = 10, 2
+        d = OrderedDict(
+            Parameter(:a) => 1.0,
+            Parameter(:b) => false,
+            Extra(:lp) => -3.0,
+        )
+        chain = FlexiChain{Symbol}(N_iters, N_chains, fill(d, N_iters, N_chains))
+
+        @testset "Wide" begin
+            @testset "default (parameters_only=true, split_varnames=true)" begin
+                df = DataFrame(Wide(chain))
+                @test nrow(df) == N_iters * N_chains
+                @test names(df) == ["iter", "chain", "a", "b"]
+                @test df.iter == repeat(1:N_iters; outer = N_chains)
+                @test df.chain == repeat(1:N_chains; inner = N_iters)
+                @test all(df.a .== 1.0)
+                @test all(df.b .== false)
+            end
+
+            @testset "parameters_only=false" begin
+                df = DataFrame(Wide(chain; parameters_only = false))
+                @test names(df) == ["iter", "chain", "a", "b", "lp"]
+                @test all(df.lp .== -3.0)
+            end
+        end
+
+        @testset "Long" begin
+            @testset "default (parameters_only=true, split_varnames=true)" begin
+                df = DataFrame(Long(chain))
+                @test nrow(df) == N_iters * N_chains * 2
+                @test names(df) == ["iter", "chain", "param", "value"]
+                @test df.param == repeat([:a, :b]; inner = N_iters * N_chains)
+                @test df.iter == repeat(1:N_iters; outer = N_chains * 2)
+                @test df.chain == repeat(1:N_chains; inner = N_iters, outer = 2)
+                a_rows = df.param .== :a
+                b_rows = df.param .== :b
+                @test all(df.value[a_rows] .== 1.0)
+                @test all(df.value[b_rows] .== 0.0)
+            end
+
+            @testset "parameters_only=false" begin
+                df = DataFrame(Long(chain; parameters_only = false))
+                @test nrow(df) == N_iters * N_chains * 3
+                @test Extra(:lp) in df.param
+            end
+        end
+
+        @testset "FlexiChain directly as table source" begin
+            df = DataFrame(chain)
+            df_wide = DataFrame(Wide(chain))
+            @test names(df) == names(df_wide)
+            @test nrow(df) == nrow(df_wide)
+            for col in names(df)
+                @test df[!, col] == df_wide[!, col]
+            end
+        end
+
+        @testset "VarName-keyed chain with array-valued param" begin
+            d_vn = OrderedDict(
+                Parameter(@varname(a)) => 1.0,
+                Parameter(@varname(b)) => [2.0, 3.0],
+            )
+            vn_chain = FlexiChain{VarName}(N_iters, N_chains, fill(d_vn, N_iters, N_chains))
+
+            @testset "Wide" begin
+                df = DataFrame(Wide(vn_chain))
+                @test names(df) == ["iter", "chain", "a", "b[1]", "b[2]"]
+                @test all(df[!, "a"] .== 1.0)
+                @test all(df[!, "b[1]"] .== 2.0)
+                @test all(df[!, "b[2]"] .== 3.0)
+            end
+
+            @testset "split_varnames=false" begin
+                df = DataFrame(Wide(vn_chain; split_varnames = false))
+                @test names(df) == ["iter", "chain", "a", "b"]
+                @test all(df[!, "a"] .== 1.0)
+                @test all(x -> x == [2.0, 3.0], df[!, "b"])
+            end
+        end
+
+        @testset "duplicate column names error" begin
+            d_dup = OrderedDict(
+                Parameter("s") => 1.0,
+                Extra(:s) => 2.0,
+            )
+            dup_chain = FlexiChain{Any}(5, 1, fill(d_dup, 5))
+            @test_throws ArgumentError Wide(dup_chain; parameters_only = false)
+            # Long preserves original keys, so Parameter("s") and Extra(:s) are distinct
+            df = DataFrame(Long(dup_chain; parameters_only = false))
+            @test nrow(df) == 5 * 1 * 2
         end
     end
 end

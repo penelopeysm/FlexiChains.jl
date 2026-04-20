@@ -1,3 +1,10 @@
+# 0.5.6
+
+Implemented a Tables.jl interface for FlexiChains, along with `Wide` and `Long` wrappers to control the output format.
+
+Made the previously internal function `FlexiChains.get_name` public.
+This function unwraps the `Parameter` or `Extra` wrapper from a key.
+
 # 0.5.5
 
 Added a new keyword argument `stack` to `getindex` on `FlexiChain`.
