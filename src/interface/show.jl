@@ -16,7 +16,7 @@ end
 
 const _BOX_COLOR = :light_black
 const _ELTYPE_COLOR = :green
-const _MAX_BOX_WIDTH = 80
+const _MAX_BOX_WIDTH = 120
 
 struct _Segment
     text::String
