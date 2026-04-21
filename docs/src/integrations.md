@@ -306,7 +306,7 @@ For example if you use AdvancedHMC.jl then you can pass the `chain_type=FlexiCha
 
 (If the sampler in question does *not* have an integration with FlexiChains, please feel free to open an issue!)
 
-## Tables.jl
+## [Tables.jl](@id integrations-tables)
 
 [Documentation for Tables.jl](https://tables.juliadata.org/stable/)
 

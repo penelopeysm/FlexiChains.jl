@@ -306,7 +306,7 @@ or pass it to a function like `returned`:
 returned(twonorm(), vnt)
 ```
 
-## Performance (on important things)
+## [Performance (on important things)](@id why-perf)
 
 In the following model, `y` is a single parameter that is a vector of length `N`.
 That means that when you use functions like `returned` or `predict` on a chain, MCMCChains has to _somehow_ reconstruct the vector `y` from its components which are all stored separately.
