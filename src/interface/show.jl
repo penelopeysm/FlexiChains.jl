@@ -322,18 +322,25 @@ function _print_summary_table(
     rows = hcat(header_col, stat_cols...)
     colwidths = map(maximum, eachcol(map(length, rows)))
 
-    cumwidth = colwidths[1] + colpadding
-    max_cols = 1
-    for j in 2:length(colwidths)
-        needed = colwidths[j] + colpadding
-        if cumwidth + needed <= inner_width
-            cumwidth += needed
-            max_cols = j
-        else
-            break
+    total = sum(cw + colpadding for cw in colwidths)
+    if total <= inner_width
+        max_cols = length(colwidths)
+        truncated = false
+    else
+        available = inner_width - 3
+        cumwidth = colwidths[1] + colpadding
+        max_cols = 1
+        for j in 2:length(colwidths)
+            needed = colwidths[j] + colpadding
+            if cumwidth + needed <= available
+                cumwidth += needed
+                max_cols = j
+            else
+                break
+            end
         end
+        truncated = true
     end
-    truncated = max_cols < size(rows, 2)
 
     for (i, row) in enumerate(eachrow(rows))
         _box_content(io, width) do io
