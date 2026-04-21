@@ -30,7 +30,7 @@ Please see the documentation for more information about the PosteriorStats integ
 
 # 0.5.3
 
-Added the `FlexiChains.rankplot` function for creating rank plots with Plots.jl backend.
+Added the `FlexiChains.rankplot` and `FlexiChains.mrankplot` functions for creating rank plots with Plots.jl and Makie.jl backends.
 
 Also fixed a bug where `plotfunc(chn, :)` errored (for all plotting functions).
 
