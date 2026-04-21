@@ -59,7 +59,7 @@ chain[@varname(mu)]
 
 !!! note "Wrapping in Parameter and Extra"
 
-    When looking up a parameter, you do not need to wrap the `VarName` in `FlexiChains.Parameter(...)`: this will be automatically done for you. But `Extra` keys always need to be wrapped.
+    When looking up a parameter, you do not need to wrap the `VarName` in `FlexiChains.Parameter(...)`: this will be automatically done for you. `Extra` keys always need to be wrapped (*but* see also [the shortcut for Symbol-based indexing below](@ref symbol-indexing)).
 
 !!! note "DimMatrix"
     
@@ -129,7 +129,7 @@ chain[Extra(:logjoint)]
 
 If there is no ambiguity in the symbol `:logjoint`, then you can use a shortcut which is described in the next section.
 
-### Indexing by `Symbol`: a shortcut
+### [Indexing by `Symbol`: a shortcut](@id symbol-indexing)
 
 If you are used to MCMCChains.jl, you may find this more cumbersome than before.
 So, FlexiChains provides some shortcuts for accessing data.
