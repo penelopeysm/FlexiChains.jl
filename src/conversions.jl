@@ -92,3 +92,69 @@ function AbstractMCMC.bundle_samples(
         last_sampler_state = [st],
     )
 end
+
+"""
+    FlexiChains.from_parameter_array(
+        arr::AbstractArray{T,3};
+        parameters = @varname(x),
+        iter_indices = 1:size(arr, 1),
+        chain_indices = 1:size(arr, 2),
+    )
+
+Given a 3D array of parameter values (with dimensions `(iters, chains, params)`),
+convert it into a `FlexiChain`. The `parameters` argument controls how columns in the
+third dimension are mapped to parameter names:
+
+- A single key (e.g. `@varname(x)` or `:x`): all columns are stored as a single
+  vector-valued parameter.
+- A tuple of `key => range` pairs: each pair maps a parameter name to a range of columns.
+
+When `key => range` pairs are used, ranges of length 1 result in scalar-valued parameters,
+while longer ranges result in vector-valued parameters. Ranges must cover all columns
+`1:size(arr, 3)` exactly once, with no gaps or overlaps.
+
+The key type of the resulting `FlexiChain` is inferred from the type(s) of the parameter
+key(s).
+"""
+function from_parameter_array(
+        arr::AbstractArray{T, 3};
+        parameters = @varname(x),
+        iter_indices = 1:size(arr, 1),
+        chain_indices = 1:size(arr, 2),
+    ) where {T}
+    niters, nchains, nparams = size(arr)
+    parameter_pairs = _normalize_parameters(parameters, nparams)
+    _check_parameter_ranges(parameter_pairs, nparams)
+    TKey = mapreduce(p -> typeof(first(p)), typejoin, parameter_pairs)
+    dict = OrderedDict(
+        map(parameter_pairs) do (key, range)
+            if length(range) == 1
+                Parameter(key) => arr[:, :, only(range)]
+            else
+                Parameter(key) => map(collect, eachslice(arr[:, :, range]; dims = (1, 2)))
+            end
+        end...,
+    )
+    return FlexiChain{TKey}(
+        niters,
+        nchains,
+        dict;
+        iter_indices = iter_indices,
+        chain_indices = chain_indices,
+    )
+end
+
+_normalize_parameters(key, nparams) = ((key => 1:nparams),)
+_normalize_parameters(pairs::Tuple{Vararg{Pair}}, _) = pairs
+
+function _check_parameter_ranges(pairs, nparams)
+    all_indices = sort(mapreduce(p -> collect(last(p)), vcat, pairs))
+    return if all_indices != 1:nparams
+        throw(
+            ArgumentError(
+                "parameter ranges must cover all $nparams columns exactly once; " *
+                    "expected indices 1:$nparams, got $all_indices",
+            )
+        )
+    end
+end
