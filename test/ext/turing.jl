@@ -16,8 +16,11 @@ Turing.setprogress!(false)
 
 # This sampler does nothing (it just stays at the existing state)
 struct StaticSampler <: AbstractMCMC.AbstractSampler end
-function AbstractMCMC.step(rng::Random.AbstractRNG, model::DynamicPPL.Model, ::StaticSampler; kwargs...)
-    vnt = rand(rng, model)
+function AbstractMCMC.step(rng::Random.AbstractRNG, model::DynamicPPL.Model, ::StaticSampler; initial_params::DynamicPPL.AbstractInitStrategy, kwargs...)
+    # generate raw values according to requested initialisation strategy
+    vi = DynamicPPL.OnlyAccsVarInfo((DynamicPPL.RawValueAccumulator(false),))
+    vi = last(DynamicPPL.init!!(rng, model, vi, initial_params, DynamicPPL.UnlinkAll()))
+    vnt = DynamicPPL.get_raw_values(vi)
     return DynamicPPL.ParamsWithStats(vnt, (;)), vnt
 end
 function AbstractMCMC.step(
@@ -200,7 +203,7 @@ end
                     save_state = true,
                 )
                 # check that the sampler state is stored
-                @test only(FlexiChains.last_sampler_state(chn1)) isa DynamicPPL.VarInfo
+                @test only(FlexiChains.last_sampler_state(chn1)) isa DynamicPPL.VarNamedTuple
                 # check that it can be resumed from
                 chn2 = sample(
                     model,
@@ -228,7 +231,7 @@ end
                 )
                 # check that the sampler state is stored
                 @test FlexiChains.last_sampler_state(chn1) isa
-                    AbstractVector{<:DynamicPPL.VarInfo}
+                    AbstractVector{<:DynamicPPL.VarNamedTuple}
                 @test length(FlexiChains.last_sampler_state(chn1)) == 3
                 # check that it can be resumed from
                 chn2 = sample(
