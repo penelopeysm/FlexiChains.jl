@@ -88,7 +88,7 @@ chn = AbstractMCMC.sample(
 
 DimensionalDistributions.jl provides a `withdims` wrapper which lets you create a distribution that returns `DimVector`s:
 
-```@example dimdist
+```julia
 using Turing # reexports MvNormal and I
 using DimensionalData: Dim
 using DimensionalDistributions
@@ -101,7 +101,7 @@ rand(dim_mvnormal)
 If you use this in a Turing model, then this information will be carried through all the way to FlexiChains, and indexing into this parameter will let you get a `DimArray` of `DimVector`s.
 This leads to a particularly elegant outcome when accessing this parameter with the `stack=true` keyword argument: FlexiChains will return a 3-dimensional `DimArray` with full dimensional information retained.
 
-```@example dimdist
+```julia
 using FlexiChains
 @model f() = x ~ dim_mvnormal
 chn2 = sample(f(), MH(), MCMCThreads(), 5, 2; chain_type=VNChain, progress=false)
@@ -115,7 +115,7 @@ chn2[@varname(x), stack=true]
 
 Sub-VarName indexing also works.
 
-```@example dimdist
+```julia
 chn2[@varname(x[1])]
 ```
 
