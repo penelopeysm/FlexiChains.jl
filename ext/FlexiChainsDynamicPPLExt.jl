@@ -9,7 +9,8 @@ using DynamicPPL:
     AbstractMCMC,
     Distributions,
     UnlinkAll,
-    UntransformedValue,
+    TransformedValue,
+    NoTransform,
     VarNamedTuple
 using OrderedCollections: OrderedDict
 using Random: Random
@@ -348,7 +349,7 @@ function DynamicPPL.init(
     # provided).
     if haskey(strategy.chain._data, param)
         x = strategy.chain._data[param][strategy.iter_index, strategy.chain_index]
-        return UntransformedValue(x)
+        return TransformedValue(x, NoTransform())
     else
         # Check if any parameter in the chain shares the same top-level symbol. If not,
         # we can skip the expensive VNT reconstruction and go straight to the fallback.
@@ -611,7 +612,7 @@ end
 # Precompile workload #
 #######################
 
-using DynamicPPL: DynamicPPL, Distributions, AbstractMCMC, @model, VarInfo, ParamsWithStats
+using DynamicPPL: DynamicPPL, Distributions, AbstractMCMC, @model, ParamsWithStats, InitFromPrior
 using FlexiChains: VNChain, summarystats
 using PrecompileTools: @setup_workload, @compile_workload
 
@@ -623,7 +624,7 @@ struct NotASampler <: AbstractMCMC.AbstractSampler end
         return y ~ Distributions.Normal()
     end
     model = f()
-    transitions = [ParamsWithStats(VarInfo(model), model) for _ in 1:10]
+    transitions = [ParamsWithStats(InitFromPrior(), model) for _ in 1:10]
     @compile_workload begin
         chn = AbstractMCMC.bundle_samples(
             transitions, model, NotASampler(), nothing, VNChain

@@ -16,13 +16,17 @@ Turing.setprogress!(false)
 
 # This sampler does nothing (it just stays at the existing state)
 struct StaticSampler <: AbstractMCMC.AbstractSampler end
-function Turing.Inference.initialstep(rng, model, ::StaticSampler, vi; kwargs...)
-    return DynamicPPL.ParamsWithStats(vi, model), vi
+function AbstractMCMC.step(rng::Random.AbstractRNG, model::DynamicPPL.Model, ::StaticSampler; initial_params::DynamicPPL.AbstractInitStrategy, kwargs...)
+    # generate raw values according to requested initialisation strategy
+    vi = DynamicPPL.OnlyAccsVarInfo((DynamicPPL.RawValueAccumulator(false),))
+    vi = last(DynamicPPL.init!!(rng, model, vi, initial_params, DynamicPPL.UnlinkAll()))
+    vnt = DynamicPPL.get_raw_values(vi)
+    return DynamicPPL.ParamsWithStats(vnt, (;)), vnt
 end
 function AbstractMCMC.step(
-        rng, model, ::StaticSampler, vi::DynamicPPL.AbstractVarInfo; kwargs...
+        rng::Random.AbstractRNG, model::DynamicPPL.Model, ::StaticSampler, vnt::DynamicPPL.VarNamedTuple; kwargs...
     )
-    return DynamicPPL.ParamsWithStats(vi, model), vi
+    return DynamicPPL.ParamsWithStats(vnt, (;)), vnt
 end
 
 @testset verbose = true "FlexiChainTuringExt" begin
@@ -199,7 +203,7 @@ end
                     save_state = true,
                 )
                 # check that the sampler state is stored
-                @test only(FlexiChains.last_sampler_state(chn1)) isa DynamicPPL.VarInfo
+                @test only(FlexiChains.last_sampler_state(chn1)) isa DynamicPPL.VarNamedTuple
                 # check that it can be resumed from
                 chn2 = sample(
                     model,
@@ -227,7 +231,7 @@ end
                 )
                 # check that the sampler state is stored
                 @test FlexiChains.last_sampler_state(chn1) isa
-                    AbstractVector{<:DynamicPPL.VarInfo}
+                    AbstractVector{<:DynamicPPL.VarNamedTuple}
                 @test length(FlexiChains.last_sampler_state(chn1)) == 3
                 # check that it can be resumed from
                 chn2 = sample(
@@ -291,7 +295,7 @@ end
         model = f(z)
 
         ps = [
-            DynamicPPL.ParamsWithStats(DynamicPPL.VarInfo(model), model) for _ in 1:50,
+            DynamicPPL.ParamsWithStats(DynamicPPL.InitFromPrior(), model) for _ in 1:50,
                 _ in 1:3
         ]
         c = AbstractMCMC.from_samples(VNChain, ps)
@@ -362,7 +366,7 @@ end
         model = f(z)
         ps = hcat(
             [
-                DynamicPPL.ParamsWithStats(DynamicPPL.VarInfo(model), model) for _ in 1:50
+                DynamicPPL.ParamsWithStats(DynamicPPL.InitFromPrior(), model) for _ in 1:50
             ]
         )
         c = AbstractMCMC.from_samples(VNChain, ps)
