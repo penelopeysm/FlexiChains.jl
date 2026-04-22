@@ -16,12 +16,12 @@ Turing.setprogress!(false)
 
 # This sampler does nothing (it just stays at the existing state)
 struct StaticSampler <: AbstractMCMC.AbstractSampler end
-function AbstractMCMC.step(rng, model, ::StaticSampler; kwargs...)
+function AbstractMCMC.step(rng::Random.AbstractRNG, model::DynamicPPL.Model, ::StaticSampler; kwargs...)
     vnt = rand(rng, model)
     return DynamicPPL.ParamsWithStats(vnt, (;)), vnt
 end
 function AbstractMCMC.step(
-        rng, model, ::StaticSampler, vnt::DynamicPPL.VarNamedTuple; kwargs...
+        rng::Random.AbstractRNG, model::DynamicPPL.Model, ::StaticSampler, vnt::DynamicPPL.VarNamedTuple; kwargs...
     )
     return DynamicPPL.ParamsWithStats(vnt, (;)), vnt
 end
