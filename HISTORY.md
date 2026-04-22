@@ -1,3 +1,7 @@
+# 0.5.8
+
+Add compatibility with DynamicPPL 0.41 and Turing 0.44.
+
 # 0.5.7
 
 Improve pretty-printing of `FlexiChain` and `FlexiSummary` objects.
