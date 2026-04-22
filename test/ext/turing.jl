@@ -16,13 +16,14 @@ Turing.setprogress!(false)
 
 # This sampler does nothing (it just stays at the existing state)
 struct StaticSampler <: AbstractMCMC.AbstractSampler end
-function Turing.Inference.initialstep(rng, model, ::StaticSampler, vi; kwargs...)
-    return DynamicPPL.ParamsWithStats(vi, model), vi
+function AbstractMMCC.step(rng, model, ::StaticSampler; kwargs...)
+    vnt = rand(rng, model)
+    return DynamicPPL.ParamsWithStats(vnt, (;)), vnt
 end
 function AbstractMCMC.step(
-        rng, model, ::StaticSampler, vi::DynamicPPL.AbstractVarInfo; kwargs...
+        rng, model, ::StaticSampler, vnt::DynamicPPL.VarNamedTuple; kwargs...
     )
-    return DynamicPPL.ParamsWithStats(vi, model), vi
+    return DynamicPPL.ParamsWithStats(vnt, (;)), vnt
 end
 
 @testset verbose = true "FlexiChainTuringExt" begin
@@ -291,7 +292,7 @@ end
         model = f(z)
 
         ps = [
-            DynamicPPL.ParamsWithStats(DynamicPPL.VarInfo(model), model) for _ in 1:50,
+            DynamicPPL.ParamsWithStats(DynamicPPL.InitFromPrior(), model) for _ in 1:50,
                 _ in 1:3
         ]
         c = AbstractMCMC.from_samples(VNChain, ps)
@@ -362,7 +363,7 @@ end
         model = f(z)
         ps = hcat(
             [
-                DynamicPPL.ParamsWithStats(DynamicPPL.VarInfo(model), model) for _ in 1:50
+                DynamicPPL.ParamsWithStats(DynamicPPL.InitFromPrior(), model) for _ in 1:50
             ]
         )
         c = AbstractMCMC.from_samples(VNChain, ps)
