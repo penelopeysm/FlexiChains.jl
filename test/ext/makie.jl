@@ -1,7 +1,7 @@
 module FCMakieExtTests
 
 using CairoMakie: Makie
-using FlexiChains: FlexiChains as FC, FlexiChain, Parameter, Extra
+using FlexiChains: FlexiChains as FC, FlexiChain, Parameter
 using StableRNGs: StableRNG
 using Test
 

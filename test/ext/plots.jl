@@ -4,7 +4,7 @@ ENV["GKSwstype"] = "100"
 
 using Plots
 using StatsPlots
-using FlexiChains: FlexiChains as FC, FlexiChain, Parameter, Extra
+using FlexiChains: FlexiChains as FC, FlexiChain, Parameter
 using StableRNGs: StableRNG
 using Test
 
