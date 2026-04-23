@@ -28,7 +28,11 @@ function reftest(
         reference_exists = isfile(ref_path)
 
         if !reference_exists
-            if isinteractive()
+            if update
+                @info "Creating missing reference image: $ref_path"
+                cp(rec_path, ref_path; force=true)
+                @test true
+            elseif isinteractive()
                 @info "Creating missing reference image: $ref_path"
                 cp(rec_path, ref_path; force=true)
             else
@@ -49,22 +53,21 @@ function reftest(
                 println("  Diff:      $diff_path")
                 println("  Pixels different: $num_pixels_diff")
 
-                if isinteractive()
-                    if update
-                        println("update = true, updating reference image")
+                if update
+                    println("update = true, updating reference image")
+                    cp(rec_path, ref_path; force=true)
+                    @test true
+                elseif isinteractive()
+                    if Base.displayable(MIME("juliavscode/html"))
+                        show_html_differ(; name, num_pixels_diff, ref_path, rec_path, diff_path)
+                    end
+                    print("Replace reference with recorded image? (y/n): ")
+                    response = readline()
+                    if lowercase(strip(response)) == "y"
                         cp(rec_path, ref_path; force=true)
+                        println("Reference image updated.")
                     else
-                        if Base.displayable(MIME("juliavscode/html"))
-                            show_html_differ(; name, num_pixels_diff, ref_path, rec_path, diff_path)
-                        end
-                        print("Replace reference with recorded image? (y/n): ")
-                        response = readline()
-                        if lowercase(strip(response)) == "y"
-                            cp(rec_path, ref_path; force=true)
-                            println("Reference image updated.")
-                        else
-                            @test false
-                        end
+                        @test false
                     end
                 else
                     @test false
