@@ -22,7 +22,7 @@ function make_test_chain()
     return FlexiChain{Symbol}(N_iters, N_chains, dicts)
 end
 
-@testset "PairPlots reference tests" begin
+@testset verbose = true "PairPlots reference tests" begin
     chn = make_test_chain()
 
     reftest("pairplot") do

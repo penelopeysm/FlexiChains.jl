@@ -1,7 +1,5 @@
 using CairoMakie
-import DelimitedFiles
 using Test
-using Statistics
 using PixelMatch
 using PNGFiles
 using Base64
@@ -35,6 +33,7 @@ function reftest(
             elseif isinteractive()
                 @info "Creating missing reference image: $ref_path"
                 cp(rec_path, ref_path; force=true)
+                @test true
             else
                 @test reference_exists
             end
