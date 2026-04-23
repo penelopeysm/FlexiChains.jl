@@ -3,3 +3,5 @@ Manifest-*.toml
 .swp
 .DS_Store
 docs/build
+test/reference_tests/*_rec.png
+test/reference_tests/*_diff.png
