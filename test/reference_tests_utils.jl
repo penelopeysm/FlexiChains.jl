@@ -41,16 +41,26 @@ function reftest(
             img_ref = PNGFiles.load(ref_path)
             img_rec = PNGFiles.load(rec_path)
 
-            num_pixels_diff, diff_image = PixelMatch.pixelmatch(img_ref, img_rec)
-
-            if num_pixels_diff > 0
-                PNGFiles.save(diff_path, diff_image)
-
+            size_mismatch = size(img_ref) != size(img_rec)
+            num_pixels_diff, diff_image = if size_mismatch
                 println("Reference test failed for: $name")
                 println("  Reference: $ref_path")
                 println("  Recorded:  $rec_path")
-                println("  Diff:      $diff_path")
-                println("  Pixels different: $num_pixels_diff")
+                println("  Size mismatch: ref=$(size(img_ref)), rec=$(size(img_rec))")
+                -1, nothing
+            else
+                PixelMatch.pixelmatch(img_ref, img_rec)
+            end
+
+            if size_mismatch || num_pixels_diff > 0
+                if !size_mismatch
+                    PNGFiles.save(diff_path, diff_image)
+                    println("Reference test failed for: $name")
+                    println("  Reference: $ref_path")
+                    println("  Recorded:  $rec_path")
+                    println("  Diff:      $diff_path")
+                    println("  Pixels different: $num_pixels_diff")
+                end
 
                 if update
                     println("update = true, updating reference image")
