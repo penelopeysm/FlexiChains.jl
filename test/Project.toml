@@ -1,6 +1,7 @@
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
 AbstractPPL = "7a57a42e-76ec-4ea3-a279-07e840d6d9cf"
+Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 AdvancedHMC = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
