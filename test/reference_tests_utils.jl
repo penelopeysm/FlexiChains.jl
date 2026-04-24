@@ -4,14 +4,14 @@ using PixelMatch
 using PNGFiles
 using Base64
 
-save_makie(path, fig) = CairoMakie.save(path, fig; px_per_unit=1, backend=CairoMakie)
+save_makie(path, fig) = CairoMakie.save(path, fig; px_per_unit = 1, backend = CairoMakie)
 
 function reftest(
-    f::Function,
-    name::String;
-    save=save_makie,
-    update::Bool=get(ENV, "UPDATE_REFIMAGES", "false") == "true",
-)
+        f::Function,
+        name::String;
+        save = save_makie,
+        update::Bool = get(ENV, "UPDATE_REFIMAGES", "false") == "true",
+    )
     @info name
     fig = f()
     path = joinpath(@__DIR__, "reference_tests")
@@ -28,11 +28,11 @@ function reftest(
         if !reference_exists
             if update
                 @info "Creating missing reference image: $ref_path"
-                cp(rec_path, ref_path; force=true)
+                cp(rec_path, ref_path; force = true)
                 @test true
             elseif isinteractive()
                 @info "Creating missing reference image: $ref_path"
-                cp(rec_path, ref_path; force=true)
+                cp(rec_path, ref_path; force = true)
                 @test true
             else
                 @test reference_exists
@@ -64,7 +64,7 @@ function reftest(
 
                 if update
                     println("update = true, updating reference image")
-                    cp(rec_path, ref_path; force=true)
+                    cp(rec_path, ref_path; force = true)
                     @test true
                 elseif isinteractive()
                     if Base.displayable(MIME("juliavscode/html"))
@@ -73,7 +73,7 @@ function reftest(
                     print("Replace reference with recorded image? (y/n): ")
                     response = readline()
                     if lowercase(strip(response)) == "y"
-                        cp(rec_path, ref_path; force=true)
+                        cp(rec_path, ref_path; force = true)
                         println("Reference image updated.")
                     else
                         @test false

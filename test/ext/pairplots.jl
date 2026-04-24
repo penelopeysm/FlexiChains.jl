@@ -14,10 +14,10 @@ function make_test_chain()
     N_chains = 2
     dicts = [
         Dict(
-            Parameter(:a) => randn(rng),
-            Parameter(:b) => randn(rng),
-        )
-        for _ in 1:N_iters, _ in 1:N_chains
+                Parameter(:a) => randn(rng),
+                Parameter(:b) => randn(rng),
+            )
+            for _ in 1:N_iters, _ in 1:N_chains
     ]
     return FlexiChain{Symbol}(N_iters, N_chains, dicts)
 end
@@ -26,11 +26,11 @@ end
     chn = make_test_chain()
 
     reftest("pairplot") do
-        PairPlots.pairplot(chn; pool_chains=false)
+        PairPlots.pairplot(chn; pool_chains = false)
     end
 
     reftest("pairplot_pooled") do
-        PairPlots.pairplot(chn; pool_chains=true)
+        PairPlots.pairplot(chn; pool_chains = true)
     end
 end
 

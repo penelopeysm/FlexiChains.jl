@@ -11,11 +11,11 @@ function make_test_chain(rng)
     N_iters, N_chains = 100, 2
     dicts = [
         Dict(
-            Parameter(:a) => randn(rng),
-            Parameter(:b) => randn(rng),
-            Parameter(:c) => rand(rng, 1:10),
-        )
-        for _ in 1:N_iters, _ in 1:N_chains
+                Parameter(:a) => randn(rng),
+                Parameter(:b) => randn(rng),
+                Parameter(:c) => rand(rng, 1:10),
+            )
+            for _ in 1:N_iters, _ in 1:N_chains
     ]
     return FlexiChain{Symbol}(N_iters, N_chains, dicts)
 end
@@ -35,7 +35,7 @@ end
     end
 
     reftest("mrankplot_overlay") do
-        FC.mrankplot(chn; overlay=true)
+        FC.mrankplot(chn; overlay = true)
     end
 
     reftest("mmixeddensity_float") do
