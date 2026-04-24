@@ -2,6 +2,7 @@ module FCMakieExtTests
 
 using CairoMakie: Makie
 using FlexiChains: FlexiChains as FC, FlexiChain, Parameter
+using OrderedCollections: OrderedDict
 using StableRNGs: StableRNG
 using Test
 
@@ -10,7 +11,7 @@ include("../reference_tests_utils.jl")
 function make_test_chain(rng)
     N_iters, N_chains = 100, 2
     dicts = [
-        Dict(
+        OrderedDict(
                 Parameter(:a) => randn(rng),
                 Parameter(:b) => randn(rng),
                 Parameter(:c) => rand(rng, 1:10),

@@ -4,6 +4,7 @@ ENV["GKSwstype"] = "100"
 
 using Plots
 using StatsPlots
+using OrderedCollections: OrderedDict
 using FlexiChains: FlexiChains as FC, FlexiChain, Parameter
 using StableRNGs: StableRNG
 using Test
@@ -17,7 +18,7 @@ function make_test_chain()
     N_iters = 100
     N_chains = 2
     dicts = [
-        Dict(
+        OrderedDict(
                 Parameter(:a) => randn(rng),
                 Parameter(:b) => randn(rng),
                 Parameter(:c) => rand(rng, 1:10),

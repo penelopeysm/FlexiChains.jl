@@ -2,6 +2,7 @@ module FlexiChainsPairPlotsExtRefTests
 
 using CairoMakie
 using PairPlots
+using OrderedCollections: OrderedDict
 using FlexiChains: FlexiChain, Parameter
 using StableRNGs: StableRNG
 using Test
@@ -13,7 +14,7 @@ function make_test_chain()
     N_iters = 100
     N_chains = 2
     dicts = [
-        Dict(
+        OrderedDict(
                 Parameter(:a) => randn(rng),
                 Parameter(:b) => randn(rng),
             )
