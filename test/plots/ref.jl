@@ -13,6 +13,11 @@ using Test
 
 ENV["GKSwstype"] = "100"
 
+const UPDATE_REFIMAGES = get(ENV, "UPDATE_REFIMAGES", "") == "1"
+if UPDATE_REFIMAGES
+    @info "Running with UPDATE_REFIMAGES=1: all reference images will be updated"
+end
+
 abstract type PlotBackend end
 struct MakieBE <: PlotBackend end
 struct PlotsBE <: PlotBackend end
@@ -121,14 +126,14 @@ const REFTEST_SPECS = [
     RefTestSpec(MakieBE(), "makie_plot", () -> Makie.plot(chn)),
 
     # PlotsExt
-    RefTestSpec(PlotsBE(), "traceplot", () -> FC.traceplot(chn), save_plots),
-    RefTestSpec(PlotsBE(), "rankplot", () -> FC.rankplot(chn), save_plots),
-    RefTestSpec(PlotsBE(), "rankplot_overlay", () -> FC.rankplot(chn; overlay = true), save_plots),
-    RefTestSpec(PlotsBE(), "mixeddensity_float", () -> FC.mixeddensity(chn[[Parameter(:a)]]), save_plots),
-    RefTestSpec(PlotsBE(), "mixeddensity_int", () -> FC.mixeddensity(chn[[Parameter(:c)]]), save_plots),
-    RefTestSpec(PlotsBE(), "meanplot", () -> FC.meanplot(chn), save_plots),
-    RefTestSpec(PlotsBE(), "autocorplot", () -> FC.autocorplot(chn), save_plots),
-    RefTestSpec(PlotsBE(), "plots_plot", () -> Plots.plot(chn), save_plots),
+    RefTestSpec(PlotsBE(), "traceplot", () -> FC.traceplot(chn)),
+    RefTestSpec(PlotsBE(), "rankplot", () -> FC.rankplot(chn)),
+    RefTestSpec(PlotsBE(), "rankplot_overlay", () -> FC.rankplot(chn; overlay = true)),
+    RefTestSpec(PlotsBE(), "mixeddensity_float", () -> FC.mixeddensity(chn[[Parameter(:a)]])),
+    RefTestSpec(PlotsBE(), "mixeddensity_int", () -> FC.mixeddensity(chn[[Parameter(:c)]])),
+    RefTestSpec(PlotsBE(), "meanplot", () -> FC.meanplot(chn)),
+    RefTestSpec(PlotsBE(), "autocorplot", () -> FC.autocorplot(chn)),
+    RefTestSpec(PlotsBE(), "plots_plot", () -> Plots.plot(chn)),
 
     # PairPlotsExt
     RefTestSpec(MakieBE(), "pairplot", () -> PairPlots.pairplot(chn; pool_chains = false)),
@@ -137,7 +142,7 @@ const REFTEST_SPECS = [
 
 @testset verbose = true "Reference tests" begin
     for spec in REFTEST_SPECS
-        reftest(spec)
+        reftest(spec; update = UPDATE_REFIMAGES)
     end
 end
 
