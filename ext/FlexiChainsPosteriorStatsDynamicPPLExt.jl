@@ -8,6 +8,7 @@ using DynamicPPL: DynamicPPL
     PosteriorStats.loo(
         model::DynamicPPL.Model,
         posterior_chn::FlexiChains;
+        factorize::Bool=false,
         kwargs...
     )
 
@@ -23,10 +24,18 @@ Returns a struct with the following fields:
   the log-likelihood values extracted from the `FlexiChain`. This contains the statistics
   of interest.
 
+The `factorize` keyword argument is passed to `DynamicPPL.pointwise_loglikelihoods`. If
+`factorize=true`, factorised log-densities will be calculated for distributions that can be
+partitioned into blocks (e.g. `MvNormal`). Please see the docstring of
+[`DynamicPPL.pointwise_loglikelihoods`](@ref) for more details.
+
 Additional keyword arguments are forwarded to [`PosteriorStats.loo`](@extref).
 """
-function PosteriorStats.loo(model::DynamicPPL.Model, posterior_chn::FlexiChain; kwargs...)
-    lls_chn = DynamicPPL.pointwise_loglikelihoods(model, posterior_chn)
+function PosteriorStats.loo(
+        model::DynamicPPL.Model, posterior_chn::FlexiChain; factorize::Bool = false,
+        kwargs...
+    )
+    lls_chn = DynamicPPL.pointwise_loglikelihoods(model, posterior_chn; factorize = factorize)
     return PosteriorStats.loo(lls_chn; kwargs...)
 end
 

@@ -1,3 +1,7 @@
+# 0.5.9
+
+Support the `factorize=true` keyword argument for `DynamicPPL.pointwise_logdensities` and `PosteriorStats.loo`.
+
 # 0.5.8
 
 Add compatibility with DynamicPPL 0.41 and Turing 0.44.
