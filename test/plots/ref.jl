@@ -42,14 +42,20 @@ function reftest(
     diff_path = joinpath(path, spec.name * "_diff.png")
     save(spec.backend, rec_path, fig)
 
-    if update
+    return if update
         cp(rec_path, ref_path; force = true)
         @testset "$(spec.name)" begin
             @test true
         end
     else
         @testset "$(spec.name)" begin
-            @test isfile(ref_path)
+            file_exists = isfile(ref_path)
+            if !file_exists
+                println("Reference image not found for $(spec.name). Run the tests with UPDATE_REFIMAGES=1 to create it.")
+                @test false
+                return
+            end
+
             img_ref = PNGFiles.load(ref_path)
             img_rec = PNGFiles.load(rec_path)
 
@@ -73,7 +79,6 @@ function reftest(
             end
         end
     end
-    return fig
 end
 
 function make_test_chain(rng)
