@@ -16,7 +16,5 @@ using Test: @testset
     # include("ext/posteriordb.jl")
     # include("ext/posteriorstats.jl")
     # include("ext/dimdist.jl")
-    include("ext/makie.jl")
-    include("ext/plots.jl")
-    include("ext/pairplots.jl")
+    include("plots/ref.jl")
 end
