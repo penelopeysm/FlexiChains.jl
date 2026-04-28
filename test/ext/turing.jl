@@ -523,6 +523,59 @@ end
             @test plds[@varname(x[-2])] == logpdf.(Normal(), chn[@varname(x[-2])])
             @test plds[@varname(y)] == logpdf.(Normal.(chn[@varname(x[-2])]), 2.0)
         end
+
+        @testset "factorize=true" begin
+            @model function array_pw(y, z)
+                x ~ MvNormal(zeros(2), I)
+                y ~ MvNormal(x, I)
+                # Doesn't work yet https://github.com/sethaxen/PartitionedDistributions.jl/issues/20
+                # z ~ Normal()
+            end
+            y = randn(2)
+            z = randn(2)
+            model = array_pw(y, z)
+            chn = sample(model, NUTS(), 50; chain_type = VNChain, verbose = false)
+
+            plds = DynamicPPL.pointwise_logdensities(model, chn)
+            @test plds[@varname(x)] == logpdf.(Ref(MvNormal(zeros(2), I)), chn[@varname(x)])
+            @test plds[@varname(y)] == logpdf.(MvNormal.(chn[@varname(x)], Ref(I)), Ref(y))
+
+            plls = DynamicPPL.pointwise_loglikelihoods(model, chn)
+            @test plls[@varname(y)] == logpdf.(MvNormal.(chn[@varname(x)], Ref(I)), Ref(y))
+            @test !haskey(plls, @varname(x))
+
+            pplds = DynamicPPL.pointwise_prior_logdensities(model, chn)
+            @test pplds[@varname(x)] == logpdf.(Ref(MvNormal(zeros(2), I)), chn[@varname(x)])
+            @test !haskey(pplds, @varname(y))
+
+            plds = DynamicPPL.pointwise_logdensities(model, chn; factorize = true)
+            for (x_pld, y_pld, x_val) in zip(plds[@varname(x)], plds[@varname(y)], chn[@varname(x)])
+                @test x_pld isa Vector{<:Real}
+                @test length(x_pld) == 2
+                @test x_pld[1] == logpdf(Normal(), x_val[1])
+                @test x_pld[2] == logpdf(Normal(), x_val[2])
+                @test y_pld isa Vector{<:Real}
+                @test length(y_pld) == 2
+                @test y_pld[1] == logpdf(Normal(x_val[1], 1), y[1])
+                @test y_pld[2] == logpdf(Normal(x_val[2], 1), y[2])
+            end
+
+            plls = DynamicPPL.pointwise_loglikelihoods(model, chn; factorize = true)
+            for (y_pll, x_val) in zip(plls[@varname(y)], chn[@varname(x)])
+                @test y_pll isa Vector{<:Real}
+                @test length(y_pll) == 2
+                @test y_pll[1] == logpdf(Normal(x_val[1], 1), y[1])
+                @test y_pll[2] == logpdf(Normal(x_val[2], 1), y[2])
+            end
+
+            pplds = DynamicPPL.pointwise_prior_logdensities(model, chn; factorize = true)
+            for (x_ppld, x_val) in zip(pplds[@varname(x)], chn[@varname(x)])
+                @test x_ppld isa Vector{<:Real}
+                @test length(x_ppld) == 2
+                @test x_ppld[1] == logpdf(Normal(), x_val[1])
+                @test x_ppld[2] == logpdf(Normal(), x_val[2])
+            end
+        end
     end
 
     @testset "returned" begin
@@ -787,15 +840,33 @@ end
     end
 
     @testset "PosteriorStats.loo with Turing" begin
-        @model function f(y)
-            x ~ Normal()
-            y .~ Normal(x)
+        @testset "no factorisation" begin
+            @model function f(y)
+                x ~ Normal()
+                y .~ Normal(x)
+            end
+            model = f(randn(10))
+            chain = sample(model, NUTS(), MCMCSerial(), 500, 3; chain_type = VNChain)
+            result = PosteriorStats.loo(model, chain)
+            @test result.param_names == [@varname(y[i]) for i in 1:10]
+            @test result.loo isa PosteriorStats.PSISLOOResult
         end
-        model = f(randn(10))
-        chain = sample(model, NUTS(), MCMCSerial(), 500, 3; chain_type = VNChain)
-        result = PosteriorStats.loo(model, chain)
-        @test result.param_names == [@varname(y[i]) for i in 1:10]
-        @test result.loo isa PosteriorStats.PSISLOOResult
+
+        @testset "factorize kwarg" begin
+            @model function farray(y)
+                x ~ MvNormal(zeros(2), I)
+                y ~ MvNormal(x, I)
+            end
+            model = farray(randn(2))
+            chain = sample(model, NUTS(), MCMCSerial(), 500, 3; chain_type = VNChain)
+            result = PosteriorStats.loo(model, chain; factorize = true)
+            @test result.param_names == [@varname(y[i]) for i in 1:2]
+            @test result.loo isa PosteriorStats.PSISLOOResult
+
+            result = PosteriorStats.loo(model, chain; factorize = false)
+            @test result.param_names == [@varname(y)]
+            @test result.loo isa PosteriorStats.PSISLOOResult
+        end
     end
 end
 
