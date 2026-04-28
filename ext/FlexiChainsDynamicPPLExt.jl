@@ -533,10 +533,10 @@ end
 
 # Shared internal helper function.
 function _pointwise_logprobs(
-        model::DynamicPPL.Model, chain::FlexiChain{<:VarName}, ::Val{Prior}, ::Val{Likelihood}
+        model::DynamicPPL.Model, chain::FlexiChain{<:VarName}, ::Val{Prior}, ::Val{Likelihood}; factorize::Bool = false
     ) where {Prior, Likelihood}
     acc = DynamicPPL.VNTAccumulator{DynamicPPL.POINTWISE_ACCNAME}(
-        DynamicPPL.PointwiseLogProb{Prior, Likelihood}()
+        DynamicPPL.PointwiseLogProb{Prior, Likelihood, factorize}()
     )
     pointwise_dicts = map(reevaluate(model, chain, (acc,), nothing)) do (_, oavi)
         logprobs = DynamicPPL.densify!!(DynamicPPL.get_pointwise_logprobs(oavi))
@@ -554,10 +554,33 @@ function _pointwise_logprobs(
     )
 end
 
+# Copied from DynamicPPL
+const _FACTORIZE_KWARG_DOC = """
+If `factorize=true`, additionally attempt to provide factorised log-densities for
+distributions that can be partitioned into blocks, using PartitionedDistributions.jl.
+
+For example, if `factorize=true`, then `y ~ MvNormal(...)` will return a vector of
+log-densities, one for each element of `y`. The `i`-th element of this vector will be the
+conditional log-probability of `y[i]` given all the other elements of `y` (often denoted
+`log p(y_{i} | y_{-i})`): in particular this is exactly the log-density required for
+leave-one-out cross-validation.
+
+In contrast, if `factorize=false`, then the log-density for `y ~ MvNormal(...)` will be a
+single scalar corresponding to `logpdf(MvNormal(...), y)`.
+
+Note that the sum of the factorised log-densities may not, in general, be equal to the
+log-density of the full distribution: they will only be equal if the original distribution
+can be completely factorised into independent components. For example, if `y ~ MvNormal(μ,
+Σ)` where `Σ` is diagonal, then each element of `y` is independent and the sum of the
+factorised log-densities will be equal to the log-density of the full distribution. In
+contrast, if `Σ` has off-diagonal entries, then the elements of `y` are not independent.
+"""
+
 """
     DynamicPPL.pointwise_logdensities(
         model::Model,
-        chain::FlexiChain{<:VarName}
+        chain::FlexiChain{<:VarName};
+        factorize::Bool=false,
     )::FlexiChain{VarName}
 
 Calculate the log probability density associated with each variable in the model, for each
@@ -565,17 +588,20 @@ iteration in the `FlexiChain`.
 
 Returns a new `FlexiChain` with the same structure as the input `chain`, mapping the
 variables to their log probabilities.
+
+$(_FACTORIZE_KWARG_DOC)
 """
 function DynamicPPL.pointwise_logdensities(
-        model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+        model::DynamicPPL.Model, chain::FlexiChain{<:VarName}; factorize::Bool = false
     )
-    return _pointwise_logprobs(model, chain, Val(true), Val(true))
+    return _pointwise_logprobs(model, chain, Val(true), Val(true); factorize = factorize)
 end
 
 """
     DynamicPPL.pointwise_loglikelihoods(
         model::Model,
-        chain::FlexiChain{<:VarName},
+        chain::FlexiChain{<:VarName};
+        factorize::Bool=false,
     )::FlexiChain{VarName}
 
 Calculate the log likelihood associated with each observed variable in the model, for each
@@ -583,17 +609,20 @@ iteration in the `FlexiChain`.
 
 Returns a new `FlexiChain` with the same structure as the input `chain`, mapping the
 observed variables to their log probabilities.
+
+$(_FACTORIZE_KWARG_DOC)
 """
 function DynamicPPL.pointwise_loglikelihoods(
-        model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+        model::DynamicPPL.Model, chain::FlexiChain{<:VarName}; factorize::Bool = false
     )
-    return _pointwise_logprobs(model, chain, Val(false), Val(true))
+    return _pointwise_logprobs(model, chain, Val(false), Val(true); factorize = factorize)
 end
 
 """
     DynamicPPL.pointwise_prior_logdensities(
         model::Model,
-        chain::FlexiChain{<:VarName},
+        chain::FlexiChain{<:VarName};
+        factorize::Bool=false, 
     )::FlexiChain{VarName}
 
 Calculate the log prior associated with each random variable in the model, for each
@@ -601,11 +630,13 @@ iteration in the `FlexiChain`.
 
 Returns a new `FlexiChain` with the same structure as the input `chain`, mapping the
 observed variables to their log probabilities.
+
+$(_FACTORIZE_KWARG_DOC)
 """
 function DynamicPPL.pointwise_prior_logdensities(
-        model::DynamicPPL.Model, chain::FlexiChain{<:VarName}
+        model::DynamicPPL.Model, chain::FlexiChain{<:VarName}; factorize::Bool = false
     )
-    return _pointwise_logprobs(model, chain, Val(true), Val(false))
+    return _pointwise_logprobs(model, chain, Val(true), Val(false); factorize = factorize)
 end
 
 #######################
