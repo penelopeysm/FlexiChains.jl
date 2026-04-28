@@ -46,11 +46,6 @@ include("stancsv.jl")
 const _LOGJOINT_KEY = Extra(:logjoint)
 const _LOGPRIOR_KEY = Extra(:logprior)
 const _LOGLIKELIHOOD_KEY = Extra(:loglikelihood)
-# Used in DynamicPPLExt.
-struct PointwiseProb{T <: VarName}
-    varname::T
-end
-Base.show(io::IO, p::PointwiseProb) = print(io, "PointwiseProb(@varname($(p.varname)))")
 
 # Extended in PosteriorDB extension (but not exported)
 function from_posteriordb_ref end
