@@ -42,33 +42,26 @@ function reftest(
     diff_path = joinpath(path, spec.name * "_diff.png")
     save(spec.backend, rec_path, fig)
 
-    @testset "$(spec.name)" begin
-        reference_exists = isfile(ref_path)
-        if !reference_exists
-            if update || isinteractive()
-                @info "Creating missing reference image: $ref_path"
-                cp(rec_path, ref_path; force = true)
-                @test true
-            else
-                @test reference_exists
-            end
-        else
+    if update
+        cp(rec_path, ref_path; force = true)
+        @testset "$(spec.name)" begin
+            @test true
+        end
+    else
+        @testset "$(spec.name)" begin
+            @test isfile(ref_path)
             img_ref = PNGFiles.load(ref_path)
             img_rec = PNGFiles.load(rec_path)
 
-            size_mismatch = size(img_ref) != size(img_rec)
-            num_pixels_diff, diff_image = if size_mismatch
+            if size(img_ref) != size(img_rec)
                 println("Reference test failed for: $(spec.name)")
                 println("  Reference: $ref_path")
                 println("  Recorded:  $rec_path")
                 println("  Size mismatch: ref=$(size(img_ref)), rec=$(size(img_rec))")
-                -1, nothing
+                @test false
             else
-                PixelMatch.pixelmatch(img_ref, img_rec)
-            end
-
-            if size_mismatch || num_pixels_diff > 0
-                if !size_mismatch
+                num_pixels_diff, diff_image = PixelMatch.pixelmatch(img_ref, img_rec)
+                if num_pixels_diff > 0
                     PNGFiles.save(diff_path, diff_image)
                     println("Reference test failed for: $(spec.name)")
                     println("  Reference: $ref_path")
@@ -76,25 +69,7 @@ function reftest(
                     println("  Diff:      $diff_path")
                     println("  Pixels different: $num_pixels_diff")
                 end
-
-                if update
-                    println("update = true, updating reference image")
-                    cp(rec_path, ref_path; force = true)
-                    @test true
-                elseif isinteractive()
-                    print("Replace reference with recorded image? (y/n): ")
-                    response = readline()
-                    if lowercase(strip(response)) == "y"
-                        cp(rec_path, ref_path; force = true)
-                        println("Reference image updated.")
-                    else
-                        @test false
-                    end
-                else
-                    @test false
-                end
-            else
-                @test true
+                @test num_pixels_diff == 0
             end
         end
     end
