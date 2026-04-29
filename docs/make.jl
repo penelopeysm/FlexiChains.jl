@@ -62,6 +62,7 @@ makedocs(;
         "makie.md",
         "integrations.md",
         "api.md",
+        "contributing.md",
         "why.md",
         "whynot.md",
     ],
