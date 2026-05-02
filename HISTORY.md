@@ -1,8 +1,11 @@
 # 0.6.0
 
+## Breaking changes
+
 Move FlexiChainsTuringExt to Turing itself, which will be released as part of Turing v0.45.
 
-Note that this means that if you use FlexiChains 0.6 with Turing <= 0.44, you will get some loss of functionality (in particular `loadstate()` will not work).
+Note that this means that if you use FlexiChains 0.6 with Turing <= 0.44, you will get a small loss of functionality.
+Specifically, `Turing.loadstate()` will not work (although `FlexiChains.last_sampler_state` will still work, and does exactly the same thing).
 
 # 0.5.9
 
