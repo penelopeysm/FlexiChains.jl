@@ -13,13 +13,16 @@ else
         include("varname.jl")
         include("flatten.jl")
         include("ext/advancedhmc.jl")
-        include("ext/mcmcchains.jl")
-        include("ext/turing.jl")
+
+        # TODO: reenable!
+        # include("ext/mcmcchains.jl")
+        # include("ext/dimdist.jl")
+
+        include("ext/dynamicppl.jl")
         include("serialise.jl")
         include("stancsv.jl")
         include("ext/posteriordb.jl")
         include("ext/posteriorstats.jl")
-        include("ext/dimdist.jl")
         include("plots/ref.jl")
     end
 end
