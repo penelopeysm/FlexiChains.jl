@@ -690,7 +690,7 @@ function FlexiChains._make_posterior_chain(
     max_logw = maximum(log_weights)
     weights = exp.(log_weights .- max_logw)
     weights ./= sum(weights)
-    dist = Categorical(weights)
+    dist = Distributions.Categorical(weights)
     idxs = rand(rng, dist, n_iters, n_chains)
     return AbstractMCMC.from_samples(VNChain, prior_samples[idxs])
 end
