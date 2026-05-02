@@ -1,13 +1,10 @@
 module FlexiChainsMCMCChainsExtTests
 
-using Turing
 using DimensionalData: DimArray, Dim
 using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra, ParameterOrExtra
 using AbstractMCMC
 using Random: Xoshiro
 using Test
-
-Turing.setprogress!(false)
 
 @testset "FlexiChainsMCMCChainsExt" begin
     @testset "FlexiChain{VarName} -> MCMCChains" begin

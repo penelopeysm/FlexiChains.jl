@@ -4,9 +4,6 @@ using FlexiChains: FlexiChains, FlexiChain, FlexiSummary, VNChain, Parameter, Ex
 using JLD2: jldsave, load
 using Serialization: serialize, deserialize
 using Test
-using Turing
-
-Turing.setprogress!(false)
 
 function test_isequal_and_same_keys(cs1::Union{FlexiChain, FlexiSummary}, cs2::Union{FlexiChain, FlexiSummary})
     @test isequal(cs1, cs2)
@@ -35,24 +32,6 @@ end
             serialize(fname, fs)
             fs2 = deserialize(fname)
             test_isequal_and_same_keys(fs, fs2)
-        end
-
-        @testset "VNChain" begin
-            @model function demomodel(x)
-                m ~ Normal(0, 1.0)
-                x ~ Normal(m, 1.0)
-                return nothing
-            end
-            model = demomodel(1.5)
-            # Note that we can't test for equality with save_state=true because the states
-            # don't compare equal :( That would need to be fixed upstream in Turing.
-            chn = sample(
-                model, NUTS(), MCMCSerial(), 100, 3; chain_type = VNChain, verbose = false
-            )
-            fname = Base.Filesystem.tempname()
-            serialize(fname, chn)
-            chn2 = deserialize(fname)
-            test_isequal_and_same_keys(chn, chn2)
         end
     end
 

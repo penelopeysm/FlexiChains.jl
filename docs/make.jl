@@ -40,7 +40,6 @@ modules = [
     Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsDynamicPPLExt),
     Base.get_extension(FlexiChains, :FlexiChainsRecipesBaseExt),
     Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt),
-    Base.get_extension(FlexiChains, :FlexiChainsTuringExt),
 ]
 
 # Enable headless mode so that plots don't pop up when building docs.
