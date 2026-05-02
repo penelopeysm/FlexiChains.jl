@@ -1,6 +1,8 @@
-# 0.5.10
+# 0.6.0
 
-Move the Turing extension to Turing itself.
+Move FlexiChainsTuringExt to Turing itself, which will be released as part of Turing v0.45.
+
+Note that this means that if you use FlexiChains 0.6 with Turing <= 0.44, you will get some loss of functionality (in particular `loadstate()` will not work).
 
 # 0.5.9
 
