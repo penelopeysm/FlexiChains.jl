@@ -75,6 +75,10 @@ export ess, rhat, mcse, gelmandiag, gelmandiag_multivariate, discretediag, bfmi
 const VNChain = FlexiChain{VarName}
 export VarName, @varname, VNChain
 
+# Test utils, overloaded in DynamicPPLExt.
+function _make_prior_chain end
+function _make_posterior_chain end
+
 # Attempt to precompile _some_ stuff, especially for VarName. This cuts the TTFX by about
 # 2-3x.
 @setup_workload begin

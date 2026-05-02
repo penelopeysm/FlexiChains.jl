@@ -4,7 +4,7 @@ using AbstractMCMC: AbstractMCMC
 using DimensionalData: DimensionalData as DD
 using Distributions
 using DynamicPPL
-using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra
+using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra, _make_prior_chain, _make_posterior_chain
 using LinearAlgebra: I
 using OffsetArrays: OffsetArray
 using PosteriorStats: PosteriorStats
@@ -16,51 +16,6 @@ _LOGPRIOR_KEY = Extra(:logprior)
 _LOGLIKELIHOOD_KEY = Extra(:loglikelihood)
 _LOGJOINT_KEY = Extra(:logjoint)
 
-function sample_from_prior(
-        rng::Random.AbstractRNG,
-        model::DynamicPPL.Model,
-        n_iters::Int,
-        n_chains::Int = 1;
-        make_chain = true,
-    )
-    vi = DynamicPPL.OnlyAccsVarInfo(
-        (
-            DynamicPPL.default_accumulators()..., DynamicPPL.RawValueAccumulator(true),
-        )
-    )
-    ps = [
-        DynamicPPL.ParamsWithStats(
-                last(DynamicPPL.init!!(rng, model, vi, InitFromPrior(), UnlinkAll()))
-            ) for _ in 1:n_iters, _ in 1:n_chains
-    ]
-    return if make_chain
-        AbstractMCMC.from_samples(VNChain, ps)
-    else
-        ps
-    end
-end
-function sample_from_prior(
-        model::DynamicPPL.Model, n_iters::Int, n_chains::Int = 1; make_chain = true
-    )
-    return sample_from_prior(Random.default_rng(), model, n_iters, n_chains; make_chain)
-end
-
-# For some of the `predict` tests, we need some way to draw from the posterior. We'll use
-# importance sampling here since it's simple to implement.
-function sample_from_posterior(rng::Random.AbstractRNG, model::DynamicPPL.Model)
-    prior_samples = sample_from_prior(rng, model, 20000; make_chain = false)
-    log_weights = vec([p.stats.loglikelihood for p in prior_samples])
-    max_logw = maximum(log_weights)
-    weights = exp.(log_weights .- max_logw)
-    weights ./= sum(weights)
-    dist = Categorical(weights)
-    idxs = rand(rng, dist, 2000)
-    return AbstractMCMC.from_samples(VNChain, hcat(prior_samples[idxs]))
-end
-function sample_from_posterior(model::DynamicPPL.Model)
-    return sample_from_posterior(Random.default_rng(), model)
-end
-
 @testset "FlexiChainsExt" begin
     @testset "InitFromParams(chain, i, j)" begin
         @model function f()
@@ -68,7 +23,7 @@ end
             return y ~ Normal(x)
         end
         model = f()
-        chn = sample_from_prior(model, 50)
+        chn = _make_prior_chain(model, 50, 1)
 
         for i in 1:50
             accs = OnlyAccsVarInfo(DynamicPPL.RawValueAccumulator(false))
@@ -90,8 +45,8 @@ end
         z = 1.0
         model = f(z)
 
-        ps = sample_from_prior(Xoshiro(468), model, 50, 3; make_chain = false)
-        c = sample_from_prior(Xoshiro(468), model, 50, 3; make_chain = true)
+        ps = _make_prior_chain(Xoshiro(468), model, 50, 3; make_chain = false)
+        c = _make_prior_chain(Xoshiro(468), model, 50, 3; make_chain = true)
         @test FlexiChains.parameters(c) == [@varname(x), @varname(y)]
         @test c[@varname(x)] == map(p -> p.params[@varname(x)], ps)
         @test c[@varname(y)] == c[@varname(x)] .+ 1
@@ -118,8 +73,8 @@ end
 
         # These should give the same results, but chn is just the ParamsWithStats
         # bundled into a VNChain.
-        chn = sample_from_prior(Xoshiro(468), f(), Ni, Nc; make_chain = true)
-        pwss = sample_from_prior(Xoshiro(468), f(), Ni, Nc; make_chain = false)
+        chn = _make_prior_chain(Xoshiro(468), f(), Ni, Nc; make_chain = true)
+        pwss = _make_prior_chain(Xoshiro(468), f(), Ni, Nc; make_chain = false)
 
         for i in 1:Ni, c in 1:Nc
             prms = FlexiChains.parameters_at(chn; iter = i, chain = c)
@@ -137,7 +92,7 @@ end
             y ~ Normal()
             return nothing
         end
-        chn = sample_from_prior(f(), 10; make_chain = true)
+        chn = _make_prior_chain(f(), 10, 1; make_chain = true)
         @test rand(chn) isa DynamicPPL.ParamsWithStats
         @test rand(chn; parameters_only = true) isa DynamicPPL.VarNamedTuple
         @test rand(chn, 5) isa Vector{<:DynamicPPL.ParamsWithStats}
@@ -154,8 +109,8 @@ end
         # Make the chain first
         z = 1.0
         model = f(z)
-        ps = sample_from_prior(Xoshiro(468), model, 50; make_chain = false)
-        c = sample_from_prior(Xoshiro(468), model, 50; make_chain = true)
+        ps = _make_prior_chain(Xoshiro(468), model, 50, 1; make_chain = false)
+        c = _make_prior_chain(Xoshiro(468), model, 50, 1; make_chain = true)
 
         # Then convert back to ParamsWithStats
         @model function newmodel()
@@ -189,7 +144,7 @@ end
             return y ~ Normal(x)
         end
         model = f() | (; y = 1.0)
-        chn = sample_from_prior(model, 100; make_chain = true)
+        chn = _make_prior_chain(model, 100, 1; make_chain = true)
         xs = chn[@varname(x)]
         expected_logprior = logpdf.(Normal(), xs)
         expected_loglike = logpdf.(Normal.(xs), 1.0)
@@ -221,7 +176,7 @@ end
                 x ~ Normal()
                 return y ~ Normal()
             end
-            chn = sample_from_prior(xonly(), 100; make_chain = true)
+            chn = _make_prior_chain(xonly(), 100, 1; make_chain = true)
             @test_throws "not found in chain" logprior(xy(), chn)
             @test_throws "not found in chain" loglikelihood(xy(), chn)
             @test_throws "not found in chain" logjoint(xy(), chn)
@@ -235,7 +190,7 @@ end
                 return nothing
             end
             model = offset_lp(2.0)
-            chn = sample_from_prior(model, 50; make_chain = true)
+            chn = _make_prior_chain(model, 50, 1; make_chain = true)
             lprior = logprior(model, chn)
             @test logprior(model, chn) ≈ logpdf.(Normal(), chn[@varname(x[-2])])
             @test loglikelihood(model, chn) ≈ logpdf.(Normal.(chn[@varname(x[-2])]), 2.0)
@@ -249,7 +204,7 @@ end
         end
         model = f(1.0)
 
-        chn = sample_from_prior(model, 100; make_chain = true)
+        chn = _make_prior_chain(model, 100, 1; make_chain = true)
         xs = chn[@varname(x)]
 
         @testset "logdensities" begin
@@ -288,7 +243,7 @@ end
                 x ~ Normal()
                 return y ~ Normal()
             end
-            chn = sample_from_prior(xonly(), 100; make_chain = true)
+            chn = _make_prior_chain(xonly(), 100, 1; make_chain = true)
             @test_throws "not found in chain" DynamicPPL.pointwise_logdensities(xy(), chn)
             @test_throws "not found in chain" DynamicPPL.pointwise_loglikelihoods(xy(), chn)
             @test_throws "not found in chain" DynamicPPL.pointwise_prior_logdensities(
@@ -304,7 +259,7 @@ end
                 return nothing
             end
             model = offset_pld(2.0)
-            chn = sample_from_prior(model, 50; make_chain = true)
+            chn = _make_prior_chain(model, 50, 1; make_chain = true)
             plds = DynamicPPL.pointwise_logdensities(model, chn)
             @test plds[@varname(x[-2])] == logpdf.(Normal(), chn[@varname(x[-2])])
             @test plds[@varname(y)] == logpdf.(Normal.(chn[@varname(x[-2])]), 2.0)
@@ -320,7 +275,7 @@ end
             y = randn(2)
             z = randn(2)
             model = array_pw(y, z)
-            chn = sample_from_prior(model, 50; make_chain = true)
+            chn = _make_prior_chain(model, 50, 1; make_chain = true)
 
             plds = DynamicPPL.pointwise_logdensities(model, chn)
             @test plds[@varname(x)] == logpdf.(Ref(MvNormal(zeros(2), I)), chn[@varname(x)])
@@ -373,7 +328,7 @@ end
             return x + y[1] + y[2]
         end
         model = f()
-        chn = sample_from_prior(model, 100; make_chain = true)
+        chn = _make_prior_chain(model, 100, 1; make_chain = true)
         expected_rtnd = chn[@varname(x)] .+ chn[@varname(y[1])] .+ chn[@varname(y[2])]
 
         rtnd = returned(model, chn)
@@ -387,7 +342,7 @@ end
                 return x ~ product_distribution((; a = Normal()))
             end
             model = f_product()
-            chn = sample_from_prior(model, 100; make_chain = true)
+            chn = _make_prior_chain(model, 100, 1; make_chain = true)
             rets = returned(f_product(), chn)
             @test chn[@varname(x)] == rets
         end
@@ -400,7 +355,7 @@ end
                 x ~ Normal()
                 return y ~ Normal()
             end
-            chn = sample_from_prior(xonly(), 100; make_chain = true)
+            chn = _make_prior_chain(xonly(), 100, 1; make_chain = true)
             @test_throws "not found in chain" returned(xy(), chn)
         end
 
@@ -409,7 +364,7 @@ end
                 x ~ Normal()
                 return DD.DimArray(randn(2, 3), (:a, :b))
             end
-            chn = sample_from_prior(return_dimarray(), 50; make_chain = true)
+            chn = _make_prior_chain(return_dimarray(), 50, 1; make_chain = true)
             rets = returned(return_dimarray(), chn)
             @test rets isa DD.DimArray{T, 4} where {T}
             @test size(rets) == (50, 1, 2, 3)
@@ -427,7 +382,7 @@ end
                 return first(x)
             end
             model = offset()
-            chn = sample_from_prior(model, 50; make_chain = true)
+            chn = _make_prior_chain(model, 50, 1; make_chain = true)
             rets = returned(model, chn)
             @test rets == chn[@varname(x[-2])]
         end
@@ -451,7 +406,7 @@ end
         model = f() | (; y = 4.0)
 
         # Sanity check
-        chn = sample_from_posterior(StableRNG(468), model)
+        chn = _make_posterior_chain(StableRNG(468), model, 2000, 1)
         @test isapprox(mean(chn[@varname(x)]), 2.0; atol = 0.1)
         @test isapprox(mean(chn[@varname(m[1])]), 0.0; atol = 0.1)
         @test isapprox(mean(chn[@varname(m[2])]), 0.0; atol = 0.1)
@@ -532,7 +487,7 @@ end
                 return y ~ Normal(x[-2])
             end
             cond_model = offset2() | (; y = 2.0)
-            chn = sample_from_posterior(StableRNG(468), cond_model)
+            chn = _make_posterior_chain(StableRNG(468), cond_model, 2000, 1)
             @test mean(chn[@varname(x[-2])]) ≈ 1.0 atol = 0.05
             pdns = predict(StableRNG(468), offset2(), chn)
             @test pdns[@varname(x[-2])] == chn[@varname(x[-2])]
@@ -550,7 +505,7 @@ end
                 return prod(x)
             end
             cond_model = varlen_single() | (; y = 1.0)
-            chn = sample_from_prior(cond_model, 100; make_chain = true)
+            chn = _make_prior_chain(cond_model, 100, 1; make_chain = true)
             # Sanity check
             @test chn[@varname(n)] == length.(chn[@varname(x)])
             # Check that returned and predict both work. For returned we can also
@@ -575,7 +530,7 @@ end
                 return prod(x)
             end
             cond_model = varlen_dense() | (; y = 1.0)
-            chn = sample_from_prior(cond_model, 100; make_chain = true)
+            chn = _make_prior_chain(cond_model, 100, 1; make_chain = true)
             # Sanity check
             @test chn[@varname(n)] == length.(chn[@varname(x)])
             # Check that returned and predict both work. For returned we can also
@@ -602,7 +557,7 @@ end
                 return prod(x[1:n])
             end
             cond_model = varlen_nondense() | (; y = 1.0)
-            chn = sample_from_prior(cond_model, 100; make_chain = true)
+            chn = _make_prior_chain(cond_model, 100, 1; make_chain = true)
             # Check that returned and predict both work.
             @test returned(cond_model, chn) isa DD.DimArray
             pdns = predict(varlen_nondense(), chn)
@@ -621,7 +576,7 @@ end
                 return y .~ Normal(x)
             end
             model = f(randn(10))
-            chain = sample_from_prior(model, 500, 3; make_chain = true)
+            chain = _make_prior_chain(model, 500, 3; make_chain = true)
             result = PosteriorStats.loo(model, chain)
             @test result.param_names == [@varname(y[i]) for i in 1:10]
             @test result.loo isa PosteriorStats.PSISLOOResult
@@ -633,7 +588,7 @@ end
                 return y ~ MvNormal(x, I)
             end
             model = farray(randn(2))
-            chain = sample_from_prior(model, 500, 3; make_chain = true)
+            chain = _make_prior_chain(model, 500, 3; make_chain = true)
             result = PosteriorStats.loo(model, chain; factorize = true)
             @test result.param_names == [@varname(y[i]) for i in 1:2]
             @test result.loo isa PosteriorStats.PSISLOOResult
