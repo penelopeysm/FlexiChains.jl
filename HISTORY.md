@@ -1,3 +1,7 @@
+# 0.5.10
+
+Move the Turing extension to Turing itself.
+
 # 0.5.9
 
 Support the `factorize=true` keyword argument for `DynamicPPL.pointwise_logdensities` and `PosteriorStats.loo`.

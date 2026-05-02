@@ -1,7 +1,7 @@
 name = "FlexiChains"
 uuid = "4a37a8b9-6e57-4b92-8664-298d46e639f7"
 authors = ["Penelope Yong <penelopeysm@gmail.com>"]
-version = "0.5.9"
+version = "0.5.10"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
@@ -29,7 +29,6 @@ PosteriorDB = "1c4bc282-d2f5-44f9-b6d1-8c4424a23ad4"
 PosteriorStats = "7f36be82-ad55-44ba-a5c0-b8b5480d7aa5"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 StanSample = "c1514b29-d3a0-5178-b312-660c88baa699"
-Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [extensions]
 FlexiChainsAdvancedHMCExt = ["AdvancedHMC", "DimensionalData"]
@@ -43,7 +42,6 @@ FlexiChainsPosteriorStatsDynamicPPLExt = ["PosteriorStats", "DynamicPPL"]
 FlexiChainsPosteriorStatsExt = ["PosteriorStats", "DimensionalData"]
 FlexiChainsRecipesBaseExt = ["RecipesBase", "StatsBase"]
 FlexiChainsStanSampleExt = ["StanSample"]
-FlexiChainsTuringExt = ["Turing", "PrecompileTools", "OrderedCollections"]
 
 [compat]
 AbstractMCMC = "5.10"
@@ -69,5 +67,4 @@ StanSample = "7"
 Statistics = "1"
 StatsBase = "0.34.6"
 Tables = "1.12.1"
-Turing = "0.44"
 julia = "1.10.8"
