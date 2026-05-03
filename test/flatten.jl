@@ -3,6 +3,7 @@ module FCFlattenTests
 using FlexiChains:
     FlexiChains,
     FlexiChain,
+    FlexiSummary,
     Parameter,
     Extra,
     Wide,
@@ -10,10 +11,12 @@ using FlexiChains:
     VarName,
     @varname,
     iter_indices,
-    chain_indices
+    chain_indices,
+    stat_indices
 using DataFrames: DataFrame, names, nrow, ncol
 using DimensionalData: DimensionalData as DD, val, At
 using OrderedCollections: OrderedDict
+using Statistics: mean, std
 using Test
 
 @testset verbose = true "flatten.jl" begin
@@ -144,6 +147,136 @@ using Test
             @test size(da) == (N_iters, 1, 3)
             param_keys = collect(val(DD.dims(da, :param)))
             @test param_keys == ["a", "b[1]", "b[2]"]
+        end
+    end
+
+    @testset "Summary Array conversion" begin
+        N_iters, N_chains = 10, 2
+        as = rand(N_iters, N_chains)
+        bs = rand(1:100, N_iters, N_chains)
+        d = OrderedDict(
+            Parameter(:a) => as,
+            Parameter(:b) => bs,
+            Extra(:lp) => -rand(N_iters, N_chains),
+        )
+        chain = FlexiChain{Symbol}(N_iters, N_chains, d)
+
+        @testset "dims=:both (iter and chain collapsed)" begin
+            fs = FlexiChains.collapse(chain, [mean, std]; dims = :both)
+
+            @testset "parameters_only=true (default)" begin
+                da = DD.DimArray(fs; warn = false)
+                @test da isa DD.DimMatrix
+                @test size(da) == (2, 2)  # (stat, param)
+                @test val(DD.dims(da, :stat)) == [:mean, :std]
+                param_keys = collect(val(DD.dims(da, :param)))
+                @test param_keys == [:a, :b]
+                @test da[At(:mean), At(:a)] ≈ mean(as)
+                @test da[At(:std), At(:a)] ≈ std(as[:])
+            end
+
+            @testset "parameters_only=false" begin
+                da = DD.DimArray(fs; parameters_only = false, warn = false)
+                @test size(da) == (2, 3)  # (stat, param)
+                param_keys = collect(val(DD.dims(da, :param)))
+                @test param_keys == [Parameter(:a), Parameter(:b), Extra(:lp)]
+            end
+
+            @testset "Base.Array" begin
+                arr = Array(fs; warn = false)
+                @test arr isa Matrix
+                @test size(arr) == (2, 2)
+            end
+        end
+
+        @testset "dims=:both, drop_stat_dim=true (all dims collapsed)" begin
+            fs = FlexiChains.collapse(chain, [mean]; dims = :both, drop_stat_dim = true)
+            da = DD.DimArray(fs; warn = false)
+            @test da isa DD.DimVector
+            @test size(da) == (2,)  # (param,)
+            param_keys = collect(val(DD.dims(da, :param)))
+            @test param_keys == [:a, :b]
+            @test da[At(:a)] ≈ mean(as)
+            @test da[At(:b)] ≈ mean(bs)
+        end
+
+        @testset "dims=:iter (iter collapsed)" begin
+            fs = FlexiChains.collapse(chain, [mean, std]; dims = :iter)
+            da = DD.DimArray(fs; warn = false)
+            @test da isa DD.DimArray{<:Any, 3}
+            @test size(da) == (N_chains, 2, 2)  # (chain, stat, param)
+
+            @test val(DD.dims(da, :chain)) == val(chain_indices(chain))
+            @test val(DD.dims(da, :stat)) == [:mean, :std]
+            param_keys = collect(val(DD.dims(da, :param)))
+            @test param_keys == [:a, :b]
+            @test da[:, At(:mean), At(:a)] ≈ vec(mean(as; dims = 1))
+        end
+
+        @testset "dims=:chain (chain collapsed)" begin
+            fs = FlexiChains.collapse(chain, [mean, std]; dims = :chain)
+            da = DD.DimArray(fs; warn = false)
+            @test da isa DD.DimArray{<:Any, 3}
+            @test size(da) == (N_iters, 2, 2)  # (iter, stat, param)
+            @test val(DD.dims(da, :iter)) == val(iter_indices(chain))
+            @test val(DD.dims(da, :stat)) == [:mean, :std]
+            param_keys = collect(val(DD.dims(da, :param)))
+            @test param_keys == [:a, :b]
+            @test da[:, At(:mean), At(:a)] ≈ vec(mean(as; dims = 2))
+        end
+
+        @testset "dims=:iter, drop_stat_dim=true" begin
+            fs = FlexiChains.collapse(chain, [mean]; dims = :iter, drop_stat_dim = true)
+            da = DD.DimArray(fs; warn = false)
+            @test da isa DD.DimMatrix
+            @test size(da) == (N_chains, 2)  # (chain, param)
+            @test val(DD.dims(da, :chain)) == val(chain_indices(chain))
+            @test da[:, At(:a)] ≈ vec(mean(as; dims = 1))
+        end
+
+        @testset "eltype_filter" begin
+            d2 = OrderedDict(
+                Parameter(:a) => rand(5, 1),
+                Parameter(:b) => fill("hello", 5, 1),
+            )
+            c2 = FlexiChain{Symbol}(5, 1, d2)
+            fs = FlexiChains.collapse(c2, [minimum]; dims = :both)
+            da = DD.DimArray(fs; eltype_filter = Float64, warn = false)
+            param_keys = collect(val(DD.dims(da, :param)))
+            @test param_keys == [:a]
+        end
+
+        @testset "warns about skipped keys" begin
+            d2 = OrderedDict(
+                Parameter(:a) => rand(5, 1),
+                Parameter(:b) => fill("hello", 5, 1),
+            )
+            c2 = FlexiChain{Symbol}(5, 1, d2)
+            fs = FlexiChains.collapse(c2, [minimum]; dims = :both)
+            @test_logs (:warn, r"skipping.*b") DD.DimArray(fs; eltype_filter = Float64)
+        end
+
+        @testset "warn=false suppresses warnings" begin
+            d2 = OrderedDict(
+                Parameter(:a) => rand(5, 1),
+                Parameter(:b) => fill("hello", 5, 1),
+            )
+            c2 = FlexiChain{Symbol}(5, 1, d2)
+            fs = FlexiChains.collapse(c2, [minimum]; dims = :both)
+            @test_logs DD.DimArray(fs; eltype_filter = Float64, warn = false)
+        end
+
+        @testset "VarName-keyed with array-valued param" begin
+            d_vn = OrderedDict(
+                Parameter(@varname(a)) => 1.0,
+                Parameter(@varname(b)) => [2.0, 3.0],
+            )
+            vn_chain = FlexiChain{VarName}(8, 1, fill(d_vn, 8))
+            fs = FlexiChains.collapse(vn_chain, [mean]; dims = :both, drop_stat_dim = true)
+            da = DD.DimArray(fs; warn = false)
+            @test size(da) == (3,)
+            param_keys = collect(val(DD.dims(da, :param)))
+            @test param_keys == [@varname(a), @varname(b[1]), @varname(b[2])]
         end
     end
 
