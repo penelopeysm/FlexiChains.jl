@@ -5,7 +5,7 @@ In particular, you will want to import StatsPlots.jl.
 
 ## Plot types
 
-What kind of plot you get in when using Plots.jl is controlled mainly by the `seriestype` keyword argument.
+What kind of plot you get in when using Plots.jl is controlled *mainly* by the `seriestype` keyword argument.
 For example, `plot(..., seriestype=:histogram)` will produce a histogram.
 In fact, calling `histogram(...)` simply redirects to `plot(..., seriestype=:histogram)`.
 
@@ -22,6 +22,8 @@ The following series types are supported for `FlexiChain` objects.
 | `:traceplot_and_density` | [`Plots.plot`](@ref) (with no `seriestype` argument)                    | Trace plot and mixed density side-by-side                                               |
 | `:rankplot`              | [`FlexiChains.rankplot`](@ref) with `overlay=false`                     | Rank plot with separate histograms per chain                                            |
 | `:rankplot_overlay`      | [`FlexiChains.rankplot`](@ref) with `overlay=true`                      | Rank plot with all chains' data overlaid                                                |
+
+There is currently one exception to this: `StatsPlots.cornerplot` is manually overloaded because it does not use the usual `seriestype` mechanism.
 
 !!! warning "Identifier conflicts"
     Please note that the identifiers `traceplot`, `meanplot`, `mixeddensity`, and `autocorplot` are also exported by MCMCChains.jl and [also currently re-exported by Turing.jl](https://github.com/TuringLang/Turing.jl/issues/2681). For this reason, FlexiChains does not export them, although they are part of the public API. To make sure you are using the FlexiChains versions, you must prefix them with the module name: `FlexiChains.traceplot(...)`. Otherwise, you may run into unexpected errors. 
@@ -201,3 +203,16 @@ savefig("mixeddensity.svg"); nothing # hide
 ```
 
 ![Mixed density plots of the sampled chain](mixeddensity.svg)
+
+## Corner plots
+
+```@docs
+StatsPlots.cornerplot
+```
+
+```@example plotsjl
+StatsPlots.cornerplot(chn)
+savefig("cornerplot.svg"); nothing # hide
+```
+
+![Corner plot of the sampled chain](cornerplot.svg)

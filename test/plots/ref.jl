@@ -115,6 +115,9 @@ const REFTEST_SPECS = [
     RefTestSpec(PlotsBE(), "autocorplot", () -> FC.autocorplot(chn)),
     RefTestSpec(PlotsBE(), "plots_plot", () -> Plots.plot(chn)),
 
+    # StatsPlotsExt
+    RefTestSpec(PlotsBE(), "cornerplot", () -> StatsPlots.cornerplot(chn)),
+
     # PairPlotsExt
     RefTestSpec(MakieBE(), "pairplot", () -> PairPlots.pairplot(chn; pool_chains = false)),
     RefTestSpec(MakieBE(), "pairplot_pooled", () -> PairPlots.pairplot(chn; pool_chains = true)),

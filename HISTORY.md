@@ -1,3 +1,7 @@
+# 0.6.1
+
+Add `cornerplot` with Plots.jl backend.
+
 # 0.6.0
 
 ## Breaking changes

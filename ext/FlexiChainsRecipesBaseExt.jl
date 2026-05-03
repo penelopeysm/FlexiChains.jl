@@ -88,12 +88,20 @@ $(FC._PLOTS_KWARGS_DOCSTRING)
     )
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
+
     # When the user calls `plot(chn[, params])` without specifying a `seriestype`, we
     # default to showing a side-by-side traceplot and density/histogram for each parameter.
     # Otherwise, if the user calls `traceplot`, `density`, `histogram`, etc. then there will
     # be a `seriestype` set for us. In either case, we can then use `seriestype` to set up
     # the layout, and dispatch to the appropriate recipe.
     seriestype = get(plotattributes, :seriestype, _TRACEPLOT_AND_DENSITY_SERIESTYPE)
+
+    # For cornerplot, we don't have individual plots, just one for the entire chain, so we
+    # can shortcircuit here.
+    if seriestype === :corner
+        return FC.PlotUtils.FlexiChainCorner(chn)
+    end
+
     # Determine number of rows / columns in layout
     nplots_per_key = if seriestype === _TRACEPLOT_AND_DENSITY_SERIESTYPE
         2
