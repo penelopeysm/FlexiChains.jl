@@ -212,6 +212,13 @@ ss[@varname(mu), stat=At(:mean)]
 !!! note
     Note that the `At` selector from DimensionalData.jl is needed here to specify the name of the statistic we're interested in.
 
+Alternatively, you can directly convert the `FlexiSummary` into an array and manipulate it as you would any other array.
+(Note that `Array(ss)` also works, but you lose the dimension information in that case.)
+
+```@example 1
+DimArray(ss)
+```
+
 By default, `summarystats` will split `VarName`s up.
 This is done because summary statistics often only make sense for scalar-valued parameters.
 If you want to avoid this, you can set `split_varnames=false`:

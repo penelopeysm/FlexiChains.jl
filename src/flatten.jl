@@ -167,8 +167,8 @@ Convert a `FlexiChain` into a standard `Array` with dimensions `(iter, chain, pa
 is the same as the conversion to [`DimensionalData.DimArray`](@ref), except that the
 dimension metadata is discarded.
 
-See [`DimensionalData.DimArray`](@ref) for more details on the conversion process and
-available keyword arguments.
+See [`DimensionalData.DimArray(::FlexiChain)`](@ref) for more details on the conversion
+process and available keyword arguments.
 """
 function Base.Array(
         chain::FlexiChain{TKey};
@@ -177,6 +177,110 @@ function Base.Array(
         parameters_only::Bool = true,
     ) where {TKey, T}
     da = DD.DimArray(chain; warn, eltype_filter, parameters_only)
+    return parent(da)
+end
+
+"""
+    DimensionalData.DimArray(
+        summary::FlexiSummary{TKey};
+        warn::Bool=true,
+        eltype_filter=Any,
+        parameters_only::Bool=true,
+    ) where {TKey}
+
+Convert a `FlexiSummary` into a `DimArray` with a `:param` dimension appended after the
+non-collapsed dimensions of the summary. For example:
+
+| Summary produced via                     | Dimensions of resulting `DimArray` |
+| :--------------------------------------- | :--------------------------------- |
+| `mean(chn)`                              | `(:param)`                         |
+| `mean(chn; dims=:iter)`                  | `(:chain, :param)`                 |
+| `mean(chn; dims=:chain)`                 | `(:iter, :param)`                  |
+| `summarystats(chn)`                      | `(:stat, :param)`                  |
+| `collapse(chn, [mean, std]; dims=:iter)` | `(:chain, :stat, :param)`          |
+
+## Keyword arguments
+
+- `eltype_filter::Any`: retain only parameters whose values subtype `eltype_filter`.
+  For example, if `eltype_filter=Float64`, then integer-valued parameters are dropped.
+
+- `parameters_only::Bool=true`: whether to include only parameters (not extras) in the
+  resulting `DimArray`.
+
+- `warn::Bool=true`: whether to issue a warning if any keys are skipped due to their values
+  not subtyping `eltype_filter`.
+"""
+function DD.DimArray(
+        summary::FlexiSummary{TKey};
+        warn::Bool = true,
+        eltype_filter::Type{T} = Any,
+        parameters_only::Bool = true,
+    ) where {TKey, T}
+    summary = FlexiChains._split_varnames(summary)
+    kept_keys = if parameters_only
+        TKey[]
+    else
+        ParameterOrExtra{<:TKey}[]
+    end
+    new_dims, dim_indices_to_drop = _get_summary_dims(summary)
+    kept_arrays = AbstractArray[]
+    skipped_keys = ParameterOrExtra{<:TKey}[]
+    for (k, v) in summary._data
+        if eltype(v) <: T && (!parameters_only || k isa Parameter)
+            k = if parameters_only && k isa Parameter
+                FlexiChains.get_name(k)
+            else
+                k
+            end
+            push!(kept_keys, k)
+            dropped = if isempty(dim_indices_to_drop)
+                v
+            else
+                dropdims(v; dims = dim_indices_to_drop)
+            end
+            push!(kept_arrays, dropped)
+        else
+            if !(parameters_only && k isa Extra)
+                push!(skipped_keys, k)
+            end
+        end
+    end
+    if warn && !isempty(skipped_keys)
+        skipped_str = join(("`$k`" for k in skipped_keys), ", ")
+        @warn "skipping keys $skipped_str as their values do not subtype $T"
+    end
+    np = length(kept_arrays)
+    np == 0 && @warn "no keys with values subtyping $T found"
+    base_shape = tuple(length.(new_dims)...)
+    kept_data = Array{eltype_filter}(undef, base_shape..., np)
+    for (i, arr) in enumerate(kept_arrays)
+        # This is equivalent to kept_data[:, :, ..., i] = arr but works
+        # for any number of dimensions
+        selectdim(kept_data, ndims(kept_data), i) .= arr
+    end
+    kept_data = [x for x in kept_data] # Concretise
+    all_dims = (new_dims..., DD.Dim{PARAM_DIM_NAME}(kept_keys))
+    return DD.DimArray(kept_data, all_dims)
+end
+
+"""
+    Base.Array(
+        summary::FlexiSummary;
+        kwargs...
+    )
+
+Convert a `FlexiSummary` into a standard `Array`. This is the same as the conversion to
+[`DimensionalData.DimArray`](@ref), except that the dimension metadata is discarded.
+
+See [`DimensionalData.DimArray(::FlexiSummary)`](@ref) for details.
+"""
+function Base.Array(
+        summary::FlexiSummary{TKey};
+        warn::Bool = true,
+        eltype_filter::Type{T} = Any,
+        parameters_only::Bool = true,
+    ) where {TKey, T}
+    da = DD.DimArray(summary; warn, eltype_filter, parameters_only)
     return parent(da)
 end
 
