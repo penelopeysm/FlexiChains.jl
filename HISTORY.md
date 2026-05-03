@@ -1,6 +1,10 @@
+# 0.6.2
+
+Implement conversion of `FlexiSummary` objects to `DimArray` and `Array`.
+
 # 0.6.1
 
-Add `cornerplot` with Plots.jl backend.
+Add `StatsPlots.cornerplot` with Plots.jl backend.
 
 # 0.6.0
 
