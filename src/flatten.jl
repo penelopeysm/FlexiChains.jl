@@ -167,8 +167,8 @@ Convert a `FlexiChain` into a standard `Array` with dimensions `(iter, chain, pa
 is the same as the conversion to [`DimensionalData.DimArray`](@ref), except that the
 dimension metadata is discarded.
 
-See [`DimensionalData.DimArray(::FlexiChain)`](@ref) for more details on the conversion
-process and available keyword arguments.
+See [`DimensionalData.DimArray(::FlexiChains.FlexiChain)`](@ref) for more details on the
+conversion process and available keyword arguments.
 """
 function Base.Array(
         chain::FlexiChain{TKey};
@@ -272,7 +272,7 @@ end
 Convert a `FlexiSummary` into a standard `Array`. This is the same as the conversion to
 [`DimensionalData.DimArray`](@ref), except that the dimension metadata is discarded.
 
-See [`DimensionalData.DimArray(::FlexiSummary)`](@ref) for details.
+See [`DimensionalData.DimArray(::FlexiChains.FlexiSummary)`](@ref) for details.
 """
 function Base.Array(
         summary::FlexiSummary{TKey};
