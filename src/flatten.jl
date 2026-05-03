@@ -167,8 +167,8 @@ Convert a `FlexiChain` into a standard `Array` with dimensions `(iter, chain, pa
 is the same as the conversion to [`DimensionalData.DimArray`](@ref), except that the
 dimension metadata is discarded.
 
-See [`DimensionalData.DimArray`](@ref) for more details on the conversion process and
-available keyword arguments.
+See [`DimensionalData.DimArray(::FlexiChain)`](@ref) for more details on the conversion
+process and available keyword arguments.
 """
 function Base.Array(
         chain::FlexiChain{TKey};
@@ -189,14 +189,26 @@ end
     ) where {TKey}
 
 Convert a `FlexiSummary` into a `DimArray` with a `:param` dimension appended after the
-non-collapsed dimensions of the summary.
+non-collapsed dimensions of the summary. For example:
 
-For example, if the summary was produced by `collapse(chain, [mean, std]; dims=:both)`, the
-resulting `DimArray` will have dimensions `(:stat, :param)`. If `dims=:iter` was used instead,
-the dimensions will be `(:chain, :stat, :param)`.
+| Summary produced via                     | Dimensions of resulting `DimArray` |
+| :--------------------------------------- | :--------------------------------- |
+| `mean(chn)`                              | `(:param)`                         |
+| `mean(chn; dims=:iter)`                  | `(:chain, :param)`                 |
+| `mean(chn; dims=:chain)`                 | `(:iter, :param)`                  |
+| `summarystats(chn)`                      | `(:stat, :param)`                  |
+| `collapse(chn, [mean, std]; dims=:iter)` | `(:chain, :stat, :param)`          |
 
-The conversion process (splitting, filtering, key unwrapping) is the same as for
-[`DimensionalData.DimArray(::FlexiChain)`](@ref); see its documentation for details.
+## Keyword arguments
+
+- `eltype_filter::Any`: retain only parameters whose values subtype `eltype_filter`.
+  For example, if `eltype_filter=Float64`, then integer-valued parameters are dropped.
+
+- `parameters_only::Bool=true`: whether to include only parameters (not extras) in the
+  resulting `DimArray`.
+
+- `warn::Bool=true`: whether to issue a warning if any keys are skipped due to their values
+  not subtyping `eltype_filter`.
 """
 function DD.DimArray(
         summary::FlexiSummary{TKey};
@@ -239,16 +251,14 @@ function DD.DimArray(
     end
     np = length(kept_arrays)
     np == 0 && @warn "no keys with values subtyping $T found"
-    base_shape = if np > 0
-        size(kept_arrays[1])
-    else
-        tuple(length.(new_dims)...)
-    end
+    base_shape = tuple(length.(new_dims)...)
     kept_data = Array{eltype_filter}(undef, base_shape..., np)
     for (i, arr) in enumerate(kept_arrays)
+        # This is equivalent to kept_data[:, :, ..., i] = arr but works
+        # for any number of dimensions
         selectdim(kept_data, ndims(kept_data), i) .= arr
     end
-    kept_data = [x for x in kept_data]
+    kept_data = [x for x in kept_data] # Concretise
     all_dims = (new_dims..., DD.Dim{PARAM_DIM_NAME}(kept_keys))
     return DD.DimArray(kept_data, all_dims)
 end
