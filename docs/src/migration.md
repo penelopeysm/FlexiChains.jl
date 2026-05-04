@@ -471,6 +471,10 @@ Thus, for example, if you wanted to plot only `y`, then you could do:
 ```@example migration
 using StatsPlots
 plot(fchain, [@varname(y)])
+savefig("fchainplot.svg"); nothing # hide
+```
+
+![FlexiChains plots](fchainplot.svg)
 ```
 
 With MCMCChains you would probably be best off subsetting the chain to variables that begin with `y` first, and then plotting that:
@@ -478,4 +482,7 @@ With MCMCChains you would probably be best off subsetting the chain to variables
 ```@example migration
 mchain_yonly = group(mchain, :y)
 plot(mchain_yonly)
+savefig("mchainplot.svg"); nothing # hide
 ```
+
+![MCMCChains plots](mchainplot.svg)
