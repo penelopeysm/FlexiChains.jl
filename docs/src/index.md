@@ -11,7 +11,7 @@ Key features:
   Scalars work, but so do vectors, matrices, and everything else.
 
 - **First-class Turing.jl integration.**
-  Simply add `chain_type=VNChain` to your `sample` call.
+  Simply add `chain_type=VNChain` to your `sample` call. (*Update:* As of Turing v0.45, FlexiChains is the default!)
 
 - **Powerful and expressive indexing.**
   You can access parameters in a variety of ways, using the full power of DimensionalData.jl selectors.

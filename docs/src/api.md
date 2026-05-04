@@ -124,11 +124,13 @@ FlexiChains.subset_parameters
 FlexiChains.subset_extras
 ```
 
-## Converting to flattened arrays
+## [Converting to flattened arrays](@id api-flatten)
 
 ```@docs
-DimensionalData.DimArray
-Base.Array
+DimensionalData.DimArray(::FlexiChains.FlexiChain)
+DimensionalData.DimArray(::FlexiChains.FlexiSummary)
+Base.Array(::FlexiChains.FlexiChain)
+Base.Array(::FlexiChains.FlexiSummary)
 Wide
 Long
 ```
