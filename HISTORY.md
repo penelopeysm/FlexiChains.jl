@@ -1,3 +1,7 @@
+# 0.6.3
+
+Add a migration guide for MCMCChains users.
+
 # 0.6.2
 
 Implement conversion of `FlexiSummary` objects to `DimArray` and `Array`.
