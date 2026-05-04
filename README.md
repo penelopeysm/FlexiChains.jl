@@ -33,7 +33,7 @@ vnts = [rand(model) for _ in 1:1000, _ in 1:3]  # (1000 x 3) draw from the prior
 chain = AbstractMCMC.from_samples(VNChain, vnts)
 ```
 
-You can index into a `VNChain` using `VarName`s.
+You can index into a `VNChain` using [`VarName`s](http://turinglang.org/AbstractPPL.jl/stable/varname/).
 Data is returned as a `DimMatrix` from the [`DimensionalData.jl` package](https://rafaqz.github.io/DimensionalData.jl/), which behaves exactly like an ordinary `Matrix` but additionally carries more information about its dimensions.
 
 ```julia
