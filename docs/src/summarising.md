@@ -1,4 +1,4 @@
-# Summarising
+# [Summarising](@id summarising)
 
 In general a `FlexiChain` contains data in matrices of size `(niters, nchains)`.
 Often it is useful to summarise this data along one or both dimensions.

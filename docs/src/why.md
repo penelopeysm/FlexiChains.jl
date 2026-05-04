@@ -213,7 +213,7 @@ Because MCMCChains stores _all_ its data in a single array, it has to flatten th
 (mchain[Symbol("x.L[1, 1]")][1, 1], mchain[Symbol("x.L[2, 1]")][1, 1]) # ...
 ```
 
-## VarNames as keys
+## [VarNames as keys](@id why-varnames-as-keys)
 
 Did you notice in that last line we had to write something like `Symbol("x.L[1, 1]")`?
 And since it's a `Symbol`, we _have_ to get the name exactly right, we couldn't do (for example) `x.L[1,1]` without the space after the comma?

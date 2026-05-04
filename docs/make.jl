@@ -65,6 +65,7 @@ makedocs(;
         "contributing.md",
         "why.md",
         "whynot.md",
+        "migration.md",
     ],
     checkdocs = :exports,
     warnonly = true,
