@@ -1,6 +1,6 @@
 # 0.6.4
 
-Extend the minimum width for the type column in the summary table.
+Extend the maximum width for the type column in the summary table.
 
 # 0.6.3
 
