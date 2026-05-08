@@ -179,9 +179,8 @@ mchain = sample(Xoshiro(468), hasstring(), MH(), 50; chain_type=MCMCChains.Chain
 catch e; showerror(stdout, e); end # hide
 ```
 
-FlexiChains will let you store anything you like.
-String? No problem.
-ODE solver output? No problem.
+FlexiChains will let you store anything you like!
+This includes strings, but also more complex objects such as the output of a differential equation solver, or customised structs, as demonstrated in [this Gaussian process tutorial](https://learnbayes.se/julia/gps).
 
 ```@example extraquantities
 fchain = sample(Xoshiro(468), hasstring(), MH(), 50; chain_type=FlexiChains.VNChain)
