@@ -45,7 +45,7 @@ are:
 - `Tout <: AbstractDict`: returns a dictionary mapping `ParameterOrExtra{TKey}` to their
   values. This is the most faithful representation of the data in the chain.
 
-- `Tout = NamedTuple`, or `Tout = ComponentArrays: attempts to convert every key name to a
+- `Tout = NamedTuple`, or `Tout = ComponentArrays`: attempts to convert every key name to a
   Symbol, which is used as the field name in the output `NamedTuple` or `ComponentArray`.
 
 $(_VALUES_PARAMETER_AT_WARNING)
