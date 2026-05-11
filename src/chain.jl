@@ -422,7 +422,7 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
     @doc """
         FlexiChain{TKey}(
             arr::AbstractArray{T,3},
-            keys::Union{TKey,Tuple};
+            key_spec::Union{TKey,Tuple};
             iter_indices = 1:size(arr, 1),
             chain_indices = 1:size(arr, 2),
             sampling_time = fill(missing, size(arr, 2)),
@@ -431,14 +431,14 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
 
     Construct a `FlexiChain` from a 3D array with dimensions `(iters, chains, params)`.
 
-    ## Keys
+    ## Key specification
 
-    The `keys` argument can be a single `parameter::TKey`, in which case the resulting
+    The `key_spec` argument can be a single `parameter::TKey`, in which case the resulting
     `FlexiChain` will have a single vector-valued parameter with that name.
 
     Alternatively, you can pass a tuple which specifies how columns in the third dimension
     are mapped to `Parameter` or `Extra` keys. Columns are consumed left-to-right. Each
-    element of `keys` must either be:
+    element of `key_spec` must either be:
 
     - `key::ParameterOrExtra{<:TKey}`: consumes one column and stores it as a scalar value
       with the given `key`; or
@@ -464,7 +464,7 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
     """
     function FlexiChain{TKey}(
             arr::AbstractArray{T, 3},
-            keys::Union{TKey, Tuple};
+            key_spec::Union{TKey, Tuple};
             iter_indices::AbstractVector{Int} = 1:size(arr, 1),
             chain_indices::AbstractVector{Int} = 1:size(arr, 2),
             sampling_time::AbstractVector{<:Union{Real, Missing}} = fill(missing, size(arr, 2)),
@@ -481,10 +481,10 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
         structures = fill(nothing, niters, nchains)
 
         # Handle keys.
-        if keys isa TKey
-            keys = (Parameter(keys) => (nparams,),)
+        if key_spec isa TKey
+            key_spec = (Parameter(key_spec) => (nparams,),)
         end
-        normalized = map(k -> _normalize_array_key(TKey, k), keys)
+        normalized = map(k -> _normalize_array_key(TKey, k), key_spec)
         total = sum(n -> prod(n.second), normalized)
         if total != nparams
             throw(
@@ -499,15 +499,20 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
         offset = 1
         for (key, sz) in normalized
             this_ncols = prod(sz)
-            cols = offset:(offset + this_ncols - 1)
-            data[key] = [reshape(arr[i, j, cols], sz) for i in 1:niters, j in 1:nchains]
+            data[key] = if sz == ()
+                arr[:, :, offset] # Scalar value
+            else
+                cols = offset:(offset + this_ncols - 1)
+                [reshape(arr[i, j, cols], sz) for i in 1:niters, j in 1:nchains]
+            end
             offset += this_ncols
         end
         return new{TKey, typeof(metadata)}(data, metadata, structures)
     end
 end
 
-_normalize_array_key(::Type{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey} = (key => (1,))
+# note: empty size signifies scalar, not 0-dim array
+_normalize_array_key(::Type{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey} = (key => ())
 _normalize_array_key(::Type{TKey}, pair::Pair{<:ParameterOrExtra{<:TKey}, <:Dims}) where {TKey} = pair
 _normalize_array_key(::Type{TKey}, x) where {TKey} = throw(
     ArgumentError(

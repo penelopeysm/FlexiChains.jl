@@ -189,7 +189,7 @@ using Test
             end
         end
 
-        @testset verbose = true "from 3D array" begin
+        @testset "from 3D array" begin
             arr = reshape(Float64.(1:30), 3, 2, 5)
             niters, nchains, ncols = size(arr)
 
@@ -201,16 +201,18 @@ using Test
                 @test chain isa FlexiChain{Symbol}
                 @test size(chain) == (niters, nchains)
                 @test Set(keys(chain)) == Set(Parameter.([:a, :b, :c, :d, :e]))
-                @test getindex(chain, :a; iter = At(1), chain = At(1)) == 1.0
-                @test getindex(chain, :e; iter = At(1), chain = At(1)) == 25.0
+                @test chain[:a, iter = At(1), chain = At(1)] == 1.0
+                @test chain[:e, iter = At(1), chain = At(1)] == 25.0
             end
 
             @testset "single vector key" begin
-                chain = FlexiChain{Symbol}(arr, (Parameter(:x) => (5,),))
-                @test chain isa FlexiChain{Symbol}
-                @test size(chain) == (niters, nchains)
-                @test Set(keys(chain)) == Set([Parameter(:x)])
-                @test getindex(chain, :x; iter = At(1), chain = At(1)) == [1.0, 7.0, 13.0, 19.0, 25.0]
+                for ks in (:x, (Parameter(:x) => (5,),))
+                    chain = FlexiChain{Symbol}(arr, ks)
+                    @test chain isa FlexiChain{Symbol}
+                    @test size(chain) == (niters, nchains)
+                    @test Set(keys(chain)) == Set([Parameter(:x)])
+                    @test chain[:x, iter = At(1), chain = At(1)] == [1.0, 7.0, 13.0, 19.0, 25.0]
+                end
             end
 
             @testset "mix of scalar and vector keys" begin
@@ -220,9 +222,9 @@ using Test
                 )
                 @test chain isa FlexiChain{Symbol}
                 @test Set(keys(chain)) == Set([Parameter(:μ), Parameter(:σ), Parameter(:β)])
-                @test getindex(chain, :μ; iter = At(1), chain = At(1)) == 1.0
-                @test getindex(chain, :σ; iter = At(1), chain = At(1)) == 7.0
-                @test getindex(chain, :β; iter = At(1), chain = At(1)) == [13.0, 19.0, 25.0]
+                @test chain[:μ, iter = At(1), chain = At(1)] == 1.0
+                @test chain[:σ, iter = At(1), chain = At(1)] == 7.0
+                @test chain[:β, iter = At(1), chain = At(1)] == [13.0, 19.0, 25.0]
             end
 
             @testset "VarName keys" begin
@@ -231,8 +233,8 @@ using Test
                     (Parameter(@varname(μ)), Parameter(@varname(σ)), Parameter(@varname(β)) => (3,)),
                 )
                 @test chain isa FlexiChain{<:VarName}
-                @test getindex(chain, @varname(μ); iter = At(1), chain = At(1)) == 1.0
-                @test getindex(chain, @varname(β); iter = At(1), chain = At(1)) == [13.0, 19.0, 25.0]
+                @test chain[@varname(μ), iter = At(1), chain = At(1)] == 1.0
+                @test chain[@varname(β), iter = At(1), chain = At(1)] == [13.0, 19.0, 25.0]
             end
 
             @testset "mix of Parameter and Extra" begin
@@ -242,17 +244,17 @@ using Test
                 )
                 @test chain isa FlexiChain{Symbol}
                 @test Set(keys(chain)) == Set([Parameter(:μ), Parameter(:σ), Parameter(:β), Extra(:lp)])
-                @test getindex(chain, :μ; iter = At(1), chain = At(1)) == 1.0
-                @test getindex(chain, :σ; iter = At(1), chain = At(1)) == 7.0
-                @test getindex(chain, :β; iter = At(1), chain = At(1)) == [13.0, 19.0, 25.0]
-                @test getindex(chain, Extra(:lp); iter = At(1), chain = At(1)) == 25.0
+                @test chain[:μ, iter = At(1), chain = At(1)] == 1.0
+                @test chain[:σ, iter = At(1), chain = At(1)] == 7.0
+                @test chain[:β, iter = At(1), chain = At(1)] == [13.0, 19.0]
+                @test chain[Extra(:lp), iter = At(1), chain = At(1)] == 25.0
             end
 
             @testset "matrix-valued key" begin
                 arr6 = reshape(Float64.(1:36), 3, 2, 6)
                 chain = FlexiChain{Symbol}(arr6, (Parameter(:M) => (2, 3),))
                 @test chain isa FlexiChain{Symbol}
-                val = getindex(chain, :M; iter = At(1), chain = At(1))
+                val = chain[:M, iter = At(1), chain = At(1)]
                 @test size(val) == (2, 3)
                 @test val == reshape([1.0, 7.0, 13.0, 19.0, 25.0, 31.0], 2, 3)
             end
@@ -265,7 +267,7 @@ using Test
                     chain_indices = [5, 10],
                 )
                 @test size(chain) == (niters, nchains)
-                @test getindex(chain, :a; iter = At(10), chain = At(5)) == 1.0
+                @test chain[:a, iter = At(10), chain = At(5)] == 1.0
             end
 
             @testset "column count validation" begin
