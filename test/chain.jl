@@ -312,6 +312,20 @@ using Test
                     (Parameter(:a) => (6,),),
                 )
             end
+
+            @testset "round-trip" begin
+                arr = rand(3, 2, 4)
+                for ks in (
+                        Parameter(:a),
+                        (Parameter(:a), Parameter(:b), Parameter(:c), Parameter(:d)),
+                        (Parameter(:a), Parameter(:b), Parameter(:c), Extra(:lp)),
+                        (Parameter(:a), Parameter(:b), Parameter(:c) => (2,)),
+                    )
+                    chain = FlexiChain{Symbol}(arr, ks)
+                    arr2 = Array(chain)
+                    @test arr == arr2
+                end
+            end
         end
     end
 
