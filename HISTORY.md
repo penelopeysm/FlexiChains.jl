@@ -1,3 +1,9 @@
+# 0.6.7
+
+Add an InferenceObjects.jl extension, which allows conversion of a `FlexiChain` into an `InferenceObjects.InferenceData` via `InferenceObjects.convert_to_inference_data(chain::FlexiChain)`.
+
+Add a method `Base.Symbol(::ParameterOrExtra)`, which converts the name of the parameter (or extra) to a `Symbol`.
+
 # 0.6.6
 
 Add an additional constructor to convert an array of `iters x chains x params` into a `FlexiChain`.

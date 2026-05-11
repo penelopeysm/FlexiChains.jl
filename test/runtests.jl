@@ -23,6 +23,7 @@ else
         include("stancsv.jl")
         include("ext/posteriordb.jl")
         include("ext/posteriorstats.jl")
+        include("ext/inferenceobjects.jl")
         include("plots/ref.jl")
     end
 end

@@ -6,6 +6,7 @@ using DocumenterInterLinks
 using FlexiChains
 using DimensionalData: DimensionalData
 using CairoMakie: CairoMakie, Makie
+using InferenceObjects: InferenceObjects
 using StatsPlots: Plots, StatsPlots
 using Statistics: Statistics
 using StatsBase: StatsBase
@@ -35,6 +36,7 @@ modules = [
     Base.get_extension(FlexiChains, :FlexiChainsPosteriorDBExt),
     Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsExt),
     Base.get_extension(FlexiChains, :FlexiChainsDynamicPPLExt),
+    Base.get_extension(FlexiChains, :FlexiChainsInferenceObjectsExt),
     Base.get_extension(FlexiChains, :FlexiChainsMakieExt),
     Base.get_extension(FlexiChains, :FlexiChainsPairPlotsExt),
     Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsDynamicPPLExt),
