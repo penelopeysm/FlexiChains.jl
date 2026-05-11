@@ -1,0 +1,5 @@
+repos:
+  - repo: https://github.com/fredrikekre/runic-pre-commit
+    rev: 2792c2717d22e0de68ad1d0b3f2bddb7a649403f
+    hooks:
+      - id: runic
