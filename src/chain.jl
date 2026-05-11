@@ -88,6 +88,13 @@ Base.show(io::IO, p::Parameter) = print(io, "Parameter(", repr(p.name), ")")
 Unwrap the `Parameter` or `Extra` to get its name.
 """
 get_name(p::Parameter) = p.name
+"""
+    Base.Symbol(p::Parameter)
+
+Convert the *name* of a `Parameter` to a `Symbol`. This is shorthand for
+`Symbol(get_name(p))`.
+"""
+Base.Symbol(p::Parameter) = Symbol(get_name(p))
 
 """
     Extra{T}(name::T)
@@ -100,6 +107,12 @@ struct Extra{T}
 end
 Base.show(io::IO, e::Extra) = print(io, "Extra(", repr(e.name), ")")
 get_name(e::Extra) = e.name
+"""
+    Base.Symbol(e::Extra)
+
+Convert the *name* of an `Extra` to a `Symbol`. This is shorthand for `Symbol(get_name(e))`.
+"""
+Base.Symbol(e::Extra) = Symbol(get_name(e))
 
 """
     ParameterOrExtra{T}

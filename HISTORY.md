@@ -1,3 +1,7 @@
+# 0.6.7
+
+Add an InferenceObjects.jl extension, which allows conversion of a `FlexiChain` into an `InferenceObjects.InferenceData` via `InferenceObjects.convert_to_inference_data(chain::FlexiChain)`.
+
 # 0.6.6
 
 Add an additional constructor to convert an array of `iters x chains x params` into a `FlexiChain`.

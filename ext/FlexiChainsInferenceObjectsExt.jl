@@ -5,7 +5,9 @@ using InferenceObjects: InferenceObjects
 using DimensionalData: DimensionalData as DD
 using OrderedCollections: OrderedDict
 
-const stats_key_map = Dict(
+# TODO: This is quite hacky, and has nothing to do with FlexiChains at all! This maps key
+# names from Turing's samplers to the names used in ArviZ.
+const STATS_KEY_MAP = Dict(
     :hamiltonian_energy => :energy,
     :hamiltonian_energy_error => :energy_error,
     :is_adapt => :tune,
@@ -14,32 +16,35 @@ const stats_key_map = Dict(
     :numerical_error => :diverging,
 )
 
+const POSTERIOR_GROUP = :posterior
+
 function InferenceObjects.convert_to_inference_data(
-    chain::FlexiChain{<:VarName}; group::Symbol=:posterior, kwargs...
-)
-    # all extras stored in :sample_stats (or :prior_sample_stats)
-    parameter_arrays = OrderedDict{Symbol,AbstractArray{<:Real}}()
-    for var_name in FlexiChains.parameters(chain)
-        arr_of_draws = chain[var_name]
-        if !(eltype(arr_of_draws) <: Union{Real,AbstractArray{<:Real}})
-            @warn "Variable $var_name is not a real-valued parameter, skipping."
+        chain::FlexiChain{<:TKey}; group::Symbol = POSTERIOR_GROUP, kwargs...
+    ) where {TKey}
+    # Handle parameters
+    parameter_arrays = OrderedDict{Symbol, AbstractArray{<:Real}}()
+    for param in FlexiChains.parameters(chain)
+        arr_of_draws = _rename_iter_dim(chain[param])
+        if !(eltype(arr_of_draws) <: Union{Real, AbstractArray{<:Real}})
+            @warn "Variable $param is not a real-valued parameter, skipping."
             continue
         end
-        parameter_arrays[Symbol(var_name)] = _cat_draws(_rename_iter_dim(arr_of_draws))
+        parameter_arrays[Symbol(param)] = _stack_draws(arr_of_draws)
     end
     group_dataset = InferenceObjects.convert_to_dataset(parameter_arrays; kwargs...)
 
     isempty(FlexiChains.extras(chain)) &&
         return InferenceObjects.InferenceData(; group => group_dataset)
 
-    sample_stats = OrderedDict{Symbol,AbstractArray{<:Real}}()
+    # Handle extras
+    sample_stats = OrderedDict{Symbol, AbstractArray{<:Real}}()
     for k in FlexiChains.extras(chain)
         arr_of_draws = _rename_iter_dim(chain[k])
-        sym = Symbol(k.name)
-        extra_name = get(stats_key_map, sym, sym)
-        sample_stats[extra_name] = _cat_draws(arr_of_draws)
+        sym = Symbol(k)
+        extra_name = get(STATS_KEY_MAP, sym, sym)
+        sample_stats[extra_name] = _stack_draws(arr_of_draws)
     end
-    group_sample_stats = if group === :posterior
+    group_sample_stats = if group === POSTERIOR_GROUP
         :sample_stats
     else
         Symbol("sample_stats_", group)
@@ -56,8 +61,8 @@ function _rename_iter_dim(arr::DD.AbstractDimArray)
     return DD.set(arr, FlexiChains.ITER_DIM_NAME => :draw)
 end
 
-_cat_draws(arr::AbstractArray{<:Real}) = arr
-function _cat_draws(arr::AbstractMatrix{<:AbstractArray{<:Real,N}}) where {N}
+_stack_draws(arr::AbstractArray{<:Real}) = arr
+function _stack_draws(arr::AbstractMatrix{<:AbstractArray{<:Real, N}}) where {N}
     return permutedims(stack(arr), (N + 1, N + 2, ntuple(identity, N)...))
 end
 
