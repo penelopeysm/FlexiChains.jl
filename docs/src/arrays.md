@@ -17,7 +17,7 @@ It is easiest to explain by example (the docstring, which has all the necessary 
 Here is a simple example where each column in the array corresponds to a scalar parameter:
 
 ```@example fromarray
-using FlexiChains: FlexiChain, Parameter
+using FlexiChains: FlexiChain, Parameter, Extra
 
 arr = rand(10, 4, 3)   # 10 iterations, 4 chains, 3 parameters
 names = (Parameter(:x), Parameter(:y), Extra(:lp))
