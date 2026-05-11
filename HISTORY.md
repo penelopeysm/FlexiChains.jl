@@ -1,3 +1,7 @@
+# 0.6.5
+
+Minor improvements to documentation.
+
 # 0.6.4
 
 Extend the maximum width for the type column in the summary table.

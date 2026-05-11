@@ -48,7 +48,7 @@ The function `values_at` is at the core of this transformation.
 Given iteration and chain indices (as keyword arguments), it returns some container that holds all the values for a given iteration.
 
 ```@example samples
-FlexiChains.values_at(chn; iter=5, chain=1)
+vs = FlexiChains.values_at(chn; iter=5, chain=1)
 ```
 
 In the case of a chain sampled from Turing, the returned container is `DynamicPPL.ParamsWithStats`, which separately stores the parameters and the stats as a `VarNamedTuple` and `NamedTuple` respectively.
@@ -131,6 +131,18 @@ If you only want parameters, pass the `parameters_only=true` keyword argument:
 ```@example samples
 rand(chn, parameters_only=true)
 ```
+
+# Using `VarNamedTuple`s
+
+All of the above functions, when run with Turing-sampled chains, return `VarNamedTuple`s or containers thereof.
+To access the values, you need to index with a `VarName`:
+
+```@example samples
+vnt = rand(chn, parameters_only=true)
+vnt[@varname(x)]
+```
+
+Please see [the Turing docs](https://turinglang.org/docs/usage/varnamedtuple/) for more details on working with `VarNamedTuple`s.
 
 # Docstrings
 

@@ -475,7 +475,6 @@ savefig("fchainplot.svg"); nothing # hide
 ```
 
 ![FlexiChains plots](fchainplot.svg)
-```
 
 With MCMCChains you would probably be best off subsetting the chain to variables that begin with `y` first, and then plotting that:
 
