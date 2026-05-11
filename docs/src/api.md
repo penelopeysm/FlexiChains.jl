@@ -24,12 +24,16 @@ You can also use `Base.keytype`:
 Base.keytype(::FlexiChains.ChainOrSummary)
 ```
 
-If you ever need to construct a `FlexiChain` from scratch, there are exactly two ways to do so.
-One is to pass an array of dictionaries (i.e., one dictionary per iteration); the other is to pass a dictionary of arrays (i.e., the values for each key are already grouped together).
+If you ever need to construct a `FlexiChain` from scratch, there are exactly three ways to do so:
+
+- with an *array of dictionaries*, i.e., one dictionary per iteration;
+- with a *dictionary of arrays*, i.e., the values for each key are already grouped together;
+- from a 3D array of `iters x chains x params`.
 
 ```@docs
 FlexiChains.FlexiChain{TKey}(niters::Int, nchains::Int, array_of_dicts::AbstractArray{<:AbstractDict}) where TKey
 FlexiChains.FlexiChain{TKey}(niters::Int, nchains::Int, dict_of_arrays::AbstractDict{<:Any,<:AbstractArray{<:Any,N}}) where {TKey,N}
+FlexiChains.FlexiChain{TKey}(array::AbstractArray{<:Any,3}) where TKey
 ```
 
 Note that, although the dictionaries themselves may have loose types, the key type of the `FlexiChain` must be specified (and the keys of the dictionaries will be checked against this).
