@@ -18,6 +18,19 @@ const STATS_KEY_MAP = Dict(
 
 const POSTERIOR_GROUP = :posterior
 
+"""
+    InferenceObjects.convert_to_inference_data(
+        chain::FlexiChain{<:TKey}; group::Symbol = $(POSTERIOR_GROUP), kwargs...
+    ) where {TKey}
+
+Convert a `FlexiChain` to an `InferenceObjects.InferenceData` object.
+
+The `group` keyword argument specifies the group name for the chain's parameters. The
+chain's extras are assigned to `:sample_stats` if `group` is `:posterior`, and to
+`:sample_stats_<group>` otherwise.
+        
+Other keyword arguments are passed to `InferenceObjects.convert_to_dataset`.
+"""
 function InferenceObjects.convert_to_inference_data(
         chain::FlexiChain{<:TKey}; group::Symbol = POSTERIOR_GROUP, kwargs...
     ) where {TKey}

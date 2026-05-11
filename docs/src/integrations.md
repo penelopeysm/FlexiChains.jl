@@ -79,6 +79,30 @@ chn = AbstractMCMC.sample(
 )
 ```
 
+## ArviZ.jl
+
+[Documentation for ArviZ.jl](https://julia.arviz.org/ArviZ/stable/)
+
+FlexiChains contains an extension that allows you to convert a `FlexiChain` into an `InferenceObjects.InferenceData` (InferenceObjects.jl is one of the sublibraries of ArviZ.jl, and is re-exported by ArviZ).
+
+```@docs
+InferenceObjects.convert_to_inference_data
+```
+
+For example:
+
+```@example arviz
+using InferenceObjects, FlexiChains, DynamicPPL
+
+@model function f(y)
+    x ~ Normal()
+    y ~ Normal(x)
+end
+
+chn = FlexiChains._make_prior_chain(f(1.0), 100, 2)
+idata = InferenceObjects.convert_to_inference_data(chn)
+```
+
 ## DimensionalDistributions.jl
 
 [Documentation for DimensionalDistributions.jl](https://github.com/sethaxen/DimensionalDistributions.jl)
