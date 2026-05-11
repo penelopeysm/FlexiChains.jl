@@ -503,7 +503,9 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
                 arr[:, :, offset] # Scalar value
             else
                 cols = offset:(offset + this_ncols - 1)
-                map(v -> reshape(v, sz), eachslice(arr[:, :, cols], dims = (1, 2)))
+                # collect is inefficient but avoids encoding ugly Reshaped/SubArray types
+                # in the chain
+                map(v -> collect(reshape(v, sz)), eachslice(arr[:, :, cols], dims = (1, 2)))
             end
             # This line standardises the internal data to be `Matrix`.
             data[key] = _check_size(this_data, niters, nchains; key_name = key)

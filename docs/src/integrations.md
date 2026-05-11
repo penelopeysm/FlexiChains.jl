@@ -342,4 +342,8 @@ DataFrame(Long(chn))
 ```
 
 Both the [`Wide`](@ref) and [`Long`](@ref) wrapper structs accept keyword arguments which determine whether array-valued parameters (like `z`) are split up, and whether or not to include the `Extra` keys in the chain as well, like Turing log-probabilities.
-Please see the docstrings for more information.
+
+```@docs
+Wide
+Long
+```
