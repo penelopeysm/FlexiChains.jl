@@ -198,6 +198,14 @@ function Base.isequal(m1::FlexiChainMetadata, m2::FlexiChainMetadata)
         isequal(m1.last_sampler_state, m2.last_sampler_state)
 end
 
+_METADATA_DOC = """
+`iter_indices` and `chain_indices` can be used to specify the iteration and chain
+indices, respectively. By default, these are `1:niters` and `1:nchains`, but can be any
+vector of integers of the appropriate length. `sampling_time` and `last_sampler_state`
+are used to store metadata about each chain. They should be given as vectors of length
+`nchains` (even if there is only one chain).
+"""
+
 """
     struct FlexiChain{
         TKey,TMetadata<:NTuple{N,FlexiChainMetadata}
@@ -275,15 +283,13 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
 
     ## Metadata
 
-    `iter_indices` and `chain_indices` can be used to specify the iteration and chain
-    indices, respectively. By default, these are `1:niters` and `1:nchains`, but can be any
-    vector of integers of the appropriate length. `sampling_time` and `last_sampler_state`
-    are used to store metadata about each chain. They should be given as vectors of length
-    `nchains` (even if there is only one chain).
+    $(_METADATA_DOC)
 
     ## Example usage
 
     ```julia
+    using FlexiChains: FlexiChain, Parameter, Extra
+
     d = fill(
         Dict(Parameter(:x) => rand(), Extra("y") => rand()), 200, 3
     )
@@ -363,15 +369,13 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
 
     ## Metadata
 
-    `iter_indices` and `chain_indices` can be used to specify the iteration and chain
-    indices, respectively. By default, these are `1:niters` and `1:nchains`, but can be any
-    vector of integers of the appropriate length. `sampling_time` and `last_sampler_state`
-    are used to store metadata about each chain. They should be given as vectors of length
-    `nchains` (even if there is only one chain).
+    $(_METADATA_DOC)
 
     ## Example usage
 
     ```julia
+    using FlexiChains: FlexiChain, Parameter, Extra
+
     d = Dict(
         Parameter(:x) => rand(200, 3),
         Extra("y") => rand(200, 3),
@@ -414,7 +418,111 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
 
         return new{TKey, typeof(metadata)}(data, metadata, structures)
     end
+
+    @doc """
+        FlexiChain{TKey}(
+            arr::AbstractArray{T,3},
+            key_spec::Union{TKey,Tuple};
+            iter_indices = 1:size(arr, 1),
+            chain_indices = 1:size(arr, 2),
+            sampling_time = fill(missing, size(arr, 2)),
+            last_sampler_state = fill(missing, size(arr, 2)),
+        ) where {T}
+
+    Construct a `FlexiChain` from a 3D array with dimensions `(iters, chains, params)`.
+
+    ## Key specification
+
+    The `key_spec` argument can be a single `parameter::TKey`, in which case the resulting
+    `FlexiChain` will have a single vector-valued parameter with that name.
+
+    Alternatively, you can pass a tuple which specifies how columns in the third dimension
+    are mapped to `Parameter` or `Extra` keys. Columns are consumed left-to-right. Each
+    element of `key_spec` must either be:
+
+    - `key::ParameterOrExtra{<:TKey}`: consumes one column and stores it as a scalar value
+      with the given `key`; or
+    - `key::ParameterOrExtra => (dims...)`: consumes `prod(dims)` columns, reshapes each
+      sample to `dims`, and stores it with the given `key`.
+
+    The total number of columns consumed must equal `size(arr, 3)`.
+
+    ## Metadata
+
+    $(_METADATA_DOC)
+
+    ## Example usage
+
+    ```julia
+    using FlexiChains: FlexiChain, Parameter, Extra
+
+    arr = randn(100, 4, 6) # iters x chains x params
+
+    # `x` and `lp` are scalars; but `z` is a 2x2 matrix, so it consumes 4 columns.
+    chn = FlexiChain{Symbol}(arr, (Parameter(:x), Parameter(:z) => (2,2), Extra(:lp)))
+    ```
+    """
+    function FlexiChain{TKey}(
+            arr::AbstractArray{T, 3},
+            key_spec::Union{TKey, Tuple};
+            iter_indices::AbstractVector{Int} = 1:size(arr, 1),
+            chain_indices::AbstractVector{Int} = 1:size(arr, 2),
+            sampling_time::AbstractVector{<:Union{Real, Missing}} = fill(missing, size(arr, 2)),
+            last_sampler_state::AbstractVector = fill(missing, size(arr, 2)),
+        ) where {TKey, T}
+        niters, nchains, nparams = size(arr)
+        metadata = FlexiChainMetadata(
+            niters, nchains, iter_indices, chain_indices, sampling_time, last_sampler_state
+        )
+
+        # TODO: Allow structures ... ? Seems unlikely that structures would be used by
+        # anything that isn't Turing. Enabling this would be non-breaking though so we can
+        # leave it for a future version.
+        structures = fill(nothing, niters, nchains)
+
+        # Handle keys.
+        if key_spec isa TKey
+            key_spec = (Parameter(key_spec) => (nparams,),)
+        end
+        normalized = map(k -> _normalize_array_key(TKey, k), key_spec)
+        total = sum(n -> prod(n.second), normalized)
+        if total != nparams
+            throw(
+                ArgumentError(
+                    "The provided array has $nparams columns, but the keys specification requires $total columns"
+                )
+            )
+        end
+
+        # Construct data
+        data = OrderedDict{ParameterOrExtra{<:TKey}, Matrix}()
+        offset = firstindex(arr, 3)
+        for (key, sz) in normalized
+            this_ncols = prod(sz)
+            this_data = if sz == ()
+                arr[:, :, offset] # Scalar value
+            else
+                cols = offset:(offset + this_ncols - 1)
+                # collect is inefficient but avoids encoding ugly Reshaped/SubArray types
+                # in the chain
+                map(v -> collect(reshape(v, sz)), eachslice(arr[:, :, cols], dims = (1, 2)))
+            end
+            # This line standardises the internal data to be `Matrix`.
+            data[key] = _check_size(this_data, niters, nchains; key_name = key)
+            offset += this_ncols
+        end
+        return new{TKey, typeof(metadata)}(data, metadata, structures)
+    end
 end
+
+# note: empty size signifies scalar, not 0-dim array
+_normalize_array_key(::Type{TKey}, key::ParameterOrExtra{<:TKey}) where {TKey} = (key => ())
+_normalize_array_key(::Type{TKey}, pair::Pair{<:ParameterOrExtra{<:TKey}, <:Dims}) where {TKey} = pair
+_normalize_array_key(::Type{TKey}, x) where {TKey} = throw(
+    ArgumentError(
+        "each key must be either a ParameterOrExtra{<:$TKey} or a ParameterOrExtra{<:$TKey} => (dims...) pair; got $(typeof(x))"
+    )
+)
 
 """
     iter_indices(chain::FlexiChain)::DimensionalData.Lookup

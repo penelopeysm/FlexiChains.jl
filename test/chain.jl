@@ -1,7 +1,9 @@
 module FCChainTests
 
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra
-using DimensionalData: val
+using AbstractPPL: @varname, VarName
+using DimensionalData: val, At
+using OffsetArrays: OffsetArray
 using OrderedCollections: OrderedDict
 using Test
 
@@ -184,6 +186,144 @@ using Test
                     @test_throws DimensionMismatch FlexiChain{Symbol}(
                         N_iters, N_chains, arrays; last_sampler_state = ["foo", "bar", "baz"]
                     )
+                end
+            end
+        end
+
+        @testset "from 3D array" begin
+            arr = rand(3, 2, 5)
+            niters, nchains, _ = size(arr)
+
+            @testset "all scalar keys" begin
+                chain = FlexiChain{Symbol}(
+                    arr,
+                    (Parameter(:a), Parameter(:b), Parameter(:c), Parameter(:d), Parameter(:e)),
+                )
+                @test chain isa FlexiChain{Symbol}
+                @test size(chain) == (niters, nchains)
+                @test collect(keys(chain)) == Parameter.([:a, :b, :c, :d, :e])
+                for i in 1:niters, j in 1:nchains
+                    @test chain[:a, iter = i, chain = j] == arr[i, j, 1]
+                    @test chain[:b, iter = i, chain = j] == arr[i, j, 2]
+                    @test chain[:c, iter = i, chain = j] == arr[i, j, 3]
+                    @test chain[:d, iter = i, chain = j] == arr[i, j, 4]
+                    @test chain[:e, iter = i, chain = j] == arr[i, j, 5]
+                end
+            end
+
+            @testset "single vector key" begin
+                for ks in (:x, (Parameter(:x) => (5,),))
+                    chain = FlexiChain{Symbol}(arr, ks)
+                    @test chain isa FlexiChain{Symbol}
+                    @test size(chain) == (niters, nchains)
+                    @test only(keys(chain)) == Parameter(:x)
+                    for i in 1:niters, j in 1:nchains
+                        @test chain[:x, iter = i, chain = j] == arr[i, j, :]
+                    end
+                end
+            end
+
+            @testset "mix of scalar and vector keys" begin
+                chain = FlexiChain{Symbol}(
+                    arr,
+                    (Parameter(:μ), Parameter(:σ), Parameter(:β) => (3,)),
+                )
+                @test chain isa FlexiChain{Symbol}
+                @test collect(keys(chain)) == [Parameter(:μ), Parameter(:σ), Parameter(:β)]
+                for i in 1:niters, j in 1:nchains
+                    @test chain[:μ, iter = i, chain = j] == arr[i, j, 1]
+                    @test chain[:σ, iter = i, chain = j] == arr[i, j, 2]
+                    @test chain[:β, iter = i, chain = j] == arr[i, j, 3:5]
+                end
+            end
+
+            @testset "VarName keys" begin
+                chain = FlexiChain{VarName}(
+                    arr,
+                    (Parameter(@varname(a)), Parameter(@varname(b)) => (4,)),
+                )
+                @test chain isa FlexiChain{<:VarName}
+                for i in 1:niters, j in 1:nchains
+                    @test chain[@varname(a), iter = i, chain = j] == arr[i, j, 1]
+                    @test chain[@varname(b[1]), iter = i, chain = j] == arr[i, j, 2]
+                    @test chain[@varname(b[2]), iter = i, chain = j] == arr[i, j, 3]
+                    @test chain[@varname(b[3]), iter = i, chain = j] == arr[i, j, 4]
+                    @test chain[@varname(b[4]), iter = i, chain = j] == arr[i, j, 5]
+                end
+            end
+
+            @testset "mix of Parameter and Extra" begin
+                chain = FlexiChain{Symbol}(
+                    arr,
+                    (Parameter(:μ), Parameter(:σ), Parameter(:β) => (2,), Extra(:lp)),
+                )
+                @test chain isa FlexiChain{Symbol}
+                @test collect(keys(chain)) == [Parameter(:μ), Parameter(:σ), Parameter(:β), Extra(:lp)]
+                for i in 1:niters, j in 1:nchains
+                    @test chain[:μ, iter = i, chain = j] == arr[i, j, 1]
+                    @test chain[:σ, iter = i, chain = j] == arr[i, j, 2]
+                    @test chain[:β, iter = i, chain = j] == arr[i, j, 3:4]
+                    @test chain[Extra(:lp), iter = i, chain = j] == arr[i, j, 5]
+                end
+            end
+
+            @testset "matrix-valued key" begin
+                arr6 = rand(3, 2, 6)
+                chain = FlexiChain{Symbol}(arr6, (Parameter(:M) => (2, 3),))
+                @test chain isa FlexiChain{Symbol}
+                for i in 1:3, j in 1:2
+                    @test chain[:M, iter = i, chain = j] == reshape(arr6[i, j, :], 2, 3)
+                end
+            end
+
+            @testset "custom iter_indices and chain_indices" begin
+                chain = FlexiChain{Symbol}(
+                    arr,
+                    (Parameter(:a), Parameter(:b) => (4,));
+                    iter_indices = 10:10:30,
+                    chain_indices = [5, 10],
+                )
+                @test size(chain) == (niters, nchains)
+                @test chain[:a, iter = At(10), chain = At(5)] == arr[1, 1, 1]
+            end
+
+            @testset "OffsetArray input" begin
+                oarr = OffsetArray(arr, 0:2, 10:11, -2:2)
+                chain = FlexiChain{Symbol}(
+                    oarr,
+                    (Parameter(:μ), Parameter(:σ), Parameter(:β) => (3,)),
+                )
+                @test chain isa FlexiChain{Symbol}
+                @test size(chain) == (niters, nchains)
+                for i in 1:niters, j in 1:nchains
+                    @test chain[:μ, iter = i, chain = j] == arr[i, j, 1]
+                    @test chain[:σ, iter = i, chain = j] == arr[i, j, 2]
+                    @test chain[:β, iter = i, chain = j] == arr[i, j, 3:5]
+                end
+            end
+
+            @testset "column count validation" begin
+                @test_throws ArgumentError FlexiChain{Symbol}(
+                    arr,
+                    (Parameter(:a), Parameter(:b)),
+                )
+                @test_throws ArgumentError FlexiChain{Symbol}(
+                    arr,
+                    (Parameter(:a) => (6,),),
+                )
+            end
+
+            @testset "round-trip" begin
+                arr = rand(3, 2, 4)
+                for ks in (
+                        :a,
+                        (Parameter(:a), Parameter(:b), Parameter(:c), Parameter(:d)),
+                        (Parameter(:a), Parameter(:b), Parameter(:c), Extra(:lp)),
+                        (Parameter(:a), Parameter(:b), Parameter(:c) => (2,)),
+                    )
+                    chain = FlexiChain{Symbol}(arr, ks)
+                    arr2 = Array(chain; parameters_only = false)
+                    @test arr == arr2
                 end
             end
         end
