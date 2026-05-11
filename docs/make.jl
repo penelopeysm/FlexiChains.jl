@@ -57,6 +57,7 @@ makedocs(;
         "summarising.md",
         "indexing.md",
         "samples.md",
+        "arrays.md",
         "plotting.md",
         "plots.md",
         "makie.md",
