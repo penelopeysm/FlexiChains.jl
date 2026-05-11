@@ -24,77 +24,93 @@ using Test
     @test chn[:world] == fill(2.0, niters, 1)
 end
 
-@testset verbose = true "from_parameter_array" begin
+@testset verbose = true "FlexiChain from 3D array" begin
     arr = reshape(Float64.(1:30), 3, 2, 5)
-    niters, nchains, nparams = size(arr)
+    niters, nchains, ncols = size(arr)
 
-    @testset "single VarName key" begin
-        chain = FlexiChains.from_parameter_array(arr)
-        @test chain isa FlexiChain{<:VarName}
-        @test size(chain) == (niters, nchains)
-        @test Set(keys(chain)) == Set([Parameter(@varname(x))])
-        val = getindex(chain, @varname(x); iter = At(1), chain = At(1))
-        @test val == [1.0, 7.0, 13.0, 19.0, 25.0]
-    end
-
-    @testset "single Symbol key" begin
-        chain = FlexiChains.from_parameter_array(arr; parameters = :x)
+    @testset "all scalar keys" begin
+        chain = FlexiChain{Symbol}(
+            arr,
+            (Parameter(:a), Parameter(:b), Parameter(:c), Parameter(:d), Parameter(:e)),
+        )
         @test chain isa FlexiChain{Symbol}
-        @test Set(keys(chain)) == Set([Parameter(:x)])
+        @test size(chain) == (niters, nchains)
+        @test Set(keys(chain)) == Set(Parameter.([:a, :b, :c, :d, :e]))
+        @test getindex(chain, :a; iter = At(1), chain = At(1)) == 1.0
+        @test getindex(chain, :e; iter = At(1), chain = At(1)) == 25.0
     end
 
-    @testset "tuple of VarName => range pairs" begin
-        chain = FlexiChains.from_parameter_array(
-            arr;
-            parameters = (@varname(μ) => 1:1, @varname(σ) => 2:2, @varname(β) => 3:5),
+    @testset "single vector key" begin
+        chain = FlexiChain{Symbol}(arr, (Parameter(:x) => (5,),))
+        @test chain isa FlexiChain{Symbol}
+        @test size(chain) == (niters, nchains)
+        @test Set(keys(chain)) == Set([Parameter(:x)])
+        @test getindex(chain, :x; iter = At(1), chain = At(1)) == [1.0, 7.0, 13.0, 19.0, 25.0]
+    end
+
+    @testset "mix of scalar and vector keys" begin
+        chain = FlexiChain{Symbol}(
+            arr,
+            (Parameter(:μ), Parameter(:σ), Parameter(:β) => (3,)),
+        )
+        @test chain isa FlexiChain{Symbol}
+        @test Set(keys(chain)) == Set([Parameter(:μ), Parameter(:σ), Parameter(:β)])
+        @test getindex(chain, :μ; iter = At(1), chain = At(1)) == 1.0
+        @test getindex(chain, :σ; iter = At(1), chain = At(1)) == 7.0
+        @test getindex(chain, :β; iter = At(1), chain = At(1)) == [13.0, 19.0, 25.0]
+    end
+
+    @testset "VarName keys" begin
+        chain = FlexiChain{VarName}(
+            arr,
+            (Parameter(@varname(μ)), Parameter(@varname(σ)), Parameter(@varname(β)) => (3,)),
         )
         @test chain isa FlexiChain{<:VarName}
-        @test Set(keys(chain)) == Set([Parameter(@varname(μ)), Parameter(@varname(σ)), Parameter(@varname(β))])
-        # Length-1 ranges give scalars
         @test getindex(chain, @varname(μ); iter = At(1), chain = At(1)) == 1.0
-        @test getindex(chain, @varname(σ); iter = At(1), chain = At(1)) == 7.0
-        # Longer ranges give vectors
         @test getindex(chain, @varname(β); iter = At(1), chain = At(1)) == [13.0, 19.0, 25.0]
     end
 
-    @testset "tuple of Symbol => range pairs" begin
-        chain = FlexiChains.from_parameter_array(
-            arr;
-            parameters = (:mu => 1:2, :sigma => 3:3, :beta => 4:5),
+    @testset "mix of Parameter and Extra" begin
+        chain = FlexiChain{Symbol}(
+            arr,
+            (Parameter(:μ), Parameter(:σ), Parameter(:β) => (2,), Extra(:lp)),
         )
         @test chain isa FlexiChain{Symbol}
-        @test Set(keys(chain)) == Set([Parameter(:mu), Parameter(:sigma), Parameter(:beta)])
-        @test getindex(chain, :mu; iter = At(1), chain = At(1)) == [1.0, 7.0]
-        @test getindex(chain, :sigma; iter = At(1), chain = At(1)) == 13.0
-        @test getindex(chain, :beta; iter = At(1), chain = At(1)) == [19.0, 25.0]
+        @test Set(keys(chain)) == Set([Parameter(:μ), Parameter(:σ), Parameter(:β), Extra(:lp)])
+        @test getindex(chain, :μ; iter = At(1), chain = At(1)) == 1.0
+        @test getindex(chain, :σ; iter = At(1), chain = At(1)) == 7.0
+        @test getindex(chain, :β; iter = At(1), chain = At(1)) == [13.0, 19.0, 25.0]
+        @test getindex(chain, Extra(:lp); iter = At(1), chain = At(1)) == 25.0
+    end
+
+    @testset "matrix-valued key" begin
+        arr6 = reshape(Float64.(1:36), 3, 2, 6)
+        chain = FlexiChain{Symbol}(arr6, (Parameter(:M) => (2, 3),))
+        @test chain isa FlexiChain{Symbol}
+        val = getindex(chain, :M; iter = At(1), chain = At(1))
+        @test size(val) == (2, 3)
+        @test val == reshape([1.0, 7.0, 13.0, 19.0, 25.0, 31.0], 2, 3)
     end
 
     @testset "custom iter_indices and chain_indices" begin
-        chain = FlexiChains.from_parameter_array(
-            arr;
-            parameters = (@varname(a) => 1:3, @varname(b) => 4:5),
+        chain = FlexiChain{Symbol}(
+            arr,
+            (Parameter(:a), Parameter(:b) => (4,));
             iter_indices = 10:10:30,
             chain_indices = [5, 10],
         )
         @test size(chain) == (niters, nchains)
-        @test getindex(chain, @varname(a); iter = At(10), chain = At(5)) == [1.0, 7.0, 13.0]
+        @test getindex(chain, :a; iter = At(10), chain = At(5)) == 1.0
     end
 
-    @testset "range validation" begin
-        # Gap in ranges
-        @test_throws ArgumentError FlexiChains.from_parameter_array(
-            arr;
-            parameters = (@varname(a) => 1:2, @varname(b) => 4:5),
+    @testset "column count validation" begin
+        @test_throws ArgumentError FlexiChain{Symbol}(
+            arr,
+            (Parameter(:a), Parameter(:b)),
         )
-        # Overlapping ranges
-        @test_throws ArgumentError FlexiChains.from_parameter_array(
-            arr;
-            parameters = (@varname(a) => 1:3, @varname(b) => 3:5),
-        )
-        # Out of bounds
-        @test_throws ArgumentError FlexiChains.from_parameter_array(
-            arr;
-            parameters = (@varname(a) => 1:3, @varname(b) => 4:6),
+        @test_throws ArgumentError FlexiChain{Symbol}(
+            arr,
+            (Parameter(:a) => (6,),),
         )
     end
 end
