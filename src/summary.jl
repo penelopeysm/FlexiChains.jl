@@ -174,6 +174,18 @@ function _get_raw_data(
     return summary._data[key]
 end
 
+"""
+    _get_summary_dims(summary::FlexiSummary)
+
+Determine which dimensions of the summary have been collapsed.
+
+Returns a tuple of two elements:
+
+- a vector of `DimensionalData.Dim` objects corresponding to the dimensions that have not
+  been collapsed; and
+- a tuple of integers corresponding to the dimensions that have been collapsed, which can be
+  passed to `dropdims`.
+"""
 function _get_summary_dims(
         fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}
     ) where {TKey, TIIdx, TCIdx, TSIdx}

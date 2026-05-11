@@ -124,11 +124,13 @@ FlexiChains.subset_parameters
 FlexiChains.subset_extras
 ```
 
-## Converting to flattened arrays
+## [Converting to flattened arrays](@id api-flatten)
 
 ```@docs
-DimensionalData.DimArray
-Base.Array
+DimensionalData.DimArray(::FlexiChains.FlexiChain)
+DimensionalData.DimArray(::FlexiChains.FlexiSummary)
+Base.Array(::FlexiChains.FlexiChain)
+Base.Array(::FlexiChains.FlexiSummary)
 Wide
 Long
 ```
@@ -150,7 +152,6 @@ DynamicPPL.pointwise_loglikelihoods
 DynamicPPL.pointwise_prior_logdensities
 DynamicPPL.InitFromParams
 MCMCChains.Chains
-Turing.loadstate
 AbstractMCMC.from_samples
 AbstractMCMC.to_samples
 ```

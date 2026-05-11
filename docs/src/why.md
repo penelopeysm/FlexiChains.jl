@@ -179,9 +179,8 @@ mchain = sample(Xoshiro(468), hasstring(), MH(), 50; chain_type=MCMCChains.Chain
 catch e; showerror(stdout, e); end # hide
 ```
 
-FlexiChains will let you store anything you like.
-String? No problem.
-ODE solver output? No problem.
+FlexiChains will let you store anything you like!
+This includes strings, but also more complex objects such as the output of a differential equation solver, or customised structs, as demonstrated in [this Gaussian process tutorial](https://learnbayes.se/julia/gps).
 
 ```@example extraquantities
 fchain = sample(Xoshiro(468), hasstring(), MH(), 50; chain_type=FlexiChains.VNChain)
@@ -213,7 +212,7 @@ Because MCMCChains stores _all_ its data in a single array, it has to flatten th
 (mchain[Symbol("x.L[1, 1]")][1, 1], mchain[Symbol("x.L[2, 1]")][1, 1]) # ...
 ```
 
-## VarNames as keys
+## [VarNames as keys](@id why-varnames-as-keys)
 
 Did you notice in that last line we had to write something like `Symbol("x.L[1, 1]")`?
 And since it's a `Symbol`, we _have_ to get the name exactly right, we couldn't do (for example) `x.L[1,1]` without the space after the comma?

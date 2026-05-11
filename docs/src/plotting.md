@@ -17,6 +17,7 @@ Here is a rough overview of the current status:
 | Running mean plots               | ✅ [`FlexiChains.meanplot`](@ref)            | 🐌                                                      |
 | Autocorrelation plots            | ✅ [`FlexiChains.autocorplot`](@ref)         | 🐌                                                      |
 | Rank plots                       | ✅ [`FlexiChains.rankplot`](@ref)            | ✅ [`FlexiChains.mrankplot`](@ref)                      |
+| Corner plots                     | ✅ [`StatsPlots.cornerplot`](@ref)           | 🐌                                                      |
 | Violin plots                     | 🐌                                           | 🐌                                                      |
 | Energy plots                     | 🐌                                           | 🐌                                                      |
 | Forest plots                     | 🐌                                           | 🐌                                                      |

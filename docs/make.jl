@@ -6,7 +6,7 @@ using DocumenterInterLinks
 using FlexiChains
 using DimensionalData: DimensionalData
 using CairoMakie: CairoMakie, Makie
-using StatsPlots: Plots
+using StatsPlots: Plots, StatsPlots
 using Statistics: Statistics
 using StatsBase: StatsBase
 using MCMCDiagnosticTools: MCMCDiagnosticTools
@@ -40,7 +40,7 @@ modules = [
     Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsDynamicPPLExt),
     Base.get_extension(FlexiChains, :FlexiChainsRecipesBaseExt),
     Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt),
-    Base.get_extension(FlexiChains, :FlexiChainsTuringExt),
+    Base.get_extension(FlexiChains, :FlexiChainsStatsPlotsExt),
 ]
 
 # Enable headless mode so that plots don't pop up when building docs.
@@ -62,8 +62,10 @@ makedocs(;
         "makie.md",
         "integrations.md",
         "api.md",
+        "contributing.md",
         "why.md",
         "whynot.md",
+        "migration.md",
     ],
     checkdocs = :exports,
     warnonly = true,

@@ -1,287 +1,38 @@
-module FCTuringExtTests
+module FlexiChainsDynamicPPLExtTests
 
 using AbstractMCMC: AbstractMCMC
 using DimensionalData: DimensionalData as DD
-using DynamicPPL: DynamicPPL
-using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra
-using MCMCChains: MCMCChains
+using Distributions
+using DynamicPPL
+using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra, _make_prior_chain, _make_posterior_chain
+using LinearAlgebra: I
 using OffsetArrays: OffsetArray
 using PosteriorStats: PosteriorStats
 using Random: Random, Xoshiro
 using StableRNGs: StableRNG
 using Test
-using Turing
 
-Turing.setprogress!(false)
+_LOGPRIOR_KEY = Extra(:logprior)
+_LOGLIKELIHOOD_KEY = Extra(:loglikelihood)
+_LOGJOINT_KEY = Extra(:logjoint)
 
-# This sampler does nothing (it just stays at the existing state)
-struct StaticSampler <: AbstractMCMC.AbstractSampler end
-function AbstractMCMC.step(rng::Random.AbstractRNG, model::DynamicPPL.Model, ::StaticSampler; initial_params::DynamicPPL.AbstractInitStrategy, kwargs...)
-    # generate raw values according to requested initialisation strategy
-    vi = DynamicPPL.OnlyAccsVarInfo((DynamicPPL.RawValueAccumulator(false),))
-    vi = last(DynamicPPL.init!!(rng, model, vi, initial_params, DynamicPPL.UnlinkAll()))
-    vnt = DynamicPPL.get_raw_values(vi)
-    return DynamicPPL.ParamsWithStats(vnt, (;)), vnt
-end
-function AbstractMCMC.step(
-        rng::Random.AbstractRNG, model::DynamicPPL.Model, ::StaticSampler, vnt::DynamicPPL.VarNamedTuple; kwargs...
-    )
-    return DynamicPPL.ParamsWithStats(vnt, (;)), vnt
-end
-
-@testset verbose = true "FlexiChainTuringExt" begin
-    @info "Testing ext/turing.jl"
-
-    @testset "sampling" begin
-        @model function demomodel(x)
-            m ~ Normal(0, 1.0)
-            x ~ Normal(m, 1.0)
-            return nothing
-        end
-        model = demomodel(1.5)
-
-        @testset "single-chain sampling" begin
-            chn = sample(model, NUTS(), 100; chain_type = VNChain, verbose = false)
-            @test chn isa VNChain
-            @test size(chn) == (100, 1)
-        end
-
-        @testset "multi-chain sampling" begin
-            chn = sample(
-                model, NUTS(), MCMCSerial(), 100, 3; chain_type = VNChain, verbose = false
-            )
-            @test chn isa VNChain
-            @test size(chn) == (100, 3)
-        end
-
-        @testset "rng is respected" begin
-            @testset "single-chain" begin
-                chn1 = sample(
-                    Xoshiro(468), model, NUTS(), 100; chain_type = VNChain, verbose = false
-                )
-                chn2 = sample(
-                    Xoshiro(468), model, NUTS(), 100; chain_type = VNChain, verbose = false
-                )
-                @test FlexiChains.has_same_data(chn1, chn2)
-                chn3 = sample(
-                    Xoshiro(469), model, NUTS(), 100; chain_type = VNChain, verbose = false
-                )
-                @test !FlexiChains.has_same_data(chn1, chn3)
-            end
-
-            @testset "single-chain with seed!" begin
-                Random.seed!(468)
-                chn1 = sample(model, NUTS(), 100; chain_type = VNChain, verbose = false)
-                Random.seed!(468)
-                chn2 = sample(model, NUTS(), 100; chain_type = VNChain, verbose = false)
-                @test FlexiChains.has_same_data(chn1, chn2)
-            end
-
-            @testset "multi-chain" begin
-                chn1 = sample(
-                    Xoshiro(468),
-                    model,
-                    NUTS(),
-                    MCMCSerial(),
-                    100,
-                    3;
-                    chain_type = VNChain,
-                    verbose = false,
-                )
-                chn2 = sample(
-                    Xoshiro(468),
-                    model,
-                    NUTS(),
-                    MCMCSerial(),
-                    100,
-                    3;
-                    chain_type = VNChain,
-                    verbose = false,
-                )
-                @test FlexiChains.has_same_data(chn1, chn2)
-                chn3 = sample(
-                    Xoshiro(469),
-                    model,
-                    NUTS(),
-                    MCMCSerial(),
-                    100,
-                    3;
-                    chain_type = VNChain,
-                    verbose = false,
-                )
-                @test !FlexiChains.has_same_data(chn1, chn3)
-            end
-        end
-
-        @testset "ordering of parameters follows that of model" begin
-            @model function f()
-                a ~ Normal()
-                x = zeros(2)
-                x .~ Normal()
-                return b ~ Normal()
-            end
-            chn = sample(f(), NUTS(), 10; chain_type = VNChain, verbose = false)
-            @test FlexiChains.parameters(chn) == [@varname(a), @varname(x), @varname(b)]
-        end
-
-        @testset "underlying data is same as MCMCChains" begin
-            chn_flexi = sample(
-                Xoshiro(468), model, NUTS(), 100; chain_type = VNChain, verbose = false
-            )
-            chn_mcmc = sample(
-                Xoshiro(468),
-                model,
-                NUTS(),
-                100;
-                chain_type = MCMCChains.Chains,
-                verbose = false,
-            )
-            @test vec(chn_flexi[@varname(m)]) == vec(chn_mcmc[:m])
-            for lp_type in [:logprior, :loglikelihood, :logjoint]
-                @test vec(chn_flexi[Extra(lp_type)]) == vec(chn_mcmc[lp_type])
-            end
-        end
-
-        @testset "with another sampler: $spl_name" for (spl_name, spl) in
-            [("MH", MH()), ("HMC", HMC(0.1, 10))]
-            chn = sample(model, spl, 20; chain_type = VNChain)
-            @test chn isa VNChain
-            @test size(chn) == (20, 1)
-        end
-
-        @testset "with a custom sampler" begin
-            # Set up the sampler itself.
-            struct S <: AbstractMCMC.AbstractSampler end
-            struct Tn end
-            AbstractMCMC.step(
-                rng::Random.AbstractRNG,
-                model::DynamicPPL.Model,
-                ::S,
-                state = nothing;
-                kwargs...,
-            ) = (Tn(), nothing)
-            # Get it to work with FlexiChains
-            FlexiChains.to_vnt_and_stats(::Tn) = (VarNamedTuple(; x = 1), (; b = "hi"))
-            # Then we should be able to sample
-            chn = sample(model, S(), 20; chain_type = VNChain)
-            @test chn isa VNChain
-            @test size(chn) == (20, 1)
-            @test all(x -> x == 1, vec(chn[@varname(x)]))
-            @test all(x -> x == "hi", vec(chn[Extra(:b)]))
-        end
-    end
-
-    @testset "chain metadata" begin
-        @testset "sampling time exists" begin
-            @model f() = x ~ Normal()
-            model = f()
-
-            @testset "single chain" begin
-                chn = sample(model, NUTS(), 100; chain_type = VNChain, verbose = false)
-                @test only(FlexiChains.sampling_time(chn)) isa AbstractFloat
-            end
-            @testset "multiple chain" begin
-                chn = sample(
-                    model, NUTS(), MCMCThreads(), 100, 3; chain_type = VNChain, verbose = false
-                )
-                @test FlexiChains.sampling_time(chn) isa AbstractVector{<:AbstractFloat}
-                @test length(FlexiChains.sampling_time(chn)) == 3
-            end
-        end
-
-        @testset "save_state and initial_state" begin
-            @model f() = x ~ Normal()
-            model = f()
-
-            @testset "single chain" begin
-                chn1 = sample(
-                    model,
-                    StaticSampler(),
-                    10;
-                    chain_type = VNChain,
-                    verbose = false,
-                    save_state = true,
-                )
-                # check that the sampler state is stored
-                @test only(FlexiChains.last_sampler_state(chn1)) isa DynamicPPL.VarNamedTuple
-                # check that it can be resumed from
-                chn2 = sample(
-                    model,
-                    StaticSampler(),
-                    10;
-                    chain_type = VNChain,
-                    verbose = false,
-                    initial_state = only(FlexiChains.last_sampler_state(chn1)),
-                )
-                # check that it did reuse the previous state
-                xval = chn1[@varname(x)][end]
-                @test all(x -> x == xval, chn2[@varname(x)])
-            end
-
-            @testset "multiple chain" begin
-                chn1 = sample(
-                    model,
-                    StaticSampler(),
-                    MCMCThreads(),
-                    10,
-                    3;
-                    chain_type = VNChain,
-                    verbose = false,
-                    save_state = true,
-                )
-                # check that the sampler state is stored
-                @test FlexiChains.last_sampler_state(chn1) isa
-                    AbstractVector{<:DynamicPPL.VarNamedTuple}
-                @test length(FlexiChains.last_sampler_state(chn1)) == 3
-                # check that it can be resumed from
-                chn2 = sample(
-                    model,
-                    StaticSampler(),
-                    MCMCThreads(),
-                    10,
-                    3;
-                    chain_type = VNChain,
-                    verbose = false,
-                    initial_state = FlexiChains.last_sampler_state(chn1),
-                )
-                # check that it did reuse the previous state
-                xval = chn1[@varname(x)][end, :]
-                @test all(i -> chn2[@varname(x)][i, :] == xval, 1:10)
-            end
-        end
-    end
-
+@testset "FlexiChainsExt" begin
     @testset "InitFromParams(chain, i, j)" begin
         @model function f()
             x ~ Normal()
             return y ~ Normal(x)
         end
         model = f()
-        chn = sample(model, NUTS(), 100; chain_type = VNChain)
-        chn2 = sample(
-            model,
-            StaticSampler(),
-            10;
-            chain_type = VNChain,
-            initial_params = InitFromParams(chn, 10, 1),
-        )
-        @test all(x -> x == chn[@varname(x), iter = 10, chain = 1], chn2[@varname(x)])
-        @test all(y -> y == chn[@varname(y), iter = 10, chain = 1], chn2[@varname(y)])
-    end
+        chn = _make_prior_chain(model, 50, 1)
 
-    @testset "summaries on chains from Turing" begin
-        @model function f()
-            x ~ Normal()
-            y ~ Poisson()
-            return z ~ MvNormal(zeros(2), I)
+        for i in 1:50
+            accs = OnlyAccsVarInfo(DynamicPPL.RawValueAccumulator(false))
+            _, accs = DynamicPPL.init!!(model, accs, InitFromParams(chn, i, 1), UnlinkAll())
+            raw_values = get_raw_values(accs)
+            for vn in (@varname(x), @varname(y))
+                @test raw_values[vn] == chn[vn, iter = i, chain = 1]
+            end
         end
-        model = f()
-        chn = sample(model, MH(), 100; chain_type = VNChain)
-        ss = FlexiChains.summarystats(chn)
-        @test ss isa FlexiChains.FlexiSummary
-        @test Set(FlexiChains.parameters(ss)) ==
-            Set([@varname(x), @varname(y), @varname(z[1]), @varname(z[2])])
-        display(ss)
     end
 
     @testset "AbstractMCMC.from_samples" begin
@@ -294,13 +45,8 @@ end
         z = 1.0
         model = f(z)
 
-        ps = [
-            DynamicPPL.ParamsWithStats(DynamicPPL.InitFromPrior(), model) for _ in 1:50,
-                _ in 1:3
-        ]
-        c = AbstractMCMC.from_samples(VNChain, ps)
-        @test c isa VNChain
-        @test size(c) == (50, 3)
+        ps = _make_prior_chain(Xoshiro(468), model, 50, 3; make_chain = false)
+        c = _make_prior_chain(Xoshiro(468), model, 50, 3; make_chain = true)
         @test FlexiChains.parameters(c) == [@varname(x), @varname(y)]
         @test c[@varname(x)] == map(p -> p.params[@varname(x)], ps)
         @test c[@varname(y)] == c[@varname(x)] .+ 1
@@ -324,13 +70,11 @@ end
             return z.a ~ Normal()
         end
         Ni, Nc = 10, 2
+
         # These should give the same results, but chn is just the ParamsWithStats
-        # bundled into a VNChain. (For chain_type=Any, default bundle_samples gives
-        # a vector of vectors, so we use stack to get it into an Ni * Nc matrix.)
-        chn = sample(Xoshiro(468), f(), Prior(), MCMCSerial(), Ni, Nc; chain_type = VNChain)
-        pwss = stack(
-            sample(Xoshiro(468), f(), Prior(), MCMCSerial(), Ni, Nc; chain_type = Any)
-        )
+        # bundled into a VNChain.
+        chn = _make_prior_chain(Xoshiro(468), f(), Ni, Nc; make_chain = true)
+        pwss = _make_prior_chain(Xoshiro(468), f(), Ni, Nc; make_chain = false)
 
         for i in 1:Ni, c in 1:Nc
             prms = FlexiChains.parameters_at(chn; iter = i, chain = c)
@@ -348,7 +92,7 @@ end
             y ~ Normal()
             return nothing
         end
-        chn = sample(f(), Prior(), 10; chain_type = VNChain)
+        chn = _make_prior_chain(f(), 10, 1; make_chain = true)
         @test rand(chn) isa DynamicPPL.ParamsWithStats
         @test rand(chn; parameters_only = true) isa DynamicPPL.VarNamedTuple
         @test rand(chn, 5) isa Vector{<:DynamicPPL.ParamsWithStats}
@@ -361,15 +105,12 @@ end
             y := x + 1
             return z ~ Normal(y)
         end
+
         # Make the chain first
         z = 1.0
         model = f(z)
-        ps = hcat(
-            [
-                DynamicPPL.ParamsWithStats(DynamicPPL.InitFromPrior(), model) for _ in 1:50
-            ]
-        )
-        c = AbstractMCMC.from_samples(VNChain, ps)
+        ps = _make_prior_chain(Xoshiro(468), model, 50, 1; make_chain = false)
+        c = _make_prior_chain(Xoshiro(468), model, 50, 1; make_chain = true)
 
         # Then convert back to ParamsWithStats
         @model function newmodel()
@@ -403,7 +144,7 @@ end
             return y ~ Normal(x)
         end
         model = f() | (; y = 1.0)
-        chn = sample(model, NUTS(), 100; chain_type = VNChain, verbose = false)
+        chn = _make_prior_chain(model, 100, 1; make_chain = true)
         xs = chn[@varname(x)]
         expected_logprior = logpdf.(Normal(), xs)
         expected_loglike = logpdf.(Normal.(xs), 1.0)
@@ -435,7 +176,7 @@ end
                 x ~ Normal()
                 return y ~ Normal()
             end
-            chn = sample(xonly(), NUTS(), 100; chain_type = VNChain, verbose = false)
+            chn = _make_prior_chain(xonly(), 100, 1; make_chain = true)
             @test_throws "not found in chain" logprior(xy(), chn)
             @test_throws "not found in chain" loglikelihood(xy(), chn)
             @test_throws "not found in chain" logjoint(xy(), chn)
@@ -449,7 +190,7 @@ end
                 return nothing
             end
             model = offset_lp(2.0)
-            chn = sample(model, NUTS(), 50; chain_type = VNChain, verbose = false)
+            chn = _make_prior_chain(model, 50, 1; make_chain = true)
             lprior = logprior(model, chn)
             @test logprior(model, chn) ≈ logpdf.(Normal(), chn[@varname(x[-2])])
             @test loglikelihood(model, chn) ≈ logpdf.(Normal.(chn[@varname(x[-2])]), 2.0)
@@ -463,7 +204,7 @@ end
         end
         model = f(1.0)
 
-        chn = sample(model, NUTS(), 100; chain_type = VNChain, verbose = false)
+        chn = _make_prior_chain(model, 100, 1; make_chain = true)
         xs = chn[@varname(x)]
 
         @testset "logdensities" begin
@@ -502,7 +243,7 @@ end
                 x ~ Normal()
                 return y ~ Normal()
             end
-            chn = sample(xonly(), NUTS(), 100; chain_type = VNChain, verbose = false)
+            chn = _make_prior_chain(xonly(), 100, 1; make_chain = true)
             @test_throws "not found in chain" DynamicPPL.pointwise_logdensities(xy(), chn)
             @test_throws "not found in chain" DynamicPPL.pointwise_loglikelihoods(xy(), chn)
             @test_throws "not found in chain" DynamicPPL.pointwise_prior_logdensities(
@@ -518,10 +259,65 @@ end
                 return nothing
             end
             model = offset_pld(2.0)
-            chn = sample(model, NUTS(), 50; chain_type = VNChain, verbose = false)
+            chn = _make_prior_chain(model, 50, 1; make_chain = true)
             plds = DynamicPPL.pointwise_logdensities(model, chn)
             @test plds[@varname(x[-2])] == logpdf.(Normal(), chn[@varname(x[-2])])
             @test plds[@varname(y)] == logpdf.(Normal.(chn[@varname(x[-2])]), 2.0)
+        end
+
+        @testset "factorize=true" begin
+            @model function array_pw(y, z)
+                x ~ MvNormal(zeros(2), I)
+                return y ~ MvNormal(x, I)
+                # Doesn't work yet https://github.com/sethaxen/PartitionedDistributions.jl/issues/20
+                # z ~ Normal()
+            end
+            y = randn(2)
+            z = randn(2)
+            model = array_pw(y, z)
+            chn = _make_prior_chain(model, 50, 1; make_chain = true)
+
+            plds = DynamicPPL.pointwise_logdensities(model, chn)
+            @test plds[@varname(x)] == logpdf.(Ref(MvNormal(zeros(2), I)), chn[@varname(x)])
+            @test plds[@varname(y)] == logpdf.(MvNormal.(chn[@varname(x)], Ref(I)), Ref(y))
+
+            plls = DynamicPPL.pointwise_loglikelihoods(model, chn)
+            @test plls[@varname(y)] == logpdf.(MvNormal.(chn[@varname(x)], Ref(I)), Ref(y))
+            @test !haskey(plls, @varname(x))
+
+            pplds = DynamicPPL.pointwise_prior_logdensities(model, chn)
+            @test pplds[@varname(x)] ==
+                logpdf.(Ref(MvNormal(zeros(2), I)), chn[@varname(x)])
+            @test !haskey(pplds, @varname(y))
+
+            plds = DynamicPPL.pointwise_logdensities(model, chn; factorize = true)
+            for (x_pld, y_pld, x_val) in
+                zip(plds[@varname(x)], plds[@varname(y)], chn[@varname(x)])
+                @test x_pld isa Vector{<:Real}
+                @test length(x_pld) == 2
+                @test x_pld[1] == logpdf(Normal(), x_val[1])
+                @test x_pld[2] == logpdf(Normal(), x_val[2])
+                @test y_pld isa Vector{<:Real}
+                @test length(y_pld) == 2
+                @test y_pld[1] == logpdf(Normal(x_val[1], 1), y[1])
+                @test y_pld[2] == logpdf(Normal(x_val[2], 1), y[2])
+            end
+
+            plls = DynamicPPL.pointwise_loglikelihoods(model, chn; factorize = true)
+            for (y_pll, x_val) in zip(plls[@varname(y)], chn[@varname(x)])
+                @test y_pll isa Vector{<:Real}
+                @test length(y_pll) == 2
+                @test y_pll[1] == logpdf(Normal(x_val[1], 1), y[1])
+                @test y_pll[2] == logpdf(Normal(x_val[2], 1), y[2])
+            end
+
+            pplds = DynamicPPL.pointwise_prior_logdensities(model, chn; factorize = true)
+            for (x_ppld, x_val) in zip(pplds[@varname(x)], chn[@varname(x)])
+                @test x_ppld isa Vector{<:Real}
+                @test length(x_ppld) == 2
+                @test x_ppld[1] == logpdf(Normal(), x_val[1])
+                @test x_ppld[2] == logpdf(Normal(), x_val[2])
+            end
         end
     end
 
@@ -532,7 +328,7 @@ end
             return x + y[1] + y[2]
         end
         model = f()
-        chn = sample(model, NUTS(), 100; chain_type = VNChain, verbose = false)
+        chn = _make_prior_chain(model, 100, 1; make_chain = true)
         expected_rtnd = chn[@varname(x)] .+ chn[@varname(y[1])] .+ chn[@varname(y[2])]
 
         rtnd = returned(model, chn)
@@ -546,7 +342,7 @@ end
                 return x ~ product_distribution((; a = Normal()))
             end
             model = f_product()
-            chn = sample(model, NUTS(), 100; chain_type = VNChain, verbose = false)
+            chn = _make_prior_chain(model, 100, 1; make_chain = true)
             rets = returned(f_product(), chn)
             @test chn[@varname(x)] == rets
         end
@@ -559,7 +355,7 @@ end
                 x ~ Normal()
                 return y ~ Normal()
             end
-            chn = sample(xonly(), NUTS(), 100; chain_type = VNChain, verbose = false)
+            chn = _make_prior_chain(xonly(), 100, 1; make_chain = true)
             @test_throws "not found in chain" returned(xy(), chn)
         end
 
@@ -568,7 +364,7 @@ end
                 x ~ Normal()
                 return DD.DimArray(randn(2, 3), (:a, :b))
             end
-            chn = sample(return_dimarray(), NUTS(), 50; chain_type = VNChain, verbose = false)
+            chn = _make_prior_chain(return_dimarray(), 50, 1; make_chain = true)
             rets = returned(return_dimarray(), chn)
             @test rets isa DD.DimArray{T, 4} where {T}
             @test size(rets) == (50, 1, 2, 3)
@@ -586,7 +382,7 @@ end
                 return first(x)
             end
             model = offset()
-            chn = sample(model, NUTS(), 50; chain_type = VNChain, verbose = false)
+            chn = _make_prior_chain(model, 50, 1; make_chain = true)
             rets = returned(model, chn)
             @test rets == chn[@varname(x[-2])]
         end
@@ -608,18 +404,9 @@ end
             return y ~ Normal(x)
         end
         model = f() | (; y = 4.0)
-        # Sample larger numbers so that we have some confidence that the results weren't
-        # obtained by sheer luck.
-        chn = sample(
-            StableRNG(468),
-            model,
-            NUTS(),
-            1000;
-            chain_type = VNChain,
-            discard_initial = 1000,
-            verbose = false,
-        )
+
         # Sanity check
+        chn = _make_posterior_chain(StableRNG(468), model, 2000, 1)
         @test isapprox(mean(chn[@varname(x)]), 2.0; atol = 0.1)
         @test isapprox(mean(chn[@varname(m[1])]), 0.0; atol = 0.1)
         @test isapprox(mean(chn[@varname(m[2])]), 0.0; atol = 0.1)
@@ -655,8 +442,6 @@ end
 
         @testset "non-parameter keys are preserved" begin
             pdns = predict(f(), chn)
-            display(chn)
-            display(pdns)
             # Check that the only new thing added was the prediction for y.
             @test only(setdiff(Set(keys(pdns)), Set(keys(chn)))) == Parameter(@varname(y))
             # Check that no other keys originally in `chn` were removed.
@@ -702,9 +487,7 @@ end
                 return y ~ Normal(x[-2])
             end
             cond_model = offset2() | (; y = 2.0)
-            chn = sample(
-                StableRNG(468), cond_model, NUTS(), 1000; chain_type = VNChain, verbose = false
-            )
+            chn = _make_posterior_chain(StableRNG(468), cond_model, 2000, 1)
             @test mean(chn[@varname(x[-2])]) ≈ 1.0 atol = 0.05
             pdns = predict(StableRNG(468), offset2(), chn)
             @test pdns[@varname(x[-2])] == chn[@varname(x[-2])]
@@ -722,7 +505,7 @@ end
                 return prod(x)
             end
             cond_model = varlen_single() | (; y = 1.0)
-            chn = sample(cond_model, MH(), 100; chain_type = VNChain, verbose = false)
+            chn = _make_prior_chain(cond_model, 100, 1; make_chain = true)
             # Sanity check
             @test chn[@varname(n)] == length.(chn[@varname(x)])
             # Check that returned and predict both work. For returned we can also
@@ -747,7 +530,7 @@ end
                 return prod(x)
             end
             cond_model = varlen_dense() | (; y = 1.0)
-            chn = sample(cond_model, MH(), 100; chain_type = VNChain, verbose = false)
+            chn = _make_prior_chain(cond_model, 100, 1; make_chain = true)
             # Sanity check
             @test chn[@varname(n)] == length.(chn[@varname(x)])
             # Check that returned and predict both work. For returned we can also
@@ -774,7 +557,7 @@ end
                 return prod(x[1:n])
             end
             cond_model = varlen_nondense() | (; y = 1.0)
-            chn = sample(cond_model, MH(), 100; chain_type = VNChain, verbose = false)
+            chn = _make_prior_chain(cond_model, 100, 1; make_chain = true)
             # Check that returned and predict both work.
             @test returned(cond_model, chn) isa DD.DimArray
             pdns = predict(varlen_nondense(), chn)
@@ -786,16 +569,34 @@ end
         end
     end
 
-    @testset "PosteriorStats.loo with Turing" begin
-        @model function f(y)
-            x ~ Normal()
-            y .~ Normal(x)
+    @testset "PosteriorStats.loo" begin
+        @testset "no factorisation" begin
+            @model function f(y)
+                x ~ Normal()
+                return y .~ Normal(x)
+            end
+            model = f(randn(10))
+            chain = _make_prior_chain(model, 500, 3; make_chain = true)
+            result = PosteriorStats.loo(model, chain)
+            @test result.param_names == [@varname(y[i]) for i in 1:10]
+            @test result.loo isa PosteriorStats.PSISLOOResult
         end
-        model = f(randn(10))
-        chain = sample(model, NUTS(), MCMCSerial(), 500, 3; chain_type = VNChain)
-        result = PosteriorStats.loo(model, chain)
-        @test result.param_names == [@varname(y[i]) for i in 1:10]
-        @test result.loo isa PosteriorStats.PSISLOOResult
+
+        @testset "factorize kwarg" begin
+            @model function farray(y)
+                x ~ MvNormal(zeros(2), I)
+                return y ~ MvNormal(x, I)
+            end
+            model = farray(randn(2))
+            chain = _make_prior_chain(model, 500, 3; make_chain = true)
+            result = PosteriorStats.loo(model, chain; factorize = true)
+            @test result.param_names == [@varname(y[i]) for i in 1:2]
+            @test result.loo isa PosteriorStats.PSISLOOResult
+
+            result = PosteriorStats.loo(model, chain; factorize = false)
+            @test result.param_names == [@varname(y)]
+            @test result.loo isa PosteriorStats.PSISLOOResult
+        end
     end
 end
 

@@ -155,7 +155,7 @@ function _print_eltype_groups(
         io::IO, groups::OrderedDict{String, Vector{String}}, width::Int,
     )
 
-    max_type_cap = max(width ÷ 3, 12)
+    max_type_cap = max(width ÷ 2, 12)
     raw_tw = maximum(textwidth(t) for t in keys(groups))
     max_tw = min(raw_tw, max_type_cap)
     prefix_width = 1 + max_tw + 2

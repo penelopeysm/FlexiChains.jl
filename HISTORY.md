@@ -1,3 +1,32 @@
+# 0.6.4
+
+Extend the maximum width for the type column in the summary table.
+
+# 0.6.3
+
+Add a migration guide for MCMCChains users.
+
+# 0.6.2
+
+Implement conversion of `FlexiSummary` objects to `DimArray` and `Array`.
+
+# 0.6.1
+
+Add `StatsPlots.cornerplot` with Plots.jl backend.
+
+# 0.6.0
+
+## Breaking changes
+
+Move FlexiChainsTuringExt to Turing itself, which will be released as part of Turing v0.45.
+
+Note that this means that if you use FlexiChains 0.6 with Turing <= 0.44, you will get a small loss of functionality.
+Specifically, `Turing.loadstate()` will not work (although `FlexiChains.last_sampler_state` will still work, and does exactly the same thing).
+
+# 0.5.9
+
+Support the `factorize=true` keyword argument for `DynamicPPL.pointwise_logdensities` and `PosteriorStats.loo`.
+
 # 0.5.8
 
 Add compatibility with DynamicPPL 0.41 and Turing 0.44.

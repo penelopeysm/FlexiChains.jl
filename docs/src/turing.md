@@ -4,7 +4,16 @@ This page provides a fairly high-level overview of how to use FlexiChains with T
 
 ## Sampling
 
-To obtain a `FlexiChain` from Turing.jl, you will need to specify a `chain_type` of `FlexiChains.VNChain` when performing MCMC sampling.
+Since Turing.jl v0.45, FlexiChains is the default chain type returned by MCMC sampling.
+
+!!! note "Not on Turing v0.45 yet?"
+
+    To obtain a `FlexiChain` with older versions of Turing.jl, you can specify the `chain_type` keyword argument when calling `sample`:
+
+    ```julia
+    using FlexiChains
+    sample(model, sampler, N; chain_type=VNChain)
+    ```
 
 Let's use a non-trivial model so that we can illustrate some features of FlexiChains.
 
@@ -211,6 +220,13 @@ ss[@varname(mu), stat=At(:mean)]
 
 !!! note
     Note that the `At` selector from DimensionalData.jl is needed here to specify the name of the statistic we're interested in.
+
+Alternatively, you can directly convert the `FlexiSummary` into an array and manipulate it as you would any other array.
+(Note that `Array(ss)` also works, but you lose the dimension information in that case.)
+
+```@example 1
+DimArray(ss)
+```
 
 By default, `summarystats` will split `VarName`s up.
 This is done because summary statistics often only make sense for scalar-valued parameters.

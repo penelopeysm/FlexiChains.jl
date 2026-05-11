@@ -46,11 +46,6 @@ include("stancsv.jl")
 const _LOGJOINT_KEY = Extra(:logjoint)
 const _LOGPRIOR_KEY = Extra(:logprior)
 const _LOGLIKELIHOOD_KEY = Extra(:loglikelihood)
-# Used in DynamicPPLExt.
-struct PointwiseProb{T <: VarName}
-    varname::T
-end
-Base.show(io::IO, p::PointwiseProb) = print(io, "PointwiseProb(@varname($(p.varname)))")
 
 # Extended in PosteriorDB extension (but not exported)
 function from_posteriordb_ref end
@@ -79,6 +74,10 @@ export ess, rhat, mcse, gelmandiag, gelmandiag_multivariate, discretediag, bfmi
 # For maximum ease of use with Turing...
 const VNChain = FlexiChain{VarName}
 export VarName, @varname, VNChain
+
+# Test utils, overloaded in DynamicPPLExt.
+function _make_prior_chain end
+function _make_posterior_chain end
 
 # Attempt to precompile _some_ stuff, especially for VarName. This cuts the TTFX by about
 # 2-3x.

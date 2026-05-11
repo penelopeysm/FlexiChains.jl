@@ -7,9 +7,7 @@ Flexible Markov chains.
 ## Quickstart
 
 `FlexiChain{T}` represents a chain that stores data for parameters of type `T`.
-`VNChain` is a alias for `FlexiChain{VarName}`, and is the appropriate type for storing Turing.jl's outputs.
-
-To obtain a `VNChain` from Turing's MCMC sampling, pass the `chain_type` argument to the `sample` function.
+`VNChain` is a alias for `FlexiChain{VarName}`, and since Turing v0.45, is the default chain type returned by Turing's sampling functions.
 
 ```julia
 using Turing
@@ -21,10 +19,13 @@ using FlexiChains
     z ~ MvNormal(zeros(2), I)
 end
 model = f()
-chain = sample(model, MH(), MCMCThreads(), 1000, 3; chain_type=VNChain)
+chain = sample(model, MH(), MCMCThreads(), 1000, 3)
 ```
 
-Alternatively, you can construct a `VNChain` from a matrix of `VarNamedTuple`s:
+> [!NOTE]
+> Prior to Turing v0.45, you can obtain a `VNChain` by calling `sample(...; chain_type=VNChain)` explicitly.
+
+You can also construct a `VNChain` from a matrix of `DynamicPPL.VarNamedTuple`s or `DynamicPPL.ParamsWithStats`:
 
 ```julia
 import AbstractMCMC
@@ -32,7 +33,7 @@ vnts = [rand(model) for _ in 1:1000, _ in 1:3]  # (1000 x 3) draw from the prior
 chain = AbstractMCMC.from_samples(VNChain, vnts)
 ```
 
-You can index into a `VNChain` using `VarName`s.
+You can index into a `VNChain` using [`VarName`s](http://turinglang.org/AbstractPPL.jl/stable/varname/).
 Data is returned as a `DimMatrix` from the [`DimensionalData.jl` package](https://rafaqz.github.io/DimensionalData.jl/), which behaves exactly like an ordinary `Matrix` but additionally carries more information about its dimensions.
 
 ```julia
