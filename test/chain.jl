@@ -3,6 +3,7 @@ module FCChainTests
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra
 using AbstractPPL: @varname, VarName
 using DimensionalData: val, At
+using OffsetArrays: OffsetArray
 using OrderedCollections: OrderedDict
 using Test
 
@@ -284,6 +285,21 @@ using Test
                 )
                 @test size(chain) == (niters, nchains)
                 @test chain[:a, iter = At(10), chain = At(5)] == arr[1, 1, 1]
+            end
+
+            @testset "OffsetArray input" begin
+                oarr = OffsetArray(arr, 0:2, 10:11, -2:2)
+                chain = FlexiChain{Symbol}(
+                    oarr,
+                    (Parameter(:μ), Parameter(:σ), Parameter(:β) => (3,)),
+                )
+                @test chain isa FlexiChain{Symbol}
+                @test size(chain) == (niters, nchains)
+                for i in 1:niters, j in 1:nchains
+                    @test chain[:μ, iter = i, chain = j] == arr[i, j, 1]
+                    @test chain[:σ, iter = i, chain = j] == arr[i, j, 2]
+                    @test chain[:β, iter = i, chain = j] == arr[i, j, 3:5]
+                end
             end
 
             @testset "column count validation" begin

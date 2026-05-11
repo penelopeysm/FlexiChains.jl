@@ -496,15 +496,17 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
 
         # Construct data
         data = OrderedDict{ParameterOrExtra{<:TKey}, Matrix}()
-        offset = 1
+        offset = firstindex(arr, 3)
         for (key, sz) in normalized
             this_ncols = prod(sz)
-            data[key] = if sz == ()
+            this_data = if sz == ()
                 arr[:, :, offset] # Scalar value
             else
                 cols = offset:(offset + this_ncols - 1)
-                [reshape(arr[i, j, cols], sz) for i in 1:niters, j in 1:nchains]
+                map(v -> reshape(v, sz), eachslice(arr[:, :, cols], dims = (1, 2)))
             end
+            # This line standardises the internal data to be `Matrix`.
+            data[key] = _check_size(this_data, niters, nchains; key_name = key)
             offset += this_ncols
         end
         return new{TKey, typeof(metadata)}(data, metadata, structures)
