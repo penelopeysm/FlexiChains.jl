@@ -1,3 +1,8 @@
+# 0.6.6
+
+Add an additional constructor to convert an array of `iters x chains x params` into a `FlexiChain`.
+Please see the documentation for more information.
+
 # 0.6.5
 
 Minor improvements to documentation.
