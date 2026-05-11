@@ -1,4 +1,4 @@
-# [Converting to/from 3D arrays](@id arrays)
+# [Converting to/from arrays](@id arrays)
 
 Many MCMC libraries return samples in the form of 3D arrays.
 FlexiChains therefore provides methods to convert from and to 3D arrays, to maximise interoperability with other libraries.
@@ -20,7 +20,7 @@ Here is a simple example where each column in the array corresponds to a scalar 
 using FlexiChains: FlexiChain, Parameter, Extra
 
 arr = rand(10, 4, 3)   # 10 iterations, 4 chains, 3 parameters
-names = (Parameter(:x), Parameter(:y), Extra(:lp))
+names = (Parameter(:x), Parameter(:y), Extra(:lp))  # note: must be tuple
 
 FlexiChain{Symbol}(arr, names)
 ```
