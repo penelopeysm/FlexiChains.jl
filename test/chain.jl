@@ -190,8 +190,8 @@ using Test
         end
 
         @testset "from 3D array" begin
-            arr = reshape(Float64.(1:30), 3, 2, 5)
-            niters, nchains, ncols = size(arr)
+            arr = rand(3, 2, 5)
+            niters, nchains, _ = size(arr)
 
             @testset "all scalar keys" begin
                 chain = FlexiChain{Symbol}(
@@ -200,9 +200,14 @@ using Test
                 )
                 @test chain isa FlexiChain{Symbol}
                 @test size(chain) == (niters, nchains)
-                @test Set(keys(chain)) == Set(Parameter.([:a, :b, :c, :d, :e]))
-                @test chain[:a, iter = At(1), chain = At(1)] == 1.0
-                @test chain[:e, iter = At(1), chain = At(1)] == 25.0
+                @test collect(keys(chain)) == Parameter.([:a, :b, :c, :d, :e])
+                for i in 1:niters, j in 1:nchains
+                    @test chain[:a, iter = i, chain = j] == arr[i, j, 1]
+                    @test chain[:b, iter = i, chain = j] == arr[i, j, 2]
+                    @test chain[:c, iter = i, chain = j] == arr[i, j, 3]
+                    @test chain[:d, iter = i, chain = j] == arr[i, j, 4]
+                    @test chain[:e, iter = i, chain = j] == arr[i, j, 5]
+                end
             end
 
             @testset "single vector key" begin
@@ -210,8 +215,10 @@ using Test
                     chain = FlexiChain{Symbol}(arr, ks)
                     @test chain isa FlexiChain{Symbol}
                     @test size(chain) == (niters, nchains)
-                    @test Set(keys(chain)) == Set([Parameter(:x)])
-                    @test chain[:x, iter = At(1), chain = At(1)] == [1.0, 7.0, 13.0, 19.0, 25.0]
+                    @test only(keys(chain)) == Parameter(:x)
+                    for i in 1:niters, j in 1:nchains
+                        @test chain[:x, iter = i, chain = j] == arr[i, j, :]
+                    end
                 end
             end
 
@@ -221,20 +228,27 @@ using Test
                     (Parameter(:μ), Parameter(:σ), Parameter(:β) => (3,)),
                 )
                 @test chain isa FlexiChain{Symbol}
-                @test Set(keys(chain)) == Set([Parameter(:μ), Parameter(:σ), Parameter(:β)])
-                @test chain[:μ, iter = At(1), chain = At(1)] == 1.0
-                @test chain[:σ, iter = At(1), chain = At(1)] == 7.0
-                @test chain[:β, iter = At(1), chain = At(1)] == [13.0, 19.0, 25.0]
+                @test collect(keys(chain)) == [Parameter(:μ), Parameter(:σ), Parameter(:β)]
+                for i in 1:niters, j in 1:nchains
+                    @test chain[:μ, iter = i, chain = j] == arr[i, j, 1]
+                    @test chain[:σ, iter = i, chain = j] == arr[i, j, 2]
+                    @test chain[:β, iter = i, chain = j] == arr[i, j, 3:5]
+                end
             end
 
             @testset "VarName keys" begin
                 chain = FlexiChain{VarName}(
                     arr,
-                    (Parameter(@varname(μ)), Parameter(@varname(σ)), Parameter(@varname(β)) => (3,)),
+                    (Parameter(@varname(a)), Parameter(@varname(b)) => (4,)),
                 )
                 @test chain isa FlexiChain{<:VarName}
-                @test chain[@varname(μ), iter = At(1), chain = At(1)] == 1.0
-                @test chain[@varname(β), iter = At(1), chain = At(1)] == [13.0, 19.0, 25.0]
+                for i in 1:niters, j in 1:nchains
+                    @test chain[@varname(a), iter = i, chain = j] == arr[i, j, 1]
+                    @test chain[@varname(b[1]), iter = i, chain = j] == arr[i, j, 2]
+                    @test chain[@varname(b[2]), iter = i, chain = j] == arr[i, j, 3]
+                    @test chain[@varname(b[3]), iter = i, chain = j] == arr[i, j, 4]
+                    @test chain[@varname(b[4]), iter = i, chain = j] == arr[i, j, 5]
+                end
             end
 
             @testset "mix of Parameter and Extra" begin
@@ -243,20 +257,22 @@ using Test
                     (Parameter(:μ), Parameter(:σ), Parameter(:β) => (2,), Extra(:lp)),
                 )
                 @test chain isa FlexiChain{Symbol}
-                @test Set(keys(chain)) == Set([Parameter(:μ), Parameter(:σ), Parameter(:β), Extra(:lp)])
-                @test chain[:μ, iter = At(1), chain = At(1)] == 1.0
-                @test chain[:σ, iter = At(1), chain = At(1)] == 7.0
-                @test chain[:β, iter = At(1), chain = At(1)] == [13.0, 19.0]
-                @test chain[Extra(:lp), iter = At(1), chain = At(1)] == 25.0
+                @test collect(keys(chain)) == [Parameter(:μ), Parameter(:σ), Parameter(:β), Extra(:lp)]
+                for i in 1:niters, j in 1:nchains
+                    @test chain[:μ, iter = i, chain = j] == arr[i, j, 1]
+                    @test chain[:σ, iter = i, chain = j] == arr[i, j, 2]
+                    @test chain[:β, iter = i, chain = j] == arr[i, j, 3:4]
+                    @test chain[Extra(:lp), iter = i, chain = j] == arr[i, j, 5]
+                end
             end
 
             @testset "matrix-valued key" begin
-                arr6 = reshape(Float64.(1:36), 3, 2, 6)
+                arr6 = rand(3, 2, 6)
                 chain = FlexiChain{Symbol}(arr6, (Parameter(:M) => (2, 3),))
                 @test chain isa FlexiChain{Symbol}
-                val = chain[:M, iter = At(1), chain = At(1)]
-                @test size(val) == (2, 3)
-                @test val == reshape([1.0, 7.0, 13.0, 19.0, 25.0, 31.0], 2, 3)
+                for i in 1:3, j in 1:2
+                    @test chain[:M, iter = i, chain = j] == reshape(arr6[i, j, :], 2, 3)
+                end
             end
 
             @testset "custom iter_indices and chain_indices" begin
@@ -267,7 +283,7 @@ using Test
                     chain_indices = [5, 10],
                 )
                 @test size(chain) == (niters, nchains)
-                @test chain[:a, iter = At(10), chain = At(5)] == 1.0
+                @test chain[:a, iter = At(10), chain = At(5)] == arr[1, 1, 1]
             end
 
             @testset "column count validation" begin
