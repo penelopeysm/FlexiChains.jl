@@ -322,7 +322,7 @@ using Test
                         (Parameter(:a), Parameter(:b), Parameter(:c) => (2,)),
                     )
                     chain = FlexiChain{Symbol}(arr, ks)
-                    arr2 = Array(chain)
+                    arr2 = Array(chain; parameters_only = false)
                     @test arr == arr2
                 end
             end
