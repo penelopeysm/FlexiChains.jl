@@ -54,8 +54,6 @@ vs = FlexiChains.values_at(chn; iter=5, chain=1)
 In the case of a chain sampled from Turing, the returned container is `DynamicPPL.ParamsWithStats`, which separately stores the parameters and the stats as a `VarNamedTuple` and `NamedTuple` respectively.
 This is a high-fidelity representation of the data, and is exactly what you get when sampling with Turing.jl (for example, if you call `sample(...; chain_type=Any)`, you will get an array of `ParamsWithStats` objects).
 
-```@example samples
-
 !!! info
     This is accomplished by storing a skeletal `VarNamedTuple` for each sample in the chain; if you are interested, see [the DynamicPPL docs](https://turinglang.org/DynamicPPL.jl/stable/vnt/manipulation/#Skeleton-VNTs) for more info.
 
