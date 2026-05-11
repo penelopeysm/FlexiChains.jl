@@ -1,4 +1,4 @@
-# Plotting overview
+# [Plotting overview](@id plotting)
 
 FlexiChains contains some support for visualising chains with Plots.jl and Makie.jl.
 
