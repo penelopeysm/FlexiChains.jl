@@ -401,7 +401,7 @@ Like for `FlexiChain`, the `Wide` wrapper is the default Tables.jl implementatio
     If this has already been done, then using `Wide(...; split_varnames=false)` cannot reverse this!
 
     ```@example tables
-    w = Wide(mean(fs), split_varnames=false)
+    w = Wide(mean(chn), split_varnames=false)
     DataFrame(w)
     ```
 
@@ -409,6 +409,6 @@ Like for `FlexiChain`, the `Wide` wrapper is the default Tables.jl implementatio
     If you want to prevent this, you need to specify `split_varnames=false` at the summary step as well:
 
     ```@example tables
-    w = Wide(mean(fs; split_varnames=false), split_varnames=false)
+    w = Wide(mean(chn; split_varnames=false), split_varnames=false)
     DataFrame(w)
     ```
