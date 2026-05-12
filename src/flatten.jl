@@ -284,16 +284,14 @@ function Base.Array(
     return parent(da)
 end
 
-## Tables.jl interface
-
-function _prepare_chain(chn::FlexiChain; split_varnames::Bool = true, parameters_only::Bool = true)
+function _prepare_chain_or_summary(cs::ChainOrSummary; split_varnames::Bool = true, parameters_only::Bool = true)
     if parameters_only
-        chn = FlexiChains.subset_parameters(chn)
+        cs = FlexiChains.subset_parameters(cs)
     end
     if split_varnames
-        chn = FlexiChains._split_varnames(chn)
+        cs = FlexiChains._split_varnames(cs)
     end
-    return chn
+    return cs
 end
 
 function _check_duplicate_keys(ks)
@@ -376,19 +374,19 @@ faster than `chain`.
 
 $(WIDE_LONG_KWARGS_DOC)
 """
-struct Wide{F <: FlexiChain, N <: NamedTuple}
-    chn::F
-    # A precomputed mapping from Symbol(k) => k for all keys in `chn`.
+struct Wide{F <: ChainOrSummary, N <: NamedTuple}
+    cs::F
+    # A precomputed mapping from Symbol(k) => k for all keys in `cs`.
     symbol_to_keys::N
 
-    function Wide(chn::FlexiChain; split_varnames::Bool = true, parameters_only::Bool = true)
-        chn = _prepare_chain(chn; split_varnames, parameters_only)
+    function Wide(cs::ChainOrSummary; split_varnames::Bool = true, parameters_only::Bool = true)
+        cs = _prepare_chain_or_summary(cs; split_varnames, parameters_only)
         # Strip parameter/extra wrappers and convert to Symbol for column names.
-        ks = Tuple(FlexiChains.get_name.(keys(chn)))
+        ks = Tuple(FlexiChains.get_name.(keys(cs)))
         sym_ks = Symbol.(ks)
         _check_duplicate_keys(sym_ks)
         symbol_to_keys = NamedTuple{sym_ks}(ks)
-        return new{typeof(chn), typeof(symbol_to_keys)}(chn, symbol_to_keys)
+        return new{typeof(cs), typeof(symbol_to_keys)}(cs, symbol_to_keys)
     end
 end
 
@@ -457,7 +455,7 @@ struct Long{F <: FlexiChain, K <: Tuple}
     original_keys::K
 
     function Long(chn::FlexiChain; split_varnames::Bool = true, parameters_only::Bool = true)
-        chn = _prepare_chain(chn; split_varnames, parameters_only)
+        chn = _prepare_chain_or_summary(chn; split_varnames, parameters_only)
         original_keys = if parameters_only
             Tuple(FlexiChains.get_name.(keys(chn)))
         else
@@ -473,22 +471,91 @@ Tables.istable(::Type{<:Long}) = true
 Tables.columnaccess(::Type{<:Wide}) = true
 Tables.columnaccess(::Type{<:Long}) = true
 
-# Default Tables.jl implementation for FlexiChain itself
+# Default Tables.jl implementation for FlexiChain and FlexiSummary itself
 Tables.columns(chn::FlexiChain) = Wide(chn; split_varnames = true, parameters_only = true)
+Tables.columns(fs::FlexiSummary) = Wide(fs; split_varnames = true, parameters_only = true)
 
-# Wide
-Tables.columnnames(s::Wide) = [FlexiChains.ITER_DIM_NAME, FlexiChains.CHAIN_DIM_NAME, keys(s.symbol_to_keys)...]
-function Tables.getcolumn(s::Wide, col::Symbol)
+# Wide chain
+Tables.columnnames(s::Wide{<:FlexiChain}) = [FlexiChains.ITER_DIM_NAME, FlexiChains.CHAIN_DIM_NAME, keys(s.symbol_to_keys)...]
+function Tables.getcolumn(s::Wide{<:FlexiChain}, col::Symbol)
     return if col === FlexiChains.ITER_DIM_NAME
-        repeat(iter_indices(s.chn); outer = FlexiChains.nchains(s.chn))
+        repeat(iter_indices(s.cs); outer = FlexiChains.nchains(s.cs))
     elseif col === FlexiChains.CHAIN_DIM_NAME
-        repeat(chain_indices(s.chn); inner = FlexiChains.niters(s.chn))
+        repeat(chain_indices(s.cs); inner = FlexiChains.niters(s.cs))
     else
-        vec(s.chn[s.symbol_to_keys[col]])
+        vec(s.cs[s.symbol_to_keys[col]])
     end
 end
 Tables.getcolumn(s::Wide, col::Int) = Tables.getcolumn(s, Tables.columnnames(s)[col])
 Tables.columns(s::Wide) = s
+
+# Wide summary
+function Tables.columnnames(w::Wide{<:FlexiSummary})
+    cols = [FlexiChains.PARAM_DIM_NAME]
+    if iter_indices(w.cs) !== nothing
+        push!(cols, FlexiChains.ITER_DIM_NAME)
+    end
+    if chain_indices(w.cs) !== nothing
+        push!(cols, FlexiChains.CHAIN_DIM_NAME)
+    end
+    si = stat_indices(w.cs)
+    if si !== nothing
+        append!(cols, parent(si))
+    else
+        push!(cols, FlexiChains.STAT_DIM_NAME)
+    end
+    return cols
+end
+function Tables.getcolumn(w::Wide{<:FlexiSummary}, col::Symbol)
+    ii = iter_indices(w.cs)
+    ci = chain_indices(w.cs)
+    si = stat_indices(w.cs)
+    nic = if ii === nothing && ci === nothing
+        1
+    elseif ii === nothing
+        length(ci)
+    elseif ci === nothing
+        length(ii)
+    else
+        throw(ArgumentError("summary has both iter and chain dimensions; should not happen"))
+    end
+    nparams = length(w.symbol_to_keys)
+    return if col === FlexiChains.PARAM_DIM_NAME
+        ks = collect(values(w.symbol_to_keys))
+        repeat(ks; inner = nic)
+    elseif col === FlexiChains.ITER_DIM_NAME
+        ii === nothing && throw(ArgumentError("summary does not have an iter dimension; should not happen"))
+        repeat(ii; outer = nparams)
+    elseif col === FlexiChains.CHAIN_DIM_NAME
+        ci === nothing && throw(ArgumentError("summary does not have a chain dimension; should not happen"))
+        repeat(ci; outer = nparams)
+    elseif col === FlexiChains.STAT_DIM_NAME
+        if si === nothing
+            if ii === nothing && ci === nothing
+                [w.cs[k] for k in values(w.symbol_to_keys)]
+            else
+                vcat([parent(w.cs[k]) for k in values(w.symbol_to_keys)]...)
+            end
+        else
+            throw(ArgumentError("summary has a non-collapse stat dimension but :stat column was requested; should not happen"))
+        end
+    else
+        # named stat dimension.
+        if si === nothing
+            throw(ArgumentError("summary does not have a stat dimension; should not happen"))
+        else
+            if col in parent(si)
+                if ii === nothing && ci === nothing
+                    [w.cs[k, stat = At(col)] for k in values(w.symbol_to_keys)]
+                else
+                    vcat([parent(w.cs[k, stat = At(col)]) for k in values(w.symbol_to_keys)]...)
+                end
+            else
+                throw(ArgumentError("summary does not have a stat named $col; should not happen"))
+            end
+        end
+    end
+end
 
 # Long
 const VALUE_COL_NAME = :value

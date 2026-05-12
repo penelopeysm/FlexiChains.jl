@@ -1,3 +1,10 @@
+# 0.6.8
+
+Implemented a Tables.jl interface for `Wide(::FlexiSummary)`.
+Unlike `Wide(::FlexiChain)`, where each parameter is given a different column, for a `FlexiSummary` each _statistic_ is given a different column, and the parameters are split up into rows.
+
+`FlexiSummary` itself also has a default Tables.jl interface which simply delegates to `Wide`.
+
 # 0.6.7
 
 Add an InferenceObjects.jl extension, which allows conversion of a `FlexiChain` into an `InferenceObjects.InferenceData` via `InferenceObjects.convert_to_inference_data(chain::FlexiChain)`.
