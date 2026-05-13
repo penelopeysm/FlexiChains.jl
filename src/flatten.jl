@@ -327,15 +327,17 @@ const WIDE_LONG_KWARGS_DOC = """
 
 """
     FlexiChains.Wide(
-        chn::FlexiChain;
+        chn::Union{<:FlexiChain,<:FlexiSummary};
         split_varnames::Bool=true,
         parameters_only::Bool=true
     )
 
-A wrapper struct indicating that a `FlexiChain` should be converted to a 'wide' table
-format, where each parameter is a separate column.
+A wrapper struct indicating a 'wide' table format. The exact meaning depends on whether the
+input is a `FlexiChain` or a `FlexiSummary`. A `FlexiChain` will have each parameter in a
+separate column; conversely, a `FlexiSummary` will have each summary statistic in a separate
+column.
 
-## Example
+## Example (`FlexiChain`)
 
 ```julia
 using Turing, FlexiChains, DataFrames
@@ -373,6 +375,27 @@ faster than `chain`.
 ```
 
 $(WIDE_LONG_KWARGS_DOC)
+
+## Example (`FlexiSummary`)
+
+```julia
+julia> df = DataFrame(Wide(summarystats(chn)))
+2×10 DataFrame
+ Row │ param     mean       std       mcse      ess_bulk  ess_tail  rh ⋯
+     │ VarName…  Float64    Float64   Float64   Float64   Float64   Fl ⋯
+─────┼──────────────────────────────────────────────────────────────────
+   1 │ x         -0.253812  0.987327  0.193554   26.0206    25.641     ⋯
+   2 │ b          0.5       0.512989  0.113426   20.4545   NaN      Na
+                                                       4 columns omitted
+
+julia> df = DataFrame(Wide(mean(chn)))
+2×2 DataFrame
+ Row │ param     stat
+     │ VarName…  Float64
+─────┼─────────────────────
+   1 │ x         -0.253812
+   2 │ b          0.5
+```
 """
 struct Wide{F <: ChainOrSummary, N <: NamedTuple}
     cs::F
