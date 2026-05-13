@@ -12,12 +12,14 @@ using FlexiChains:
     @varname,
     iter_indices,
     chain_indices,
-    stat_indices
+    stat_indices,
+    summarystats
 using DataFrames: DataFrame, names, nrow, ncol
 using DimensionalData: DimensionalData as DD, val, At
 using OrderedCollections: OrderedDict
 using Statistics: mean, std
 using Test
+using FlexiChains: Tables
 
 @testset verbose = true "flatten.jl" begin
     @info "Testing flatten.jl"
@@ -375,6 +377,124 @@ using Test
             # Long preserves original keys, so Parameter("s") and Extra(:s) are distinct
             df = DataFrame(Long(dup_chain; parameters_only = false))
             @test nrow(df) == 5 * 1 * 2
+        end
+
+        @testset "Wide summary" begin
+            N_iters, N_chains = 10, 2
+            as = rand(N_iters, N_chains)
+            bs = rand(N_iters, N_chains)
+            d_summary = OrderedDict(
+                Parameter(:a) => as,
+                Parameter(:b) => bs,
+                Extra(:lp) => -rand(N_iters, N_chains),
+            )
+            sc = FlexiChain{Symbol}(N_iters, N_chains, d_summary)
+
+            @testset "mean(chain) — all dims collapsed, single stat" begin
+                fs = mean(sc)
+                df = DataFrame(Wide(fs))
+                @test nrow(df) == 2
+                @test names(df) == ["param", "stat"]
+                @test df.param == [:a, :b]
+                for row in eachrow(df)
+                    @test row.stat ≈ fs[row.param]
+                end
+            end
+
+            @testset "mean(chain; dims=:iter) — chain dim retained, single stat" begin
+                fs = mean(sc; dims = :iter)
+                df = DataFrame(Wide(fs))
+                @test nrow(df) == 2 * N_chains
+                @test names(df) == ["param", "chain", "stat"]
+                @test df.param == repeat([:a, :b]; inner = N_chains)
+                @test df.chain == repeat(1:N_chains; outer = 2)
+                for row in eachrow(df)
+                    @test row.stat ≈ fs[row.param, chain = At(row.chain)]
+                end
+            end
+
+            @testset "mean(chain; dims=:chain) — iter dim retained, single stat" begin
+                fs = mean(sc; dims = :chain)
+                df = DataFrame(Wide(fs))
+                @test nrow(df) == 2 * N_iters
+                @test names(df) == ["param", "iter", "stat"]
+                @test df.param == repeat([:a, :b]; inner = N_iters)
+                @test df.iter == repeat(1:N_iters; outer = 2)
+                for row in eachrow(df)
+                    @test row.stat ≈ fs[row.param, iter = At(row.iter)]
+                end
+            end
+
+            @testset "collapse(chain, [mean, std]; dims=:both) — named stat cols" begin
+                fs = FlexiChains.collapse(sc, [mean, std]; dims = :both)
+                df = DataFrame(Wide(fs))
+                @test nrow(df) == 2
+                @test names(df) == ["param", "mean", "std"]
+                @test df.param == [:a, :b]
+                for row in eachrow(df)
+                    for stat_name in [:mean, :std]
+                        @test row[stat_name] ≈ fs[row.param, stat = At(stat_name)]
+                    end
+                end
+            end
+
+            @testset "collapse(chain, [mean, std]; dims=:iter) — chain + named stats" begin
+                fs = FlexiChains.collapse(sc, [mean, std]; dims = :iter)
+                df = DataFrame(Wide(fs))
+                @test nrow(df) == 2 * N_chains
+                @test names(df) == ["param", "chain", "mean", "std"]
+                @test df.param == repeat([:a, :b]; inner = N_chains)
+                @test df.chain == repeat(1:N_chains; outer = 2)
+                for row in eachrow(df)
+                    for stat_name in [:mean, :std]
+                        @test row[stat_name] ≈ fs[row.param, stat = At(stat_name), chain = At(row.chain)]
+                    end
+                end
+            end
+
+            @testset "FlexiSummary directly as table source" begin
+                fs = FlexiChains.collapse(sc, [mean, std]; dims = :both)
+                df = DataFrame(fs)
+                df_wide = DataFrame(Wide(fs))
+                @test names(df) == names(df_wide)
+                @test nrow(df) == nrow(df_wide)
+                for col in names(df)
+                    @test df[!, col] == df_wide[!, col]
+                end
+            end
+
+            @testset "parameters_only=false includes extras" begin
+                fs = mean(sc)
+                df = DataFrame(Wide(fs; parameters_only = false))
+                @test nrow(df) == 3
+                @test :lp in df.param
+            end
+
+            @testset "VarName-keyed summary with array-valued param" begin
+                d_vn = OrderedDict(
+                    Parameter(@varname(a)) => 1.0,
+                    Parameter(@varname(b)) => [2.0, 3.0],
+                )
+                vn_chain = FlexiChain{VarName}(N_iters, N_chains, fill(d_vn, N_iters, N_chains))
+                fs = mean(vn_chain; split_varnames = false)
+
+                @testset "split_varnames=true" begin
+                    df = DataFrame(Wide(fs; split_varnames = true))
+                    @test nrow(df) == 3
+                    @test names(df) == ["param", "stat"]
+                    for row in eachrow(df)
+                        @test row.stat ≈ fs[row.param]
+                    end
+                end
+                @testset "split_varnames=false" begin
+                    df = DataFrame(Wide(fs; split_varnames = false))
+                    @test nrow(df) == 2
+                    @test names(df) == ["param", "stat"]
+                    for row in eachrow(df)
+                        @test row.stat ≈ fs[row.param]
+                    end
+                end
+            end
         end
     end
 end
