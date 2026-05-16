@@ -125,6 +125,7 @@ include("FlexiChainsMakieExt/hist.jl")
 include("FlexiChainsMakieExt/mixeddensity.jl")
 include("FlexiChainsMakieExt/traceplot.jl")
 include("FlexiChainsMakieExt/plot.jl")
+include("FlexiChainsMakieExt/meanplot.jl")
 include("FlexiChainsMakieExt/rankplot.jl")
 
 end

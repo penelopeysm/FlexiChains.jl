@@ -60,6 +60,7 @@ include("plots.jl")
 # Extended in Makie extension
 @public mtraceplot, mtraceplot!
 @public mrankplot, mrankplot!
+@public mmeanplot, mmeanplot!
 
 # Convenience re-exports.
 export Wide, Long

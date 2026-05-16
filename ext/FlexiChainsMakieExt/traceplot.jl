@@ -83,7 +83,7 @@ function FC.mtraceplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainTrace; kwargs.
         # want user-specified `kwargs` to override it; but `color_kwarg` was determined from
         # `kwargs`, so we want to apply it last to ensure the color obtained from
         # `determine_color_kwargs` is respected.
-        p = Makie.lines!(ax, datacol; label = label, kwargs..., color_kwarg...)
+        p = Makie.lines!(ax, x, datacol; label = label, kwargs..., color_kwarg...)
     end
     return Makie.AxisPlot(ax, p)
 end

@@ -103,6 +103,7 @@ const REFTEST_SPECS = [
     RefTestSpec(MakieBE(), "mrankplot_overlay", () -> FC.mrankplot(chn; overlay = true)),
     RefTestSpec(MakieBE(), "mmixeddensity_float", () -> FC.mmixeddensity(chn, [Parameter(:a)])),
     RefTestSpec(MakieBE(), "mmixeddensity_int", () -> FC.mmixeddensity(chn, [Parameter(:c)])),
+    RefTestSpec(MakieBE(), "mmeanplot", () -> FC.mmeanplot(chn)),
     RefTestSpec(MakieBE(), "makie_plot", () -> Makie.plot(chn)),
 
     # PlotsExt

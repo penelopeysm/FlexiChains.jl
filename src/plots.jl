@@ -192,6 +192,15 @@ Mutating version of `mmixeddensity`, for use with existing Makie.Axis objects.
 """
 function mmixeddensity! end
 
+function mmeanplot end
+
+"""
+    FlexiChains.mmeanplot!
+
+Mutating version of `mmeanplot`, for use with existing Makie.Axis objects.
+"""
+function mmeanplot! end
+
 ###########################################################
 # Utility functions for plotting (shared across backends) #
 ###########################################################

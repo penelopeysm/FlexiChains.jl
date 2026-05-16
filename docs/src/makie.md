@@ -137,6 +137,19 @@ Makie.save("mixeddensity_makie.png", ans.figure); # hide
 
 ![Mixed density plots of the sampled chain](mixeddensity_makie.png)
 
+## Running mean plots
+
+```@docs
+FlexiChains.mmeanplot
+```
+
+```@example 1
+FlexiChains.mmeanplot(chn)
+Makie.save("meanplot_makie.png", ans.figure); # hide
+```
+
+![Running mean plots of the sampled chain](meanplot_makie.png)
+
 ## Rank plots
 
 ```@docs
