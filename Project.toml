@@ -1,7 +1,7 @@
 name = "FlexiChains"
 uuid = "4a37a8b9-6e57-4b92-8664-298d46e639f7"
 authors = ["Penelope Yong <penelopeysm@gmail.com> and contributors"]
-version = "0.6.9"
+version = "0.6.10"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
@@ -39,7 +39,7 @@ FlexiChainsComponentArraysExt = ["ComponentArrays"]
 FlexiChainsDynamicPPLExt = ["DynamicPPL", "Random", "DimensionalData", "OrderedCollections", "Distributions"]
 FlexiChainsInferenceObjectsExt = ["InferenceObjects", "DimensionalData", "OrderedCollections"]
 FlexiChainsMCMCChainsExt = ["MCMCChains", "OrderedCollections"]
-FlexiChainsMakieExt = ["Makie"]
+FlexiChainsMakieExt = ["Makie", "StatsBase"]
 FlexiChainsPairPlotsExt = ["PairPlots", "Makie"]
 FlexiChainsPosteriorDBExt = ["PosteriorDB", "OrderedCollections"]
 FlexiChainsPosteriorStatsDynamicPPLExt = ["PosteriorStats", "DynamicPPL"]

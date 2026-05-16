@@ -14,10 +14,10 @@ Here is a rough overview of the current status:
 | Density plots                    | ✅ [`Plots.density`](@ref)            | ✅ [`Makie.density`](@ref)                              |
 | Histograms                       | ✅ [`Plots.histogram`](@ref)          | ✅ [`Makie.hist`](@ref) and [`Makie.stephist`](@ref)    |
 | Mixed density plots              | ✅ [`FlexiChains.mixeddensity`](@ref) | ✅ [`FlexiChains.mmixeddensity`](@ref)                  |
-| Running mean plots               | ✅ [`FlexiChains.meanplot`](@ref)     | 🐌                                                      |
-| Autocorrelation plots            | ✅ [`FlexiChains.autocorplot`](@ref)  | 🐌                                                      |
+| Running mean plots               | ✅ [`FlexiChains.meanplot`](@ref)     | ✅ [`FlexiChains.mmeanplot`](@ref)                      |
+| Autocorrelation plots            | ✅ [`FlexiChains.autocorplot`](@ref)  | ✅ [`FlexiChains.mautocorplot`](@ref)                   |
 | Rank plots                       | ✅ [`FlexiChains.rankplot`](@ref)     | ✅ [`FlexiChains.mrankplot`](@ref)                      |
-| Corner plots                     | ✅ [`StatsPlots.cornerplot`](@ref)    | 🐌                                                      |
+| Corner plots                     | ✅ [`StatsPlots.cornerplot`](@ref)    | ✅ [`PairPlots.pairplot`](@ref)                         |
 | Violin plots                     | ✅ [`StatsPlots.violin`](@ref)        | 🐌                                                      |
 | Energy plots                     | 🐌                                    | 🐌                                                      |
 | Forest plots                     | 🐌                                    | 🐌                                                      |
