@@ -34,4 +34,64 @@ function StatsPlots.cornerplot(
     return StatsPlots.cornerplot(data; size = (600, 600), label = label, compact = true, kwargs...)
 end
 
+####################################################################################
+# Everything below this is just docstrings which we need to attach to functions in
+# Plots/StatsPlots.
+####################################################################################
+
+"""
+    Plots.density(
+        chn::FlexiChain[, param_or_params];
+        pool_chains::Bool=false,
+        kwargs...
+    )
+
+Make a density plot of the parameter values in `chn` using Plots.jl.
+
+$(FC._PARAM_DOCSTRING("density"))
+
+$(FC._POOL_CHAINS_DOCSTRING)
+
+$(FC._PLOTS_KWARGS_DOCSTRING)
+"""
+StatsPlots.density
+
+"""
+    Plots.histogram(
+        chn::FlexiChain[, param_or_params];
+        pool_chains::Bool=false,
+        kwargs...
+    )
+
+Make a histogram of the parameter values in `chn` using Plots.jl.
+
+$(FC._PARAM_DOCSTRING("histogram"))
+
+$(FC._POOL_CHAINS_DOCSTRING)
+
+$(FC._PLOTS_KWARGS_DOCSTRING)
+"""
+StatsPlots.histogram
+
+"""
+    Plots.violin(
+        chn::FlexiChain[, param_or_params];
+        pool_chains::Bool=false,
+        with_box::Bool=false,
+        kwargs...
+    )
+
+Make a violin plot of `chn` using Plots.jl.
+
+$(FC._PARAM_DOCSTRING("violin"))
+
+$(FC._POOL_CHAINS_DOCSTRING)
+
+If `with_box=true`, a box plot will additionally be overlaid on the violin plot.
+
+$(FC._PLOTS_KWARGS_DOCSTRING) (For `with_box=true`, keyword arguments are passed to both the
+violin and box plot components.)
+"""
+StatsPlots.violin
+
 end # module

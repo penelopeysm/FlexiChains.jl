@@ -6,22 +6,22 @@ FlexiChains contains some support for visualising chains with Plots.jl and Makie
 
 Here is a rough overview of the current status:
 
-| Type of plot                     | Plots.jl                                     | Makie.jl                                                |
-| :------------------------------- | :------------------------------------        | :------------------------------------------------------ |
-| Trace + mixed density (default)  | ✅ [`Plots.plot`](@ref)                      | ✅ [`Makie.plot`](@ref)                                 |
-| Pair / corner plots              | 🐌                                           | ✅ [`PairPlots.pairplot`](@ref integrations-pairplots)  |
-| Trace plots                      | ✅ [`FlexiChains.traceplot`](@ref)           | ✅ [`FlexiChains.mtraceplot`](@ref)                     |
-| Density plots                    | ✅ [`Plots.density`](@ref plots-density)     | ✅ [`Makie.density`](@ref)                              |
-| Histograms                       | ✅ [`Plots.histogram`](@ref plots-histogram) | ✅ [`Makie.hist`](@ref) and [`Makie.stephist`](@ref)    |
-| Mixed density plots              | ✅ [`FlexiChains.mixeddensity`](@ref)        | ✅ [`FlexiChains.mmixeddensity`](@ref)                  |
-| Running mean plots               | ✅ [`FlexiChains.meanplot`](@ref)            | 🐌                                                      |
-| Autocorrelation plots            | ✅ [`FlexiChains.autocorplot`](@ref)         | 🐌                                                      |
-| Rank plots                       | ✅ [`FlexiChains.rankplot`](@ref)            | ✅ [`FlexiChains.mrankplot`](@ref)                      |
-| Corner plots                     | ✅ [`StatsPlots.cornerplot`](@ref)           | 🐌                                                      |
-| Violin plots                     | 🐌                                           | 🐌                                                      |
-| Energy plots                     | 🐌                                           | 🐌                                                      |
-| Forest plots                     | 🐌                                           | 🐌                                                      |
-| Predictive check plots           | 🐌                                           | 🐌                                                      |
+| Type of plot                     | Plots.jl                              | Makie.jl                                                |
+| :------------------------------- | :------------------------------------ | :------------------------------------------------------ |
+| Trace + mixed density (default)  | ✅ [`Plots.plot`](@ref)               | ✅ [`Makie.plot`](@ref)                                 |
+| Pair / corner plots              | 🐌                                    | ✅ [`PairPlots.pairplot`](@ref integrations-pairplots)  |
+| Trace plots                      | ✅ [`FlexiChains.traceplot`](@ref)    | ✅ [`FlexiChains.mtraceplot`](@ref)                     |
+| Density plots                    | ✅ [`Plots.density`](@ref)            | ✅ [`Makie.density`](@ref)                              |
+| Histograms                       | ✅ [`Plots.histogram`](@ref)          | ✅ [`Makie.hist`](@ref) and [`Makie.stephist`](@ref)    |
+| Mixed density plots              | ✅ [`FlexiChains.mixeddensity`](@ref) | ✅ [`FlexiChains.mmixeddensity`](@ref)                  |
+| Running mean plots               | ✅ [`FlexiChains.meanplot`](@ref)     | 🐌                                                      |
+| Autocorrelation plots            | ✅ [`FlexiChains.autocorplot`](@ref)  | 🐌                                                      |
+| Rank plots                       | ✅ [`FlexiChains.rankplot`](@ref)     | ✅ [`FlexiChains.mrankplot`](@ref)                      |
+| Corner plots                     | ✅ [`StatsPlots.cornerplot`](@ref)    | 🐌                                                      |
+| Violin plots                     | ✅ [`StatsPlots.violin`](@ref)        | 🐌                                                      |
+| Energy plots                     | 🐌                                    | 🐌                                                      |
+| Forest plots                     | 🐌                                    | 🐌                                                      |
+| Predictive check plots           | 🐌                                    | 🐌                                                      |
 
 All of the above functions have 'mutating' versions with a `!` suffix.
 

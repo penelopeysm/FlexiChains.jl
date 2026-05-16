@@ -6,6 +6,12 @@ function _PARAM_DOCSTRING(funcname)
     """
 end
 
+const _POOL_CHAINS_DOCSTRING = """
+The `pool_chains` keyword argument specifies whether to pool samples across multiple chains
+when plotting. If `true` (the default), samples from all chains are pooled together; if
+`false`, samples from each chain are plotted separately.
+"""
+
 const _PLOTS_KWARGS_DOCSTRING = "Other keyword arguments are forwarded to the underlying Plots.jl functions."
 
 ######################
@@ -39,6 +45,7 @@ function traceplot! end
 """
     FlexiChains.mixeddensity(
         chn::FlexiChain{TKey}[, param_or_params];
+        pool_chains::Bool=false,
         kwargs...
     )
 
@@ -47,6 +54,8 @@ Plot a density estimate or histogram for the specified parameter(s) in the given
 discrete-valued parameters as histograms.
 
 $(_PARAM_DOCSTRING("mixeddensity"))
+
+$(_POOL_CHAINS_DOCSTRING)
 
 $(_PLOTS_KWARGS_DOCSTRING)
 """
@@ -318,6 +327,13 @@ module PlotUtils
         chn::FlexiChain{TKey}
         param::Tp
         pool_chains::Bool
+    end
+
+    struct FlexiChainViolin{TKey, Tp <: ParameterOrExtra{<:TKey}}
+        chn::FlexiChain{TKey}
+        param::Tp
+        pool_chains::Bool
+        with_box::Bool
     end
 
 end # module PlotUtils
