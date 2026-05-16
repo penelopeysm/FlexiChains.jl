@@ -201,6 +201,15 @@ Mutating version of `mmeanplot`, for use with existing Makie.Axis objects.
 """
 function mmeanplot! end
 
+function mautocorplot end
+
+"""
+    FlexiChains.mautocorplot!
+
+Mutating version of `mautocorplot`, for use with existing Makie.Axis objects.
+"""
+function mautocorplot! end
+
 ###########################################################
 # Utility functions for plotting (shared across backends) #
 ###########################################################

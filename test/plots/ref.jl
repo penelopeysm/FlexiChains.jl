@@ -104,6 +104,8 @@ const REFTEST_SPECS = [
     RefTestSpec(MakieBE(), "mmixeddensity_float", () -> FC.mmixeddensity(chn, [Parameter(:a)])),
     RefTestSpec(MakieBE(), "mmixeddensity_int", () -> FC.mmixeddensity(chn, [Parameter(:c)])),
     RefTestSpec(MakieBE(), "mmeanplot", () -> FC.mmeanplot(chn)),
+    RefTestSpec(MakieBE(), "mautocorplot", () -> FC.mautocorplot(chn)),
+    RefTestSpec(MakieBE(), "mautocorplot_lags", () -> FC.mautocorplot(chn; lags = 1:40)),
     RefTestSpec(MakieBE(), "makie_plot", () -> Makie.plot(chn)),
 
     # PlotsExt
@@ -114,6 +116,7 @@ const REFTEST_SPECS = [
     RefTestSpec(PlotsBE(), "mixeddensity_int", () -> FC.mixeddensity(chn[[Parameter(:c)]])),
     RefTestSpec(PlotsBE(), "meanplot", () -> FC.meanplot(chn)),
     RefTestSpec(PlotsBE(), "autocorplot", () -> FC.autocorplot(chn)),
+    RefTestSpec(PlotsBE(), "autocorplot_lags", () -> FC.autocorplot(chn; lags = 1:40)),
     RefTestSpec(PlotsBE(), "plots_plot", () -> Plots.plot(chn)),
     RefTestSpec(PlotsBE(), "violinplot", () -> Plots.violin(chn)),
     RefTestSpec(PlotsBE(), "violinplotwbox", () -> Plots.violin(chn; with_box = true)),

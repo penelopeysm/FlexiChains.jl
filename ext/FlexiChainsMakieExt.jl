@@ -3,6 +3,7 @@ module FlexiChainsMakieExt
 using FlexiChains: FlexiChains
 using Makie
 using Makie: ColorTypes
+using StatsBase: StatsBase
 
 const FC = FlexiChains
 const MakieGrids = Union{Makie.GridPosition, Makie.GridSubposition}
@@ -126,6 +127,7 @@ include("FlexiChainsMakieExt/mixeddensity.jl")
 include("FlexiChainsMakieExt/traceplot.jl")
 include("FlexiChainsMakieExt/plot.jl")
 include("FlexiChainsMakieExt/meanplot.jl")
+include("FlexiChainsMakieExt/autocorplot.jl")
 include("FlexiChainsMakieExt/rankplot.jl")
 
 end

@@ -150,6 +150,19 @@ Makie.save("meanplot_makie.png", ans.figure); # hide
 
 ![Running mean plots of the sampled chain](meanplot_makie.png)
 
+## Autocorrelation plots
+
+```@docs
+FlexiChains.mautocorplot
+```
+
+```@example 1
+FlexiChains.mautocorplot(chn)
+Makie.save("autocorplot_makie.png", ans.figure); # hide
+```
+
+![Autocorrelation plots of the sampled chain](autocorplot_makie.png)
+
 ## Rank plots
 
 ```@docs
