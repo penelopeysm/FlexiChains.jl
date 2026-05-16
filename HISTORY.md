@@ -1,3 +1,7 @@
+# 0.6.10
+
+Implemented Makie-backed `FlexiChains.mmeanplot` and `FlexiChains.mautocorplot`.
+
 # 0.6.9
 
 Implemented `Plots.violin` for `FlexiChain`s.
