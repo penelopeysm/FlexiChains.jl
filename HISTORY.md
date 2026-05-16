@@ -1,3 +1,7 @@
+# 0.6.9
+
+Implemented `Plots.violin` for `FlexiChain`s.
+
 # 0.6.8
 
 Implemented a Tables.jl interface for `Wide(::FlexiSummary)`.

@@ -114,6 +114,8 @@ const REFTEST_SPECS = [
     RefTestSpec(PlotsBE(), "meanplot", () -> FC.meanplot(chn)),
     RefTestSpec(PlotsBE(), "autocorplot", () -> FC.autocorplot(chn)),
     RefTestSpec(PlotsBE(), "plots_plot", () -> Plots.plot(chn)),
+    RefTestSpec(PlotsBE(), "violinplot", () -> Plots.violin(chn)),
+    RefTestSpec(PlotsBE(), "violinplotwbox", () -> Plots.violin(chn; box = true)),
 
     # StatsPlotsExt
     RefTestSpec(PlotsBE(), "cornerplot", () -> StatsPlots.cornerplot(chn)),

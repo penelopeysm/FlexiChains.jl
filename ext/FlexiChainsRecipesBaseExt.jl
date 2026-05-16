@@ -58,6 +58,8 @@ function FC.autocorplot!(
     return plot!(chn, args...; kwargs..., lags, demean, seriestype = _AUTOCORPLOT_SERIESTYPE)
 end
 
+const _VIOLINPLOT_SERIESTYPE = :violin
+
 const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 
 ###############################
@@ -84,6 +86,7 @@ $(FC._PLOTS_KWARGS_DOCSTRING)
         param_or_params = FC.Parameter.(FC.parameters(chn));
         lags = nothing,
         demean = nothing,
+        box = true,
         pool_chains = false,
     )
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
@@ -147,6 +150,8 @@ $(FC._PLOTS_KWARGS_DOCSTRING)
                     return FC.PlotUtils.FlexiChainRankOverlay(chn, k, ranks)
                 elseif seriestype === _AUTOCORPLOT_SERIESTYPE
                     return FC.PlotUtils.FlexiChainAutoCor(chn, k, lags, demean)
+                elseif seriestype === _VIOLINPLOT_SERIESTYPE
+                    return FC.PlotUtils.FlexiChainViolin(chn, k, pool_chains, box)
                 else
                     return (chn, k, seriestype)
                 end
@@ -307,6 +312,30 @@ Histogram for discrete data.
     bins --> 25
     normalize --> :pdf
     return x
+end
+
+"""
+Violin plot.
+"""
+@recipe function _(t::FC.PlotUtils.FlexiChainViolin)
+    # Extract data
+    # StatsPlots.violin wants data in quite a weird format.
+    data = FC._get_raw_data(t.chn, t.param)
+    nchains, niters = size(t.chn)
+    y = vec(data)
+    FC.PlotUtils.check_eltype_is_real(y)
+    label --> nothing
+    title --> t.param.name
+    yguide --> "value"
+    if t.pool_chains
+        xticks --> []
+        x = [1]
+        return x, y
+    else
+        labels = map(cidx -> "chain $cidx", FC.chain_indices(t.chn))
+        x = repeat(labels; inner = niters)
+        return x, y
+    end
 end
 
 end # module
