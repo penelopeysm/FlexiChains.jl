@@ -68,7 +68,6 @@ function FC.mmeanplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainMean; kwargs...
     x = FC.iter_indices(d.chn)
     data = FC._get_raw_data(d.chn, d.param)
     y = mapslices(FC.PlotUtils.runningmean, data; dims = 1)
-    FC.PlotUtils.check_eltype_is_real(y)
     nchains = size(y, 2)
     p = nothing
     labels = permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
