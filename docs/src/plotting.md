@@ -9,7 +9,6 @@ Here is a rough overview of the current status:
 | Type of plot                     | Plots.jl                              | Makie.jl                                                |
 | :------------------------------- | :------------------------------------ | :------------------------------------------------------ |
 | Trace + mixed density (default)  | ✅ [`Plots.plot`](@ref)               | ✅ [`Makie.plot`](@ref)                                 |
-| Pair / corner plots              | 🐌                                    | ✅ [`PairPlots.pairplot`](@ref integrations-pairplots)  |
 | Trace plots                      | ✅ [`FlexiChains.traceplot`](@ref)    | ✅ [`FlexiChains.mtraceplot`](@ref)                     |
 | Density plots                    | ✅ [`Plots.density`](@ref)            | ✅ [`Makie.density`](@ref)                              |
 | Histograms                       | ✅ [`Plots.histogram`](@ref)          | ✅ [`Makie.hist`](@ref) and [`Makie.stephist`](@ref)    |
