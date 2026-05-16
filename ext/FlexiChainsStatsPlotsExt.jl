@@ -77,7 +77,7 @@ StatsPlots.histogram
     Plots.violin(
         chn::FlexiChain[, param_or_params];
         pool_chains::Bool=false,
-        box::Bool=false,
+        with_box::Bool=false,
         kwargs...
     )
 
@@ -87,9 +87,10 @@ $(FC._PARAM_DOCSTRING("violin"))
 
 $(FC._POOL_CHAINS_DOCSTRING)
 
-If `box=true`, a box plot will additionally be overlaid on the violin plot.
+If `with_box=true`, a box plot will additionally be overlaid on the violin plot.
 
-$(FC._PLOTS_KWARGS_DOCSTRING)
+$(FC._PLOTS_KWARGS_DOCSTRING) (For `with_box=true`, keyword arguments are passed to both the
+violin and box plot components.)
 """
 StatsPlots.violin
 

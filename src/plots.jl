@@ -161,36 +161,6 @@ Same as `FlexiChains.autocorplot`, but uses `plot!` instead of `plot`.
 """
 function autocorplot! end
 
-"""
-    FlexiChains.violinplot(
-        chn::FlexiChain{TKey}[, param_or_params];
-        pool_chains=false,
-        box=true,
-        kwargs...
-    )
-
-Plot the density of the specified parameter(s) in the given `FlexiChain` using Plots.jl, in
-the form of a violin plot (i.e. a mirrored density plot, with an additional box plot
-overlaid if `box=true`).
-
-$(_POOL_CHAINS_DOCSTRING)
-
-$(_PARAM_DOCSTRING("violinplot"))
-"""
-function violinplot end
-
-"""
-    FlexiChains.violinplot!(
-        chn::FlexiChain{TKey}[, param_or_params];
-        pool_chains=true,
-        box=true,
-        kwargs...
-    )
-
-Same as `FlexiChains.violinplot`, but uses `plot!` instead of `plot`.
-"""
-function violinplot! end
-
 ###################
 # Makie overloads #
 ###################
@@ -363,7 +333,7 @@ module PlotUtils
         chn::FlexiChain{TKey}
         param::Tp
         pool_chains::Bool
-        box::Bool
+        with_box::Bool
     end
 
 end # module PlotUtils
