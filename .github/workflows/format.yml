@@ -11,9 +11,9 @@ jobs:
     name: Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v3
-      - uses: julia-actions/cache@v3
-      - uses: fredrikekre/runic-action@v1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # 3.0.2
+      - uses: julia-actions/cache@a45e8fa8be21c18a06b7177052533149e61e9b38 # 3.1.0
+      - uses: fredrikekre/runic-action@26bdc21c15f81fbd4c7605a5f94fb5a0060820a6 # 1.4.0
         with:
           version: '1'

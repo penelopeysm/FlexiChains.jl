@@ -42,17 +42,15 @@ jobs:
             os: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
 
-      - uses: julia-actions/setup-julia@v3
+      - uses: julia-actions/setup-julia@fa02766e078afaaf09b14210362cee14137e6a32 # 3.0.2
         with:
           version: ${{ matrix.runner.version }}
 
-      - uses: julia-actions/cache@v3
+      - uses: julia-actions/cache@a45e8fa8be21c18a06b7177052533149e61e9b38 # 3.1.0
 
-      - uses: julia-actions/julia-buildpkg@v1
-
-      - uses: julia-actions/julia-runtest@v1
+      - uses: julia-actions/julia-runtest@d60b785c6f2bdf4ebfb18b2b6f7d93b7dfb0efe3 # 1.11.4
         env:
           # Only run Aqua tests on latest version
           AQUA: ${{ matrix.runner.version == '1' && 'true' || 'false' }}
