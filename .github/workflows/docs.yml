@@ -58,7 +58,7 @@ jobs:
           REPO_NAME: ${{ github.event.repository.name }}
         run: |
           preview_url="https://pysm.dev/FlexiChains.jl/previews/PR${PR_NUMBER}/"
-          body="<!-- docs-preview-tag --> ${REPO_NAME} documentation for PR #${PR_NUMBER} is available at ${preview_url}."
+          body="<!-- docs-preview-tag --> [Docs preview for PR #${PR_NUMBER}](${preview_url})"
           existing=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | contains("docs-preview-tag")) | .id' | head -1)
           if [ -z "$existing" ]; then
             gh pr comment "$PR_NUMBER" --body "$body"
