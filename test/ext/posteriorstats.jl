@@ -1,13 +1,93 @@
 module FlexiChainsPosteriorStatsTests
 
-using FlexiChains: FlexiChain, Parameter, Extra, VarName, @varname
-using DimensionalData: DimensionalData as DD, val
+using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, VarName, @varname, FlexiSummary
+using DimensionalData: DimensionalData as DD, val, At
 using OrderedCollections: OrderedDict
 using PosteriorStats: PosteriorStats
+using IntervalSets: leftendpoint, rightendpoint
 using Test
 
 @testset verbose = true "PosteriorStats extension" begin
     @info "Testing PosteriorStats extension"
+
+    @testset "hdi/eti" begin
+        N_iters, N_chains = 10, 3
+        as = rand(N_iters, N_chains)
+        bs = rand(N_iters, N_chains)
+        cs = rand(N_iters, N_chains)
+        chain = FlexiChain{Symbol}(
+            N_iters,
+            N_chains,
+            OrderedDict(
+                Parameter(:a) => as,
+                Parameter(:b) => bs,
+                Extra("c") => cs,
+            )
+        )
+
+        @testset "basic return types" begin
+            for func in (PosteriorStats.hdi, PosteriorStats.eti)
+                fs = func(chain; prob = 0.95)
+                @test fs isa FlexiSummary
+                @test FlexiChains.iter_indices(fs) === nothing
+                @test FlexiChains.chain_indices(fs) === nothing
+                @test FlexiChains.stat_indices(fs) === nothing
+
+                fsi = func(chain; prob = 0.95, dims = :chain)
+                @test fsi isa FlexiSummary
+                @test FlexiChains.iter_indices(fsi) == FlexiChains.iter_indices(chain)
+                @test FlexiChains.chain_indices(fsi) === nothing
+                @test FlexiChains.stat_indices(fsi) === nothing
+
+                fsc = func(chain; prob = 0.95, dims = :iter)
+                @test fsc isa FlexiSummary
+                @test FlexiChains.iter_indices(fsc) === nothing
+                @test FlexiChains.chain_indices(fsc) == FlexiChains.chain_indices(chain)
+                @test FlexiChains.stat_indices(fsc) === nothing
+            end
+        end
+
+        @testset "split_interval kwarg" begin
+            fs_hdi = PosteriorStats.hdi(chain; prob = 0.95, split_interval = false)
+            fs_split_hdi = PosteriorStats.hdi(chain; prob = 0.95, split_interval = true)
+            @test FlexiChains.iter_indices(fs_split_hdi) === nothing
+            @test FlexiChains.chain_indices(fs_split_hdi) === nothing
+            @test FlexiChains.stat_indices(fs_split_hdi) == [:hdi_lower, :hdi_upper]
+            for k in keys(fs_split_hdi)
+                @test fs_split_hdi[k, stat = At(:hdi_lower)] == leftendpoint(fs_hdi[k])
+                @test fs_split_hdi[k, stat = At(:hdi_upper)] == rightendpoint(fs_hdi[k])
+            end
+
+            fsi_split_hdi = PosteriorStats.hdi(chain; dims = :chain, prob = 0.95, split_interval = true)
+            @test FlexiChains.iter_indices(fsi_split_hdi) == FlexiChains.iter_indices(chain)
+            @test FlexiChains.chain_indices(fsi_split_hdi) === nothing
+            @test FlexiChains.stat_indices(fs_split_hdi) == [:hdi_lower, :hdi_upper]
+
+            fsc_split_hdi = PosteriorStats.hdi(chain; dims = :iter, prob = 0.95, split_interval = true)
+            @test FlexiChains.iter_indices(fsc_split_hdi) === nothing
+            @test FlexiChains.chain_indices(fsc_split_hdi) == FlexiChains.chain_indices(chain)
+            @test FlexiChains.stat_indices(fsc_split_hdi) == [:hdi_lower, :hdi_upper]
+
+            fs_split_eti = PosteriorStats.eti(chain; prob = 0.95, split_interval = true)
+            @test FlexiChains.iter_indices(fs_split_eti) === nothing
+            @test FlexiChains.chain_indices(fs_split_eti) === nothing
+            @test FlexiChains.stat_indices(fs_split_eti) == [:eti_lower, :eti_upper]
+
+            # If we use method=:multimodal, split_interval should be ignored
+            @test_logs (:warn, r"Returning the original FlexiSummary without splitting") PosteriorStats.hdi(chain; prob = 0.95, method = :multimodal, split_interval = true)
+            fs_multimodal = PosteriorStats.hdi(chain; prob = 0.95, method = :multimodal, split_interval = true)
+            @test FlexiChains.stat_indices(fs_multimodal) === nothing
+        end
+
+        @testset "test info message when prob isn't passed" begin
+            expected_message = r"`prob` keyword argument not provided"
+            @test_logs (:info, expected_message) PosteriorStats.hdi(chain)
+            @test_logs (:info, expected_message) PosteriorStats.eti(chain)
+
+            @test_logs PosteriorStats.hdi(chain; prob = 0.95)
+            @test_logs PosteriorStats.eti(chain; prob = 0.95)
+        end
+    end
 
     @testset "loo with Symbol-keyed chain" begin
         N_iters, N_chains = 100, 2

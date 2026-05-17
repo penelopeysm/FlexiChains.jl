@@ -14,7 +14,6 @@ using FlexiChains:
 using Logging: Warn
 using MCMCDiagnosticTools: ess, rhat, mcse
 using OrderedCollections: OrderedDict
-using PosteriorStats: hdi, eti
 using Statistics
 using StatsBase: geomean, harmmean, mad, iqr
 using Test
@@ -131,12 +130,6 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
         @test mcse(chain) isa FlexiSummary
         @test mcse(chain; dims = :iter) isa FlexiSummary
         @test mcse(chain; dims = :chain) isa FlexiSummary
-        @test hdi(chain) isa FlexiSummary
-        @test hdi(chain; dims = :iter) isa FlexiSummary
-        @test hdi(chain; dims = :chain) isa FlexiSummary
-        @test eti(chain) isa FlexiSummary
-        @test eti(chain; dims = :iter) isa FlexiSummary
-        @test eti(chain; dims = :chain) isa FlexiSummary
         @test quantile(chain, 0.5) isa FlexiSummary
         @test quantile(chain, 0.5; dims = :iter) isa FlexiSummary
         @test quantile(chain, 0.5; dims = :chain) isa FlexiSummary
