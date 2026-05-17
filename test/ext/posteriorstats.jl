@@ -1,6 +1,6 @@
 module FlexiChainsPosteriorStatsTests
 
-using FlexiChains: FlexiChain, Parameter, Extra, VarName, @varname, FlexiSummary
+using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, VarName, @varname, FlexiSummary
 using DimensionalData: DimensionalData as DD, val
 using OrderedCollections: OrderedDict
 using PosteriorStats: PosteriorStats
