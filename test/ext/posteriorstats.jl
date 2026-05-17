@@ -1,9 +1,10 @@
 module FlexiChainsPosteriorStatsTests
 
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, VarName, @varname, FlexiSummary
-using DimensionalData: DimensionalData as DD, val
+using DimensionalData: DimensionalData as DD, val, At
 using OrderedCollections: OrderedDict
 using PosteriorStats: PosteriorStats
+using IntervalSets: leftendpoint, rightendpoint
 using Test
 
 @testset verbose = true "PosteriorStats extension" begin
@@ -47,10 +48,29 @@ using Test
         end
 
         @testset "split_interval kwarg" begin
+            fs_hdi = PosteriorStats.hdi(chain; prob = 0.95, split_interval = false)
             fs_split_hdi = PosteriorStats.hdi(chain; prob = 0.95, split_interval = true)
+            @test FlexiChains.iter_indices(fs_split_hdi) === nothing
+            @test FlexiChains.chain_indices(fs_split_hdi) === nothing
+            @test FlexiChains.stat_indices(fs_split_hdi) == [:hdi_lower, :hdi_upper]
+            for k in keys(fs_split_hdi)
+                @test fs_split_hdi[k, stat = At(:hdi_lower)] == leftendpoint(fs_hdi[k])
+                @test fs_split_hdi[k, stat = At(:hdi_upper)] == rightendpoint(fs_hdi[k])
+            end
+
+            fsi_split_hdi = PosteriorStats.hdi(chain; dims = :chain, prob = 0.95, split_interval = true)
+            @test FlexiChains.iter_indices(fsi_split_hdi) == FlexiChains.iter_indices(chain)
+            @test FlexiChains.chain_indices(fsi_split_hdi) === nothing
             @test FlexiChains.stat_indices(fs_split_hdi) == [:hdi_lower, :hdi_upper]
 
+            fsc_split_hdi = PosteriorStats.hdi(chain; dims = :iter, prob = 0.95, split_interval = true)
+            @test FlexiChains.iter_indices(fsc_split_hdi) === nothing
+            @test FlexiChains.chain_indices(fsc_split_hdi) == FlexiChains.chain_indices(chain)
+            @test FlexiChains.stat_indices(fsc_split_hdi) == [:hdi_lower, :hdi_upper]
+
             fs_split_eti = PosteriorStats.eti(chain; prob = 0.95, split_interval = true)
+            @test FlexiChains.iter_indices(fs_split_eti) === nothing
+            @test FlexiChains.chain_indices(fs_split_eti) === nothing
             @test FlexiChains.stat_indices(fs_split_eti) == [:eti_lower, :eti_upper]
 
             # If we use method=:multimodal, split_interval should be ignored

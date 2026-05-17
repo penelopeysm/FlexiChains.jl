@@ -262,9 +262,8 @@ PosteriorStats.hdi(chn; prob=0.95, split_interval=true)
 ```
 
 `PosteriorStats.loo`, which computes Pareto-smoothed importance sampling leave-one-out cross-validation (PSIS-LOO), is also overloaded for `FlexiChain` objects.
-You can either pass a chain of log-likelihood values, which can be computed via `DynamicPPL.pointwise_loglikelihoods(model, chain)`, or (perhaps more easily) a Turing model plus a posterior chain which just does that for you:
-
-And an example (although note that the chain above is sampled from the prior — so this is only meant to be a demonstration of the API):
+You can either pass a chain of log-likelihood values, which can be computed via `DynamicPPL.pointwise_loglikelihoods(model, chain)`, or (perhaps more easily) a Turing model plus a posterior chain which just does that for you.
+For example (although note that the chain above is sampled from the prior — so this is only meant to be a demonstration of the API):
 
 ```@example posteriorstats
 PosteriorStats.loo(model, chn)
