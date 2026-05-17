@@ -20,9 +20,50 @@ permissions:
 jobs:
   docs:
     runs-on: ubuntu-latest
+    env:
+      IS_PR_BUT_NOT_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name }}
 
     steps:
-      - name: Build and deploy Documenter.jl docs
-        uses: TuringLang/actions/DocsDocumenter@main
+      - uses: actions/checkout@v6
+
+      - uses: julia-actions/setup-julia@v3
         with:
-          add-navbar: false
+          version: 1
+
+      - uses: julia-actions/cache@v3
+
+      - name: Install docs dependencies
+        shell: julia --color=yes --project=docs {0}
+        run: |
+          using Pkg
+          Pkg.develop(; path=".")
+          Pkg.instantiate()
+
+      - name: Build docs
+        shell: julia --color=yes --project=docs {0}
+        run: include("docs/make.jl")
+
+      - name: Deploy docs to gh-pages branch
+        working-directory: docs
+        shell: julia --color=yes --project=. {0}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        # Must pass `root` when `deploydocs()` is run from outside make.jl file
+        # Also, `root` must be an absolute path (hence the call to `pwd()`)
+        run: |
+          using Documenter
+          deploydocs(; root=pwd(), repo="github.com/penelopeysm/FlexiChains.git", push_preview=true)
+          
+      - name: Post docs preview comment
+        if: ${{ env.IS_PR_BUT_NOT_FORK == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          preview_url="https://pysm.dev/FlexiChains.jl/previews/PR${PR_NUMBER}/"
+          body="<!-- docs-preview-tag --> ${REPO_NAME} documentation for PR #${PR_NUMBER} is available at ${preview_url}."
+          existing=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | contains("docs-preview-tag")) | .id' | head -1)
+          if [ -z "$existing" ]; then
+            gh pr comment "$PR_NUMBER" --body "$body"
+          fi
