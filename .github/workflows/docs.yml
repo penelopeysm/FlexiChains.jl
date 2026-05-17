@@ -40,8 +40,8 @@ jobs:
           Pkg.instantiate()
 
       - name: Build docs
-        shell: julia --color=yes --project=docs {0}
-        run: include("docs/make.jl")
+        working-directory: docs
+        run: julia --color=yes --project=. -e 'include("make.jl")'
 
       - name: Deploy docs to gh-pages branch
         working-directory: docs
