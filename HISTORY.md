@@ -1,3 +1,7 @@
+# 0.6.11
+
+Added the `split_interval` keyword argument to `PosteriorStats.hdi(::FlexiChain)` and `PosteriorStats.eti(::FlexiChain)`, which allows you to specify that the returned interval should be split into its lower and upper bounds as separate statistics.
+
 # 0.6.10
 
 Implemented Makie-backed `FlexiChains.mmeanplot` and `FlexiChains.mautocorplot`.
