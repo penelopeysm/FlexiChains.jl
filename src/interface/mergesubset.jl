@@ -75,8 +75,7 @@ end
 
 Merge two `FlexiSummary`s along both the key and statistic dimensions.
 
-The two summaries must have the same iteration and chain indices, and both must have known
-stat names (i.e. `_stat_indices !== nothing`).
+The two summaries must have the same iteration and chain indices.
 
 The merged result contains the union of keys and the union of stat names from both summaries.
 For each `(key, stat)` pair, the value from `s2` takes priority over `s1`. Pairs that exist
@@ -88,7 +87,10 @@ and a warning will be issued.
 function Base.merge(
         s1::FlexiSummary{TKey1}, s2::FlexiSummary{TKey2}
     ) where {TKey1, TKey2}
-    # Validate iter and chain indices match
+    # Validate iter and chain indices match. This is stricter than merge on FlexiChain, but
+    # for summaries, I'm genuinely unsure of how one can ever have a situation where one
+    # would want to merge summaries with different iteration or chain indices. (To the
+    # reader: please feel free to open issues / PRs if you have a use case!)
     s1._iter_indices == s2._iter_indices || throw(
         DimensionMismatch(
             "cannot merge FlexiSummaries with different iteration indices."
@@ -99,18 +101,11 @@ function Base.merge(
             "cannot merge FlexiSummaries with different chain indices."
         ),
     )
-    # Both must have known stat names
-    si1 = s1._stat_indices
-    si2 = s2._stat_indices
-    si1 === nothing && throw(
-        ArgumentError("cannot merge: first FlexiSummary has unknown stat names")
-    )
-    si2 === nothing && throw(
-        ArgumentError("cannot merge: second FlexiSummary has unknown stat names")
-    )
-    names1 = parent(si1)
-    names2 = parent(si2)
-    # Promote key type if necessary
+    # Collect stat names
+    stats1 = parent(s1._stat_indices)
+    stats2 = parent(s2._stat_indices)
+    all_stats = union(stats1, stats2)
+    # Collect key names
     TKeyNew = if TKey1 != TKey2
         new = Base.promote_type(TKey1, TKey2)
         @warn "Merging FlexiSummaries with different key types: $(TKey1) and $(TKey2). The resulting summary will have $(new) as the key type."
@@ -118,37 +113,38 @@ function Base.merge(
     else
         TKey1
     end
-    # Merged stat names and keys: s1's order first, then new from s2
-    merged_names = union(names1, names2)
     all_keys = union(collect(keys(s1._data)), collect(keys(s2._data)))
-    # Build index maps: stat name -> position in original arrays
-    s1_stat_idx = Dict(name => i for (i, name) in enumerate(names1))
-    s2_stat_idx = Dict(name => i for (i, name) in enumerate(names2))
-    # Determine sizes for padding with missing
+    # Build mappings from stat name to index along the 3rd dimension of data array
+    s1_stat_idx = Dict(name => i for (i, name) in enumerate(stats1))
+    s2_stat_idx = Dict(name => i for (i, name) in enumerate(stats2))
+    all_stat_idx = Dict(name => i for (i, name) in enumerate(all_stats))
+    # Determine sizes of output array
     iter_size = s1._iter_indices === nothing ? 1 : length(s1._iter_indices)
     chain_size = s1._chain_indices === nothing ? 1 : length(s1._chain_indices)
-    # Merge data: for each (key, stat), s2 wins if it has the pair
+    stat_size = length(all_stats)
+    # Merge data
     new_data = OrderedDict{ParameterOrExtra{<:TKeyNew}, Array{<:Any, 3}}()
     for k in all_keys
-        arr = Array{Any, 3}(undef, iter_size, chain_size, length(merged_names))
-        fill!(arr, missing)
-        # Fill from s1
+        arr = Array{Any, 3}(missing, iter_size, chain_size, stat_size)
+        # Fill from s1 first.
         if haskey(s1._data, k)
-            for (name, i) in s1_stat_idx
-                j = findfirst(==(name), merged_names)
-                arr[:, :, j] .= @view s1._data[k][:, :, i]
+            # In principle this could be optimised to check if s2 has the combination of key
+            # `k` + stat `name` before filling from s1, but this is probably good enough.
+            for (stat_name, i) in s1_stat_idx
+                j = all_stat_idx[stat_name]
+                arr[:, :, j] = s1._data[k][:, :, i]
             end
         end
-        # Overwrite from s2 (s2 wins)
+        # Then overwrite from s2
         if haskey(s2._data, k)
-            for (name, i) in s2_stat_idx
-                j = findfirst(==(name), merged_names)
+            for (stat_name, i) in s2_stat_idx
+                j = all_stat_idx[stat_name]
                 arr[:, :, j] .= @view s2._data[k][:, :, i]
             end
         end
         new_data[k] = map(identity, arr)
     end
-    new_si = _make_categorical(merged_names)
+    new_si = _make_categorical(all_stats)
     return FlexiSummary{TKeyNew}(
         new_data, s1._iter_indices, s1._chain_indices, new_si, false,
     )
