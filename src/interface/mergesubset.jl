@@ -145,8 +145,11 @@ function Base.merge(
         new_data[k] = map(identity, arr)
     end
     new_si = _make_categorical(all_stats)
+    # The result should only drop the stat dimension if both inputs dropped it and there's
+    # only one stat in the result (for example, merge(mean(chn1), mean(chn2))).
+    new_drop = s1._drop_stat_dim && s2._drop_stat_dim && length(all_stats) == 1
     return FlexiSummary{TKeyNew}(
-        new_data, s1._iter_indices, s1._chain_indices, new_si, false,
+        new_data, s1._iter_indices, s1._chain_indices, new_si, new_drop,
     )
 end
 

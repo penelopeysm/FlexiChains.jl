@@ -660,6 +660,223 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
             @test_throws ArgumentError FlexiChains.map_parameters(j, smy)
         end
     end
+
+    @testset "merge FlexiSummary" begin
+        N_iters, N_chains = 10, 3
+        as = rand(N_iters, N_chains)
+        bs = rand(N_iters, N_chains)
+        cs = rand(N_iters, N_chains)
+        chain_ab = FlexiChain{Symbol}(
+            N_iters, N_chains,
+            Dict(Parameter(:a) => as, Parameter(:b) => bs);
+            iter_indices = 2:2:(2 * N_iters),
+            chain_indices = [1, 2, 3],
+        )
+        chain_bc = FlexiChain{Symbol}(
+            N_iters, N_chains,
+            Dict(Parameter(:b) => bs, Extra("c") => cs);
+            iter_indices = 2:2:(2 * N_iters),
+            chain_indices = [1, 2, 3],
+        )
+
+        @testset "same keys, same stats: s2 takes priority" begin
+            s1 = FlexiChains.collapse(chain_ab, [mean, std]; dims = :both)
+            s2 = FlexiChains.collapse(chain_ab, [mean, std]; dims = :both)
+            merged = merge(s1, s2)
+            @test merged isa FlexiSummary{Symbol}
+            for k in keys(s2)
+                @test isequal(merged[k], s2[k])
+            end
+        end
+
+        @testset "disjoint keys, same stats" begin
+            s1 = mean(chain_ab)
+            s2 = mean(chain_bc)
+            merged = merge(s1, s2)
+            @test merged isa FlexiSummary{Symbol}
+            # :a only in s1
+            @test isapprox(merged[:a], s1[:a])
+            # Extra("c") only in s2
+            @test isapprox(merged[Extra("c")], s2[Extra("c")])
+            # :b in both — s2 wins
+            @test isapprox(merged[:b], s2[:b])
+        end
+
+        @testset "same keys, disjoint stats" begin
+            s_mean = mean(chain_ab)
+            s_std = std(chain_ab)
+            merged = merge(s_mean, s_std)
+            @test merged isa FlexiSummary{Symbol}
+            # Both stat names should be present
+            @test FlexiChains.stat_indices(merged) == [:mean, :std]
+            # Values should match the originals
+            @test isapprox(
+                merged[:a, stat = DD.At(:mean)],
+                s_mean[:a],
+            )
+            @test isapprox(
+                merged[:a, stat = DD.At(:std)],
+                s_std[:a],
+            )
+        end
+
+        @testset "disjoint keys and disjoint stats" begin
+            s1 = mean(chain_ab)
+            s2 = std(chain_bc)
+            merged = merge(s1, s2)
+            @test merged isa FlexiSummary{Symbol}
+            @test FlexiChains.stat_indices(merged) == [:mean, :std]
+            # :a only has mean (from s1), std should be missing
+            @test isapprox(merged[:a, stat = DD.At(:mean)], s1[:a])
+            @test ismissing(merged[:a, stat = DD.At(:std)])
+            # Extra("c") only has std (from s2), mean should be missing
+            @test isapprox(merged[Extra("c"), stat = DD.At(:std)], s2[Extra("c")])
+            @test ismissing(merged[Extra("c"), stat = DD.At(:mean)])
+            # :b has mean from s1 and std from s2
+            @test isapprox(merged[:b, stat = DD.At(:mean)], s1[:b])
+            @test isapprox(merged[:b, stat = DD.At(:std)], s2[:b])
+        end
+
+        @testset "overlapping stats: s2 values take priority" begin
+            s1 = FlexiChains.collapse(chain_ab, [mean, std]; dims = :both)
+            chain_ab2 = FlexiChain{Symbol}(
+                N_iters, N_chains,
+                Dict(Parameter(:a) => as .+ 1, Parameter(:b) => bs .+ 1);
+                iter_indices = 2:2:(2 * N_iters),
+                chain_indices = [1, 2, 3],
+            )
+            s2 = mean(chain_ab2)
+            merged = merge(s1, s2)
+            # mean should come from s2 (the shifted data)
+            @test isapprox(merged[:a, stat = DD.At(:mean)], s2[:a])
+            # std should come from s1 (s2 didn't have std)
+            @test isapprox(
+                merged[:a, stat = DD.At(:std)],
+                s1[:a, stat = DD.At(:std)],
+            )
+        end
+
+        @testset "uncollapsed and mismatched iteration or chain indices" begin
+            chain_diff_iter = FlexiChain{Symbol}(
+                N_iters, N_chains,
+                Dict(Parameter(:a) => as);
+                iter_indices = 100:100:(100 * N_iters),
+                chain_indices = [1, 2, 3],
+            )
+            s1 = mean(chain_ab; dims = :chain)
+            s2 = mean(chain_diff_iter; dims = :chain)
+            @test_throws DimensionMismatch merge(s1, s2)
+
+            chain_diff_chain = FlexiChain{Symbol}(
+                N_iters, N_chains,
+                Dict(Parameter(:a) => as);
+                iter_indices = 2:2:(2 * N_iters),
+                chain_indices = [10, 20, 30],
+            )
+            s1 = mean(chain_ab, dims = :iter)
+            s2 = mean(chain_diff_chain, dims = :iter)
+            @test_throws DimensionMismatch merge(s1, s2)
+        end
+
+        @testset "collapsed iter dimension (dims=:iter)" begin
+            s1 = mean(chain_ab; dims = :iter)
+            s2 = std(chain_bc; dims = :iter)
+            merged = merge(s1, s2)
+            @test merged isa FlexiSummary{Symbol}
+            @test FlexiChains.iter_indices(merged) === nothing
+            @test FlexiChains.chain_indices(merged) == FlexiChains.chain_indices(s1)
+        end
+
+        @testset "collapsed chain dimension (dims=:chain)" begin
+            s1 = mean(chain_ab; dims = :chain)
+            s2 = std(chain_bc; dims = :chain)
+            merged = merge(s1, s2)
+            @test merged isa FlexiSummary{Symbol}
+            @test FlexiChains.iter_indices(merged) == FlexiChains.iter_indices(s1)
+            @test FlexiChains.chain_indices(merged) === nothing
+        end
+
+        @testset "dropped stat dim in merge result" begin
+            @testset "when it should be dropped" begin
+                s1 = mean(chain_ab)
+                s2 = mean(chain_bc)
+                @test FlexiChains.stat_indices(s1) === nothing
+                @test FlexiChains.stat_indices(s2) === nothing
+                merged = merge(s1, s2)
+                @test FlexiChains.stat_indices(merged) === nothing
+            end
+            @testset "when it shouldn't be dropped" begin
+                s1 = mean(chain_ab)
+                s2 = std(chain_ab)
+                @test FlexiChains.stat_indices(s1) === nothing
+                @test FlexiChains.stat_indices(s2) === nothing
+                merged = merge(s1, s2)
+                @test FlexiChains.stat_indices(merged) == [:mean, :std]
+            end
+        end
+
+        @testset "key type promotion" begin
+            chain_str = FlexiChain{String}(
+                N_iters, N_chains,
+                Dict(Parameter("x") => rand(N_iters, N_chains));
+                iter_indices = 2:2:(2 * N_iters),
+                chain_indices = [1, 2, 3],
+            )
+            s1 = mean(chain_ab)
+            s2 = mean(chain_str)
+            @test_logs (:warn, r"different key types") merge(s1, s2)
+            merged = merge(s1, s2)
+            @test merged isa FlexiSummary{Any}
+            @test haskey(merged, Parameter(:a))
+            @test haskey(merged, Parameter("x"))
+        end
+
+        @testset "three or more summaries" begin
+            chain_d = FlexiChain{Symbol}(
+                N_iters, N_chains,
+                Dict(Parameter(:d) => rand(N_iters, N_chains));
+                iter_indices = 2:2:(2 * N_iters),
+                chain_indices = [1, 2, 3],
+            )
+            s1 = mean(chain_ab)
+            s2 = mean(chain_bc)
+            s3 = mean(chain_d)
+            merged = merge(s1, s2, s3)
+            @test merged isa FlexiSummary{Symbol}
+            @test haskey(merged, Parameter(:a))
+            @test haskey(merged, Parameter(:b))
+            @test haskey(merged, Extra("c"))
+            @test haskey(merged, Parameter(:d))
+        end
+    end
+
+    @testset "subset_parameters on summary" begin
+        chain_mixed = FlexiChain{Symbol}(
+            N_iters, N_chains,
+            Dict(Parameter(:a) => as, Extra("c") => cs);
+            iter_indices = 2:2:(2 * N_iters),
+            chain_indices = [1, 2, 3],
+        )
+        s = mean(chain_mixed)
+        sp = FlexiChains.subset_parameters(s)
+        @test sp isa FlexiSummary{Symbol}
+        @test haskey(sp, Parameter(:a))
+        @test !haskey(sp, Extra("c"))
+    end
+
+    @testset "subset_extras on summary" begin
+        chain_mixed = FlexiChain{Symbol}(
+            N_iters, N_chains,
+            Dict(Parameter(:a) => as, Extra("c") => cs);
+            iter_indices = 2:2:(2 * N_iters),
+            chain_indices = [1, 2, 3],
+        )
+        s = mean(chain_mixed)
+        se = FlexiChains.subset_extras(s)
+        @test se isa FlexiSummary{Symbol}
+        @test !haskey(se, Parameter(:a))
+        @test haskey(se, Extra("c"))
+    end
 end
 
 end # module
