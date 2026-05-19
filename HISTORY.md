@@ -1,3 +1,14 @@
+# 0.6.12
+
+Added `Base.merge(fs1::FlexiSummary, fs2::FlexiSummary)` to merge two summaries together.
+
+The resulting `FlexiSummary` will have keys that are the union of the keys of `fs1` and `fs2`, as well as statistics that are the union of the statistics of `fs1` and `fs2`.
+
+In general, the value for a given key and statistic in the merged summary will be taken from `fs2` if it exists, and from `fs1` otherwise.
+For key/statistic combinations that don't exist in either summary, the value will be `missing`.
+
+For the most part, it is expected that the two summaries being merged will have either the same keys (in which case this amounts to concatenation of statistics), or the same statistics (i.e., concatenation of keys).
+
 # 0.6.11
 
 Added the `split_interval` keyword argument to `PosteriorStats.hdi(::FlexiChain)` and `PosteriorStats.eti(::FlexiChain)`, which allows you to specify that the returned interval should be split into its lower and upper bounds as separate statistics.

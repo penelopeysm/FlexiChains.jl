@@ -70,23 +70,6 @@ The key `v` is still present in the result (since `mean` and `std` could be comp
 However, notice that other statistics such as `ess` are no longer defined, and so return `missing` values.
 Just like before, the string `s` is dropped since no statistics could be computed for it.
 
-## Conversion to Arrays
-
-Before we go on to the next step, it's worth noting that `FlexiSummary` objects can be converted to `DimArray`s (more informative) or plain `Array`s.
-This is useful for e.g. extracting the mean of all variables as an array:
-
-```@example stats
-st = summarystats(chain)
-DimArray(st)
-```
-
-In the next section we'll describe individual statistics.
-Here is a sneak peek: `mean(chain)` will return a `FlexiSummary` object, and you can convert it to a `DimArray` if you want to extract the mean values as an array:
-
-```@example stats
-DimArray(mean(chain))
-```
-
 ## Individual statistics
 
 Sometimes you may only want to calculate a single statistic.
@@ -98,10 +81,17 @@ All of these functions return a `FlexiSummary` where the `:stat` dimension has a
 That means that if you want to access the mean of a variable `@varname(a)` you don't need to further use the `stat` dimension:
 
 ```@example stats
-m = mean(chain)
+mn = mean(chain)
 # Not needed: mean_f = m[@varname(f), stat=At(:mean)]
 # Just do:
-mean_f = m[@varname(f)]
+mean_f = mn[@varname(f)]
+```
+
+In fact, behind the scenes, the actual name of the statistic is retained.
+This means that, for example, if you convert the result to a `DataFrame`, the column will be named `mean` rather than `stat`:
+
+```@example stats
+DataFrame(mn)
 ```
 
 ```@docs
@@ -168,6 +158,26 @@ There are two things worth mentioning, which we will note in passing here withou
 
 2. The name of the statistic is inferred from the function. Sometimes this doesn't work out nicely, for example if you pass an anonymous function. In this case you can provide a tuple of `(:name, function)` instead of just the function.
 
+## Merging summaries
+
+As an alternative to using `collapse`, you can also calculate separate summaries and then merge them.
+
+```@example stats
+mn = mean(chain)
+sd = std(chain)
+
+merge(mn, sd)
+```
+
+```@docs
+Base.merge(::FlexiChains.FlexiSummary, ::FlexiChains.FlexiSummary)
+```
+
+## Density intervals
+
+It is worth just noting briefly here that FlexiChains has a PosteriorStats extension which allows you to calculate highest density intervals and equal-tailed intervals.
+Please see the [PosteriorStats integration section](@ref integrations-posteriorstats) for details.
+
 ## MCMC diagnostics
 
 There are a number of functions in MCMCDiagnosticTools.jl which do not nicely fit the notion of 'collapse over one or more dimensions'.
@@ -187,4 +197,20 @@ MCMCDiagnosticTools.gelmandiag
 MCMCDiagnosticTools.gelmandiag_multivariate
 MCMCDiagnosticTools.discretediag
 MCMCDiagnosticTools.bfmi
+```
+
+## Flattening summaries
+
+Finally, `FlexiSummary` objects can be converted to `DimArray`s or `DataFrame`s, just like `FlexiChain`s.
+This is useful for various analyses and visualisations.
+
+```@example stats
+st = summarystats(chain)
+DimArray(st)
+```
+
+```@example stats
+using DataFrames
+
+DataFrame(st)
 ```

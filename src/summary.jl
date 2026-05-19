@@ -15,7 +15,7 @@ end
         TKey,
         TIIdx<:Union{DimensionalData.Lookup,Nothing},
         TCIdx<:Union{DimensionalData.Lookup,Nothing},
-        TSIdx<:Union{DimensionalData.Categorical,Nothing},
+        TSIdx<:DimensionalData.Categorical,
     }
 
 A data structure containing summary statistics of a [`FlexiChain`](@ref).
@@ -67,9 +67,11 @@ Regardless of which dimensions have been collapsed, the internal data of a `Flex
 **always** contains all three dimensions (some of which may have size 1).
 
 Information about which dimensions are collapsed is therefore not stored in the arrays.
-Instead, it is stored in the `_iter_indices`, `_chain_indices`, and `_stat_indices` fields
-of the `FlexiSummary`, as well as their types. If any of these are `nothing`, then that
-dimension has been collapsed.
+Instead, it is stored in the `_iter_indices` and `_chain_indices` fields of the
+`FlexiSummary`, as well as their types. If either of these is `nothing`, then that
+dimension has been collapsed. For the stat dimension, `_stat_indices` always contains a
+`DimensionalData.Categorical` with the stat name(s), but the `_drop_stat_dim` field
+controls whether the stat dimension is presented to the user.
 
 This information is later used in the `_get_raw_data` and `_raw_to_user_data` functions.
 """
@@ -77,32 +79,33 @@ struct FlexiSummary{
         TKey,
         TIIdx <: Union{DD.Lookup, Nothing},
         TCIdx <: Union{DD.Lookup, Nothing},
-        TSIdx <: Union{DD.Categorical, Nothing},
+        TSIdx <: DD.Categorical,
     }
     _data::OrderedDict{ParameterOrExtra{<:TKey}, <:AbstractArray{<:Any, 3}}
     _iter_indices::TIIdx
     _chain_indices::TCIdx
     _stat_indices::TSIdx
+    _drop_stat_dim::Bool
 
     function FlexiSummary{TKey}(
             data::OrderedDict{<:Any, <:AbstractArray{<:Any, 3}},
-            # Note: These are NOT keyword arguments, they are mandatory positional arguments
             iter_indices::TIIdx,
             chain_indices::TCIdx,
             stat_indices::TSIdx,
+            drop_stat_dim::Bool,
         )::FlexiSummary{
             TKey, TIIdx, TCIdx, TSIdx,
         } where {
             TKey,
             TIIdx <: Union{DD.Lookup, Nothing},
             TCIdx <: Union{DD.Lookup, Nothing},
-            TSIdx <: Union{DD.Categorical, Nothing},
+            TSIdx <: DD.Categorical,
         }
         # Get expected size.
         expected_size = (
             TIIdx === Nothing ? 1 : length(iter_indices),
             TCIdx === Nothing ? 1 : length(chain_indices),
-            TSIdx === Nothing ? 1 : length(stat_indices),
+            length(stat_indices),
         )
         # Size verification (while marshalling into a Dict with the right type).
         d = OrderedDict{ParameterOrExtra{<:TKey}, Array{<:Any, 3}}()
@@ -113,7 +116,9 @@ struct FlexiSummary{
             end
             d[k] = collect(v)
         end
-        return new{TKey, TIIdx, TCIdx, TSIdx}(d, iter_indices, chain_indices, stat_indices)
+        return new{TKey, TIIdx, TCIdx, TSIdx}(
+            d, iter_indices, chain_indices, stat_indices, drop_stat_dim
+        )
     end
 end
 """
@@ -135,15 +140,13 @@ function chain_indices(fs::FlexiSummary{TKey, TIIdx, TCIdx})::TCIdx where {TKey,
     return fs._chain_indices
 end
 """
-    stat_indices(summary::FlexiSummary)::DimensionalData.Lookup
+    stat_indices(summary::FlexiSummary)
 
-The indices for each statistic in the summary. This may be `nothing` if the `$STAT_DIM_NAME` 
-dimension has been collapsed.
+The indices for each statistic in the summary. Returns `nothing` if the `$STAT_DIM_NAME`
+dimension has been collapsed (i.e. `drop_stat_dim=true` was used).
 """
-function stat_indices(
-        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}
-    )::TSIdx where {TKey, TIIdx, TCIdx, TSIdx}
-    return fs._stat_indices
+function stat_indices(fs::FlexiSummary)
+    return fs._drop_stat_dim ? nothing : fs._stat_indices
 end
 
 _pretty_value(x::Integer, ::Bool = false) = repr(x)
@@ -186,22 +189,23 @@ Returns a tuple of two elements:
 - a tuple of integers corresponding to the dimensions that have been collapsed, which can be
   passed to `dropdims`.
 """
-function _get_summary_dims(
-        fs::FlexiSummary{TKey, TIIdx, TCIdx, TSIdx}
-    ) where {TKey, TIIdx, TCIdx, TSIdx}
+function _get_summary_dims(fs::FlexiSummary)
     new_dims = DD.Dim[]
     dims_to_keep = Int[]
-    if TIIdx !== Nothing
+    ii = iter_indices(fs)
+    ci = chain_indices(fs)
+    si = stat_indices(fs)
+    if ii !== nothing
         push!(dims_to_keep, 1)
-        push!(new_dims, DD.Dim{ITER_DIM_NAME}(iter_indices(fs)))
+        push!(new_dims, DD.Dim{ITER_DIM_NAME}(ii))
     end
-    if TCIdx !== Nothing
+    if ci !== nothing
         push!(dims_to_keep, 2)
-        push!(new_dims, DD.Dim{CHAIN_DIM_NAME}(chain_indices(fs)))
+        push!(new_dims, DD.Dim{CHAIN_DIM_NAME}(ci))
     end
-    if TSIdx !== Nothing
+    if si !== nothing
         push!(dims_to_keep, 3)
-        push!(new_dims, DD.Dim{STAT_DIM_NAME}(stat_indices(fs)))
+        push!(new_dims, DD.Dim{STAT_DIM_NAME}(si))
     end
     dim_indices_to_drop = tuple(setdiff(1:3, dims_to_keep)...)
     return new_dims, dim_indices_to_drop
@@ -257,7 +261,8 @@ with `new_data`.
 """
 function _replace_data(summary::FlexiSummary, ::Type{newkey}, new_data) where {newkey}
     return FlexiSummary{newkey}(
-        new_data, iter_indices(summary), chain_indices(summary), stat_indices(summary)
+        new_data, summary._iter_indices, summary._chain_indices,
+        summary._stat_indices, summary._drop_stat_dim,
     )
 end
 
@@ -415,22 +420,17 @@ function collapse(
             end
         end
     end
+    if drop_stat_dim && length(funcs) != 1
+        throw(
+            ArgumentError(
+                "`drop_stat_dim=true` only allowed when one function is provided"
+            ),
+        )
+    end
     iter_idxs = dims == :chain ? FlexiChains.iter_indices(chain) : nothing
     chain_idxs = dims == :iter ? FlexiChains.chain_indices(chain) : nothing
-    stat_lookup = if drop_stat_dim
-        if length(funcs) != 1
-            throw(
-                ArgumentError(
-                    "`drop_stat_dim=true` only allowed when one function is provided"
-                ),
-            )
-        else
-            nothing
-        end
-    else
-        _make_categorical(names)
-    end
-    return FlexiSummary{TKey}(data, iter_idxs, chain_idxs, stat_lookup)
+    stat_lookup = _make_categorical(names)
+    return FlexiSummary{TKey}(data, iter_idxs, chain_idxs, stat_lookup, drop_stat_dim)
 end
 
 function _stat_docstring(func_name, short_name)

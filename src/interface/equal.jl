@@ -40,7 +40,8 @@ function Base.:(==)(c1::FlexiSummary{TKey1}, c2::FlexiSummary{TKey2}) where {TKe
         (c1._data == c2._data) &
         (c1._iter_indices == c2._iter_indices) &
         (c1._chain_indices == c2._chain_indices) &
-        (c1._stat_indices == c2._stat_indices)
+        (c1._stat_indices == c2._stat_indices) &
+        (c1._drop_stat_dim == c2._drop_stat_dim)
 end
 
 """
@@ -68,7 +69,8 @@ function Base.isequal(
         isequal(c1._data, c2._data) &&
         isequal(c1._iter_indices, c2._iter_indices) &&
         isequal(c1._chain_indices, c2._chain_indices) &&
-        isequal(c1._stat_indices, c2._stat_indices)
+        isequal(c1._stat_indices, c2._stat_indices) &&
+        c1._drop_stat_dim == c2._drop_stat_dim
 end
 
 """

@@ -525,13 +525,19 @@ function Base.getindex(
     new_chain_indices, new_chain_lookup = _get_indices_and_lookup(
         fs, chain_indices, get(relevant_kwargs, :chain, Colon())
     )
-    new_stat_indices, new_stat_lookup = _get_indices_and_lookup(
-        fs, stat_indices, get(relevant_kwargs, :stat, Colon())
-    )
+    new_stat_indices, new_stat_lookup = if fs._drop_stat_dim
+        Colon(), fs._stat_indices
+    else
+        _get_indices_and_lookup(
+            fs, stat_indices, get(relevant_kwargs, :stat, Colon())
+        )
+    end
     keys_to_include = _get_multi_keys(TKey, keys(fs), keyvec)
     new_data = OrderedDict{ParameterOrExtra{<:TKey}, AbstractArray{<:Any, 3}}(
         k => _get_raw_data(fs, k)[new_iter_indices, new_chain_indices, new_stat_indices] for
             k in keys_to_include
     )
-    return FlexiSummary{TKey}(new_data, new_iter_lookup, new_chain_lookup, new_stat_lookup)
+    return FlexiSummary{TKey}(
+        new_data, new_iter_lookup, new_chain_lookup, new_stat_lookup, fs._drop_stat_dim,
+    )
 end

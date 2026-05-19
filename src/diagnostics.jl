@@ -9,7 +9,7 @@ function _gelmandiag_summary(
         data[Parameter(k)] = reshape([psrf[i], psrfci[i]], 1, 1, 2)
     end
     return FlexiSummary{TKey}(
-        data, nothing, nothing, _make_categorical([:psrf, :psrfci])
+        data, nothing, nothing, _make_categorical([:psrf, :psrfci]), false
     )
 end
 
@@ -121,7 +121,7 @@ function MCMCDiagnosticTools.discretediag(
             1, 1, 3,
         )
     end
-    between = FlexiSummary{TKey}(between_data, nothing, nothing, stat_names)
+    between = FlexiSummary{TKey}(between_data, nothing, nothing, stat_names, false)
 
     # Within-chain summary: iter dimension collapsed, chain dimension kept
     num_chains = length(FlexiChains.chain_indices(chain))
@@ -134,7 +134,7 @@ function MCMCDiagnosticTools.discretediag(
         within_data[Parameter(k)] = vals
     end
     within = FlexiSummary{TKey}(
-        within_data, nothing, FlexiChains.chain_indices(chain), stat_names,
+        within_data, nothing, FlexiChains.chain_indices(chain), stat_names, false,
     )
 
     return (; between, within)

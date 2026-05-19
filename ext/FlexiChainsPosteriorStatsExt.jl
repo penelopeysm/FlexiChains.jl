@@ -23,11 +23,10 @@ function _split_interval(fs::FlexiChains.FlexiSummary{TKey}, lower_name::Symbol,
         combined = cat(lower, upper; dims = 3) # new 3D array with stat dimension of size 2
         new_data[k] = combined
     end
-    ii = FlexiChains.iter_indices(fs)
-    ci = FlexiChains.chain_indices(fs)
     si = FlexiChains._make_categorical([lower_name, upper_name])
-    fs = FlexiChains.FlexiSummary{TKey}(new_data, ii, ci, si)
-    return fs
+    return FlexiChains.FlexiSummary{TKey}(
+        new_data, fs._iter_indices, fs._chain_indices, si, false,
+    )
 end
 
 """
