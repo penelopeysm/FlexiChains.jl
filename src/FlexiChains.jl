@@ -62,6 +62,8 @@ include("plots.jl")
 @public mrankplot, mrankplot!
 @public mmeanplot, mmeanplot!
 @public mautocorplot, mautocorplot!
+@public mforestplot, mforestplot!
+@public mridgeline, mridgeline!
 
 # Convenience re-exports.
 export Wide, Long

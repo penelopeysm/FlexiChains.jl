@@ -210,6 +210,24 @@ Mutating version of `mautocorplot`, for use with existing Makie.Axis objects.
 """
 function mautocorplot! end
 
+function mforestplot end
+
+"""
+    FlexiChains.mforestplot!
+
+Mutating version of `mforestplot`, for use with existing Makie.Axis objects.
+"""
+function mforestplot! end
+
+function mridgeline end
+
+"""
+    FlexiChains.mridgeline!
+
+Mutating version of `mridgeline`, for use with existing Makie.Axis objects.
+"""
+function mridgeline! end
+
 ###########################################################
 # Utility functions for plotting (shared across backends) #
 ###########################################################
@@ -344,6 +362,18 @@ module PlotUtils
     struct FlexiChainDensity{TKey, Tp <: ParameterOrExtra{<:TKey}}
         chn::FlexiChain{TKey}
         param::Tp
+        pool_chains::Bool
+    end
+
+    struct FlexiChainForest{TKey}
+        chn::FlexiChain{TKey}
+        params::Vector
+        pool_chains::Bool
+    end
+
+    struct FlexiChainRidgeline{TKey}
+        chn::FlexiChain{TKey}
+        params::Vector
         pool_chains::Bool
     end
 

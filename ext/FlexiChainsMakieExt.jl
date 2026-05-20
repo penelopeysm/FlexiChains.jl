@@ -4,6 +4,7 @@ using FlexiChains: FlexiChains
 using Makie
 using Makie: ColorTypes
 using StatsBase: StatsBase
+using KernelDensity: KernelDensity
 
 const FC = FlexiChains
 const MakieGrids = Union{Makie.GridPosition, Makie.GridSubposition}
@@ -62,46 +63,40 @@ function maybe_add_legend(
 end
 
 """
-Determines the color keyword arguments for each chain based on the provided values for the
-`color` and `colormap` arguments.
+Determines the color for each chain based on the provided `color` and `colormap` arguments.
 
-`kwargs` are all the keyword arguments that were passed into the plotting function (minus
-things such as `pool_chains` which are pulled out at a higher level).
-
-This returns a vector of NamedTuples, one for each chain, each containing the appropriate
-keyword arguments for specifying the color of that chain.
+Returns a `Vector` of colors, one per chain. When neither `color` nor `colormap` is given,
+colours are taken from the current Makie theme palette.
 """
-function determine_color_kwargs(nchains::Int, kwargs::NamedTuple)::Vector{NamedTuple}
+function determine_chain_colors(nchains::Int, kwargs::NamedTuple)::Vector
     color = get(kwargs, :color, nothing)
-    # TODO: Use this
     colormap = get(kwargs, :colormap, nothing)
 
     if (!isnothing(colormap) && !isnothing(color))
         error("cannot specify both `color` and `colormap` arguments")
     end
 
-    color_kwargs = if isnothing(colormap)
-        # No colormap, so we need to handle `color`.
+    return if isnothing(colormap)
         if isnothing(color)
-            # Just stick to the default.
-            fill((;), nchains)
+            # We need to explicitly construct the colors here (instead of just letting Makie
+            # cycle through them) because for some plots we need to reuse the same colours
+            # on the same plot (for example, ridgeline plots -- the density for each chain
+            # needs to use the same colour across all parameters). If we just let Makie
+            # cycle through them, then each chain x parameter combination will get a new
+            # colour.
+            map(j -> Makie.Cycled(j), 1:nchains)
         elseif color isa AbstractVector
-            # Assume it's a manually specified vector of colours, e.g. `color=[:red, :blue,
-            # :green]`
             length(color) < nchains && error(
                 "not enough colors specified for each chain: got $(length(color)), need $nchains",
             )
-            map(c -> (; color = c), color)
+            collect(color[1:nchains])
         else
-            # Assume it's a single colour, e.g. `color=:purple`
-            fill((; color = color), nchains)
+            fill(color, nchains)
         end
     else
-        # Colormap was provided. We should probably assume it's categorical
         cm = Makie.to_colormap(colormap)
-        map(i -> (; color = cm[i]), 1:nchains)
+        map(i -> cm[i], 1:nchains)
     end
-    return color_kwargs
 end
 
 """
@@ -129,5 +124,7 @@ include("FlexiChainsMakieExt/plot.jl")
 include("FlexiChainsMakieExt/meanplot.jl")
 include("FlexiChainsMakieExt/autocorplot.jl")
 include("FlexiChainsMakieExt/rankplot.jl")
+include("FlexiChainsMakieExt/forestplot.jl")
+include("FlexiChainsMakieExt/ridgeline.jl")
 
 end

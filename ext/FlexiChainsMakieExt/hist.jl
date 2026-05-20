@@ -128,15 +128,15 @@ for f in (:hist, :stephist)
             else
                 labels = permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
                 nchains = size(y, 2)
-                color_kwargs = determine_color_kwargs(nchains, NamedTuple(kwargs))
-                for (label, datacol, color_kwarg) in zip(labels, eachcol(y), color_kwargs)
+                colors = determine_chain_colors(nchains, NamedTuple(kwargs))
+                for (label, datacol, color) in zip(labels, eachcol(y), colors)
                     p = Makie.$f!(
                         ax,
                         datacol;
                         normalization = :pdf,
                         label = label,
                         kwargs...,
-                        color_kwarg...,
+                        color = color,
                     )
                 end
             end
