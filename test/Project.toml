@@ -39,7 +39,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 AbstractMCMC = "5.14"
-AbstractPPL = "0.14.1"
+AbstractPPL = "0.14.1, 0.15"
 AdvancedHMC = "0.8.3"
 Aqua = "0.8"
 CairoMakie = "0.15"

@@ -51,7 +51,7 @@ FlexiChainsStatsPlotsExt = ["StatsPlots", "DimensionalData"]
 
 [compat]
 AbstractMCMC = "5.10"
-AbstractPPL = "0.14"
+AbstractPPL = "0.14, 0.15"
 AdvancedHMC = "0.8"
 ComponentArrays = "0.15"
 DelimitedFiles = "1"
