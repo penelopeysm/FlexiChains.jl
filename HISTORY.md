@@ -1,3 +1,13 @@
+# 0.6.13
+
+Moved plotting functions into the `FlexiChains.Plots` and `FlexiChains.Makie` submodules.
+
+What used to be called `FlexiChains.traceplot` (the Plots.jl backend) is now `FlexiChains.Plots.traceplot`, and what used to be called `FlexiChains.mtraceplot` (the Makie.jl backend) is now `FlexiChains.Makie.traceplot`.
+
+The intention for this is to make it easier to switch between plotting backends, and to make the naming more consistent and intuitive.
+
+The old functions are retained as aliases, but they are deprecated and will be removed in the future.
+
 # 0.6.12
 
 Added `Base.merge(fs1::FlexiSummary, fs2::FlexiSummary)` to merge two summaries together.
