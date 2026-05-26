@@ -91,7 +91,7 @@ In fact, behind the scenes, the actual name of the statistic is retained.
 This means that, for example, if you convert the result to a `DataFrame`, the column will be named `mean` rather than `stat`:
 
 ```@example stats
-DataFrame(mn)
+using DataFrames; DataFrame(mn)
 ```
 
 ```@docs

@@ -11,7 +11,7 @@ HIST_DOCSTRING = """
 
 Create histograms for the specified parameters in the chain.
 
-$(FC._PARAM_DOCSTRING("Makie.hist"))
+$(FC.PlotUtils._PARAM_DOCSTRING("Makie.hist"))
 
 # Keyword arguments
 
@@ -28,7 +28,7 @@ STEPHIST_DOCSTRING = """
 
 Create a step histogram for the specified parameters in the chain.
 
-$(FC._PARAM_DOCSTRING("Makie.stephist"))
+$(FC.PlotUtils._PARAM_DOCSTRING("Makie.stephist"))
 
 # Keyword arguments
 

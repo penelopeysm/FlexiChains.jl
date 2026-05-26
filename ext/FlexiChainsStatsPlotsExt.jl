@@ -15,9 +15,9 @@ using StatsPlots: StatsPlots
 
 Make a corner plot of `chn` using Plots.jl.
 
-$(FC._PARAM_DOCSTRING("cornerplot"))
+$(FC.PlotUtils._PARAM_DOCSTRING("cornerplot"))
 
-$(FC._PLOTS_KWARGS_DOCSTRING)
+$(FC.Plots._PLOTS_KWARGS_DOCSTRING)
 """
 function StatsPlots.cornerplot(
         chn::FC.FlexiChain,
@@ -48,11 +48,11 @@ end
 
 Make a density plot of the parameter values in `chn` using Plots.jl.
 
-$(FC._PARAM_DOCSTRING("density"))
+$(FC.PlotUtils._PARAM_DOCSTRING("density"))
 
-$(FC._POOL_CHAINS_DOCSTRING)
+$(FC.PlotUtils._POOL_CHAINS_DOCSTRING)
 
-$(FC._PLOTS_KWARGS_DOCSTRING)
+$(FC.Plots._PLOTS_KWARGS_DOCSTRING)
 """
 StatsPlots.density
 
@@ -65,11 +65,11 @@ StatsPlots.density
 
 Make a histogram of the parameter values in `chn` using Plots.jl.
 
-$(FC._PARAM_DOCSTRING("histogram"))
+$(FC.PlotUtils._PARAM_DOCSTRING("histogram"))
 
-$(FC._POOL_CHAINS_DOCSTRING)
+$(FC.PlotUtils._POOL_CHAINS_DOCSTRING)
 
-$(FC._PLOTS_KWARGS_DOCSTRING)
+$(FC.Plots._PLOTS_KWARGS_DOCSTRING)
 """
 StatsPlots.histogram
 
@@ -83,14 +83,14 @@ StatsPlots.histogram
 
 Make a violin plot of `chn` using Plots.jl.
 
-$(FC._PARAM_DOCSTRING("violin"))
+$(FC.PlotUtils._PARAM_DOCSTRING("violin"))
 
-$(FC._POOL_CHAINS_DOCSTRING)
+$(FC.PlotUtils._POOL_CHAINS_DOCSTRING)
 
 If `with_box=true`, a box plot will additionally be overlaid on the violin plot.
 
-$(FC._PLOTS_KWARGS_DOCSTRING) (For `with_box=true`, keyword arguments are passed to both the
-violin and box plot components.)
+$(FC.Plots._PLOTS_KWARGS_DOCSTRING) (For `with_box=true`, keyword arguments are passed to
+both the violin and box plot components.)
 """
 StatsPlots.violin
 

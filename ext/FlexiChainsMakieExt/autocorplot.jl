@@ -3,7 +3,7 @@ function _default_autocorplot_axis(k::FC.ParameterOrExtra)
 end
 
 """
-    FlexiChains.mautocorplot(
+    FlexiChains.Makie.autocorplot(
         chn::FC.FlexiChain[, param_or_params];
         lags=FlexiChains.PlotUtils.default_lags(chn),
         demean=true,
@@ -12,7 +12,7 @@ end
 
 Plot the autocorrelation of the specified parameter(s) in the given `FlexiChain` using Makie.
 
-$(FC._PARAM_DOCSTRING("FlexiChains.mautocorplot"))
+$(FC.PlotUtils._PARAM_DOCSTRING("FlexiChains.Makie.autocorplot"))
 
 # Keyword arguments
 
@@ -22,7 +22,7 @@ $(FC._PARAM_DOCSTRING("FlexiChains.mautocorplot"))
 
 $(MAKIE_KWARGS_DOCSTRING)
 """
-function FC.mautocorplot(
+function FC.Makie.autocorplot(
         chn::FC.FlexiChain,
         param_or_params = FC.Parameter.(FC.parameters(chn));
         lags = FC.PlotUtils.default_lags(chn),
@@ -41,7 +41,7 @@ function FC.mautocorplot(
     a, p = nothing, nothing
     indices = Iterators.product(1:ncols, 1:nrows)
     for ((col, row), k) in zip(indices, keys_to_plot)
-        a, p = FC.mautocorplot!(
+        a, p = FC.Makie.autocorplot!(
             Makie.Axis(figure[row, col]; _default_autocorplot_axis(k)..., axis...),
             FC.PlotUtils.FlexiChainAutoCor(chn, k, lags, demean);
             kwargs...,
@@ -55,18 +55,18 @@ end
 ########################
 # Single axis plotting #
 ########################
-function FC.mautocorplot(
+function FC.Makie.autocorplot(
         grid::MakieGrids, chn::FC.FlexiChain, param;
         axis = (;), kwargs...,
     )
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
-    return FC.mautocorplot!(
+    return FC.Makie.autocorplot!(
         Makie.Axis(grid; _default_autocorplot_axis(k)..., axis...),
         chn, param; kwargs...,
     )
 end
-function FC.mautocorplot!(
+function FC.Makie.autocorplot!(
         ax::Makie.Axis, chn::FC.FlexiChain, param;
         lags = FC.PlotUtils.default_lags(chn),
         demean::Bool = true,
@@ -74,17 +74,17 @@ function FC.mautocorplot!(
     )
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
-    a, p = FC.mautocorplot!(
+    a, p = FC.Makie.autocorplot!(
         ax, FC.PlotUtils.FlexiChainAutoCor(chn, k, lags, demean); kwargs...
     )
     return Makie.AxisPlot(a, p)
 end
-function FC.mautocorplot!(chn::FC.FlexiChain, param; kwargs...)
-    return FC.mautocorplot!(Makie.current_axis(), chn, param; kwargs...)
+function FC.Makie.autocorplot!(chn::FC.FlexiChain, param; kwargs...)
+    return FC.Makie.autocorplot!(Makie.current_axis(), chn, param; kwargs...)
 end
 
 # This performs the actual plotting
-function FC.mautocorplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainAutoCor; kwargs...)
+function FC.Makie.autocorplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainAutoCor; kwargs...)
     x = d.lags
     data = FC._get_raw_data(d.chn, d.param)
     y = StatsBase.autocor(data, d.lags; demean = d.demean)

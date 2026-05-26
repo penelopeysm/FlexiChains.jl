@@ -8,7 +8,7 @@
 Plot the parameters in a `FlexiChain` using `Makie`. For each parameter, a trace plot and a
 density plot are created.
 
-$(FC._PARAM_DOCSTRING("Makie.plot"))
+$(FC.PlotUtils._PARAM_DOCSTRING("Makie.plot"))
 
 # Keyword arguments
 

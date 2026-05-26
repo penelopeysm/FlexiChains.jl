@@ -11,7 +11,7 @@ end
 
 Create density plots for the specified parameters in the chain.
 
-$(FC._PARAM_DOCSTRING("Makie.density"))
+$(FC.PlotUtils._PARAM_DOCSTRING("Makie.density"))
 
 # Keyword arguments
 

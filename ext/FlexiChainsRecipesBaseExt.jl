@@ -10,49 +10,48 @@ const DEFAULT_MARGIN = (8, :mm)
 # custom overloads #
 ####################
 
-macro overload_plot_func(plotfuncname, seriestype)
-    plotfuncname! = if Meta.isexpr(plotfuncname, :., 2) && plotfuncname.args[2] isa QuoteNode
-        :($(plotfuncname.args[1]).$(Symbol(plotfuncname.args[2].value, "!")))
-    else
-        error("expected plotfuncname to be of the form `Module.plotfunc`")
-    end
-    return quote
-        function $(plotfuncname)(chn::FC.FlexiChain, args...; kwargs...)
-            return plot(chn, args...; kwargs..., seriestype = $(seriestype))
-        end
-        function $(plotfuncname!)(chn::FC.FlexiChain, args...; kwargs...)
-            return plot!(chn, args...; kwargs..., seriestype = $(seriestype))
-        end
-    end
+const _TRACEPLOT_SERIESTYPE = :traceplot
+function FC.Plots.traceplot(chn::FC.FlexiChain, args...; kwargs...)
+    return plot(chn, args...; kwargs..., seriestype = _TRACEPLOT_SERIESTYPE)
+end
+function FC.Plots.traceplot!(chn::FC.FlexiChain, args...; kwargs...)
+    return plot!(chn, args...; kwargs..., seriestype = _TRACEPLOT_SERIESTYPE)
 end
 
-const _TRACEPLOT_SERIESTYPE = :traceplot
-@overload_plot_func(FC.traceplot, _TRACEPLOT_SERIESTYPE)
-
 const _MIXEDDENSITY_SERIESTYPE = :mixeddensity
-@overload_plot_func(FC.mixeddensity, _MIXEDDENSITY_SERIESTYPE)
+function FC.Plots.mixeddensity(chn::FC.FlexiChain, args...; kwargs...)
+    return plot(chn, args...; kwargs..., seriestype = _MIXEDDENSITY_SERIESTYPE)
+end
+function FC.Plots.mixeddensity!(chn::FC.FlexiChain, args...; kwargs...)
+    return plot!(chn, args...; kwargs..., seriestype = _MIXEDDENSITY_SERIESTYPE)
+end
 
 const _MEANPLOT_SERIESTYPE = :meanplot
-@overload_plot_func(FC.meanplot, _MEANPLOT_SERIESTYPE)
+function FC.Plots.meanplot(chn::FC.FlexiChain, args...; kwargs...)
+    return plot(chn, args...; kwargs..., seriestype = _MEANPLOT_SERIESTYPE)
+end
+function FC.Plots.meanplot!(chn::FC.FlexiChain, args...; kwargs...)
+    return plot!(chn, args...; kwargs..., seriestype = _MEANPLOT_SERIESTYPE)
+end
 
 const _RANKPLOT_SERIESTYPE = :rankplot
 const _RANKOVERLAY_SERIESTYPE = :rankplot_overlay
-function FC.rankplot(chn::FC.FlexiChain, args...; overlay = false, kwargs...)
+function FC.Plots.rankplot(chn::FC.FlexiChain, args...; overlay = false, kwargs...)
     seriestype = overlay ? _RANKOVERLAY_SERIESTYPE : _RANKPLOT_SERIESTYPE
     return plot(chn, args...; kwargs..., seriestype = seriestype)
 end
-function FC.rankplot!(chn::FC.FlexiChain, args...; overlay = false, kwargs...)
+function FC.Plots.rankplot!(chn::FC.FlexiChain, args...; overlay = false, kwargs...)
     seriestype = overlay ? _RANKOVERLAY_SERIESTYPE : _RANKPLOT_SERIESTYPE
     return plot!(chn, args...; kwargs..., seriestype = seriestype)
 end
 
 const _AUTOCORPLOT_SERIESTYPE = :autocorplot
-function FC.autocorplot(
+function FC.Plots.autocorplot(
         chn::FC.FlexiChain, args...; lags = FC.PlotUtils.default_lags(chn), demean = true, kwargs...
     )
     return plot(chn, args...; kwargs..., lags, demean, seriestype = _AUTOCORPLOT_SERIESTYPE)
 end
-function FC.autocorplot!(
+function FC.Plots.autocorplot!(
         chn::FC.FlexiChain, args...; lags = FC.PlotUtils.default_lags(chn), demean = true, kwargs...
     )
     return plot!(chn, args...; kwargs..., lags, demean, seriestype = _AUTOCORPLOT_SERIESTYPE)
@@ -76,9 +75,9 @@ const _TRACEPLOT_AND_DENSITY_SERIESTYPE = :traceplot_and_density
 Plot a `FlexiChain` using Plots.jl. By default, this produces a trace plot and mixed density
 side-by-side for each parameter.
 
-$(FC._PARAM_DOCSTRING("plot"))
+$(FC.PlotUtils._PARAM_DOCSTRING("plot"))
 
-$(FC._PLOTS_KWARGS_DOCSTRING)
+$(FC.Plots._PLOTS_KWARGS_DOCSTRING)
 """ RecipesBase.plot
 
 @recipe function _(
