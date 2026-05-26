@@ -365,10 +365,28 @@ module PlotUtils
         pool_chains::Bool
     end
 
+    # Used by forest plots and overloaded in PosteriorStatsExt
+    function get_hdi_intervals end
+
+    _DEFAULT_INTERVALS = (0.66, 0.95)  # Mimics tidybayes.
     struct FlexiChainForest{TKey}
         chn::FlexiChain{TKey}
         params::Vector
         pool_chains::Bool
+        point::Symbol
+        interval::Symbol
+        hdi_method::Symbol
+        levels::Vector{Float64}
+        function FlexiChainForest(chn::FlexiChain{TKey}, params::Vector, pool_chains::Bool, point = :median, interval = :quantile, hdi_method = :unimodal, levels = _DEFAULT_INTERVALS) where {TKey}
+            point in (:mean, :median) ||
+                throw(ArgumentError("point must be :mean or :median, got :$point"))
+            interval in (:quantile, :hdi) ||
+                throw(ArgumentError("interval must be :quantile or :hdi, got :$interval"))
+            all(l -> 0 < l < 1, levels) ||
+                throw(ArgumentError("interval levels must be in (0, 1)"))
+            sorted_levels = sort(collect(Float64, levels))
+            return new{TKey}(chn, params, pool_chains, point, interval, hdi_method, sorted_levels)
+        end
     end
 
     struct FlexiChainRidgeline{TKey}
