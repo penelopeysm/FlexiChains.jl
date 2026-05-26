@@ -1,3 +1,8 @@
+# 0.6.13
+
+Added `FlexiChains.mridgeline` and `FlexiChains.mforestplot` for creating ridgeline and forest plots with a Makie backend.
+Note that these functions can be composed to generate 'eye' plots.
+
 # 0.6.12
 
 Added `Base.merge(fs1::FlexiSummary, fs2::FlexiSummary)` to merge two summaries together.

@@ -26,7 +26,7 @@ end
         point::Symbol=:median,
         interval::Symbol=:quantile,
         hdi_method::Symbol=:unimodal,
-        levels::Tuple=(0.66, 0.95),
+        levels::Tuple=$(FC.PlotUtils.DEFAULT_INTERVALS),
         pool_chains::Bool=false,
         kwargs...,
     )
@@ -61,7 +61,7 @@ function FC.mforestplot(
         point::Symbol = :median,
         interval::Symbol = :quantile,
         hdi_method::Symbol = :unimodal,
-        levels = FC.PlotUtils._DEFAULT_INTERVALS,
+        levels = FC.PlotUtils.DEFAULT_INTERVALS,
         pool_chains::Bool = false,
         legend_position::Symbol = :bottom,
         figure = (;),
@@ -98,7 +98,7 @@ end
 ########################
 function FC.mforestplot(
         grid::MakieGrids, chn::FC.FlexiChain, param_or_params;
-        point::Symbol = :median, levels = FC.PlotUtils._DEFAULT_INTERVALS,
+        point::Symbol = :median, levels = FC.PlotUtils.DEFAULT_INTERVALS,
         interval::Symbol = :quantile,
         hdi_method::Symbol = :unimodal,
         pool_chains::Bool = false, axis = (;), kwargs...
@@ -114,7 +114,7 @@ end
 
 function FC.mforestplot!(
         ax::Makie.Axis, chn::FC.FlexiChain, param_or_params;
-        point::Symbol = :median, levels = FC.PlotUtils._DEFAULT_INTERVALS,
+        point::Symbol = :median, levels = FC.PlotUtils.DEFAULT_INTERVALS,
         interval::Symbol = :quantile, hdi_method::Symbol = :unimodal,
         pool_chains::Bool = false, kwargs...
     )
