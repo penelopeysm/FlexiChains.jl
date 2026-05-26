@@ -40,7 +40,7 @@ function traceplot end
         kwargs...
     )
 
-Same as [`FlexiChains.traceplot`](@ref), but uses `plot!` instead of `plot`.
+Same as [`FlexiChains.Plotss.traceplot`](@ref), but uses `plot!` instead of `plot`.
 """
 function traceplot! end
 

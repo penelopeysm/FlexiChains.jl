@@ -9,11 +9,11 @@ Here is a rough overview of the current status:
 | Type of plot                     | Plots.jl                                    | Makie.jl                                                |
 | :------------------------------- | :------------------------------------       | :------------------------------------------------------ |
 | Trace + mixed density (default)  | ✅ [`Plots.plot`](@ref)                     | ✅ [`Makie.plot`](@ref)                                 |
-| Trace plots                      | ✅ [`FlexiChains.Plots.traceplot`](@ref)    | ✅ [`FlexiChains.Makie.mtraceplot`](@ref)               |
+| Trace plots                      | ✅ [`FlexiChains.Plots.traceplot`](@ref)    | ✅ [`FlexiChains.Makie.traceplot`](@ref)                |
 | Density plots                    | ✅ [`Plots.density`](@ref)                  | ✅ [`Makie.density`](@ref)                              |
 | Histograms                       | ✅ [`Plots.histogram`](@ref)                | ✅ [`Makie.hist`](@ref) and [`Makie.stephist`](@ref)    |
-| Mixed density plots              | ✅ [`FlexiChains.Plots.mixeddensity`](@ref) | ✅ [`FlexiChains.Makie.mmixeddensity`](@ref)            |
-| Running mean plots               | ✅ [`FlexiChains.Plots.meanplot`](@ref)     | ✅ [`FlexiChains.Makie.mmeanplot`](@ref)                |
+| Mixed density plots              | ✅ [`FlexiChains.Plots.mixeddensity`](@ref) | ✅ [`FlexiChains.Makie.mixeddensity`](@ref)             |
+| Running mean plots               | ✅ [`FlexiChains.Plots.meanplot`](@ref)     | ✅ [`FlexiChains.Makie.meanplot`](@ref)                 |
 | Autocorrelation plots            | ✅ [`FlexiChains.Plots.autocorplot`](@ref)  | ✅ [`FlexiChains.Makie.autocorplot`](@ref)              |
 | Rank plots                       | ✅ [`FlexiChains.Plots.rankplot`](@ref)     | ✅ [`FlexiChains.Makie.rankplot`](@ref)                 |
 | Corner plots                     | ✅ [`StatsPlots.cornerplot`](@ref)          | ✅ [`PairPlots.pairplot`](@ref)                         |
@@ -24,7 +24,7 @@ Here is a rough overview of the current status:
 
 All of the above functions have 'mutating' versions with a `!` suffix.
 
-Notice that for the functions provided by FlexiChains, the corresponding Makie.jl version is prefixed with `m`.
+Notice that FlexiChains provides separate functions for Plots.jl and Makie.jl backends, which are namespaced within the `FlexiChains.Plots` and `FlexiChains.Makie` modules, respectively.
 This is necessary for disambiguation, much like how `Plots.plot()` and `Makie.plot()` are different functions.
 
 ## Compositionality
@@ -37,7 +37,7 @@ For example, with Plots.jl you can do things like this:
 ```julia
 chn = ...
 # These functions provided / extended by FlexiChains
-p1 = FlexiChains.traceplot(chn, param1)
+p1 = FlexiChains.Plots.traceplot(chn, param1)
 p2 = Plots.density(chn, param2)
 # This is some completely external Plots.jl plot
 p3 = Plots.plot(randn(10, 10))
@@ -52,7 +52,7 @@ chn = ...
 # Set up a Makie figure
 f = Makie.Figure()
 # These functions provided / extended by FlexiChains
-FlexiChains.mtraceplot!(f[1, 1], chn, param1)
+FlexiChains.Makie.traceplot!(f[1, 1], chn, param1)
 Makie.density!(f[1, 2], chn, param2)
 # This is some completely external Makie.jl plot
 Makie.plot!(f[1, 3], randn(10, 10))
