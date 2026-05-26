@@ -1,13 +1,12 @@
 # Plotting: Makie.jl
 
-Plotting functionality with Makie.jl is currently in a very early stage of development, so there are fewer plots.
-However, there is some custom code to generate (e.g.) shared legends, which leads to perhaps slightly nicer plots than for Plots.jl.
 Many parts of the Makie integration in FlexiChains are heavily lifted from [the (unreleased) ChainsMakie.jl package](https://simonsteiger.github.io/ChainsMakie.jl/dev/).
+This includes some custom code to generate (e.g.) shared legends, which leads to slightly nicer plots than for Plots.jl (on top of Makie generally yielding nicer plots out of the box).
 
 !!! note
-    You can also use Makie as a backend to make pair plots! This requires loading a Makie
-    backend as well as PairPlots.jl. Please see the [PairPlots.jl integration section](@ref
-    integrations-pairplots) for more details.
+    You can also use Makie as a backend to make pair plots!
+    This requires loading a Makie backend as well as PairPlots.jl.
+    Please see the [PairPlots.jl integration section](@ref integrations-pairplots) for more details.
 
 ## [General interface](@id makie-interface)
 
@@ -30,7 +29,7 @@ For all functions `plotfunc` shown in the table of [the plotting page](./plottin
    Most keyword arguments are passed to the underlying Makie plotting functions, but there are some special ones which are handled by FlexiChains.
    For more information about these, see the [customisation section below](@ref makie-customisation).
 
-For functions which create only a single plot per parameter (e.g. `density`, or `mtraceplot`), the following options are also available.
+For functions which create only a single plot per parameter (e.g. `density`, or `traceplot`), the following options are also available.
 The intention is to allow you to build more complex figures using these as building blocks:
 
 2. Plot a single parameter onto an existing `Makie.Axis` object: this uses the 'mutating' version with an exclamation mark.
@@ -56,6 +55,8 @@ This is the same model as used on the Plots.jl documentation page.
 
 ```@example 1
 using FlexiChains, CairoMakie, Turing
+
+using FlexiChains.Makie # For the plotting functions.
 
 @model function f()
     x ~ Normal()
@@ -87,11 +88,11 @@ Makie.save("plot_makie.png", ans.figure); # hide
 ## Trace plots
 
 ```@docs
-FlexiChains.mtraceplot
+FlexiChains.Makie.traceplot
 ```
 
 ```@example 1
-FlexiChains.mtraceplot(chn)
+traceplot(chn)
 Makie.save("traceplot_makie.png", ans.figure); # hide
 ```
 
@@ -127,11 +128,12 @@ Makie.save("hist_makie.png", ans.figure); # hide
 ## Mixed density plots
 
 ```@docs
-FlexiChains.mmixeddensity
+FlexiChains.Makie.mixeddensity
+FlexiChains.Makie.mixeddensity!
 ```
 
 ```@example 1
-FlexiChains.mmixeddensity(chn)
+mixeddensity(chn)
 Makie.save("mixeddensity_makie.png", ans.figure); # hide
 ```
 
@@ -140,11 +142,12 @@ Makie.save("mixeddensity_makie.png", ans.figure); # hide
 ## Running mean plots
 
 ```@docs
-FlexiChains.mmeanplot
+FlexiChains.Makie.meanplot
+FlexiChains.Makie.meanplot!
 ```
 
 ```@example 1
-FlexiChains.mmeanplot(chn)
+meanplot(chn)
 Makie.save("meanplot_makie.png", ans.figure); # hide
 ```
 
@@ -153,11 +156,12 @@ Makie.save("meanplot_makie.png", ans.figure); # hide
 ## Autocorrelation plots
 
 ```@docs
-FlexiChains.mautocorplot
+FlexiChains.Makie.autocorplot
+FlexiChains.Makie.autocorplot!
 ```
 
 ```@example 1
-FlexiChains.mautocorplot(chn)
+autocorplot(chn)
 Makie.save("autocorplot_makie.png", ans.figure); # hide
 ```
 
@@ -166,11 +170,12 @@ Makie.save("autocorplot_makie.png", ans.figure); # hide
 ## Rank plots
 
 ```@docs
-FlexiChains.mrankplot
+FlexiChains.Makie.rankplot
+FlexiChains.Makie.rankplot!
 ```
 
 ```@example 1
-FlexiChains.mrankplot(chn)
+rankplot(chn)
 Makie.save("rankplot_makie.png", ans.figure); # hide
 ```
 
@@ -203,7 +208,7 @@ Makie.save("custom_layout_makie.png", ans.figure); # hide
 Pass a vector of colours (one per chain) via the `color` keyword, or a categorical colormap via `colormap`:
 
 ```@example 1
-FlexiChains.mtraceplot(chn, [@varname(x), @varname(y)];
+traceplot(chn, [@varname(x), @varname(y)];
     color=[(:red, 0.6), (:blue, 0.6), (:green, 0.6)],
     # or e.g. colormap=:tab10
 )
@@ -221,7 +226,7 @@ Makie.save("custom_colors_makie.png", ans.figure); # hide
 Use `legend_position` to move the legend (`:bottom`, `:right`, or `:none`):
 
 ```@example 1
-FlexiChains.mtraceplot(chn; legend_position=:right)
+traceplot(chn; legend_position=:right)
 Makie.save("custom_legend_makie.png", ans.figure); # hide
 ```
 

@@ -13,23 +13,23 @@ The following series types are supported for `FlexiChain` objects.
 
 | `seriestype=`            | Equivalent function                                                     | Description                                                                             |
 | :----------------------- | :---------------------------------------------------------------------- | :-------------------------------------------------------------------------------------  |
-| `:traceplot`             | [`FlexiChains.traceplot`](@ref)                                         | Trace plot of samples                                                                   |
+| `:traceplot`             | [`FlexiChains.Plots.traceplot`](@ref)                                   | Trace plot of samples                                                                   |
 | `:histogram`             | [`Plots.histogram`](@ref plots-histogram)                               | Histogram of samples                                                                    |
 | `:density`               | [`Plots.density`](@ref plots-density)                                   | Kernel density estimate of samples                                                      |
-| `:mixeddensity`          | [`FlexiChains.mixeddensity`](@ref)                                      | Density plot or histogram, depending on whether the parameter is continuous or discrete |
-| `:meanplot`              | [`FlexiChains.meanplot`](@ref)                                          | Running mean of samples                                                                 |
-| `:autocorplot`           | [`FlexiChains.autocorplot`](@ref)                                       | Autocorrelation of samples                                                              |
+| `:mixeddensity`          | [`FlexiChains.Plots.mixeddensity`](@ref)                                | Density plot or histogram, depending on whether the parameter is continuous or discrete |
+| `:meanplot`              | [`FlexiChains.Plots.meanplot`](@ref)                                    | Running mean of samples                                                                 |
+| `:autocorplot`           | [`FlexiChains.Plots.autocorplot`](@ref)                                 | Autocorrelation of samples                                                              |
 | `:traceplot_and_density` | [`Plots.plot`](@ref) (with no `seriestype` argument)                    | Trace plot and mixed density side-by-side                                               |
-| `:rankplot`              | [`FlexiChains.rankplot`](@ref) with `overlay=false`                     | Rank plot with separate histograms per chain                                            |
-| `:rankplot_overlay`      | [`FlexiChains.rankplot`](@ref) with `overlay=true`                      | Rank plot with all chains' data overlaid                                                |
+| `:rankplot`              | [`FlexiChains.Plots.rankplot`](@ref) with `overlay=false`               | Rank plot with separate histograms per chain                                            |
+| `:rankplot_overlay`      | [`FlexiChains.Plots.rankplot`](@ref) with `overlay=true`                | Rank plot with all chains' data overlaid                                                |
 
 There is currently one exception to this: `StatsPlots.cornerplot` is manually overloaded because it does not use the usual `seriestype` mechanism.
 
 !!! warning "Identifier conflicts"
-    Please note that the identifiers `traceplot`, `meanplot`, `mixeddensity`, and `autocorplot` are also exported by MCMCChains.jl and [also currently re-exported by Turing.jl](https://github.com/TuringLang/Turing.jl/issues/2681). For this reason, FlexiChains does not export them, although they are part of the public API. To make sure you are using the FlexiChains versions, you must prefix them with the module name: `FlexiChains.traceplot(...)`. Otherwise, you may run into unexpected errors. 
+    Please note that the identifiers `traceplot`, `meanplot`, `mixeddensity`, and `autocorplot` are also exported by MCMCChains.jl (which uses Plots.jl as its backend), as well as the `FlexiChains.Makie` submodule. If you have imported more than one of these modules, you will need to disambiguate which function you want to use by prefixing it with the module name, e.g. `FlexiChains.Plots.traceplot`.
 
 !!! note "Feature parity with MCMCChains.jl"
-    There are still somewhat fewer options than in MCMCChains.jl. Other plot types will be added over time, but in the meantime if you need features from MCMCChains, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using `MCMCChains.Chains(chn)`. Help with adding new plots is very much welcome!
+    There are still a couple fewer plotting options than in MCMCChains.jl. Other plot types will be added over time, but in the meantime if you need features from MCMCChains, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using `MCMCChains.Chains(chn)`. Help with adding new plots is very much welcome!
 
 ## General interface
 
@@ -66,6 +66,8 @@ We'll make a model with different types of parameters (continuous, discrete, and
 
 ```@example plotsjl
 using FlexiChains, StatsPlots, Turing
+
+using FlexiChains.Plots # For the plotting functions.
 
 @model function f()
     x ~ Normal()
@@ -112,11 +114,12 @@ savefig("plot2.svg"); nothing # hide
 ## Trace plots
 
 ```@docs
-FlexiChains.traceplot
+FlexiChains.Plots.traceplot
+FlexiChains.Plots.traceplot!
 ```
 
 ```@example plotsjl
-FlexiChains.traceplot(chn)
+traceplot(chn)
 savefig("traceplot.svg"); nothing # hide
 ```
 
@@ -155,11 +158,12 @@ savefig("histogram.svg"); nothing # hide
 ## Running mean plots
 
 ```@docs
-FlexiChains.meanplot
+FlexiChains.Plots.meanplot
+FlexiChains.Plots.meanplot!
 ```
 
 ```@example plotsjl
-FlexiChains.meanplot(chn)
+meanplot(chn)
 savefig("meanplot.svg"); nothing # hide
 ```
 
@@ -168,11 +172,12 @@ savefig("meanplot.svg"); nothing # hide
 ## Rank plots
 
 ```@docs
-FlexiChains.rankplot
+FlexiChains.Plots.rankplot
+FlexiChains.Plots.rankplot!
 ```
 
 ```@example plotsjl
-FlexiChains.rankplot(chn)
+rankplot(chn)
 savefig("rankplot.svg"); nothing # hide
 ```
 
@@ -181,11 +186,12 @@ savefig("rankplot.svg"); nothing # hide
 ## Autocorrelation plots
 
 ```@docs
-FlexiChains.autocorplot
+FlexiChains.Plots.autocorplot
+FlexiChains.Plots.autocorplot!
 ```
 
 ```@example plotsjl
-FlexiChains.autocorplot(chn)
+autocorplot(chn)
 savefig("autocorplot.svg"); nothing # hide
 ```
 
@@ -194,11 +200,12 @@ savefig("autocorplot.svg"); nothing # hide
 ## Mixed density plots
 
 ```@docs
-FlexiChains.mixeddensity
+FlexiChains.Plots.mixeddensity
+FlexiChains.Plots.mixeddensity!
 ```
 
 ```@example plotsjl
-FlexiChains.mixeddensity(chn)
+mixeddensity(chn)
 savefig("mixeddensity.svg"); nothing # hide
 ```
 

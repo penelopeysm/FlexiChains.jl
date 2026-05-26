@@ -45,7 +45,7 @@ Create a pair plot for the given chain. Note that PairPlots.jl uses Makie.jl as 
 backend, so you will additionally need to load a Makie backend (e.g. with `using GLMakie` or
 `using CairoMakie`) before calling this function.
 
-$(FC._PARAM_DOCSTRING("pairplot"))
+$(FC.PlotUtils._PARAM_DOCSTRING("pairplot"))
 
 ## Keyword arguments
 

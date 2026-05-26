@@ -3,20 +3,20 @@ function _default_meanplot_axis(k::FC.ParameterOrExtra)
 end
 
 """
-    FlexiChains.mmeanplot(
+    FlexiChains.Makie.meanplot(
         chn::FC.FlexiChain[, param_or_params];
         kwargs...,
     )
 
 Plot the running mean of the specified parameter(s) in the given `FlexiChain` using Makie.
 
-$(FC._PARAM_DOCSTRING("FlexiChains.mmeanplot"))
+$(FC.PlotUtils._PARAM_DOCSTRING("FlexiChains.Makie.meanplot"))
 
 # Keyword arguments
 
 $(MAKIE_KWARGS_DOCSTRING)
 """
-function FC.mmeanplot(
+function FC.Makie.meanplot(
         chn::FC.FlexiChain,
         param_or_params = FC.Parameter.(FC.parameters(chn));
         layout::Union{Tuple{Int, Int}, Nothing} = nothing,
@@ -33,7 +33,7 @@ function FC.mmeanplot(
     a, p = nothing, nothing
     indices = Iterators.product(1:ncols, 1:nrows)
     for ((col, row), k) in zip(indices, keys_to_plot)
-        a, p = FC.mmeanplot!(
+        a, p = FC.Makie.meanplot!(
             Makie.Axis(figure[row, col]; _default_meanplot_axis(k)..., axis...),
             FC.PlotUtils.FlexiChainMean(chn, k);
             kwargs...,
@@ -47,24 +47,24 @@ end
 ########################
 # Single axis plotting #
 ########################
-function FC.mmeanplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
+function FC.Makie.meanplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
-    return FC.mmeanplot!(
+    return FC.Makie.meanplot!(
         Makie.Axis(grid; _default_meanplot_axis(k)..., axis...), chn, param; kwargs...
     )
 end
-function FC.mmeanplot!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwargs...)
+function FC.Makie.meanplot!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwargs...)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
-    a, p = FC.mmeanplot!(ax, FC.PlotUtils.FlexiChainMean(chn, k); kwargs...)
+    a, p = FC.Makie.meanplot!(ax, FC.PlotUtils.FlexiChainMean(chn, k); kwargs...)
     return Makie.AxisPlot(a, p)
 end
-function FC.mmeanplot!(chn::FC.FlexiChain, param; kwargs...)
-    return FC.mmeanplot!(Makie.current_axis(), chn, param; kwargs...)
+function FC.Makie.meanplot!(chn::FC.FlexiChain, param; kwargs...)
+    return FC.Makie.meanplot!(Makie.current_axis(), chn, param; kwargs...)
 end
 
-function FC.mmeanplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainMean; kwargs...)
+function FC.Makie.meanplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainMean; kwargs...)
     x = FC.iter_indices(d.chn)
     data = FC._get_raw_data(d.chn, d.param)
     y = mapslices(FC.PlotUtils.runningmean, data; dims = 1)

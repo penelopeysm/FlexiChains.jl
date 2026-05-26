@@ -7,7 +7,8 @@ using FlexiChains
 using DimensionalData: DimensionalData
 using CairoMakie: CairoMakie, Makie
 using InferenceObjects: InferenceObjects
-using StatsPlots: Plots, StatsPlots
+using Plots: Plots
+using StatsPlots: StatsPlots
 using Statistics: Statistics
 using StatsBase: StatsBase
 using MCMCDiagnosticTools: MCMCDiagnosticTools

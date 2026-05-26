@@ -50,18 +50,10 @@ const _LOGLIKELIHOOD_KEY = Extra(:loglikelihood)
 # Extended in PosteriorDB extension (but not exported)
 function from_posteriordb_ref end
 @public from_posteriordb_ref
-include("plots.jl")
-# Extended in RecipesBase extension
-@public traceplot, traceplot!
-@public mixeddensity, mixeddensity!
-@public meanplot, meanplot!
-@public rankplot, rankplot!
-@public autocorplot, autocorplot!
-# Extended in Makie extension
-@public mtraceplot, mtraceplot!
-@public mrankplot, mrankplot!
-@public mmeanplot, mmeanplot!
-@public mautocorplot, mautocorplot!
+include("plots/utils.jl")
+include("plots/plots.jl")
+include("plots/makie.jl")
+include("plots/shims.jl")
 
 # Convenience re-exports.
 export Wide, Long

@@ -4,7 +4,7 @@ function isdiscrete(chn::FC.FlexiChain{T}, k::FC.ParameterOrExtra{<:T}) where {T
 end
 
 """
-    FlexiChains.mmixeddensity(
+    FlexiChains.Makie.mixeddensity(
         chn::FC.FlexiChain[, param_or_params];
         pool_chains::Bool=false,
         kwargs...,
@@ -13,14 +13,14 @@ end
 Create mixed density plots (i.e., density plots for continuous parameters and histograms for
 discrete parameters) for the specified parameters in the chain.
 
-$(FC._PARAM_DOCSTRING("FlexiChains.mmixeddensity"))
+$(FC.PlotUtils._PARAM_DOCSTRING("FlexiChains.Makie.mixeddensity"))
 
 # Keyword arguments
 
 - `pool_chains::Bool`: whether to pool data from all chains into a single plot, or to plot each chain separately. Defaults to `false`.
 $(MAKIE_KWARGS_DOCSTRING)
 """
-function FC.mmixeddensity(
+function FC.Makie.mixeddensity(
         chn::FC.FlexiChain,
         param_or_params = FC.Parameter.(FC.parameters(chn));
         pool_chains::Bool = false,
@@ -44,7 +44,7 @@ function FC.mmixeddensity(
         else
             _default_density_axis(k)
         end
-        a, p = FlexiChains.mmixeddensity!(
+        a, p = FlexiChains.Makie.mixeddensity!(
             Makie.Axis(figure[row, col]; axis_kwargs..., axis...),
             FC.PlotUtils.FlexiChainMixedDensity(chn, k, pool_chains);
             kwargs...,
@@ -61,7 +61,7 @@ end
 ########################
 # Single axis plotting #
 ########################
-function FC.mmixeddensity(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
+function FC.Makie.mixeddensity(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
@@ -71,28 +71,28 @@ function FC.mmixeddensity(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;
     else
         _default_density_axis(k)
     end
-    return FC.mmixeddensity!(
+    return FC.Makie.mixeddensity!(
         Makie.Axis(grid; axis_kwargs..., axis...), chn, param; kwargs...
     )
 end
-function FC.mmixeddensity!(
+function FC.Makie.mixeddensity!(
         ax::Makie.Axis, chn::FC.FlexiChain, param; pool_chains::Bool = false, kwargs...
     )
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
-    a, p = FC.mmixeddensity!(
+    a, p = FC.Makie.mixeddensity!(
         ax, FC.PlotUtils.FlexiChainMixedDensity(chn, k, pool_chains); kwargs...
     )
     return Makie.AxisPlot(a, p)
 end
-function FC.mmixeddensity!(chn::FC.FlexiChain, param; kwargs...)
-    return FC.mmixeddensity!(Makie.current_axis(), chn, param; kwargs...)
+function FC.Makie.mixeddensity!(chn::FC.FlexiChain, param; kwargs...)
+    return FC.Makie.mixeddensity!(Makie.current_axis(), chn, param; kwargs...)
 end
 
 """
 This is the actual function that does the density plotting.
 """
-function FC.mmixeddensity!(
+function FC.Makie.mixeddensity!(
         ax::Makie.Axis, d::FC.PlotUtils.FlexiChainMixedDensity; kwargs...
     )
     return if isdiscrete(d.chn, d.param)
