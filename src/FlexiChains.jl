@@ -86,7 +86,7 @@ function _make_posterior_chain end
 end
 
 function __init__()
-    Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
+    return Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
         if exc.f === FlexiChains.PlotUtils.get_hdi_intervals
             printstyled(io, "\n\n    To use interval=:hdi, please load PosteriorStats.jl first.\n"; color = :cyan)
         end
