@@ -1,7 +1,17 @@
+# 0.6.14
+
+Added `FlexiChains.Makie.ridgeline` and `FlexiChains.Makie.forestplot` for creating ridgeline and forest plots with a Makie backend.
+Note that these functions do *not* have `FlexiChains.mridgeline` and `FlexiChains.mforestplot` aliases!
+
 # 0.6.13
 
-Added `FlexiChains.mridgeline` and `FlexiChains.mforestplot` for creating ridgeline and forest plots with a Makie backend.
-Note that these functions can be composed to generate 'eye' plots.
+Moved plotting functions into the `FlexiChains.Plots` and `FlexiChains.Makie` submodules.
+
+What used to be called `FlexiChains.traceplot` (the Plots.jl backend) is now `FlexiChains.Plots.traceplot`, and what used to be called `FlexiChains.mtraceplot` (the Makie.jl backend) is now `FlexiChains.Makie.traceplot`.
+
+The intention for this is to make it easier to switch between plotting backends, and to make the naming more consistent and intuitive.
+
+The old functions are retained as aliases, but they are deprecated and will be removed in the future.
 
 # 0.6.12
 
