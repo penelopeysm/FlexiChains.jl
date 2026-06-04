@@ -1,3 +1,7 @@
+# 0.6.14
+
+Added compatibility with AbstractPPL@0.15 and DynamicPPL@0.42.
+
 # 0.6.13
 
 Moved plotting functions into the `FlexiChains.Plots` and `FlexiChains.Makie` submodules.
