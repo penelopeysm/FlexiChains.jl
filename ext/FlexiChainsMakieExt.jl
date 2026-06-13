@@ -122,6 +122,7 @@ function setup_figure_and_layout(nrows_default::Int, ncols_default::Int, layout:
 end
 
 include("FlexiChainsMakieExt/quantiles_common.jl")
+include("FlexiChainsMakieExt/connquantiles.jl")
 include("FlexiChainsMakieExt/density.jl")
 include("FlexiChainsMakieExt/hist.jl")
 include("FlexiChainsMakieExt/mixeddensity.jl")

@@ -177,6 +177,12 @@ const REFTEST_SPECS = [
     # PairPlotsExt
     RefTestSpec(MakieBE(), "pairplot", () -> PairPlots.pairplot(chn; pool_chains = false)),
     RefTestSpec(MakieBE(), "pairplot_pooled", () -> PairPlots.pairplot(chn; pool_chains = true)),
+
+    # Betancourt quantile plots
+    RefTestSpec(MakieBE(), "connquantiles",
+        () -> FC.Makie.connquantiles(conn_chn, :f_grid, CONN_XGRID; baseline = CONN_BASELINE)),
+    RefTestSpec(MakieBE(), "connquantiles_residual",
+        () -> FC.Makie.connquantiles(conn_chn, :f_grid, CONN_XGRID; baseline = CONN_BASELINE, residual = true)),
 ]
 
 @testset verbose = true "Reference tests" begin
