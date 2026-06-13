@@ -33,6 +33,7 @@ using ..FlexiChains:
     _get_multi_key
 import DimensionalData as DD
 import StatsBase
+import Statistics
 
 """
 Return a chain that has been:
@@ -74,6 +75,36 @@ function check_eltype_is_real(::AbstractArray{T}) where {T}
             ),
         )
     end
+end
+
+const DEFAULT_QUANTILE_LEVELS = [10, 20, 30, 40, 50, 60, 70, 80, 90]
+
+"""
+Compute nested-quantile band values.
+
+`quantile_levels` are in 0–100. For a matrix (`iter × chain`), each quantile is the
+**ensemble estimate**: the empirical quantile is computed per chain (per column) and then
+averaged across chains. For a vector (single chain) the quantile is computed directly.
+Returns a vector of the same length as `quantile_levels`.
+"""
+function compute_quantile_bands(
+        data::AbstractVector{<:Real},
+        quantile_levels::AbstractVector{<:Real} = DEFAULT_QUANTILE_LEVELS,
+    )
+    return Statistics.quantile(Float64.(data), quantile_levels ./ 100)
+end
+
+function compute_quantile_bands(
+        data::AbstractMatrix{<:Real},
+        quantile_levels::AbstractVector{<:Real} = DEFAULT_QUANTILE_LEVELS,
+    )
+    probs = quantile_levels ./ 100
+    nchains = size(data, 2)
+    acc = zeros(Float64, length(probs))
+    for c in axes(data, 2)
+        acc .+= Statistics.quantile(Float64.(view(data, :, c)), probs)
+    end
+    return acc ./ nchains
 end
 
 struct FlexiChainTrace{TKey, Tp <: ParameterOrExtra{<:TKey}}
