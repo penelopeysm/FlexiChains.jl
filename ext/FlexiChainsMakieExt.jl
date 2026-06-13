@@ -124,6 +124,7 @@ end
 include("FlexiChainsMakieExt/quantiles_common.jl")
 include("FlexiChainsMakieExt/connquantiles.jl")
 include("FlexiChainsMakieExt/discquantiles.jl")
+include("FlexiChainsMakieExt/histquantiles.jl")
 include("FlexiChainsMakieExt/density.jl")
 include("FlexiChainsMakieExt/hist.jl")
 include("FlexiChainsMakieExt/mixeddensity.jl")

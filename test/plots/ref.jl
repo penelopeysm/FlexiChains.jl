@@ -140,7 +140,9 @@ function make_hist_chain(rng)
     ]
     return FlexiChain{Symbol}(N_iters, N_chains, dicts)
 end
-const HIST_OBSERVED = [exp(0.5 * randn(StableRNG(7))) for _ in 1:40]
+const HIST_OBSERVED = let rng_obs = StableRNG(7)
+    [exp(0.5 * randn(rng_obs)) for _ in 1:40]
+end
 
 rng_conn = StableRNG(101); conn_chn = make_conn_chain(rng_conn)
 rng_disc = StableRNG(202); disc_chn = make_disc_chain(rng_disc)
@@ -189,6 +191,10 @@ const REFTEST_SPECS = [
         () -> FC.Makie.discquantiles_vert(disc_chn, :beta)),
     RefTestSpec(MakieBE(), "discquantiles_residual",
         () -> FC.Makie.discquantiles(disc_chn, :beta; baseline = DISC_BASELINE, residual = true)),
+    RefTestSpec(MakieBE(), "histquantiles",
+        () -> FC.Makie.histquantiles(hist_chn, :y_pred; nbins = 20)),
+    RefTestSpec(MakieBE(), "histquantiles_observed",
+        () -> FC.Makie.histquantiles(hist_chn, :y_pred; nbins = 20, observed = HIST_OBSERVED)),
 ]
 
 @testset verbose = true "Reference tests" begin
