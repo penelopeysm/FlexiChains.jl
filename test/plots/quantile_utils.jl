@@ -3,6 +3,9 @@ module QuantileUtilsTests
 using Test
 using Statistics: Statistics
 using FlexiChains: FlexiChains as FC
+using FlexiChains: FlexiChain, Parameter
+using OrderedCollections: OrderedDict
+using StableRNGs: StableRNG
 const PU = FC.PlotUtils
 
 @testset "compute_quantile_bands" begin
@@ -86,6 +89,23 @@ end
         @test all(==(0), mats[2])
         @test size(mats[1]) == (3, 2)
     end
+end
+
+@testset "leaf_series" begin
+    rng = StableRNG(1)
+    # array-valued variable `v` stored whole: each draw is a length-3 vector
+    dicts = [OrderedDict(Parameter(:v) => randn(rng, 3)) for _ in 1:5, _ in 1:2]
+    chn = FlexiChain{Symbol}(5, 2, dicts)
+
+    ks, data = PU.leaf_series(chn, :v)         # auto-expand single array variable
+    @test length(ks) == 3
+    @test length(data) == 3
+    @test all(d -> size(d) == (5, 2), data)    # each leaf is iter×chain
+
+    # escape hatch: explicit vector of scalar leaves, custom order is preserved
+    ks2, data2 = PU.leaf_series(chn, [Parameter(Symbol("v[3]")), Parameter(Symbol("v[1]"))])
+    @test length(ks2) == 2
+    @test ks2 == [Parameter(Symbol("v[3]")), Parameter(Symbol("v[1]"))]
 end
 
 end # module

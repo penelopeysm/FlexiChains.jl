@@ -28,6 +28,7 @@ using ..FlexiChains:
     ParameterOrExtra,
     VarName,
     _split_varnames,
+    _get_raw_data,
     niters,
     _get_multi_keys,
     _get_multi_key
@@ -150,6 +151,33 @@ function bin_count_matrices(component_data::AbstractVector{<:AbstractMatrix{<:Re
         end
     end
     return counts
+end
+
+"""Resolve `param` to an ordered list of scalar leaf keys and their raw `iter × chain`
+matrices. `param` may be:
+- a single array-valued `VarName`/`Symbol`, auto-expanded to its scalar leaves in
+  column-major index order (via `_split_varnames`);
+- an `AbstractVector` of scalar keys, returned in the given order; or
+- a `Colon` (`:`), expanding all parameters' leaves.
+All series are checked to be real-valued."""
+function leaf_series(chn::FlexiChain{TKey}, param) where {TKey}
+    # For an explicit vector of scalar leaf keys, split first then subset so that
+    # the caller can name leaves that only exist after array-variable splitting.
+    sub = if param isa AbstractVector
+        split_chn = _split_varnames(chn)
+        leaf_keys = _get_multi_keys(TKey, keys(split_chn), param)
+        split_chn[leaf_keys]
+    else
+        subset_and_split_chain(chn, param)
+    end
+    ks = collect(keys(sub))
+    isempty(ks) && throw(ArgumentError("no parameters to plot"))
+    data = map(ks) do k
+        d = _get_raw_data(sub, k)
+        check_eltype_is_real(d)
+        d
+    end
+    return ks, data
 end
 
 struct FlexiChainTrace{TKey, Tp <: ParameterOrExtra{<:TKey}}
