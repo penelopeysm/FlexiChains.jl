@@ -107,6 +107,51 @@ function compute_quantile_bands(
     return acc ./ nchains
 end
 
+"""Equal-width bin edges spanning the range of `values`; returns `nbins+1` edges.
+`values` must be non-empty."""
+function auto_bin_edges(values, nbins::Integer)
+    isempty(values) && throw(ArgumentError("auto_bin_edges: `values` must be non-empty"))
+    lo, hi = extrema(values)
+    lo == hi && (hi = lo + 1)  # degenerate guard for constant input
+    return collect(range(float(lo), float(hi); length = nbins + 1))
+end
+
+"""Count how many of `values` fall in each `[edges[b], edges[b+1])` bin.
+Values equal to the final edge land in the last bin; out-of-range values are ignored.
+Returns a `Vector{Int}` of length `length(edges) - 1`."""
+function histogram_counts(values, edges)
+    nbins = length(edges) - 1
+    counts = zeros(Int, nbins)
+    last_edge = last(edges)
+    for v in values
+        b = searchsortedlast(edges, v)
+        v == last_edge && (b = nbins)      # v == last edge: clamp to last bin
+        1 <= b <= nbins && (counts[b] += 1)
+    end
+    return counts
+end
+
+"""For a collection of component series (each an `iter × chain` matrix), compute, for every
+bin, the `iter × chain` matrix of per-draw counts (number of components falling in that bin).
+All component matrices must share the same axes. Returns a `Vector` of length `nbins`, each
+element a 1-based `iter × chain` `Matrix{Int}`."""
+function bin_count_matrices(component_data::AbstractVector{<:AbstractMatrix{<:Real}}, edges)
+    m1 = first(component_data)
+    all(m -> axes(m) == axes(m1), component_data) ||
+        throw(DimensionMismatch("all component matrices must share the same axes"))
+    nbins = length(edges) - 1
+    counts = [zeros(Int, size(m1)) for _ in 1:nbins]
+    # Read via the components' own axes (offset-safe); write to 1-based output indices.
+    for (cidx, c) in enumerate(axes(m1, 2)), (iidx, it) in enumerate(axes(m1, 1))
+        draw_vals = (component_data[j][it, c] for j in eachindex(component_data))
+        hc = histogram_counts(draw_vals, edges)
+        for b in 1:nbins
+            counts[b][iidx, cidx] = hc[b]
+        end
+    end
+    return counts
+end
+
 struct FlexiChainTrace{TKey, Tp <: ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp

@@ -41,4 +41,51 @@ const PU = FC.PlotUtils
     end
 end
 
+@testset "binning utilities" begin
+    @testset "auto_bin_edges spans the range" begin
+        edges = PU.auto_bin_edges([0.0, 10.0, 5.0], 5)
+        @test length(edges) == 6
+        @test first(edges) == 0.0
+        @test last(edges) == 10.0
+    end
+
+    @testset "auto_bin_edges degenerate + empty" begin
+        edges = PU.auto_bin_edges([5.0, 5.0], 4)   # constant input
+        @test length(edges) == 5
+        @test first(edges) == 5.0
+        @test last(edges) == 6.0
+        @test_throws ArgumentError PU.auto_bin_edges(Float64[], 4)
+    end
+
+    @testset "histogram_counts interior edge is left-closed" begin
+        edges = range(0.0, 10.0; length = 6)  # [0,2)[2,4)[4,6)[6,8)[8,10]
+        @test PU.histogram_counts([2.0], edges) == [0, 1, 0, 0, 0]
+    end
+
+    @testset "histogram_counts" begin
+        edges = range(0.0, 10.0; length = 6)  # bins: [0,2)[2,4)[4,6)[6,8)[8,10]
+        counts = PU.histogram_counts([1.0, 3.0, 3.5, 9.0, 10.0], edges)
+        @test counts == [1, 2, 0, 0, 2]   # 10.0 (== last edge) lands in last bin
+        @test sum(counts) == 5
+    end
+
+    @testset "histogram_counts ignores out-of-range" begin
+        edges = range(0.0, 10.0; length = 6)
+        counts = PU.histogram_counts([-1.0, 11.0, 5.0], edges)
+        @test sum(counts) == 1
+    end
+
+    @testset "bin_count_matrices preserves iter×chain shape" begin
+        edges = range(0.0, 10.0; length = 6)
+        comp1 = fill(1.0, 3, 2)   # all in bin 1
+        comp2 = fill(9.0, 3, 2)   # all in bin 5
+        mats = PU.bin_count_matrices([comp1, comp2], edges)
+        @test length(mats) == 5
+        @test all(==(1), mats[1])
+        @test all(==(1), mats[5])
+        @test all(==(0), mats[2])
+        @test size(mats[1]) == (3, 2)
+    end
+end
+
 end # module
