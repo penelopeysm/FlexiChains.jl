@@ -181,7 +181,7 @@ Makie.save("rankplot_makie.png", ans.figure); # hide
 
 ![Rank plots of the sampled chain](rankplot_makie.png)
 
-## Betancourt quantile plots
+## Pushforward plots
 
 These reproduce the nested-quantile pushforward visualizations from
 [Betancourt's `mcmc_visualization_tools`](https://github.com/betanalpha/mcmc_visualization_tools).
@@ -193,42 +193,6 @@ FlexiChains.Makie.connquantiles
 FlexiChains.Makie.discquantiles
 FlexiChains.Makie.discquantiles_vert
 FlexiChains.Makie.histquantiles
-```
-
-### Connected pushforward quantiles
-
-```@example betancourt
-using FlexiChains, CairoMakie, OrderedCollections, StableRNGs
-
-rng = StableRNG(101)
-xgrid = collect(range(-3.0, 3.0; length = 12))
-dicts = [OrderedDict(FlexiChains.Parameter(:f_grid) => [(1.0 + 2.0*x) + 0.8*randn(rng) for x in xgrid])
-         for _ in 1:150, _ in 1:2]
-chn_conn = FlexiChains.FlexiChain{Symbol}(150, 2, dicts)
-FlexiChains.Makie.connquantiles(chn_conn, :f_grid, xgrid; baseline = [1.0 + 2.0*x for x in xgrid])
-```
-
-### Disconnected pushforward quantiles
-
-```@example betancourt
-means = [-2.0, -0.5, 0.0, 1.5, 3.0]
-ddicts = [OrderedDict(FlexiChains.Parameter(:beta) => [m + 0.5*randn(rng) for m in means])
-          for _ in 1:150, _ in 1:2]
-dchn = FlexiChains.FlexiChain{Symbol}(150, 2, ddicts)
-FlexiChains.Makie.discquantiles(dchn, :beta; baseline = means)
-```
-
-Use `discquantiles_vert` for the rotated layout, and `residual = true` (with `baseline`)
-to centre the bands on prediction error.
-
-### Histogram quantiles (posterior-predictive check)
-
-```@example betancourt
-hdicts = [OrderedDict(FlexiChains.Parameter(:y_pred) => [exp(0.5*randn(rng)) for _ in 1:40])
-          for _ in 1:150, _ in 1:2]
-hchn = FlexiChains.FlexiChain{Symbol}(150, 2, hdicts)
-observed = [exp(0.5*randn(StableRNG(7))) for _ in 1:40]
-FlexiChains.Makie.histquantiles(hchn, :y_pred; nbins = 20, observed = observed)
 ```
 
 ## [Customisation](@id makie-customisation)
