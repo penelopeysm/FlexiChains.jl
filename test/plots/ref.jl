@@ -183,6 +183,12 @@ const REFTEST_SPECS = [
         () -> FC.Makie.connquantiles(conn_chn, :f_grid, CONN_XGRID; baseline = CONN_BASELINE)),
     RefTestSpec(MakieBE(), "connquantiles_residual",
         () -> FC.Makie.connquantiles(conn_chn, :f_grid, CONN_XGRID; baseline = CONN_BASELINE, residual = true)),
+    RefTestSpec(MakieBE(), "discquantiles",
+        () -> FC.Makie.discquantiles(disc_chn, :beta; baseline = DISC_BASELINE)),
+    RefTestSpec(MakieBE(), "discquantiles_vert",
+        () -> FC.Makie.discquantiles_vert(disc_chn, :beta)),
+    RefTestSpec(MakieBE(), "discquantiles_residual",
+        () -> FC.Makie.discquantiles(disc_chn, :beta; baseline = DISC_BASELINE, residual = true)),
 ]
 
 @testset verbose = true "Reference tests" begin
