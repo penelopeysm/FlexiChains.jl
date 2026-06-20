@@ -1,7 +1,16 @@
-# 0.6.14
+# 0.6.16
 
 Added `FlexiChains.Makie.ridgeline` and `FlexiChains.Makie.forestplot` for creating ridgeline and forest plots with a Makie backend.
 Note that these functions do *not* have `FlexiChains.mridgeline` and `FlexiChains.mforestplot` aliases!
+
+# 0.6.15
+
+Added compatibility with OrderedCollections@2.
+
+# 0.6.14
+
+Added compatibility with AbstractPPL@0.15 and DynamicPPL@0.42.
+>>>>>>> main
 
 # 0.6.13
 
