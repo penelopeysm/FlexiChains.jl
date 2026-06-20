@@ -19,7 +19,8 @@ Here is a rough overview of the current status:
 | Corner plots                     | ✅ [`StatsPlots.cornerplot`](@ref)          | ✅ [`PairPlots.pairplot`](@ref)                         |
 | Violin plots                     | ✅ [`StatsPlots.violin`](@ref)              | 🐌                                                      |
 | Energy plots                     | 🐌                                          | 🐌                                                      |
-| Forest plots                     | 🐌                                          | 🐌                                                      |
+| Forest plots                     | 🐌                                          | ✅ [`FlexiChains.Makie.forestplot`](@ref)                |
+| Ridgeline plots                  | 🐌                                          | ✅ [`FlexiChains.Makie.ridgeline`](@ref)                 |
 | Predictive check plots           | 🐌                                          | 🐌                                                      |
 
 All of the above functions have 'mutating' versions with a `!` suffix.

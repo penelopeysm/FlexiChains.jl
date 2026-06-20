@@ -181,6 +181,42 @@ Makie.save("rankplot_makie.png", ans.figure); # hide
 
 ![Rank plots of the sampled chain](rankplot_makie.png)
 
+## Forest plots
+
+!!! info "Half-eye plots"
+    To get a 'half-eye' look similar to R's `ggdist` package, you can compose `forestplot!` and `ridgeline!`.
+    See e.g. the example [here](https://github.com/penelopeysm/FlexiChains.jl/pull/230).
+
+```@docs
+FlexiChains.Makie.forestplot
+FlexiChains.Makie.forestplot!
+```
+
+```@example 1
+forestplot(chn)
+Makie.save("forestplot_makie.png", ans.figure); # hide
+```
+
+![Forest plots of the sampled chain](forestplot_makie.png)
+
+## Ridgeline plots
+
+!!! info "Half-eye plots"
+    To get a 'half-eye' look similar to R's `ggdist` package, you can compose `forestplot!` and `ridgeline!`.
+    See e.g. the example [here](https://github.com/penelopeysm/FlexiChains.jl/pull/230).
+
+```@docs
+FlexiChains.Makie.ridgeline
+FlexiChains.Makie.ridgeline!
+```
+
+```@example 1
+ridgeline(chn)
+Makie.save("ridgeline_makie.png", ans.figure); # hide
+```
+
+![Ridgeline plots of the sampled chain](ridgeline_makie.png)
+
 ## [Customisation](@id makie-customisation)
 
 As described in the [general interface section above](@ref makie-interface), all of the above functions accept keyword arguments to control the appearance of the plot.
