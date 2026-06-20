@@ -7,6 +7,7 @@ using StatsPlots
 using OrderedCollections: OrderedDict
 using FlexiChains: FlexiChains as FC, FlexiChain, Parameter
 using StableRNGs: StableRNG
+import PosteriorStats # For hdi forestplot
 using PixelMatch
 using PNGFiles
 using Test
@@ -107,6 +108,9 @@ const REFTEST_SPECS = [
     RefTestSpec(MakieBE(), "mautocorplot", () -> FC.Makie.autocorplot(chn)),
     RefTestSpec(MakieBE(), "mautocorplot_lags", () -> FC.Makie.autocorplot(chn; lags = 1:40)),
     RefTestSpec(MakieBE(), "makie_plot", () -> Makie.plot(chn)),
+    RefTestSpec(MakieBE(), "mridgeline", () -> FC.Makie.ridgeline(chn)),
+    RefTestSpec(MakieBE(), "mforestplot", () -> FC.Makie.forestplot(chn)),
+    RefTestSpec(MakieBE(), "mforestplot_options", () -> FC.Makie.forestplot(chn; point = :mean, interval = :hdi, hdi_method = :multimodal, levels = (0.5, 0.95))),
 
     # PlotsExt
     RefTestSpec(PlotsBE(), "traceplot", () -> FC.Plots.traceplot(chn)),

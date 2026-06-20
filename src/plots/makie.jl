@@ -13,7 +13,11 @@ export traceplot,
     meanplot,
     meanplot!,
     autocorplot,
-    autocorplot!
+    autocorplot!,
+    ridgeline,
+    ridgeline!,
+    forestplot,
+    forestplot!
 
 # The non-mutating versions have docstrings in the extension.
 
@@ -66,5 +70,25 @@ Mutating version of [`FlexiChains.Makie.autocorplot`](@ref), for use with existi
 `Makie.Axis` objects.
 """
 function autocorplot! end
+
+function ridgeline end
+
+"""
+    FlexiChains.Makie.ridgeline!
+
+Mutating version of [`FlexiChains.Makie.ridgeline`](@ref), for use with existing
+`Makie.Axis` objects.
+"""
+function ridgeline! end
+
+function forestplot end
+
+"""
+    FlexiChains.Makie.forestplot!
+
+Mutating version of [`FlexiChains.Makie.forestplot`](@ref), for use with existing
+`Makie.Axis` objects.
+"""
+function forestplot! end
 
 end # module

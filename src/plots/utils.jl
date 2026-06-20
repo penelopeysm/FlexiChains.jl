@@ -23,6 +23,9 @@ when plotting. If `true` (the default), samples from all chains are pooled toget
 const DEFAULT_WIDTH = 400
 const DEFAULT_HEIGHT = 250
 
+function get_hdi_intervals end  # Overloaded in PosteriorStatsExt
+const DEFAULT_INTERVALS = (0.66, 0.95) # for forestplot
+
 using ..FlexiChains:
     FlexiChain,
     ParameterOrExtra,
@@ -154,6 +157,32 @@ struct FlexiChainViolin{TKey, Tp <: ParameterOrExtra{<:TKey}}
     param::Tp
     pool_chains::Bool
     with_box::Bool
+end
+
+struct FlexiChainForest{TKey}
+    chn::FlexiChain{TKey}
+    params::Vector
+    pool_chains::Bool
+    point::Symbol
+    interval::Symbol
+    hdi_method::Symbol
+    levels::Vector{Float64}
+    function FlexiChainForest(chn::FlexiChain{TKey}, params::Vector, pool_chains::Bool, point = :median, interval = :quantile, hdi_method = :unimodal, levels = DEFAULT_INTERVALS) where {TKey}
+        point in (:mean, :median) ||
+            throw(ArgumentError("point must be :mean or :median, got :$point"))
+        interval in (:quantile, :hdi) ||
+            throw(ArgumentError("interval must be :quantile or :hdi, got :$interval"))
+        all(l -> 0 < l < 1, levels) ||
+            throw(ArgumentError("interval levels must be in (0, 1)"))
+        sorted_levels = sort(collect(Float64, levels))
+        return new{TKey}(chn, params, pool_chains, point, interval, hdi_method, sorted_levels)
+    end
+end
+
+struct FlexiChainRidgeline{TKey}
+    chn::FlexiChain{TKey}
+    params::Vector
+    pool_chains::Bool
 end
 
 end # module PlotUtils

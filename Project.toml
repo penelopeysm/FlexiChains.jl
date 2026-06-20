@@ -1,7 +1,7 @@
 name = "FlexiChains"
 uuid = "4a37a8b9-6e57-4b92-8664-298d46e639f7"
 authors = ["Penelope Yong <penelopeysm@gmail.com> and contributors"]
-version = "0.6.15"
+version = "0.6.16"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
@@ -25,6 +25,7 @@ Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DynamicPPL = "366bfd00-2699-11ea-058f-f148b4cae6d8"
 InferenceObjects = "b5cf5a8d-e756-4ee3-b014-01d49d192c00"
 IntervalSets = "8197267c-284f-5f27-9208-e0e47529a953"
+KernelDensity = "5ab0869b-81aa-558d-bb23-cbf5423bbe9b"
 MCMCChains = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 PairPlots = "43a3c2be-4208-490b-832a-a21dcd55d7da"
@@ -40,7 +41,7 @@ FlexiChainsComponentArraysExt = ["ComponentArrays"]
 FlexiChainsDynamicPPLExt = ["DynamicPPL", "Random", "DimensionalData", "OrderedCollections", "Distributions"]
 FlexiChainsInferenceObjectsExt = ["InferenceObjects", "DimensionalData", "OrderedCollections"]
 FlexiChainsMCMCChainsExt = ["MCMCChains", "OrderedCollections"]
-FlexiChainsMakieExt = ["Makie", "StatsBase"]
+FlexiChainsMakieExt = ["Makie", "StatsBase", "KernelDensity"]
 FlexiChainsPairPlotsExt = ["PairPlots", "Makie"]
 FlexiChainsPosteriorDBExt = ["PosteriorDB", "OrderedCollections"]
 FlexiChainsPosteriorStatsDynamicPPLExt = ["PosteriorStats", "DynamicPPL"]
@@ -61,6 +62,7 @@ DocStringExtensions = "0.9"
 DynamicPPL = "0.41.6, 0.42"
 InferenceObjects = "0.4"
 IntervalSets = "0.5 - 0.7"
+KernelDensity = "0.6"
 MCMCChains = "6, 7"
 MCMCDiagnosticTools = "0.3.15"
 Makie = "0.24"
