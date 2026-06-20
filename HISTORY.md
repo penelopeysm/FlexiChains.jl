@@ -10,7 +10,6 @@ Added compatibility with OrderedCollections@2.
 # 0.6.14
 
 Added compatibility with AbstractPPL@0.15 and DynamicPPL@0.42.
->>>>>>> main
 
 # 0.6.13
 
