@@ -140,14 +140,14 @@ Use `describe(chains)` for summary statistics and quantiles.
 # summarize(mchain)      # same as summarystats for the most part
 # describe(mchain)       # prints them but returns nothing</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Summary Statistics
 
-  parameters      mean       std      mcse   ess_bulk   ess_tail      rhat   e ⋯
-      Symbol   Float64   Float64   Float64    Float64    Float64   Float64     ⋯
+ <span class="sgr1"> parameters </span> <span class="sgr1">    mean </span> <span class="sgr1">     std </span> <span class="sgr1">    mcse </span> <span class="sgr1"> ess_bulk </span> <span class="sgr1"> ess_tail </span> <span class="sgr1">    rhat </span> <span class="sgr1"> e</span> ⋯
+ <span class="sgr90">     Symbol </span> <span class="sgr90"> Float64 </span> <span class="sgr90"> Float64 </span> <span class="sgr90"> Float64 </span> <span class="sgr90">  Float64 </span> <span class="sgr90">  Float64 </span> <span class="sgr90"> Float64 </span> <span class="sgr90">  </span> ⋯
 
            x    0.1409    1.1744       NaN        NaN        NaN    1.2648     ⋯
            y    0.1947    1.2549       NaN        NaN        NaN    1.1048     ⋯
            z   -0.0787    1.0362       NaN        NaN        NaN    1.0867     ⋯
 
-                                                                1 column omitted
+<span class="sgr36">                                                                1 column omitted</span>
 </code></pre><p>FlexiChains only uses <code>StatsBase.summarystats</code>:</p><pre><code class="language-julia hljs">summarystats(fchain)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr90">╭─</span><span class="sgr1">FlexiSummary (9 statistics)</span><span class="sgr90"> ─────────────────────────────────────────────────╮</span>
 <span class="sgr90">│</span> <span class="sgr37">  iter    collapsed</span>                                                          <span class="sgr90">│</span>
 <span class="sgr90">│</span> <span class="sgr37">  chain   collapsed</span>                                                          <span class="sgr90">│</span>
@@ -173,8 +173,8 @@ model = k()
 mchain = prior_chain(Xoshiro(468), model, 5, 2, MCMCChains.Chains)
 fchain = prior_chain(Xoshiro(468), model, 5, 2, FlexiChains.VNChain)</code></pre><h3 id="MCMCChains-5"><a class="docs-heading-anchor" href="#MCMCChains-5">MCMCChains</a><a class="docs-heading-anchor-permalink" href="#MCMCChains-5" title="Permalink"></a></h3><pre><code class="language-julia hljs">mmean = mean(mchain)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Mean
 
-  parameters      mean 
-      Symbol   Float64 
+ <span class="sgr1"> parameters </span> <span class="sgr1">    mean </span>
+ <span class="sgr90">     Symbol </span> <span class="sgr90"> Float64 </span>
 
            x    0.1409
         y[1]    0.1947
@@ -199,8 +199,8 @@ fchain = prior_chain(Xoshiro(468), model, 5, 2, FlexiChains.VNChain)</code></pre
 <span class="sgr90">╰──────────────────────────────────────────────────────────────────────────────╯</span></code></pre><p>This returns a <code>FlexiSummary</code> object, which can be indexed into with a <code>VarName</code>:</p><pre><code class="language-julia hljs">fmean[@varname(x)]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.14094667862080373</code></pre><p>Or, perhaps more efficiently since this avoids calculating the mean of all other variables, you can index into the chain first to extract the variable <code>x</code> and then take the mean of that:</p><pre><code class="language-julia hljs">fmean_x = mean(fchain[@varname(x)])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.14094667862080373</code></pre><h2 id="B3.-Mean-of-an-array-valued-variable"><a class="docs-heading-anchor" href="#B3.-Mean-of-an-array-valued-variable">B3. Mean of an array-valued variable</a><a id="B3.-Mean-of-an-array-valued-variable-1"></a><a class="docs-heading-anchor-permalink" href="#B3.-Mean-of-an-array-valued-variable" title="Permalink"></a></h2><h3 id="MCMCChains-6"><a class="docs-heading-anchor" href="#MCMCChains-6">MCMCChains</a><a class="docs-heading-anchor-permalink" href="#MCMCChains-6" title="Permalink"></a></h3><p>In the example above we had <code>y ~ MvNormal(zeros(2), I)</code>, so <code>y</code> is a 2-dimensional array-valued variable. With MCMCChains, you have to first subset the chain to variables that begin with <code>y</code> using <code>group</code>, and then calculate the mean:</p><pre><code class="language-julia hljs">mchain_yonly = group(mchain, :y)
 mmean_yonly = mean(mchain_yonly)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Mean
 
-  parameters      mean 
-      Symbol   Float64 
+ <span class="sgr1"> parameters </span> <span class="sgr1">    mean </span>
+ <span class="sgr90">     Symbol </span> <span class="sgr90"> Float64 </span>
 
         y[1]    0.1947
         y[2]   -0.0787
@@ -288,4 +288,4 @@ model = q()
 mchain = prior_chain(Xoshiro(468), model, 5, 2, MCMCChains.Chains)
 fchain = prior_chain(Xoshiro(468), model, 5, 2, FlexiChains.VNChain)</code></pre><p>Plotting functions in FlexiChains all allow you to pass a collection of parameters as a second, optional argument. Thus, for example, if you wanted to plot only <code>y</code>, then you could do:</p><pre><code class="language-julia hljs">using StatsPlots
 plot(fchain, [@varname(y)])</code></pre><p><img src="../fchainplot.svg" alt="FlexiChains plots"/></p><p>With MCMCChains you would probably be best off subsetting the chain to variables that begin with <code>y</code> first, and then plotting that:</p><pre><code class="language-julia hljs">mchain_yonly = group(mchain, :y)
-plot(mchain_yonly)</code></pre><p><img src="../mchainplot.svg" alt="MCMCChains plots"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../whynot/">« Why not FlexiChains?</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Sunday 17 May 2026 16:18">Sunday 17 May 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+plot(mchain_yonly)</code></pre><p><img src="../mchainplot.svg" alt="MCMCChains plots"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../whynot/">« Why not FlexiChains?</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Sunday 21 June 2026 18:52">Sunday 21 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
