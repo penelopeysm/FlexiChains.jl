@@ -65,9 +65,22 @@ using StatsBase: summarystats, mad
 export summarystats, mad
 using MCMCDiagnosticTools: ess, rhat, mcse, gelmandiag, gelmandiag_multivariate, discretediag, bfmi
 export ess, rhat, mcse, gelmandiag, gelmandiag_multivariate, discretediag, bfmi
-# For maximum ease of use with Turing...
+
+"""
+    VNChain
+
+Alias for `FlexiChain{VarName}`.
+"""
 const VNChain = FlexiChain{VarName}
-export VarName, @varname, VNChain
+
+"""
+    SymChain
+
+Alias for `FlexiChain{Symbol}`.
+"""
+const SymChain = FlexiChain{Symbol}
+
+export VarName, @varname, VNChain, SymChain
 
 # Test utils, overloaded in DynamicPPLExt.
 function _make_prior_chain end
