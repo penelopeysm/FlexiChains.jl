@@ -1,3 +1,7 @@
+# 0.6.17
+
+Added the exported alias `SymChain` for `FlexiChain{Symbol}`.
+
 # 0.6.16
 
 Added `FlexiChains.Makie.ridgeline` and `FlexiChains.Makie.forestplot` for creating ridgeline and forest plots with a Makie backend.

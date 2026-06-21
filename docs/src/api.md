@@ -16,6 +16,13 @@ FlexiChains.FlexiChain
 FlexiChains.FlexiSummary
 ```
 
+There are aliases for common `FlexiChain` key types:
+
+```@docs
+VNChain
+SymChain
+```
+
 Both types have extra type parameters, but they are considered internal and may change at any time.
 
 You can also use `Base.keytype`:
