@@ -48,7 +48,7 @@ jobs:
         # Also, `root` must be an absolute path (hence the call to `pwd()`)
         run: |
           using Documenter
-          deploydocs(; root=pwd(), repo="github.com/penelopeysm/FlexiChains.git", push_preview=true)
+          deploydocs(; root=pwd(), repo="github.com/penelopeysm/FlexiChains.jl.git", push_preview=true)
           
       - name: Post docs preview comment
         if: ${{ env.IS_PR_BUT_NOT_FORK == 'true' }}
