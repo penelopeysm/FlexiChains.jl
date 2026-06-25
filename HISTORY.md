@@ -1,3 +1,7 @@
+# 0.6.18
+
+Re-export `Begin` and `End` from DimensionalData.jl, to make indexing into FlexiChains easier.
+
 # 0.6.17
 
 Added the exported alias `SymChain` for `FlexiChain{Symbol}`.

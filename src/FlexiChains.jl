@@ -57,8 +57,8 @@ include("plots/shims.jl")
 
 # Convenience re-exports.
 export Wide, Long
-using DimensionalData: At, Near, Contains, (..), Touches, Where, Not, DimArray
-export At, Near, Contains, (..), Touches, Where, Not, DimArray
+using DimensionalData: At, Near, Contains, (..), Touches, Where, Not, DimArray, Begin, End
+export At, Near, Contains, (..), Touches, Where, Not, DimArray, Begin, End
 using Statistics: mean, median, std, var, quantile
 export mean, median, std, var, quantile
 using StatsBase: summarystats, mad
@@ -99,11 +99,19 @@ function _make_posterior_chain end
 end
 
 function __init__()
-    return Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
+    Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
         if exc.f === FlexiChains.PlotUtils.get_hdi_intervals
             printstyled(io, "\n\n    To use interval=:hdi, please load PosteriorStats.jl first.\n"; color = :cyan)
         end
     end
+    Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
+        if (exc.f === Base.firstindex || exc.f === Base.lastindex) &&
+                length(argtypes) == 1 &&
+                (argtypes[1] <: FlexiChain || argtypes[1] <: FlexiChains.FlexiSummary)
+            printstyled(io, "\n\n    Indexing into FlexiChains objects with `begin` or `end` does not work; please use `Begin` and `End` instead, which are equivalent."; color = :cyan)
+        end
+    end
+    return nothing
 end
 
 end # module FlexiChains
