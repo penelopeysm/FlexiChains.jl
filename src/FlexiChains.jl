@@ -106,8 +106,8 @@ function __init__()
     end
     Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
         if (exc.f === Base.firstindex || exc.f === Base.lastindex) &&
-              length(argtypes) == 1 &&
-            (argtypes[1] <: FlexiChain || argtypes[1] <: FlexiChains.FlexiSummary)
+                length(argtypes) == 1 &&
+                (argtypes[1] <: FlexiChain || argtypes[1] <: FlexiChains.FlexiSummary)
             printstyled(io, "\n\n    Indexing into FlexiChains objects with `begin` or `end` does not work; please use `Begin` and `End` instead, which are equivalent."; color = :cyan)
         end
     end
