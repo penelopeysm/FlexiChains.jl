@@ -1,5 +1,3 @@
-@public FlexiChain, Parameter, Extra, ParameterOrExtra
-@public iter_indices, chain_indices, renumber_iters, renumber_chains
 @public sampling_time, last_sampler_state
 @public get_name
 
@@ -488,11 +486,6 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
             niters, nchains, iter_indices, chain_indices, sampling_time, last_sampler_state
         )
 
-        # TODO: Allow structures ... ? Seems unlikely that structures would be used by
-        # anything that isn't Turing. Enabling this would be non-breaking though so we can
-        # leave it for a future version.
-        structures = fill(nothing, niters, nchains)
-
         # Handle keys.
         if key_spec isa TKey
             key_spec = (Parameter(key_spec) => (nparams,),)
@@ -506,6 +499,9 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
                 )
             )
         end
+
+        # Make structures (if possible).
+        structures = _make_structures_from_array(TKey, niters, nchains)
 
         # Construct data
         data = OrderedDict{ParameterOrExtra{<:TKey}, Matrix}()
@@ -526,6 +522,12 @@ struct FlexiChain{TKey, TMetadata <: FlexiChainMetadata} <: AbstractMCMC.Abstrac
         end
         return new{TKey, typeof(metadata)}(data, metadata, structures)
     end
+end
+
+# Default is to not make any structures, but this can be overloaded for TKey = VarName if
+# DynamicPPL is loaded
+function _make_structures_from_array(::Type, niters::Int, nchains::Int)
+    return fill(nothing, niters, nchains)
 end
 
 # note: empty size signifies scalar, not 0-dim array

@@ -598,6 +598,29 @@ _LOGJOINT_KEY = Extra(:logjoint)
             @test result.loo isa PosteriorStats.PSISLOOResult
         end
     end
+
+    @testset "adds structures when converting from Array" begin
+        arr = randn(10, 3, 3)
+        for key_spec in (
+                @varname(x),
+                (@varname(x1), @varname(x2), @varname(x3)),
+                (@varname(x1), @varname(x2) => (2,)),
+                (@varname(x1), @varname(x2) => (2,)),
+                (@varname(x1), @varname(x2), Extra(:logp)),
+            )
+            chn = FlexiChains.VNChain(arr, @varname(x))
+            # Note: this behaviour only works when DynamicPPL is loaded -- be careful about
+            # moving this test to anywhere else
+            @test rand(chn) isa DynamicPPL.ParamsWithStats
+            @test rand(chn; parameters_only = true) isa DynamicPPL.VarNamedTuple
+
+            first_values = FlexiChains.values_at(chn; iter = 1, chain = 1)
+            @test first_values isa DynamicPPL.ParamsWithStats
+
+            first_params = FlexiChains.parameters_at(chn; iter = 1, chain = 1)
+            @test first_params == first_values.params
+        end
+    end
 end
 
 end # module

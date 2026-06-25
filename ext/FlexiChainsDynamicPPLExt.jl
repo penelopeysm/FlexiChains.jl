@@ -101,6 +101,18 @@ function FlexiChains.reconstruct_parameters(chn::VNChain, i, j, structure::VarNa
     return vnt
 end
 
+# Overload so that you can construct a VNChain from a 3D array and have it include
+# structures, so that `rand(chn)` returns a more convenient ParamsWithStats rather than a
+# Dict.
+#
+# We only need a skeletal VarNamedTuple. Because all our variables will be top-level
+# symbols, the skeletal VarNamedTuple will be empty, so we don't need to actually construct
+# anything.
+function FlexiChains._make_structures_from_array(::Type{VarName}, niters::Int, nchains::Int)
+    return fill(DynamicPPL.VarNamedTuple(), niters, nchains)
+end
+
+
 ##################################################
 # AbstractMCMC.{to,from}_samples implementations #
 ##################################################
