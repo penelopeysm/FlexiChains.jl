@@ -135,7 +135,21 @@ function _discquantiles_figure(chn, param, direction; figure, axis, kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
 end
 
-# ---- vertical (default) ----
+"""
+    FlexiChains.Makie.discquantiles(chn, param; kwargs...)
+
+Plot disconnected nested quantile intervals for an array variable's components, side by side
+in one axis with vertical bars (Betancourt's `plot_disc_pushforward_quantiles`). x = component
+index, y = marginal quantiles.
+
+`param` is a single array-valued `VarName`/`Symbol` or a vector of scalar keys.
+
+# Keyword arguments
+- `quantiles`: odd-length vector of levels in 0–100. Default `[10,…,90]`.
+- `baseline`: length-N vector overlaid per index.
+- `residual`: if `true`, subtract `baseline` before banding (requires `baseline`).
+- `figure`, `axis`: NamedTuples forwarded to `Makie.Figure` / `Makie.Axis`.
+"""
 function FC.Makie.discquantiles(
     chn::FC.FlexiChain,
     param;
@@ -155,7 +169,12 @@ function FC.Makie.discquantiles!(chn::FC.FlexiChain, param; kwargs...)
     return FC.Makie.discquantiles!(Makie.current_axis(), chn, param; kwargs...)
 end
 
-# ---- rotated / horizontal ----
+"""
+    FlexiChains.Makie.discquantiles_vert(chn, param; kwargs...)
+
+Rotated form of [`FlexiChains.Makie.discquantiles`](@ref) using horizontal bars (component
+index on the y-axis), helpful for long component labels.
+"""
 function FC.Makie.discquantiles_vert(
     chn::FC.FlexiChain,
     param;

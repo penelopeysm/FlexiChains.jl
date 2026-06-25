@@ -61,6 +61,19 @@ function _plot_histquantiles!(
     return Makie.AxisPlot(ax, p)
 end
 
+"""
+    FlexiChains.Makie.histquantiles(chn, param; observed=nothing, nbins=25, kwargs...)
+
+Posterior-predictive histogram check (Betancourt's `plot_hist_quantiles`). `param` is one
+predictive array variable. Its component values are binned per posterior draw; each bin's
+count distribution is summarised with a nested quantile ribbon. x = value bins, y = counts.
+
+# Keyword arguments
+- `observed`: vector of observed values; its histogram (same bins) is overlaid as a line.
+- `nbins`: number of equal-width bins. Default `25`.
+- `quantiles`: odd-length vector of levels in 0–100. Default `[10,…,90]`.
+- `figure`, `axis`: NamedTuples forwarded to `Makie.Figure` / `Makie.Axis`.
+"""
 function FC.Makie.histquantiles(
     chn::FC.FlexiChain,
     param;

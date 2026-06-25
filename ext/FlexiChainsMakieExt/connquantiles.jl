@@ -1,6 +1,22 @@
 # No title: connquantiles plots an array variable as a whole, not a single leaf.
 _default_connquantiles_axis() = (xlabel = "index", ylabel = "value")
 
+"""
+    FlexiChains.Makie.connquantiles(chn, param, plot_xs=nothing; kwargs...)
+
+Plot nested quantile credible-interval bands of an array variable's components, connected
+across `plot_xs` into a continuous "function envelope" (Betancourt's
+`plot_conn_pushforward_quantiles`).
+
+`param` is a single array-valued `VarName`/`Symbol` (auto-expanded to ordered leaves) or a
+vector of scalar keys. `plot_xs` defaults to `1:N` (number of components).
+
+# Keyword arguments
+- `quantiles`: odd-length vector of levels in 0–100. Default `[10,…,90]`.
+- `baseline`: length-N vector overlaid as a reference line.
+- `residual`: if `true`, subtract `baseline` before banding (requires `baseline`).
+- `figure`, `axis`: NamedTuples forwarded to `Makie.Figure` / `Makie.Axis`.
+"""
 function FC.Makie.connquantiles(
     chn::FC.FlexiChain,
     param,
