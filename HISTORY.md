@@ -1,3 +1,7 @@
+# 0.6.19
+
+Improved the internal structure of `VNChain`s constructed from `Array`s, such that `rand(chn)` returns `DynamicPPL.ParamsWithStats` or `DynamicPPL.VarNamedTuple` (but unfortunately, only if DynamicPPL is loaded, since those types are defined there).
+
 # 0.6.18
 
 Re-export `Begin` and `End` from DimensionalData.jl, to make indexing into FlexiChains easier.
