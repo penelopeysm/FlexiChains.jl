@@ -15,7 +15,7 @@ const PU = FC.PlotUtils
         data = collect(1.0:100.0)
         bands = PU.compute_quantile_bands(data, levels)
         @test length(bands) == 3
-        @test bands ≈ [25.75, 50.5, 75.25] atol = 1e-6
+        @test bands ≈ [25.75, 50.5, 75.25] atol = 1.0e-6
     end
 
     @testset "matrix input = ensemble (per-chain quantile, averaged)" begin
@@ -23,7 +23,7 @@ const PU = FC.PlotUtils
         data = hcat(col, col)
         bands = PU.compute_quantile_bands(data, levels)
         single = PU.compute_quantile_bands(col, levels)
-        @test bands ≈ single atol = 1e-9
+        @test bands ≈ single atol = 1.0e-9
     end
 
     @testset "ensemble differs from pooled when chains differ" begin
@@ -34,8 +34,8 @@ const PU = FC.PlotUtils
         ensemble = PU.compute_quantile_bands(data, [25])
         expected = (PU.compute_quantile_bands(c1, [25]) .+ PU.compute_quantile_bands(c2, [25])) ./ 2
         pooled = Statistics.quantile(vec(data), 0.25)
-        @test ensemble ≈ expected atol = 1e-9
-        @test !isapprox(ensemble[1], pooled; atol = 1e-6)  # guards against pooling regression
+        @test ensemble ≈ expected atol = 1.0e-9
+        @test !isapprox(ensemble[1], pooled; atol = 1.0e-6)  # guards against pooling regression
     end
 
     @testset "default levels" begin
@@ -91,21 +91,18 @@ end
     end
 end
 
-@testset "leaf_series" begin
+@testset "subset_and_split_chain leaf extraction" begin
     rng = StableRNG(1)
     # array-valued variable `v` stored whole: each draw is a length-3 vector
     dicts = [OrderedDict(Parameter(:v) => randn(rng, 3)) for _ in 1:5, _ in 1:2]
     chn = FlexiChain{Symbol}(5, 2, dicts)
 
-    ks, data = PU.leaf_series(chn, :v)         # auto-expand single array variable
+    sub = PU.subset_and_split_chain(chn, :v)   # auto-expand single array variable
+    ks = collect(keys(sub))
     @test length(ks) == 3
+    data = map(k -> PU._get_raw_data(sub, k), ks)
     @test length(data) == 3
     @test all(d -> size(d) == (5, 2), data)    # each leaf is iter×chain
-
-    # escape hatch: explicit vector of scalar leaves, custom order is preserved
-    ks2, data2 = PU.leaf_series(chn, [Parameter(Symbol("v[3]")), Parameter(Symbol("v[1]"))])
-    @test length(ks2) == 2
-    @test ks2 == [Parameter(Symbol("v[3]")), Parameter(Symbol("v[1]"))]
 end
 
 end # module

@@ -18,14 +18,14 @@ vector of scalar keys. `plot_xs` defaults to `1:N` (number of components).
 - `figure`, `axis`: NamedTuples forwarded to `Makie.Figure` / `Makie.Axis`.
 """
 function FC.Makie.connquantiles(
-    chn::FC.FlexiChain,
-    param,
-    plot_xs = nothing;
-    quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
-    figure = (;),
-    axis = (;),
-    kwargs...,
-)
+        chn::FC.FlexiChain,
+        param,
+        plot_xs = nothing;
+        quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
+        figure = (;),
+        axis = (;),
+        kwargs...,
+    )
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
     ax = Makie.Axis(fig[1, 1]; _default_connquantiles_axis()..., axis...)
     _, p = FC.Makie.connquantiles!(ax, chn, param, plot_xs; quantiles, kwargs...)
@@ -33,18 +33,25 @@ function FC.Makie.connquantiles(
 end
 
 function FC.Makie.connquantiles!(
-    ax::Makie.Axis,
-    chn::FC.FlexiChain,
-    param,
-    plot_xs = nothing;
-    quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
-    baseline = nothing,
-    residual = false,
-    color = Makie.Cycled(1),
-    kwargs...,
-)
+        ax::Makie.Axis,
+        chn::FC.FlexiChain,
+        param,
+        plot_xs = nothing;
+        quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
+        baseline = nothing,
+        residual = false,
+        color = Makie.Cycled(1),
+        kwargs...,
+    )
     isodd(length(quantiles)) || throw(ArgumentError("`quantiles` must have odd length"))
-    ks, data = FC.PlotUtils.leaf_series(chn, param)
+    sub = FC.PlotUtils.subset_and_split_chain(chn, param)
+    ks = collect(keys(sub))
+    isempty(ks) && throw(ArgumentError("no parameters to plot"))
+    data = map(ks) do k
+        d = FC.PlotUtils._get_raw_data(sub, k)
+        FC.PlotUtils.check_eltype_is_real(d)
+        d
+    end
     n = length(ks)
     xs = plot_xs === nothing ? collect(Float64, 1:n) : collect(Float64, plot_xs)
 
@@ -68,8 +75,8 @@ function FC.Makie.connquantiles!(
         )
     end
 
-    nq = length(quantiles);
-    n_bands = nq ÷ 2;
+    nq = length(quantiles)
+    n_bands = nq ÷ 2
     median_idx = (nq + 1) ÷ 2
     qs = Matrix{Float64}(undef, nq, n)
 
@@ -86,7 +93,7 @@ function FC.Makie.connquantiles!(
             ax,
             xs,
             qs[i, :],
-            qs[nq+1-i, :];
+            qs[nq + 1 - i, :];
             color = (base_color, _band_alpha(i, n_bands)),
             kwargs...,
         )

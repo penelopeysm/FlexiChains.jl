@@ -1,8 +1,8 @@
 # Build "stairs" x-coordinates from bin edges: each bin contributes its two edges.
 function _stair_x(edges)
     xs = Float64[]
-    for b in 1:(length(edges)-1)
-        push!(xs, edges[b], edges[b+1])
+    for b in 1:(length(edges) - 1)
+        push!(xs, edges[b], edges[b + 1])
     end
     return xs
 end
@@ -11,14 +11,14 @@ end
 _stair_y(vals) = repeat(vals, inner = 2)
 
 function _plot_histquantiles!(
-    ax::Makie.Axis,
-    data;
-    observed = nothing,
-    nbins::Integer = 25,
-    quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
-    color = Makie.Cycled(1),
-    kwargs...,
-)
+        ax::Makie.Axis,
+        data;
+        observed = nothing,
+        nbins::Integer = 25,
+        quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
+        color = Makie.Cycled(1),
+        kwargs...,
+    )
     isodd(length(quantiles)) || throw(ArgumentError("`quantiles` must have odd length"))
     all_vals = reduce(vcat, vec.(data))
     edges = FC.PlotUtils.auto_bin_edges(all_vals, nbins)
@@ -42,7 +42,7 @@ function _plot_histquantiles!(
             ax,
             xs,
             _stair_y(qs[i, :]),
-            _stair_y(qs[nq+1-i, :]);
+            _stair_y(qs[nq + 1 - i, :]);
             color = (base_color, _band_alpha(i, n_bands)),
             kwargs...,
         )
@@ -75,13 +75,20 @@ count distribution is summarised with a nested quantile ribbon. x = value bins, 
 - `figure`, `axis`: NamedTuples forwarded to `Makie.Figure` / `Makie.Axis`.
 """
 function FC.Makie.histquantiles(
-    chn::FC.FlexiChain,
-    param;
-    figure = (;),
-    axis = (;),
-    kwargs...,
-)
-    _, data = FC.PlotUtils.leaf_series(chn, param)
+        chn::FC.FlexiChain,
+        param;
+        figure = (;),
+        axis = (;),
+        kwargs...,
+    )
+    sub = FC.PlotUtils.subset_and_split_chain(chn, param)
+    ks = collect(keys(sub))
+    isempty(ks) && throw(ArgumentError("no parameters to plot"))
+    data = map(ks) do k
+        d = FC.PlotUtils._get_raw_data(sub, k)
+        FC.PlotUtils.check_eltype_is_real(d)
+        d
+    end
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
     ax = Makie.Axis(fig[1, 1]; xlabel = "value", ylabel = "counts", axis...)
     _, p = _plot_histquantiles!(ax, data; kwargs...)
@@ -89,7 +96,14 @@ function FC.Makie.histquantiles(
 end
 
 function FC.Makie.histquantiles!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwargs...)
-    _, data = FC.PlotUtils.leaf_series(chn, param)
+    sub = FC.PlotUtils.subset_and_split_chain(chn, param)
+    ks = collect(keys(sub))
+    isempty(ks) && throw(ArgumentError("no parameters to plot"))
+    data = map(ks) do k
+        d = FC.PlotUtils._get_raw_data(sub, k)
+        FC.PlotUtils.check_eltype_is_real(d)
+        d
+    end
     return _plot_histquantiles!(ax, data; kwargs...)
 end
 
