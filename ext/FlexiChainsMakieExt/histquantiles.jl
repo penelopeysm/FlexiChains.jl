@@ -51,7 +51,7 @@ function _plot_histquantiles!(
     median_p =
         Makie.lines!(ax, xs, _stair_y(qs[median_idx, :]); color = base_color, linewidth = 2)
 
-    p === nothing && (p = median_p) # median-only case (n_bands == 0)
+    p = p === nothing ? median_p : p # median-only case (n_bands == 0)
 
     if observed !== nothing
         obs = FC.PlotUtils.histogram_counts(observed, edges)

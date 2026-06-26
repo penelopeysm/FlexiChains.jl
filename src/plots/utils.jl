@@ -125,9 +125,14 @@ function histogram_counts(values, edges)
     counts = zeros(Int, nbins)
     last_edge = last(edges)
     for v in values
-        b = searchsortedlast(edges, v)
-        v == last_edge && (b = nbins)      # v == last edge: clamp to last bin
-        1 <= b <= nbins && (counts[b] += 1)
+        b = if v == last_edge
+            nbins # clamp to last bin
+        else
+            searchsortedlast(edges, v)
+        end
+        if 1 <= b <= nbins
+            counts[b] += 1
+        end
     end
     return counts
 end

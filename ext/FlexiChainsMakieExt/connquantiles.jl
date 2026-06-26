@@ -95,7 +95,7 @@ function FC.Makie.connquantiles!(
     end
 
     median_p = Makie.lines!(ax, xs, qs[median_idx, :]; color = base_color, linewidth = 2)
-    p === nothing && (p = median_p)  # median-only case (n_bands == 0)
+    p = p === nothing ? median_p : p  # median-only case (n_bands == 0)
 
     if residual
         Makie.hlines!(ax, [0.0]; color = :black, linestyle = :dash, linewidth = 1)
