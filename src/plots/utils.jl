@@ -107,7 +107,7 @@ end
 Equal-width bin edges spanning the range of `values`; returns `nbins+1` edges.
 `values` must be non-empty.
 """
-function get_bin_edges(values, nbins::Integer)
+function get_bin_edges(values::AbstractArray, nbins::Integer)
     isempty(values) && throw(ArgumentError("get_bin_edges: `values` must be non-empty"))
     lo, hi = extrema(values)
     if lo == hi
@@ -159,15 +159,14 @@ Returns an `iter × chain × nbins` array where `counts[i, c, b]` is the number 
 that fell in bin `b` for draw `(i, c)`.
 """
 function bin_count_matrices(
-        components::AbstractVector{<:AbstractMatrix{<:Real}},
+        values::AbstractArray{<:Real, 3}, # iter × chain × component
         edges::AbstractVector{<:Real}
     )
-    n_iter, n_chain = size(first(components))
+    n_iter, n_chain, _ = size(values)
     n_bins = length(edges) - 1
     counts = zeros(Int, n_iter, n_chain, n_bins)
     for c in 1:n_chain, i in 1:n_iter
-        draw_vals = (component[i, c] for component in components)
-        counts[i, c, :] = histogram_counts(draw_vals, edges)
+        counts[i, c, :] = histogram_counts(values[i, c, :], edges)
     end
     return counts
 end

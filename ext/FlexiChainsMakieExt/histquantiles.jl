@@ -1,18 +1,8 @@
-# Build "stairs" x-coordinates from bin edges: each bin contributes its two edges.
-function _stair_x(edges)
-    xs = Float64[]
-    for b in 1:(length(edges) - 1)
-        push!(xs, edges[b], edges[b + 1])
-    end
-    return xs
-end
-
-# Repeat each per-bin value twice to align with `_stair_x`.
-_stair_y(vals) = repeat(vals, inner = 2)
+rep2(vals) = repeat(vals, inner = 2)
 
 function _plot_histquantiles!(
         ax::Makie.Axis,
-        data;
+        stacked_data;  # niters x nchains x nparams
         observed = nothing,
         nbins::Integer = 25,
         quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
@@ -20,9 +10,9 @@ function _plot_histquantiles!(
         kwargs...,
     )
     isodd(length(quantiles)) || throw(ArgumentError("`quantiles` must have odd length"))
-    all_vals = reduce(vcat, vec.(data))
-    edges = FC.PlotUtils.auto_bin_edges(all_vals, nbins)
-    counts = FC.PlotUtils.bin_count_matrices(data, edges)   # iter × chain × nbins
+    edges = FC.PlotUtils.get_bin_edges(stacked_data, nbins)
+    # counts is iter × chain × nbins
+    counts = FC.PlotUtils.bin_count_matrices(stacked_data, edges)
 
     nq = length(quantiles)
     n_bands = div(nq, 2)
@@ -33,46 +23,49 @@ function _plot_histquantiles!(
         qs[:, b] = FC.PlotUtils.compute_quantile_bands(view(counts, :, :, b), quantiles)
     end
 
-    base_color = _resolve_base_color(color)
-    xs = _stair_x(edges)
-    p = nothing
+    xs = Float64[]
+    for b in 1:(length(edges) - 1)
+        push!(xs, edges[b], edges[b + 1])
+    end
 
     for i in 1:n_bands
-        p = Makie.band!(
+        Makie.band!(
             ax,
             xs,
-            _stair_y(qs[i, :]),
-            _stair_y(qs[nq + 1 - i, :]);
-            color = (base_color, _band_alpha(i, n_bands)),
+            rep2(qs[i, :]),
+            rep2(qs[nq + 1 - i, :]);
+            alpha = _band_alpha(i, n_bands),
+            color = color,
             kwargs...,
         )
     end
 
-    median_p =
-        Makie.lines!(ax, xs, _stair_y(qs[median_idx, :]); color = base_color, linewidth = 2)
-
-    p = p === nothing ? median_p : p # median-only case (n_bands == 0)
+    p = Makie.lines!(ax, xs, rep2(qs[median_idx, :]); color = color, linewidth = 2)
 
     if observed !== nothing
         obs = FC.PlotUtils.histogram_counts(observed, edges)
-        Makie.lines!(ax, xs, _stair_y(Float64.(obs)); color = :black, linewidth = 2)
+        p = Makie.lines!(ax, xs, rep2(Float64.(obs)); color = :black, linewidth = 2)
     end
 
     return Makie.AxisPlot(ax, p)
 end
 
 """
-    FlexiChains.Makie.histquantiles(chn, param; observed=nothing, nbins=25, kwargs...)
+    FlexiChains.Makie.histquantiles(chn, param_or_params; observed=nothing, nbins=25, kwargs...)
 
-Posterior-predictive histogram check (Betancourt's `plot_hist_quantiles`). `param` is one
-predictive array variable. Its component values are binned per posterior draw; each bin's
-count distribution is summarised with a nested quantile ribbon. x = value bins, y = counts.
+Posterior predictive check via histograms. For each posterior draw, the predictive values
+are binned into a histogram; the resulting per-bin count distributions are summarised as
+nested quantile ribbons. Overlaying `observed` data shows whether the model's predictive
+distribution is consistent with the observations.
+
+This function is a port of [Michael Betancourt's
+`plot_hist_quantiles`](https://github.com/betanalpha/mcmc_visualization_tools).
 
 # Keyword arguments
 - `observed`: vector of observed values; its histogram (same bins) is overlaid as a line.
-- `nbins`: number of equal-width bins. Default `25`.
-- `quantiles`: odd-length vector of levels in 0–1. Default `[0.1,…,0.9]`.
-- `figure`, `axis`: NamedTuples forwarded to `Makie.Figure` / `Makie.Axis`.
+- `nbins`: number of equal-width bins. Defaults to `25`.
+- `quantiles`: odd-length vector of levels in 0–1. Defaults to `[0.1, 0.2, ..., 0.9]`.
+- `figure`, `axis`: `NamedTuple`s forwarded to `Makie.Figure` / `Makie.Axis`.
 """
 function FC.Makie.histquantiles(
         chn::FC.FlexiChain,
@@ -81,17 +74,9 @@ function FC.Makie.histquantiles(
         axis = (;),
         kwargs...,
     )
-    sub = FC.PlotUtils.subset_and_split_chain(chn, param)
-    ks = collect(keys(sub))
-    isempty(ks) && throw(ArgumentError("no parameters to plot"))
-    data = map(ks) do k
-        d = FC.PlotUtils._get_raw_data(sub, k)
-        FC.PlotUtils.check_eltype_is_real(d)
-        d
-    end
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
     ax = Makie.Axis(fig[1, 1]; xlabel = "value", ylabel = "counts", axis...)
-    _, p = _plot_histquantiles!(ax, data; kwargs...)
+    _, p = FC.Makie.histquantiles!(ax, chn, param; kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
 end
 
@@ -104,7 +89,8 @@ function FC.Makie.histquantiles!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwar
         FC.PlotUtils.check_eltype_is_real(d)
         d
     end
-    return _plot_histquantiles!(ax, data; kwargs...)
+    stacked_data = stack(data) # niters × nchains × nparams
+    return _plot_histquantiles!(ax, stacked_data; kwargs...)
 end
 
 function FC.Makie.histquantiles!(chn::FC.FlexiChain, param; kwargs...)

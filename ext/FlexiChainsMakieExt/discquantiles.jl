@@ -1,11 +1,9 @@
 function _discquantiles_bands(data, quantiles, baseline, residual)
     isodd(length(quantiles)) || throw(ArgumentError("`quantiles` must have odd length"))
     n = length(data)
-
     if residual && baseline === nothing
         throw(ArgumentError("`residual=true` requires `baseline`"))
     end
-
     if baseline !== nothing && length(baseline) != n
         throw(
             ArgumentError(
@@ -13,7 +11,6 @@ function _discquantiles_bands(data, quantiles, baseline, residual)
             ),
         )
     end
-
     nq = length(quantiles)
     qs = Matrix{Float64}(undef, nq, n)
 
@@ -25,7 +22,6 @@ function _discquantiles_bands(data, quantiles, baseline, residual)
     return qs
 end
 
-# direction = :y -> vertical bars (x = index); direction = :x -> horizontal bars (y = index)
 function _plot_discquantiles!(
         ax::Makie.Axis,
         data;
@@ -39,21 +35,19 @@ function _plot_discquantiles!(
     qs = _discquantiles_bands(data, quantiles, baseline, residual)
     nq = size(qs, 1)
     n = size(qs, 2)
-    n_bands = nq ÷ 2
-    median_idx = (nq + 1) ÷ 2
-    base_color = _resolve_base_color(color)
+    n_bands = div(nq, 2)
+    median_idx = div(nq + 1, 2)
     positions = collect(1:n)
     medians = qs[median_idx, :]
 
-    p = nothing
-
     for i in 1:n_bands
-        p = Makie.barplot!(
+        Makie.barplot!(
             ax,
             positions,
             qs[nq + 1 - i, :];
             fillto = qs[i, :],
-            color = (base_color, _band_alpha(i, n_bands)),
+            alpha = _band_alpha(i, n_bands),
+            color = color,
             strokewidth = 0,
             direction = vertical ? :y : :x,
             width = 0.6,
@@ -61,99 +55,50 @@ function _plot_discquantiles!(
         )
     end
 
-    median_p = if vertical
+    Makie.scatter!(
+        ax,
+        vertical ? positions : medians,
+        vertical ? medians : positions;
+        color = color,
+        marker = (vertical ? :hline : :vline),
+        markersize = 16,
+    )
+
+    p = if baseline !== nothing && !residual
         Makie.scatter!(
             ax,
-            positions,
-            medians;
-            color = base_color,
-            marker = :hline,
-            markersize = 16,
+            vertical ? positions : baseline,
+            vertical ? baseline : positions;
+            color = :black, marker = :xcross, markersize = 12
         )
-    else
-        Makie.scatter!(
-            ax,
-            medians,
-            positions;
-            color = base_color,
-            marker = :vline,
-            markersize = 16,
-        )
-    end
-
-    p = p === nothing ? median_p : p # median-only case (n_bands == 0)
-
-    if baseline !== nothing && !residual
-        bl = collect(Float64, baseline)
-        if vertical
-            Makie.scatter!(
-                ax,
-                positions,
-                bl;
-                color = :black,
-                marker = :xcross,
-                markersize = 12,
-            )
-        else
-            Makie.scatter!(
-                ax,
-                bl,
-                positions;
-                color = :black,
-                marker = :xcross,
-                markersize = 12,
-            )
-        end
     elseif residual
-        if vertical
-            Makie.hlines!(ax, [0.0]; color = :black, linestyle = :dash, linewidth = 1)
-        else
-            Makie.vlines!(ax, [0.0]; color = :black, linestyle = :dash, linewidth = 1)
-        end
+        func! = vertical ? Makie.hlines! : Makie.vlines!
+        func!(ax, [0.0]; color = :black, linestyle = :dash, linewidth = 1)
     end
 
     return Makie.AxisPlot(ax, p)
 end
 
-# Shared figure builder for the non-mutating variants. Index axis ticks are labelled with the
-# component leaf names; `direction` selects which axis carries the index.
-function _discquantiles_figure(chn, param, vertical; figure, axis, kwargs...)
-    sub = FC.PlotUtils.subset_and_split_chain(chn, param)
-    ks = collect(keys(sub))
-    isempty(ks) && throw(ArgumentError("no parameters to plot"))
-    data = map(ks) do k
-        d = FC.PlotUtils._get_raw_data(sub, k)
-        FC.PlotUtils.check_eltype_is_real(d)
-        d
-    end
-    _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
-    ticks = (1:length(ks), string.(FC.get_name.(ks)))
-
-    ax_kw = if vertical
-        (; xlabel = "index", ylabel = "value", xticks = ticks)
-    else
-        (; xlabel = "value", ylabel = "index", yticks = ticks)
-    end
-
-    ax = Makie.Axis(fig[1, 1]; ax_kw..., axis...)
-    _, p = _plot_discquantiles!(ax, data; vertical, kwargs...)
-    return Makie.FigureAxisPlot(fig, ax, p)
-end
 
 """
-    FlexiChains.Makie.discquantiles(chn, param; kwargs...)
+    FlexiChains.Makie.discquantiles(chn, param_or_params; vertical=true, kwargs...)
 
-Plot disconnected nested quantile intervals for an array variable's components, side by side
-in one axis with vertical bars (Betancourt's `plot_disc_pushforward_quantiles`). x = component
-index, y = marginal quantiles.
+Plot each component of an array parameter as an independent quantile bar, with nested
+intervals shown as stacked bands. Unlike [`connquantiles`](@ref
+FlexiChains.Makie.connquantiles), components are not connected; each bar is separated from
+its neighbours , making this appropriate when the components have no natural ordering or
+functional relationship (e.g. group-level intercepts in a hierarchical model).
 
-`param` is a single array-valued `VarName`/`Symbol` or a vector of scalar keys.
+This function is a port of [Michael Betancourt's
+`plot_disc_pushforward_quantiles`](https://github.com/betanalpha/mcmc_visualization_tools).
 
 # Keyword arguments
-- `quantiles`: odd-length vector of levels in 0–1. Default `[0.1,…,0.9]`.
+#
+- `vertical`: if `true`, bars are vertical; otherwise horizontal. Defaults to `true`.
+- `quantiles`: odd-length vector of levels in 0–1. Defaults to `[0.1, 0.2, ..., 0.9]`.
 - `baseline`: length-N vector overlaid per index.
 - `residual`: if `true`, subtract `baseline` before banding (requires `baseline`).
-- `figure`, `axis`: NamedTuples forwarded to `Makie.Figure` / `Makie.Axis`.
+- `figure`, `axis`: `NamedTuple`s forwarded to `Makie.Figure` / `Makie.Axis`.
 """
 function FC.Makie.discquantiles(
         chn::FC.FlexiChain,
@@ -162,10 +107,17 @@ function FC.Makie.discquantiles(
         axis = (;),
         kwargs...,
     )
-    return _discquantiles_figure(chn, param, true; figure, axis, kwargs...)
+    _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
+    ax = Makie.Axis(fig[1, 1]; axis...)
+    _, p = FC.Makie.discquantiles!(ax, chn, param; kwargs...)
+    return Makie.FigureAxisPlot(fig, ax, p)
 end
 
-function FC.Makie.discquantiles!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwargs...)
+function FC.Makie.discquantiles!(
+        ax::Makie.Axis, chn::FC.FlexiChain, param;
+        vertical::Bool = true,
+        kwargs...,
+    )
     sub = FC.PlotUtils.subset_and_split_chain(chn, param)
     ks = collect(keys(sub))
     isempty(ks) && throw(ArgumentError("no parameters to plot"))
@@ -174,7 +126,13 @@ function FC.Makie.discquantiles!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwar
         FC.PlotUtils.check_eltype_is_real(d)
         d
     end
-    return _plot_discquantiles!(ax, data; kwargs...)
+    ticks = (1:length(ks), string.(FC.get_name.(ks)))
+    if vertical
+        ax.xticks = ticks
+    else
+        ax.yticks = ticks
+    end
+    return _plot_discquantiles!(ax, data; vertical, kwargs...)
 end
 
 function FC.Makie.discquantiles!(chn::FC.FlexiChain, param; kwargs...)

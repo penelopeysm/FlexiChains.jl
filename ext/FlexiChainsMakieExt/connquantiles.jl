@@ -2,41 +2,41 @@
 _default_connquantiles_axis() = (xlabel = "index", ylabel = "value")
 
 """
-    FlexiChains.Makie.connquantiles(chn, param, plot_xs=nothing; kwargs...)
+    FlexiChains.Makie.connquantiles(chn, param_or_params; x_grid=nothing; kwargs...)
 
-Plot nested quantile credible-interval bands of an array variable's components, connected
-across `plot_xs` into a continuous "function envelope" (Betancourt's
-`plot_conn_pushforward_quantiles`).
+Plot the marginal posterior of each component of an array parameter as a quantile ribbon,
+forming a "function envelope" over `x_grid`. Useful for visualising how a functional
+quantity (e.g. a fitted curve or spectrum) varies with posterior uncertainty.
 
-`param` is a single array-valued `VarName`/`Symbol` (auto-expanded to ordered leaves) or a
-vector of scalar keys. `plot_xs` defaults to `1:N` (number of components).
+This is a port of [Michael Betancourt's
+`plot_conn_pushforward_quantiles`](https://github.com/betanalpha/mcmc_visualization_tools).
 
 # Keyword arguments
-- `quantiles`: odd-length vector of levels in 0–1. Default `[0.1,…,0.9]`.
+- `x_grid`: the x-values to plot against. Defaults to `1:N`, where `N` is the number of
+  components being plotted.
+- `quantiles`: odd-length vector of levels in 0–1. Defaults to `[0.1, 0.2, ..., 0.9]`.
 - `baseline`: length-N vector overlaid as a reference line.
 - `residual`: if `true`, subtract `baseline` before banding (requires `baseline`).
-- `figure`, `axis`: NamedTuples forwarded to `Makie.Figure` / `Makie.Axis`.
+- `figure`, `axis`: `NamedTuple`s forwarded to `Makie.Figure` / `Makie.Axis`.
 """
 function FC.Makie.connquantiles(
         chn::FC.FlexiChain,
-        param,
-        plot_xs = nothing;
-        quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
+        param;
         figure = (;),
         axis = (;),
         kwargs...,
     )
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
     ax = Makie.Axis(fig[1, 1]; _default_connquantiles_axis()..., axis...)
-    _, p = FC.Makie.connquantiles!(ax, chn, param, plot_xs; quantiles, kwargs...)
+    _, p = FC.Makie.connquantiles!(ax, chn, param; kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
 end
 
 function FC.Makie.connquantiles!(
         ax::Makie.Axis,
         chn::FC.FlexiChain,
-        param,
-        plot_xs = nothing;
+        param;
+        x_grid = nothing,
         quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
         baseline = nothing,
         residual = false,
@@ -52,19 +52,19 @@ function FC.Makie.connquantiles!(
         FC.PlotUtils.check_eltype_is_real(d)
         d
     end
-    n = length(ks)
-    xs = plot_xs === nothing ? collect(Float64, 1:n) : collect(Float64, plot_xs)
 
+    n = length(ks)
+    xs = x_grid === nothing ? collect(Float64, 1:n) : collect(Float64, x_grid)
     if length(xs) != n
         throw(
             ArgumentError(
-                "length of `plot_xs` ($(length(xs))) must match number of components ($n)",
+                "connquantile: length of `x_grid` ($(length(xs))) must match number of components ($n)",
             ),
         )
     end
 
     if residual && baseline === nothing
-        throw(ArgumentError("`residual=true` requires `baseline`"))
+        throw(ArgumentError("connquantile: `residual=true` requires `baseline`"))
     end
 
     if baseline !== nothing && length(baseline) != n
@@ -76,8 +76,8 @@ function FC.Makie.connquantiles!(
     end
 
     nq = length(quantiles)
-    n_bands = nq ÷ 2
-    median_idx = (nq + 1) ÷ 2
+    n_bands = div(nq, 2)
+    median_idx = div(nq + 1, 2)
     qs = Matrix{Float64}(undef, nq, n)
 
     for j in 1:n
@@ -85,24 +85,20 @@ function FC.Makie.connquantiles!(
         qs[:, j] = FC.PlotUtils.compute_quantile_bands(d, quantiles)
     end
 
-    base_color = _resolve_base_color(color)
-    p = nothing
-
     for i in 1:n_bands
-        p = Makie.band!(
+        Makie.band!(
             ax,
             xs,
             qs[i, :],
             qs[nq + 1 - i, :];
-            color = (base_color, _band_alpha(i, n_bands)),
+            alpha = _band_alpha(i, n_bands),
+            color = color,
             kwargs...,
         )
     end
+    Makie.lines!(ax, xs, qs[median_idx, :]; color = color, linewidth = 2)
 
-    median_p = Makie.lines!(ax, xs, qs[median_idx, :]; color = base_color, linewidth = 2)
-    p = p === nothing ? median_p : p  # median-only case (n_bands == 0)
-
-    if residual
+    p = if residual
         Makie.hlines!(ax, [0.0]; color = :black, linestyle = :dash, linewidth = 1)
     elseif baseline !== nothing
         Makie.lines!(
@@ -118,6 +114,6 @@ function FC.Makie.connquantiles!(
     return Makie.AxisPlot(ax, p)
 end
 
-function FC.Makie.connquantiles!(chn::FC.FlexiChain, param, plot_xs = nothing; kwargs...)
-    return FC.Makie.connquantiles!(Makie.current_axis(), chn, param, plot_xs; kwargs...)
+function FC.Makie.connquantiles!(chn::FC.FlexiChain, param; kwargs...)
+    return FC.Makie.connquantiles!(Makie.current_axis(), chn, param; kwargs...)
 end

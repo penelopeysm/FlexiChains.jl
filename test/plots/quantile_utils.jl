@@ -40,19 +40,19 @@ const PU = FC.PlotUtils
 end
 
 @testset "binning utilities" begin
-    @testset "auto_bin_edges spans the range" begin
-        edges = PU.auto_bin_edges([0.0, 10.0, 5.0], 5)
+    @testset "get_bin_edges spans the range" begin
+        edges = PU.get_bin_edges([0.0, 10.0, 5.0], 5)
         @test length(edges) == 6
         @test first(edges) == 0.0
         @test last(edges) == 10.0
     end
 
-    @testset "auto_bin_edges degenerate + empty" begin
-        edges = PU.auto_bin_edges([5.0, 5.0], 4)   # constant input
+    @testset "get_bin_edges degenerate + empty" begin
+        edges = PU.get_bin_edges([5.0, 5.0], 4)   # constant input
         @test length(edges) == 5
         @test first(edges) == 5.0
         @test last(edges) > 5.0
-        @test_throws ArgumentError PU.auto_bin_edges(Float64[], 4)
+        @test_throws ArgumentError PU.get_bin_edges(Float64[], 4)
     end
 
     @testset "histogram_counts interior edge is left-closed" begin
@@ -77,7 +77,7 @@ end
         edges = range(0.0, 10.0; length = 6)
         comp1 = fill(1.0, 3, 2)   # all in bin 1
         comp2 = fill(9.0, 3, 2)   # all in bin 5
-        counts = PU.bin_count_matrices([comp1, comp2], edges)
+        counts = PU.bin_count_matrices(stack([comp1, comp2]), edges)
         @test size(counts) == (3, 2, 5)
         @test all(==(1), counts[:, :, 1])
         @test all(==(1), counts[:, :, 5])
