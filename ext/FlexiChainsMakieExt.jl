@@ -116,14 +116,6 @@ function setup_figure_and_layout(nrows_default::Int, ncols_default::Int, layout:
     return nrows, ncols, figure
 end
 
-function _resolve_base_color(color)
-    return if color isa Makie.Cycled
-        palette = Makie.current_default_theme()[:palette][:color][]
-        palette[mod1(color.i, length(palette))]
-    else
-        Makie.to_color(color)
-    end
-end
 _band_alpha(i, n_bands) = 0.2 + 0.7 * i / n_bands
 
 include("FlexiChainsMakieExt/connquantiles.jl")
