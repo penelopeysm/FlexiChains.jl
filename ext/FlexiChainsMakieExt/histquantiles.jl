@@ -24,9 +24,9 @@ function _plot_histquantiles!(
     edges = FC.PlotUtils.auto_bin_edges(all_vals, nbins)
     counts = FC.PlotUtils.bin_count_matrices(data, edges)   # vector length nbins of iter×chain
 
-    nq = length(quantiles);
-    n_bands = nq ÷ 2;
-    median_idx = (nq + 1) ÷ 2
+    nq = length(quantiles)
+    n_bands = div(nq, 2)
+    median_idx = div(nq + 1, 2)
     qs = Matrix{Float64}(undef, nq, nbins)
 
     for b in 1:nbins
