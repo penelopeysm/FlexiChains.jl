@@ -60,14 +60,12 @@ function FC.Makie.connquantiles!(
         throw(ArgumentError("`residual=true` requires `baseline`"))
     end
 
-    if baseline !== nothing
-        if length(baseline) != n
-            throw(
-                ArgumentError(
-                    "length of `baseline` ($(length(baseline))) must match number of components ($n)",
-                ),
-            )
-        end
+    if baseline !== nothing && length(baseline) != n
+        throw(
+            ArgumentError(
+                "length of `baseline` ($(length(baseline))) must match number of components ($n)",
+            ),
+        )
     end
 
     nq = length(quantiles);
