@@ -94,56 +94,36 @@ function make_test_chain(rng)
     ]
     return FlexiChain{Symbol}(N_iters, N_chains, dicts)
 end
-rng = StableRNG(42)
-chn = make_test_chain(rng)
+chn = make_test_chain(StableRNG(42))
 
 # --- Betancourt demo chains: analytic, structured, deterministic ---
 
 # conn: f_grid[n] ~ N(alpha + beta * x[n], s) over an x-grid -> real linear trend
 const CONN_XGRID = collect(range(-3.0, 3.0; length = 12))
 function make_conn_chain(rng)
-    N_iters, N_chains = 150, 2
+    N_iters, N_chains, N_params = 150, 2, length(CONN_XGRID)
     alpha_true, beta_true, s = 1.0, 2.0, 0.8
-    dicts = [
-        OrderedDict(
-                Parameter(:f_grid) => [
-                    (alpha_true + beta_true * x) + s * randn(rng) for x in CONN_XGRID
-                ],
-            )
-            for _ in 1:N_iters, _ in 1:N_chains
-    ]
-    return FlexiChain{Symbol}(N_iters, N_chains, dicts)
+    arr = (alpha_true .+ beta_true .* reshape(CONN_XGRID, 1, 1, :)) .+ s .* randn(rng, N_iters, N_chains, N_params)
+    return FlexiChain{Symbol}(arr, :f_grid)
 end
 const CONN_BASELINE = [1.0 + 2.0 * x for x in CONN_XGRID]   # true line for overlay/residual
 
 # disc: beta[1..5] with distinct, spread means
 const DISC_MEANS = [-2.0, -0.5, 0.0, 1.5, 3.0]
 function make_disc_chain(rng)
-    N_iters, N_chains = 150, 2
-    dicts = [
-        OrderedDict(
-                Parameter(:beta) => [m + 0.5 * randn(rng) for m in DISC_MEANS],
-            )
-            for _ in 1:N_iters, _ in 1:N_chains
-    ]
-    return FlexiChain{Symbol}(N_iters, N_chains, dicts)
+    N_iters, N_chains, N_params = 150, 2, length(DISC_MEANS)
+    arr = reshape(DISC_MEANS, 1, 1, :) .+ 0.5 .* randn(rng, N_iters, N_chains, N_params)
+    return FlexiChain{Symbol}(arr, :beta)
 end
 const DISC_BASELINE = copy(DISC_MEANS)
 
 # hist: predictive array y_pred[1..40], skewed shape; plus observed data
 function make_hist_chain(rng)
-    N_iters, N_chains = 150, 2
-    dicts = [
-        OrderedDict(
-                Parameter(:y_pred) => [exp(0.5 * randn(rng)) for _ in 1:40],
-            )
-            for _ in 1:N_iters, _ in 1:N_chains
-    ]
-    return FlexiChain{Symbol}(N_iters, N_chains, dicts)
+    N_iters, N_chains, N_params = 150, 2, 40
+    arr = exp.(0.5 .* randn(rng, N_iters, N_chains, N_params))
+    return FlexiChain{Symbol}(arr, :y_pred)
 end
-const HIST_OBSERVED = let rng_obs = StableRNG(7)
-    [exp(0.5 * randn(rng_obs)) for _ in 1:40]
-end
+const HIST_OBSERVED = exp.(0.5 .* randn(StableRNG(7), 40))  # observed data for overlay
 
 rng_conn = StableRNG(101); conn_chn = make_conn_chain(rng_conn)
 rng_disc = StableRNG(202); disc_chn = make_disc_chain(rng_disc)
