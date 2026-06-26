@@ -19,7 +19,7 @@ export traceplot,
     discquantiles,
     discquantiles!,
     histquantiles,
-    histquantiles!
+    histquantiles!,
     ridgeline,
     ridgeline!,
     forestplot,
