@@ -181,20 +181,6 @@ Makie.save("rankplot_makie.png", ans.figure); # hide
 
 ![Rank plots of the sampled chain](rankplot_makie.png)
 
-## Pushforward plots
-
-These reproduce the nested-quantile pushforward visualizations from
-[Betancourt's `mcmc_visualization_tools`](https://github.com/betanalpha/mcmc_visualization_tools).
-Each accepts a single array-valued variable (auto-expanded to its ordered components) or an
-explicit vector of scalar keys.
-
-```@docs
-FlexiChains.Makie.connquantiles
-FlexiChains.Makie.discquantiles
-FlexiChains.Makie.discquantiles_vert
-FlexiChains.Makie.histquantiles
-```
-
 ## Forest plots
 
 !!! info "Half-eye plots"
@@ -230,6 +216,17 @@ Makie.save("ridgeline_makie.png", ans.figure); # hide
 ```
 
 ![Ridgeline plots of the sampled chain](ridgeline_makie.png)
+
+## Pushforward plots
+
+These reproduce the nested-quantile pushforward visualizations from [Betancourt's `mcmc_visualization_tools`](https://github.com/betanalpha/mcmc_visualization_tools).
+
+```@docs
+FlexiChains.Makie.connquantiles
+FlexiChains.Makie.discquantiles
+FlexiChains.Makie.discquantiles_vert
+FlexiChains.Makie.histquantiles
+```
 
 ## [Customisation](@id makie-customisation)
 
