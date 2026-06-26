@@ -107,6 +107,7 @@ function make_conn_chain(rng)
     return FlexiChain{Symbol}(arr, :f_grid)
 end
 const CONN_BASELINE = [1.0 + 2.0 * x for x in CONN_XGRID]   # true line for overlay/residual
+conn_chn = make_conn_chain(StableRNG(101))
 
 # disc: beta[1..5] with distinct, spread means
 const DISC_MEANS = [-2.0, -0.5, 0.0, 1.5, 3.0]
@@ -116,6 +117,7 @@ function make_disc_chain(rng)
     return FlexiChain{Symbol}(arr, :beta)
 end
 const DISC_BASELINE = copy(DISC_MEANS)
+disc_chn = make_disc_chain(StableRNG(202))
 
 # hist: predictive array y_pred[1..40], skewed shape; plus observed data
 function make_hist_chain(rng)
@@ -124,10 +126,7 @@ function make_hist_chain(rng)
     return FlexiChain{Symbol}(arr, :y_pred)
 end
 const HIST_OBSERVED = exp.(0.5 .* randn(StableRNG(7), 40))  # observed data for overlay
-
-rng_conn = StableRNG(101); conn_chn = make_conn_chain(rng_conn)
-rng_disc = StableRNG(202); disc_chn = make_disc_chain(rng_disc)
-rng_hist = StableRNG(303); hist_chn = make_hist_chain(rng_hist)
+hist_chn = make_hist_chain(StableRNG(303))
 
 const REFTEST_SPECS = [
     # MakieExt
