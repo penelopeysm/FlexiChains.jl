@@ -139,4 +139,19 @@ function PosteriorStats.loo(chn::FlexiChain; kwargs...)
     return NamesAndLOOResult(param_names, PosteriorStats.loo(da; kwargs...))
 end
 
+function FlexiChains.PlotUtils.get_hdi_intervals(data::Union{<:AbstractVector, <:AbstractMatrix}, prob::Float64, method::Symbol)
+    interval_or_intervals = PosteriorStats.hdi(data; prob = prob, method = method)
+    # method=:unimodal returns a single interval, so wrap in a vector
+    intervals = if method === :unimodal
+        [interval_or_intervals]
+    else
+        interval_or_intervals
+    end
+    # then convert each interval to a tuple so that downstream code doesn't have to faff
+    # with IntervalSets
+    return map(intervals) do interval
+        (leftendpoint(interval), rightendpoint(interval))
+    end
+end
+
 end # module

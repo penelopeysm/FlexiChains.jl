@@ -18,10 +18,12 @@ export traceplot,
     connquantiles!,
     discquantiles,
     discquantiles!,
-    discquantiles_vert,
-    discquantiles_vert!,
     histquantiles,
     histquantiles!
+    ridgeline,
+    ridgeline!,
+    forestplot,
+    forestplot!
 
 # The non-mutating versions have docstrings in the extension.
 
@@ -89,5 +91,24 @@ function histquantiles end
 
 """Mutating version of [`FlexiChains.Makie.histquantiles`](@ref)."""
 function histquantiles! end
+function ridgeline end
+
+"""
+    FlexiChains.Makie.ridgeline!
+
+Mutating version of [`FlexiChains.Makie.ridgeline`](@ref), for use with existing
+`Makie.Axis` objects.
+"""
+function ridgeline! end
+
+function forestplot end
+
+"""
+    FlexiChains.Makie.forestplot!
+
+Mutating version of [`FlexiChains.Makie.forestplot`](@ref), for use with existing
+`Makie.Axis` objects.
+"""
+function forestplot! end
 
 end # module

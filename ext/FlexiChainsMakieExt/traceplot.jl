@@ -77,13 +77,9 @@ function FC.Makie.traceplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainTrace; kw
     nchains = size(y, 2)
     p = nothing
     labels = permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
-    color_kwargs = determine_color_kwargs(nchains, NamedTuple(kwargs))
-    for (label, datacol, color_kwarg) in zip(labels, eachcol(y), color_kwargs)
-        # note the careful ordering of keyword arguments here: `label` is a default, so we
-        # want user-specified `kwargs` to override it; but `color_kwarg` was determined from
-        # `kwargs`, so we want to apply it last to ensure the color obtained from
-        # `determine_color_kwargs` is respected.
-        p = Makie.lines!(ax, x, datacol; label = label, kwargs..., color_kwarg...)
+    colors = determine_chain_colors(nchains, NamedTuple(kwargs))
+    for (label, datacol, color) in zip(labels, eachcol(y), colors)
+        p = Makie.lines!(ax, x, datacol; label = label, kwargs..., color = color)
     end
     return Makie.AxisPlot(ax, p)
 end

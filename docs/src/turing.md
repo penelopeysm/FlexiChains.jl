@@ -50,6 +50,12 @@ Thus, the parameter `mu` is really stored as `Parameter(@varname(mu))`, and the 
 For a `FlexiChain{T}`, all `Parameter` keys must wrap objects that subtype `T`.
 `Extra`s on the other hand can wrap anything.
 
+`VNChain` is an alias for `FlexiChain{VarName}`, i.e., the parameters are stored as `VarName`s, which is the natural output for Turing.jl.
+
+!!! note "SymChain"
+    For other modelling packages it may sometimes be more natural to store parameters as `Symbol`s instead of `VarName`s.
+    In that case, you can use `SymChain` (an alias for `FlexiChain{Symbol}`) instead of `VNChain`.
+
 ## Accessing data
 
 FlexiChains provides multiple different ways to access the data for a given key.

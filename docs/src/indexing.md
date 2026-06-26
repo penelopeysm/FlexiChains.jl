@@ -187,6 +187,13 @@ This is slightly less interesting because chains are always numbered consecutive
 Consequently, `i` and `At(i)` have the same meaning.
 Nonetheless, you can still use all the same selectors as described above, e.g. `Not(2)` to drop the second chain.
 
+Finally, note that regular `begin` and `end` cannot be used with the `iter` and `chain` keyword arguments, because Julia's lowering pass does not handle those appropriately for keyword arguments.
+In place of this you can use `Begin` and `End`, which are [semantically equivalent and re-exported from DimensionalData](@extref DimensionalData Begin-End-indexing).
+
+```@example 1
+chn[@varname(x), iter=(Begin+1):End]
+```
+
 For more information about DimensionalData's selectors, please see [their docs](@extref DimensionalData Selectors).
 
 ### `stack`

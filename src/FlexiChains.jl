@@ -57,17 +57,30 @@ include("plots/shims.jl")
 
 # Convenience re-exports.
 export Wide, Long
-using DimensionalData: At, Near, Contains, (..), Touches, Where, Not, DimArray
-export At, Near, Contains, (..), Touches, Where, Not, DimArray
+using DimensionalData: At, Near, Contains, (..), Touches, Where, Not, DimArray, Begin, End
+export At, Near, Contains, (..), Touches, Where, Not, DimArray, Begin, End
 using Statistics: mean, median, std, var, quantile
 export mean, median, std, var, quantile
 using StatsBase: summarystats, mad
 export summarystats, mad
 using MCMCDiagnosticTools: ess, rhat, mcse, gelmandiag, gelmandiag_multivariate, discretediag, bfmi
 export ess, rhat, mcse, gelmandiag, gelmandiag_multivariate, discretediag, bfmi
-# For maximum ease of use with Turing...
+
+"""
+    VNChain
+
+Alias for `FlexiChain{VarName}`.
+"""
 const VNChain = FlexiChain{VarName}
-export VarName, @varname, VNChain
+
+"""
+    SymChain
+
+Alias for `FlexiChain{Symbol}`.
+"""
+const SymChain = FlexiChain{Symbol}
+
+export VarName, @varname, VNChain, SymChain
 
 # Test utils, overloaded in DynamicPPLExt.
 function _make_prior_chain end
@@ -83,6 +96,22 @@ function _make_posterior_chain end
         fc = VNChain(10, 2, ds)
         summarystats(fc)
     end
+end
+
+function __init__()
+    Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
+        if exc.f === FlexiChains.PlotUtils.get_hdi_intervals
+            printstyled(io, "\n\n    To use interval=:hdi, please load PosteriorStats.jl first.\n"; color = :cyan)
+        end
+    end
+    Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
+        if (exc.f === Base.firstindex || exc.f === Base.lastindex) &&
+                length(argtypes) == 1 &&
+                (argtypes[1] <: FlexiChain || argtypes[1] <: FlexiChains.FlexiSummary)
+            printstyled(io, "\n\n    Indexing into FlexiChains objects with `begin` or `end` does not work; please use `Begin` and `End` instead, which are equivalent."; color = :cyan)
+        end
+    end
+    return nothing
 end
 
 end # module FlexiChains

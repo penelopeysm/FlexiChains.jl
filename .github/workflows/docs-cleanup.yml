@@ -1,0 +1,28 @@
+name: Documentation preview cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
+        with:
+          ref: gh-pages
+
+      - name: Delete PR preview
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -d "previews/PR${PR_NUMBER}" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git rm -rf "previews/PR${PR_NUMBER}"
+            git commit -m "Remove docs preview for PR #${PR_NUMBER}"
+            git push origin gh-pages
+          fi

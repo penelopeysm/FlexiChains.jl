@@ -1,3 +1,24 @@
+# 0.6.19
+
+Improved the internal structure of `VNChain`s constructed from `Array`s, such that `rand(chn)` returns `DynamicPPL.ParamsWithStats` or `DynamicPPL.VarNamedTuple` (but unfortunately, only if DynamicPPL is loaded, since those types are defined there).
+
+# 0.6.18
+
+Re-export `Begin` and `End` from DimensionalData.jl, to make indexing into FlexiChains easier.
+
+# 0.6.17
+
+Added the exported alias `SymChain` for `FlexiChain{Symbol}`.
+
+# 0.6.16
+
+Added `FlexiChains.Makie.ridgeline` and `FlexiChains.Makie.forestplot` for creating ridgeline and forest plots with a Makie backend.
+Note that these functions do *not* have `FlexiChains.mridgeline` and `FlexiChains.mforestplot` aliases!
+
+# 0.6.15
+
+Added compatibility with OrderedCollections@2.
+
 # 0.6.14
 
 Added compatibility with AbstractPPL@0.15 and DynamicPPL@0.42.

@@ -43,7 +43,7 @@ function Makie.density(
             kwargs...,
         )
     end
-    if pool_chains
+    if !pool_chains
         # Extract the colors used in the last axis
         colors = map(p -> p.color[], a.scene.plots)
         maybe_add_legend(figure, chn, colors, legend_position; legend...)
@@ -89,9 +89,9 @@ function Makie.density!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainDensity; kwarg
     else
         labels = permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
         nchains = size(y, 2)
-        color_kwargs = determine_color_kwargs(nchains, NamedTuple(kwargs))
-        for (label, datacol, color_kwarg) in zip(labels, eachcol(y), color_kwargs)
-            p = Makie.density!(ax, datacol; label = label, kwargs..., color_kwarg...)
+        colors = determine_chain_colors(nchains, NamedTuple(kwargs))
+        for (label, datacol, color) in zip(labels, eachcol(y), colors)
+            p = Makie.density!(ax, datacol; label = label, kwargs..., color = color)
         end
     end
     return Makie.AxisPlot(ax, p)
