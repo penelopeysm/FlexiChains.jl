@@ -33,7 +33,7 @@ function _plot_discquantiles!(
         baseline = nothing,
         residual = false,
         color = Makie.Cycled(1),
-        direction::Symbol = :y,
+        vertical::Bool = true,
         kwargs...,
     )
     qs = _discquantiles_bands(data, quantiles, baseline, residual)
@@ -55,13 +55,13 @@ function _plot_discquantiles!(
             fillto = qs[i, :],
             color = (base_color, _band_alpha(i, n_bands)),
             strokewidth = 0,
-            direction = direction,
+            direction = vertical ? :y : :x,
             width = 0.6,
             kwargs...,
         )
     end
 
-    median_p = if direction === :y
+    median_p = if vertical
         Makie.scatter!(
             ax,
             positions,
@@ -85,7 +85,7 @@ function _plot_discquantiles!(
 
     if baseline !== nothing && !residual
         bl = collect(Float64, baseline)
-        if direction === :y
+        if vertical
             Makie.scatter!(
                 ax,
                 positions,
@@ -105,7 +105,7 @@ function _plot_discquantiles!(
             )
         end
     elseif residual
-        if direction === :y
+        if vertical
             Makie.hlines!(ax, [0.0]; color = :black, linestyle = :dash, linewidth = 1)
         else
             Makie.vlines!(ax, [0.0]; color = :black, linestyle = :dash, linewidth = 1)
@@ -117,7 +117,7 @@ end
 
 # Shared figure builder for the non-mutating variants. Index axis ticks are labelled with the
 # component leaf names; `direction` selects which axis carries the index.
-function _discquantiles_figure(chn, param, direction; figure, axis, kwargs...)
+function _discquantiles_figure(chn, param, vertical; figure, axis, kwargs...)
     sub = FC.PlotUtils.subset_and_split_chain(chn, param)
     ks = collect(keys(sub))
     isempty(ks) && throw(ArgumentError("no parameters to plot"))
@@ -129,14 +129,14 @@ function _discquantiles_figure(chn, param, direction; figure, axis, kwargs...)
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
     ticks = (1:length(ks), string.(FC.get_name.(ks)))
 
-    ax_kw = if direction === :y
+    ax_kw = if vertical
         (; xlabel = "index", ylabel = "value", xticks = ticks)
     else
         (; xlabel = "value", ylabel = "index", yticks = ticks)
     end
 
     ax = Makie.Axis(fig[1, 1]; ax_kw..., axis...)
-    _, p = _plot_discquantiles!(ax, data; direction = direction, kwargs...)
+    _, p = _plot_discquantiles!(ax, data; vertical, kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
 end
 
@@ -162,7 +162,7 @@ function FC.Makie.discquantiles(
         axis = (;),
         kwargs...,
     )
-    return _discquantiles_figure(chn, param, :y; figure, axis, kwargs...)
+    return _discquantiles_figure(chn, param, true; figure, axis, kwargs...)
 end
 
 function FC.Makie.discquantiles!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwargs...)
@@ -174,41 +174,9 @@ function FC.Makie.discquantiles!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwar
         FC.PlotUtils.check_eltype_is_real(d)
         d
     end
-    return _plot_discquantiles!(ax, data; direction = :y, kwargs...)
+    return _plot_discquantiles!(ax, data; kwargs...)
 end
 
 function FC.Makie.discquantiles!(chn::FC.FlexiChain, param; kwargs...)
     return FC.Makie.discquantiles!(Makie.current_axis(), chn, param; kwargs...)
-end
-
-"""
-    FlexiChains.Makie.discquantiles_vert(chn, param; kwargs...)
-
-Rotated form of [`FlexiChains.Makie.discquantiles`](@ref) using horizontal bars (component
-index on the y-axis), helpful for long component labels.
-"""
-function FC.Makie.discquantiles_vert(
-        chn::FC.FlexiChain,
-        param;
-        figure = (;),
-        axis = (;),
-        kwargs...,
-    )
-    return _discquantiles_figure(chn, param, :x; figure, axis, kwargs...)
-end
-
-function FC.Makie.discquantiles_vert!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwargs...)
-    sub = FC.PlotUtils.subset_and_split_chain(chn, param)
-    ks = collect(keys(sub))
-    isempty(ks) && throw(ArgumentError("no parameters to plot"))
-    data = map(ks) do k
-        d = FC.PlotUtils._get_raw_data(sub, k)
-        FC.PlotUtils.check_eltype_is_real(d)
-        d
-    end
-    return _plot_discquantiles!(ax, data; direction = :x, kwargs...)
-end
-
-function FC.Makie.discquantiles_vert!(chn::FC.FlexiChain, param; kwargs...)
-    return FC.Makie.discquantiles_vert!(Makie.current_axis(), chn, param; kwargs...)
 end

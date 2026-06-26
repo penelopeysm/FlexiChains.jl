@@ -85,11 +85,6 @@ function discquantiles end
 """Mutating version of [`FlexiChains.Makie.discquantiles`](@ref)."""
 function discquantiles! end
 
-function discquantiles_vert end
-
-"""Mutating version of [`FlexiChains.Makie.discquantiles_vert`](@ref)."""
-function discquantiles_vert! end
-
 function histquantiles end
 
 """Mutating version of [`FlexiChains.Makie.histquantiles`](@ref)."""
