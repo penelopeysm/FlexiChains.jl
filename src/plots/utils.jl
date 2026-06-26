@@ -136,30 +136,13 @@ end
 bin, the `iter × chain` matrix of per-draw counts (number of components falling in that bin).
 All component matrices must share the same axes. Returns a `Vector` of length `nbins`, each
 element a 1-based `iter × chain` `Matrix{Int}`."""
-function bin_count_matrices(component_data::AbstractVector{<:AbstractMatrix{<:Real}}, edges)
-    m1 = first(component_data)
-    all(m -> axes(m) == axes(m1), component_data) ||
-        throw(DimensionMismatch("all component matrices must share the same axes"))
-    nbins = length(edges) - 1
-    counts = [zeros(Int, size(m1)) for _ in 1:nbins]
-    # Read via the components' own axes (offset-safe); write to 1-based output indices.
-    for (cidx, c) in enumerate(axes(m1, 2)), (iidx, it) in enumerate(axes(m1, 1))
-        draw_vals = (component_data[j][it, c] for j in eachindex(component_data))
-        hc = histogram_counts(draw_vals, edges)
-        for b in 1:nbins
-            counts[b][iidx, cidx] = hc[b]
-        end
-    end
-    return counts
-end
-
-function bin_count_matrices2(components::AbstractVector{<:AbstractMatrix{<:Real}}, edges)
+function bin_count_matrices(components::AbstractVector{<:AbstractMatrix{<:Real}}, edges)
     n_iter, n_chain = size(first(components))
     n_bins = length(edges) - 1
     counts = [zeros(Int, (n_iter, n_chain)) for _ in 1:n_bins]
 
     for c in 1:n_chain, i in 1:n_iter
-        draw_vals = [component[i, c] for component in components]
+        draw_vals = (component[i, c] for component in components)
         hc = histogram_counts(draw_vals, edges)
         for b in 1:n_bins
             counts[b][i, c] = hc[b]
