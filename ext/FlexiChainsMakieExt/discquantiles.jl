@@ -83,7 +83,7 @@ function _plot_discquantiles!(
         )
     end
 
-    p === nothing && (p = median_p) # median-only case (n_bands == 0)
+    p = p === nothing ? median_p : p # median-only case (n_bands == 0)
 
     if baseline !== nothing && !residual
         bl = collect(Float64, baseline)
