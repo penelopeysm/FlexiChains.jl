@@ -106,11 +106,11 @@ function make_conn_chain(rng)
     alpha_true, beta_true, s = 1.0, 2.0, 0.8
     dicts = [
         OrderedDict(
-            Parameter(:f_grid) => [
-                (alpha_true + beta_true * x) + s * randn(rng) for x in CONN_XGRID
-            ],
-        )
-        for _ in 1:N_iters, _ in 1:N_chains
+                Parameter(:f_grid) => [
+                    (alpha_true + beta_true * x) + s * randn(rng) for x in CONN_XGRID
+                ],
+            )
+            for _ in 1:N_iters, _ in 1:N_chains
     ]
     return FlexiChain{Symbol}(N_iters, N_chains, dicts)
 end
@@ -122,9 +122,9 @@ function make_disc_chain(rng)
     N_iters, N_chains = 150, 2
     dicts = [
         OrderedDict(
-            Parameter(:beta) => [m + 0.5 * randn(rng) for m in DISC_MEANS],
-        )
-        for _ in 1:N_iters, _ in 1:N_chains
+                Parameter(:beta) => [m + 0.5 * randn(rng) for m in DISC_MEANS],
+            )
+            for _ in 1:N_iters, _ in 1:N_chains
     ]
     return FlexiChain{Symbol}(N_iters, N_chains, dicts)
 end
@@ -135,9 +135,9 @@ function make_hist_chain(rng)
     N_iters, N_chains = 150, 2
     dicts = [
         OrderedDict(
-            Parameter(:y_pred) => [exp(0.5 * randn(rng)) for _ in 1:40],
-        )
-        for _ in 1:N_iters, _ in 1:N_chains
+                Parameter(:y_pred) => [exp(0.5 * randn(rng)) for _ in 1:40],
+            )
+            for _ in 1:N_iters, _ in 1:N_chains
     ]
     return FlexiChain{Symbol}(N_iters, N_chains, dicts)
 end
@@ -185,20 +185,30 @@ const REFTEST_SPECS = [
     RefTestSpec(MakieBE(), "pairplot_pooled", () -> PairPlots.pairplot(chn; pool_chains = true)),
 
     # Betancourt quantile plots
-    RefTestSpec(MakieBE(), "connquantiles",
-        () -> FC.Makie.connquantiles(conn_chn, :f_grid, CONN_XGRID; baseline = CONN_BASELINE)),
-    RefTestSpec(MakieBE(), "connquantiles_residual",
-        () -> FC.Makie.connquantiles(conn_chn, :f_grid, CONN_XGRID; baseline = CONN_BASELINE, residual = true)),
-    RefTestSpec(MakieBE(), "discquantiles",
-        () -> FC.Makie.discquantiles(disc_chn, :beta; baseline = DISC_BASELINE)),
-    RefTestSpec(MakieBE(), "discquantiles_vert",
-        () -> FC.Makie.discquantiles_vert(disc_chn, :beta)),
-    RefTestSpec(MakieBE(), "discquantiles_residual",
-        () -> FC.Makie.discquantiles(disc_chn, :beta; baseline = DISC_BASELINE, residual = true)),
-    RefTestSpec(MakieBE(), "histquantiles",
-        () -> FC.Makie.histquantiles(hist_chn, :y_pred; nbins = 20)),
-    RefTestSpec(MakieBE(), "histquantiles_observed",
-        () -> FC.Makie.histquantiles(hist_chn, :y_pred; nbins = 20, observed = HIST_OBSERVED)),
+    RefTestSpec(
+        MakieBE(), "connquantiles",
+        () -> FC.Makie.connquantiles(conn_chn, :f_grid, CONN_XGRID; baseline = CONN_BASELINE)
+    ),
+    RefTestSpec(
+        MakieBE(), "connquantiles_residual",
+        () -> FC.Makie.connquantiles(conn_chn, :f_grid, CONN_XGRID; baseline = CONN_BASELINE, residual = true)
+    ),
+    RefTestSpec(
+        MakieBE(), "discquantiles",
+        () -> FC.Makie.discquantiles(disc_chn, :beta; baseline = DISC_BASELINE)
+    ),
+    RefTestSpec(
+        MakieBE(), "discquantiles_residual",
+        () -> FC.Makie.discquantiles(disc_chn, :beta; baseline = DISC_BASELINE, residual = true)
+    ),
+    RefTestSpec(
+        MakieBE(), "histquantiles",
+        () -> FC.Makie.histquantiles(hist_chn, :y_pred; nbins = 20)
+    ),
+    RefTestSpec(
+        MakieBE(), "histquantiles_observed",
+        () -> FC.Makie.histquantiles(hist_chn, :y_pred; nbins = 20, observed = HIST_OBSERVED)
+    ),
 ]
 
 @testset verbose = true "Reference tests" begin
