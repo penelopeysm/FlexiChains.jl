@@ -129,8 +129,12 @@ function FC.Makie.discquantiles!(
     ticks = (1:length(ks), string.(FC.get_name.(ks)))
     if vertical
         ax.xticks = ticks
+        ax.xlabel = "parameter"
+        ax.ylabel = "value"
     else
         ax.yticks = ticks
+        ax.xlabel = "value"
+        ax.ylabel = "parameter"
     end
     return _plot_discquantiles!(ax, data; vertical, kwargs...)
 end
