@@ -12,7 +12,7 @@ across `plot_xs` into a continuous "function envelope" (Betancourt's
 vector of scalar keys. `plot_xs` defaults to `1:N` (number of components).
 
 # Keyword arguments
-- `quantiles`: odd-length vector of levels in 0–100. Default `[10,…,90]`.
+- `quantiles`: odd-length vector of levels in 0–1. Default `[0.1,…,0.9]`.
 - `baseline`: length-N vector overlaid as a reference line.
 - `residual`: if `true`, subtract `baseline` before banding (requires `baseline`).
 - `figure`, `axis`: NamedTuples forwarded to `Makie.Figure` / `Makie.Axis`.

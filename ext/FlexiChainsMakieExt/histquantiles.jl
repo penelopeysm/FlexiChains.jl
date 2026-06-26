@@ -22,7 +22,7 @@ function _plot_histquantiles!(
     isodd(length(quantiles)) || throw(ArgumentError("`quantiles` must have odd length"))
     all_vals = reduce(vcat, vec.(data))
     edges = FC.PlotUtils.auto_bin_edges(all_vals, nbins)
-    counts = FC.PlotUtils.bin_count_matrices(data, edges)   # vector length nbins of iter×chain
+    counts = FC.PlotUtils.bin_count_matrices(data, edges)   # iter × chain × nbins
 
     nq = length(quantiles)
     n_bands = div(nq, 2)
@@ -30,7 +30,7 @@ function _plot_histquantiles!(
     qs = Matrix{Float64}(undef, nq, nbins)
 
     for b in 1:nbins
-        qs[:, b] = FC.PlotUtils.compute_quantile_bands(counts[b], quantiles)
+        qs[:, b] = FC.PlotUtils.compute_quantile_bands(view(counts, :, :, b), quantiles)
     end
 
     base_color = _resolve_base_color(color)
@@ -71,7 +71,7 @@ count distribution is summarised with a nested quantile ribbon. x = value bins, 
 # Keyword arguments
 - `observed`: vector of observed values; its histogram (same bins) is overlaid as a line.
 - `nbins`: number of equal-width bins. Default `25`.
-- `quantiles`: odd-length vector of levels in 0–100. Default `[10,…,90]`.
+- `quantiles`: odd-length vector of levels in 0–1. Default `[0.1,…,0.9]`.
 - `figure`, `axis`: NamedTuples forwarded to `Makie.Figure` / `Makie.Axis`.
 """
 function FC.Makie.histquantiles(

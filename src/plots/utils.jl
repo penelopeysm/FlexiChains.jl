@@ -26,6 +26,9 @@ const DEFAULT_HEIGHT = 250
 function get_hdi_intervals end  # Overloaded in PosteriorStatsExt
 const DEFAULT_INTERVALS = (0.66, 0.95) # for forestplot
 
+# for connquantile etc.
+const DEFAULT_QUANTILE_LEVELS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
 using ..FlexiChains:
     FlexiChain,
     ParameterOrExtra,
@@ -81,49 +84,52 @@ function check_eltype_is_real(::AbstractArray{T}) where {T}
     end
 end
 
-const DEFAULT_QUANTILE_LEVELS = [10, 20, 30, 40, 50, 60, 70, 80, 90]
-
 """
 Compute nested-quantile band values.
 
-`quantile_levels` are in 0–100. For a matrix (`iter × chain`), each quantile is the
-**ensemble estimate**: the empirical quantile is computed per chain (per column) and then
-averaged across chains. For a vector (single chain) the quantile is computed directly.
-Returns a vector of the same length as `quantile_levels`.
+`quantile_levels` are in 0–1. For a matrix (`iter × chain`), each quantile is the *ensemble
+estimate*: the empirical quantile is computed per chain (per column) and then averaged
+across chains. Returns a vector of the same length as `quantile_levels`.
 """
 function compute_quantile_bands(
-        data::AbstractVector{<:Real},
-        quantile_levels::AbstractVector{<:Real} = DEFAULT_QUANTILE_LEVELS,
-    )
-    return Statistics.quantile(Float64.(data), quantile_levels ./ 100)
-end
-
-function compute_quantile_bands(
         data::AbstractMatrix{<:Real},
-        quantile_levels::AbstractVector{<:Real} = DEFAULT_QUANTILE_LEVELS,
+        quantile_levels::AbstractVector{<:Real},
     )
-    probs = quantile_levels ./ 100
     nchains = size(data, 2)
-    acc = zeros(Float64, length(probs))
-    for c in axes(data, 2)
-        acc .+= Statistics.quantile(Float64.(view(data, :, c)), probs)
+    acc = zeros(length(quantile_levels))
+    for c in 1:nchains
+        acc = acc .+ Statistics.quantile(view(data, :, c), quantile_levels)
     end
     return acc ./ nchains
 end
 
-"""Equal-width bin edges spanning the range of `values`; returns `nbins+1` edges.
-`values` must be non-empty."""
-function auto_bin_edges(values, nbins::Integer)
-    isempty(values) && throw(ArgumentError("auto_bin_edges: `values` must be non-empty"))
+"""
+Equal-width bin edges spanning the range of `values`; returns `nbins+1` edges.
+`values` must be non-empty.
+"""
+function get_bin_edges(values, nbins::Integer)
+    isempty(values) && throw(ArgumentError("get_bin_edges: `values` must be non-empty"))
     lo, hi = extrema(values)
-    lo == hi && (hi = lo + 1)  # degenerate guard for constant input
-    return collect(range(float(lo), float(hi); length = nbins + 1))
+    if lo == hi
+        hi = lo + eps(lo) # Don't make the bin have 0 width.
+    end
+    return collect(range(lo, hi; length = nbins + 1))
 end
 
-"""Count how many of `values` fall in each `[edges[b], edges[b+1])` bin.
-Values equal to the final edge land in the last bin; out-of-range values are ignored.
-Returns a `Vector{Int}` of length `length(edges) - 1`."""
-function histogram_counts(values, edges)
+"""
+Returns a vector `v` where `v[b]` is the number of entries of `values` falling within the
+bin `[edges[b], edges[b+1])`. The length of `v` is `length(edges) - 1`.
+
+edges  [0]     [1]     [2] ...
+        |  v[0] |  v[1] |  ...
+        | elems | elems |  ...
+        -----------------  ...
+
+Values equal to the final edge land in the last bin, and out-of-range values are ignored.
+"""
+function histogram_counts(values::AbstractVector{<:Real}, edges::AbstractVector{<:Real})
+    issorted(edges) || throw(ArgumentError("edges must be sorted"))
+    length(edges) >= 2 || throw(ArgumentError("edges must have at least 2 elements"))
     nbins = length(edges) - 1
     counts = zeros(Int, nbins)
     last_edge = last(edges)
@@ -140,23 +146,29 @@ function histogram_counts(values, edges)
     return counts
 end
 
-"""For a collection of component series (each an `iter × chain` matrix), compute, for every
-bin, the `iter × chain` matrix of per-draw counts (number of components falling in that bin).
-All component matrices must share the same axes. Returns a `Vector` of length `nbins`, each
-element a 1-based `iter × chain` `Matrix{Int}`."""
-function bin_count_matrices(components::AbstractVector{<:AbstractMatrix{<:Real}}, edges)
+"""
+Histogram a vector-valued parameter across posterior draws.
+
+`components` must be a length-K vector of `iter × chain` matrices, one per component of the
+parameter (e.g. `y_pred[1], ..., y_pred[K]`).
+
+For each combination of `(iter, chain)`, the `K` component values are binned into a
+histogram defined by `edges`.
+
+Returns an `iter × chain × nbins` array where `counts[i, c, b]` is the number of components
+that fell in bin `b` for draw `(i, c)`.
+"""
+function bin_count_matrices(
+        components::AbstractVector{<:AbstractMatrix{<:Real}},
+        edges::AbstractVector{<:Real}
+    )
     n_iter, n_chain = size(first(components))
     n_bins = length(edges) - 1
-    counts = [zeros(Int, (n_iter, n_chain)) for _ in 1:n_bins]
-
+    counts = zeros(Int, n_iter, n_chain, n_bins)
     for c in 1:n_chain, i in 1:n_iter
         draw_vals = (component[i, c] for component in components)
-        hc = histogram_counts(draw_vals, edges)
-        for b in 1:n_bins
-            counts[b][i, c] = hc[b]
-        end
+        counts[i, c, :] = histogram_counts(draw_vals, edges)
     end
-
     return counts
 end
 

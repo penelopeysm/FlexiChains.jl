@@ -9,20 +9,20 @@ using StableRNGs: StableRNG
 const PU = FC.PlotUtils
 
 @testset "compute_quantile_bands" begin
-    levels = [25, 50, 75]
+    levels = [0.25, 0.5, 0.75]
 
-    @testset "vector input = direct quantile" begin
-        data = collect(1.0:100.0)
+    @testset "single-chain matrix = direct quantile" begin
+        data = reshape(collect(1.0:100.0), :, 1)
         bands = PU.compute_quantile_bands(data, levels)
         @test length(bands) == 3
         @test bands ≈ [25.75, 50.5, 75.25] atol = 1.0e-6
     end
 
-    @testset "matrix input = ensemble (per-chain quantile, averaged)" begin
+    @testset "identical chains = same as single chain" begin
         col = collect(1.0:100.0)
         data = hcat(col, col)
         bands = PU.compute_quantile_bands(data, levels)
-        single = PU.compute_quantile_bands(col, levels)
+        single = PU.compute_quantile_bands(reshape(col, :, 1), levels)
         @test bands ≈ single atol = 1.0e-9
     end
 
@@ -31,16 +31,11 @@ const PU = FC.PlotUtils
         # estimate provably differs from a naive pooled quantile.
         c1 = collect(1.0:100.0); c2 = collect(101.0:200.0)
         data = hcat(c1, c2)
-        ensemble = PU.compute_quantile_bands(data, [25])
-        expected = (PU.compute_quantile_bands(c1, [25]) .+ PU.compute_quantile_bands(c2, [25])) ./ 2
+        ensemble = PU.compute_quantile_bands(data, [0.25])
+        expected = (PU.compute_quantile_bands(reshape(c1, :, 1), [0.25]) .+ PU.compute_quantile_bands(reshape(c2, :, 1), [0.25])) ./ 2
         pooled = Statistics.quantile(vec(data), 0.25)
         @test ensemble ≈ expected atol = 1.0e-9
         @test !isapprox(ensemble[1], pooled; atol = 1.0e-6)  # guards against pooling regression
-    end
-
-    @testset "default levels" begin
-        bands = PU.compute_quantile_bands(collect(1.0:100.0))
-        @test length(bands) == length(PU.DEFAULT_QUANTILE_LEVELS) == 9
     end
 end
 
@@ -56,7 +51,7 @@ end
         edges = PU.auto_bin_edges([5.0, 5.0], 4)   # constant input
         @test length(edges) == 5
         @test first(edges) == 5.0
-        @test last(edges) == 6.0
+        @test last(edges) > 5.0
         @test_throws ArgumentError PU.auto_bin_edges(Float64[], 4)
     end
 
@@ -78,16 +73,15 @@ end
         @test sum(counts) == 1
     end
 
-    @testset "bin_count_matrices preserves iter×chain shape" begin
+    @testset "bin_count_matrices returns iter×chain×nbins array" begin
         edges = range(0.0, 10.0; length = 6)
         comp1 = fill(1.0, 3, 2)   # all in bin 1
         comp2 = fill(9.0, 3, 2)   # all in bin 5
-        mats = PU.bin_count_matrices([comp1, comp2], edges)
-        @test length(mats) == 5
-        @test all(==(1), mats[1])
-        @test all(==(1), mats[5])
-        @test all(==(0), mats[2])
-        @test size(mats[1]) == (3, 2)
+        counts = PU.bin_count_matrices([comp1, comp2], edges)
+        @test size(counts) == (3, 2, 5)
+        @test all(==(1), counts[:, :, 1])
+        @test all(==(1), counts[:, :, 5])
+        @test all(==(0), counts[:, :, 2])
     end
 end
 

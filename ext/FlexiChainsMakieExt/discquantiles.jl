@@ -150,7 +150,7 @@ index, y = marginal quantiles.
 `param` is a single array-valued `VarName`/`Symbol` or a vector of scalar keys.
 
 # Keyword arguments
-- `quantiles`: odd-length vector of levels in 0–100. Default `[10,…,90]`.
+- `quantiles`: odd-length vector of levels in 0–1. Default `[0.1,…,0.9]`.
 - `baseline`: length-N vector overlaid per index.
 - `residual`: if `true`, subtract `baseline` before banding (requires `baseline`).
 - `figure`, `axis`: NamedTuples forwarded to `Makie.Figure` / `Makie.Axis`.
