@@ -153,6 +153,22 @@ function bin_count_matrices(component_data::AbstractVector{<:AbstractMatrix{<:Re
     return counts
 end
 
+function bin_count_matrices2(components::AbstractVector{<:AbstractMatrix{<:Real}}, edges)
+    n_iter, n_chain = size(first(components))
+    n_bins = length(edges) - 1
+    counts = [zeros(Int, (n_iter, n_chain)) for _ in 1:n_bins]
+
+    for c in 1:n_chain, i in 1:n_iter
+        draw_vals = [component[i, c] for component in components]
+        hc = histogram_counts(draw_vals, edges)
+        for b in 1:n_bins
+            counts[b][i, c] = hc[b]
+        end
+    end
+
+    return counts
+end
+
 """Resolve `param` to an ordered list of scalar leaf keys and their raw `iter × chain`
 matrices. `param` may be:
 - a single array-valued `VarName`/`Symbol`, auto-expanded to its scalar leaves in
