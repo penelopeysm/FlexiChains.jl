@@ -14,6 +14,12 @@ export traceplot,
     meanplot!,
     autocorplot,
     autocorplot!,
+    pushforwardcontinuous,
+    pushforwardcontinuous!,
+    pushforwarddiscrete,
+    pushforwarddiscrete!,
+    pushforwardhist,
+    pushforwardhist!,
     ridgeline,
     ridgeline!,
     forestplot,
@@ -71,6 +77,20 @@ Mutating version of [`FlexiChains.Makie.autocorplot`](@ref), for use with existi
 """
 function autocorplot! end
 
+function pushforwardcontinuous end
+
+"""Mutating version of [`FlexiChains.Makie.pushforwardcontinuous`](@ref)."""
+function pushforwardcontinuous! end
+
+function pushforwarddiscrete end
+
+"""Mutating version of [`FlexiChains.Makie.pushforwarddiscrete`](@ref)."""
+function pushforwarddiscrete! end
+
+function pushforwardhist end
+
+"""Mutating version of [`FlexiChains.Makie.pushforwardhist`](@ref)."""
+function pushforwardhist! end
 function ridgeline end
 
 """

@@ -26,16 +26,21 @@ const DEFAULT_HEIGHT = 250
 function get_hdi_intervals end  # Overloaded in PosteriorStatsExt
 const DEFAULT_INTERVALS = (0.66, 0.95) # for forestplot
 
+# for connquantile etc.
+const DEFAULT_QUANTILE_LEVELS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
 using ..FlexiChains:
     FlexiChain,
     ParameterOrExtra,
     VarName,
     _split_varnames,
+    _get_raw_data,
     niters,
     _get_multi_keys,
     _get_multi_key
 import DimensionalData as DD
 import StatsBase
+import Statistics
 
 """
 Return a chain that has been:
@@ -77,6 +82,93 @@ function check_eltype_is_real(::AbstractArray{T}) where {T}
             ),
         )
     end
+end
+
+"""
+Compute nested-quantile band values.
+
+`quantile_levels` are in 0–1. For a matrix (`iter × chain`), each quantile is the *ensemble
+estimate*: the empirical quantile is computed per chain (per column) and then averaged
+across chains. Returns a vector of the same length as `quantile_levels`.
+"""
+function compute_quantile_bands(
+        data::AbstractMatrix{<:Real},
+        quantile_levels::AbstractVector{<:Real},
+    )
+    nchains = size(data, 2)
+    acc = zeros(length(quantile_levels))
+    for c in 1:nchains
+        acc = acc .+ Statistics.quantile(view(data, :, c), quantile_levels)
+    end
+    return acc ./ nchains
+end
+
+"""
+Equal-width bin edges spanning the range of `values`; returns `nbins+1` edges.
+`values` must be non-empty.
+"""
+function get_bin_edges(values::AbstractArray, nbins::Integer)
+    isempty(values) && throw(ArgumentError("get_bin_edges: `values` must be non-empty"))
+    lo, hi = extrema(values)
+    if lo == hi
+        hi = lo + eps(lo) # Don't make the bin have 0 width.
+    end
+    return collect(range(lo, hi; length = nbins + 1))
+end
+
+"""
+Returns a vector `v` where `v[b]` is the number of entries of `values` falling within the
+bin `[edges[b], edges[b+1])`. The length of `v` is `length(edges) - 1`.
+
+edges  [0]     [1]     [2] ...
+        |  v[0] |  v[1] |  ...
+        | elems | elems |  ...
+        -----------------  ...
+
+Values equal to the final edge land in the last bin, and out-of-range values are ignored.
+"""
+function histogram_counts(values::AbstractVector{<:Real}, edges::AbstractVector{<:Real})
+    issorted(edges) || throw(ArgumentError("edges must be sorted"))
+    length(edges) >= 2 || throw(ArgumentError("edges must have at least 2 elements"))
+    nbins = length(edges) - 1
+    counts = zeros(Int, nbins)
+    last_edge = last(edges)
+    for v in values
+        b = if v == last_edge
+            nbins # clamp to last bin
+        else
+            searchsortedlast(edges, v)
+        end
+        if 1 <= b <= nbins
+            counts[b] += 1
+        end
+    end
+    return counts
+end
+
+"""
+Histogram a vector-valued parameter across posterior draws.
+
+`components` must be a length-K vector of `iter × chain` matrices, one per component of the
+parameter (e.g. `y_pred[1], ..., y_pred[K]`).
+
+For each combination of `(iter, chain)`, the `K` component values are binned into a
+histogram defined by `edges`.
+
+Returns an `iter × chain × nbins` array where `counts[i, c, b]` is the number of components
+that fell in bin `b` for draw `(i, c)`.
+"""
+function bin_count_matrices(
+        values::AbstractArray{<:Real, 3}, # iter × chain × component
+        edges::AbstractVector{<:Real}
+    )
+    n_iter, n_chain, _ = size(values)
+    n_bins = length(edges) - 1
+    counts = zeros(Int, n_iter, n_chain, n_bins)
+    for c in 1:n_chain, i in 1:n_iter
+        counts[i, c, :] = histogram_counts(values[i, c, :], edges)
+    end
+    return counts
 end
 
 struct FlexiChainTrace{TKey, Tp <: ParameterOrExtra{<:TKey}}

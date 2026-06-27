@@ -217,6 +217,16 @@ Makie.save("ridgeline_makie.png", ans.figure); # hide
 
 ![Ridgeline plots of the sampled chain](ridgeline_makie.png)
 
+## Pushforward plots
+
+These reproduce the nested-quantile pushforward visualizations from [Betancourt's `mcmc_visualization_tools`](https://github.com/betanalpha/mcmc_visualization_tools).
+
+```@docs
+FlexiChains.Makie.pushforwardcontinuous
+FlexiChains.Makie.pushforwarddiscrete
+FlexiChains.Makie.pushforwardhist
+```
+
 ## [Customisation](@id makie-customisation)
 
 As described in the [general interface section above](@ref makie-interface), all of the above functions accept keyword arguments to control the appearance of the plot.
