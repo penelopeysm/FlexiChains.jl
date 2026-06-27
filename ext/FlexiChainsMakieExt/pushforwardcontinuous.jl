@@ -1,8 +1,8 @@
-# No title: connquantiles plots an array variable as a whole, not a single leaf.
-_default_connquantiles_axis() = (xlabel = "index", ylabel = "value")
+# No title: pushforwardcontinuous plots an array variable as a whole, not a single leaf.
+_default_pushforwardcontinuous_axis() = (xlabel = "index", ylabel = "value")
 
 """
-    FlexiChains.Makie.connquantiles(chn, param_or_params; x_grid=nothing; kwargs...)
+    FlexiChains.Makie.pushforwardcontinuous(chn, param_or_params; x_grid=nothing; kwargs...)
 
 Plot the marginal posterior of each component of an array parameter as a quantile ribbon,
 forming a "function envelope" over `x_grid`. Useful for visualising how a functional
@@ -19,7 +19,7 @@ This is a port of [Michael Betancourt's
 - `residual`: if `true`, subtract `baseline` before banding (requires `baseline`).
 - `figure`, `axis`: `NamedTuple`s forwarded to `Makie.Figure` / `Makie.Axis`.
 """
-function FC.Makie.connquantiles(
+function FC.Makie.pushforwardcontinuous(
         chn::FC.FlexiChain,
         param;
         figure = (;),
@@ -27,12 +27,12 @@ function FC.Makie.connquantiles(
         kwargs...,
     )
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
-    ax = Makie.Axis(fig[1, 1]; _default_connquantiles_axis()..., axis...)
-    _, p = FC.Makie.connquantiles!(ax, chn, param; kwargs...)
+    ax = Makie.Axis(fig[1, 1]; _default_pushforwardcontinuous_axis()..., axis...)
+    _, p = FC.Makie.pushforwardcontinuous!(ax, chn, param; kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
 end
 
-function FC.Makie.connquantiles!(
+function FC.Makie.pushforwardcontinuous!(
         ax::Makie.Axis,
         chn::FC.FlexiChain,
         param;
@@ -114,6 +114,6 @@ function FC.Makie.connquantiles!(
     return Makie.AxisPlot(ax, p)
 end
 
-function FC.Makie.connquantiles!(chn::FC.FlexiChain, param; kwargs...)
-    return FC.Makie.connquantiles!(Makie.current_axis(), chn, param; kwargs...)
+function FC.Makie.pushforwardcontinuous!(chn::FC.FlexiChain, param; kwargs...)
+    return FC.Makie.pushforwardcontinuous!(Makie.current_axis(), chn, param; kwargs...)
 end

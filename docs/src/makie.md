@@ -222,10 +222,9 @@ Makie.save("ridgeline_makie.png", ans.figure); # hide
 These reproduce the nested-quantile pushforward visualizations from [Betancourt's `mcmc_visualization_tools`](https://github.com/betanalpha/mcmc_visualization_tools).
 
 ```@docs
-FlexiChains.Makie.connquantiles
-FlexiChains.Makie.discquantiles
-FlexiChains.Makie.discquantiles_vert
-FlexiChains.Makie.histquantiles
+FlexiChains.Makie.pushforwardcontinuous
+FlexiChains.Makie.pushforwarddiscrete
+FlexiChains.Makie.pushforwardhist
 ```
 
 ## [Customisation](@id makie-customisation)

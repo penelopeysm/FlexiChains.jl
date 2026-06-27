@@ -118,9 +118,9 @@ end
 
 _band_alpha(i, n_bands) = 0.2 + 0.7 * i / n_bands
 
-include("FlexiChainsMakieExt/connquantiles.jl")
-include("FlexiChainsMakieExt/discquantiles.jl")
-include("FlexiChainsMakieExt/histquantiles.jl")
+include("FlexiChainsMakieExt/pushforwardcontinuous.jl")
+include("FlexiChainsMakieExt/pushforwarddiscrete.jl")
+include("FlexiChainsMakieExt/pushforwardhist.jl")
 include("FlexiChainsMakieExt/density.jl")
 include("FlexiChainsMakieExt/hist.jl")
 include("FlexiChainsMakieExt/mixeddensity.jl")

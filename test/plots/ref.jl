@@ -165,32 +165,32 @@ const REFTEST_SPECS = [
 
     # Betancourt quantile plots
     RefTestSpec(
-        MakieBE(), "connquantiles",
-        () -> FC.Makie.connquantiles(conn_chn, :f_grid; x_grid = CONN_XGRID, baseline = CONN_BASELINE)
+        MakieBE(), "pushforwardcontinuous",
+        () -> FC.Makie.pushforwardcontinuous(conn_chn, :f_grid; x_grid = CONN_XGRID, baseline = CONN_BASELINE)
     ),
     RefTestSpec(
-        MakieBE(), "connquantiles_residual",
-        () -> FC.Makie.connquantiles(conn_chn, :f_grid; x_grid = CONN_XGRID, baseline = CONN_BASELINE, residual = true)
+        MakieBE(), "pushforwardcontinuous_residual",
+        () -> FC.Makie.pushforwardcontinuous(conn_chn, :f_grid; x_grid = CONN_XGRID, baseline = CONN_BASELINE, residual = true)
     ),
     RefTestSpec(
-        MakieBE(), "discquantiles",
-        () -> FC.Makie.discquantiles(disc_chn, :beta; baseline = DISC_BASELINE)
+        MakieBE(), "pushforwarddiscrete",
+        () -> FC.Makie.pushforwarddiscrete(disc_chn, :beta; baseline = DISC_BASELINE)
     ),
     RefTestSpec(
-        MakieBE(), "discquantiles_horizontal",
-        () -> FC.Makie.discquantiles(disc_chn, :beta; baseline = DISC_BASELINE, vertical = false)
+        MakieBE(), "pushforwarddiscrete_horizontal",
+        () -> FC.Makie.pushforwarddiscrete(disc_chn, :beta; baseline = DISC_BASELINE, vertical = false)
     ),
     RefTestSpec(
-        MakieBE(), "discquantiles_residual",
-        () -> FC.Makie.discquantiles(disc_chn, :beta; baseline = DISC_BASELINE, residual = true)
+        MakieBE(), "pushforwarddiscrete_residual",
+        () -> FC.Makie.pushforwarddiscrete(disc_chn, :beta; baseline = DISC_BASELINE, residual = true)
     ),
     RefTestSpec(
-        MakieBE(), "histquantiles",
-        () -> FC.Makie.histquantiles(hist_chn, :y_pred; nbins = 20)
+        MakieBE(), "pushforwardhist",
+        () -> FC.Makie.pushforwardhist(hist_chn, :y_pred; nbins = 20)
     ),
     RefTestSpec(
-        MakieBE(), "histquantiles_observed",
-        () -> FC.Makie.histquantiles(hist_chn, :y_pred; nbins = 20, observed = HIST_OBSERVED)
+        MakieBE(), "pushforwardhist_observed",
+        () -> FC.Makie.pushforwardhist(hist_chn, :y_pred; nbins = 20, observed = HIST_OBSERVED)
     ),
 ]
 

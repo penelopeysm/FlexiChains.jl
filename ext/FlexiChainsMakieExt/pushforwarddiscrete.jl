@@ -1,4 +1,4 @@
-function _discquantiles_bands(data, quantiles, baseline, residual)
+function _pushforwarddiscrete_bands(data, quantiles, baseline, residual)
     isodd(length(quantiles)) || throw(ArgumentError("`quantiles` must have odd length"))
     n = length(data)
     if residual && baseline === nothing
@@ -22,7 +22,7 @@ function _discquantiles_bands(data, quantiles, baseline, residual)
     return qs
 end
 
-function _plot_discquantiles!(
+function _plot_pushforwarddiscrete!(
         ax::Makie.Axis,
         data;
         quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
@@ -32,7 +32,7 @@ function _plot_discquantiles!(
         vertical::Bool = true,
         kwargs...,
     )
-    qs = _discquantiles_bands(data, quantiles, baseline, residual)
+    qs = _pushforwarddiscrete_bands(data, quantiles, baseline, residual)
     nq = size(qs, 1)
     n = size(qs, 2)
     n_bands = div(nq, 2)
@@ -81,11 +81,11 @@ end
 
 
 """
-    FlexiChains.Makie.discquantiles(chn, param_or_params; vertical=true, kwargs...)
+    FlexiChains.Makie.pushforwarddiscrete(chn, param_or_params; vertical=true, kwargs...)
 
 Plot each component of an array parameter as an independent quantile bar, with nested
-intervals shown as stacked bands. Unlike [`connquantiles`](@ref
-FlexiChains.Makie.connquantiles), components are not connected; each bar is separated from
+intervals shown as stacked bands. Unlike [`pushforwardcontinuous`](@ref
+FlexiChains.Makie.pushforwardcontinuous), components are not connected; each bar is separated from
 its neighbours , making this appropriate when the components have no natural ordering or
 functional relationship (e.g. group-level intercepts in a hierarchical model).
 
@@ -100,7 +100,7 @@ This function is a port of [Michael Betancourt's
 - `residual`: if `true`, subtract `baseline` before banding (requires `baseline`).
 - `figure`, `axis`: `NamedTuple`s forwarded to `Makie.Figure` / `Makie.Axis`.
 """
-function FC.Makie.discquantiles(
+function FC.Makie.pushforwarddiscrete(
         chn::FC.FlexiChain,
         param;
         figure = (;),
@@ -109,11 +109,11 @@ function FC.Makie.discquantiles(
     )
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
     ax = Makie.Axis(fig[1, 1]; axis...)
-    _, p = FC.Makie.discquantiles!(ax, chn, param; kwargs...)
+    _, p = FC.Makie.pushforwarddiscrete!(ax, chn, param; kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
 end
 
-function FC.Makie.discquantiles!(
+function FC.Makie.pushforwarddiscrete!(
         ax::Makie.Axis, chn::FC.FlexiChain, param;
         vertical::Bool = true,
         kwargs...,
@@ -136,9 +136,9 @@ function FC.Makie.discquantiles!(
         ax.xlabel = "value"
         ax.ylabel = "parameter"
     end
-    return _plot_discquantiles!(ax, data; vertical, kwargs...)
+    return _plot_pushforwarddiscrete!(ax, data; vertical, kwargs...)
 end
 
-function FC.Makie.discquantiles!(chn::FC.FlexiChain, param; kwargs...)
-    return FC.Makie.discquantiles!(Makie.current_axis(), chn, param; kwargs...)
+function FC.Makie.pushforwarddiscrete!(chn::FC.FlexiChain, param; kwargs...)
+    return FC.Makie.pushforwarddiscrete!(Makie.current_axis(), chn, param; kwargs...)
 end

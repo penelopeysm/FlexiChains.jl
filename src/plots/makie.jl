@@ -14,12 +14,12 @@ export traceplot,
     meanplot!,
     autocorplot,
     autocorplot!,
-    connquantiles,
-    connquantiles!,
-    discquantiles,
-    discquantiles!,
-    histquantiles,
-    histquantiles!,
+    pushforwardcontinuous,
+    pushforwardcontinuous!,
+    pushforwarddiscrete,
+    pushforwarddiscrete!,
+    pushforwardhist,
+    pushforwardhist!,
     ridgeline,
     ridgeline!,
     forestplot,
@@ -77,20 +77,20 @@ Mutating version of [`FlexiChains.Makie.autocorplot`](@ref), for use with existi
 """
 function autocorplot! end
 
-function connquantiles end
+function pushforwardcontinuous end
 
-"""Mutating version of [`FlexiChains.Makie.connquantiles`](@ref)."""
-function connquantiles! end
+"""Mutating version of [`FlexiChains.Makie.pushforwardcontinuous`](@ref)."""
+function pushforwardcontinuous! end
 
-function discquantiles end
+function pushforwarddiscrete end
 
-"""Mutating version of [`FlexiChains.Makie.discquantiles`](@ref)."""
-function discquantiles! end
+"""Mutating version of [`FlexiChains.Makie.pushforwarddiscrete`](@ref)."""
+function pushforwarddiscrete! end
 
-function histquantiles end
+function pushforwardhist end
 
-"""Mutating version of [`FlexiChains.Makie.histquantiles`](@ref)."""
-function histquantiles! end
+"""Mutating version of [`FlexiChains.Makie.pushforwardhist`](@ref)."""
+function pushforwardhist! end
 function ridgeline end
 
 """
