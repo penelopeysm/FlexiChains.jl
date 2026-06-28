@@ -219,12 +219,69 @@ Makie.save("ridgeline_makie.png", ans.figure); # hide
 
 ## Pushforward plots
 
-These reproduce the nested-quantile pushforward visualizations from [Betancourt's `mcmc_visualization_tools`](https://github.com/betanalpha/mcmc_visualization_tools).
+These plots are based on Michael Betancourt's [`mcmc_visualization_tools`](https://github.com/betanalpha/mcmc_visualization_tools).
 
 ```@docs
 FlexiChains.Makie.pushforwardcontinuous
 FlexiChains.Makie.pushforwarddiscrete
 FlexiChains.Makie.pushforwardhist
+```
+
+### Example
+
+```@example pushforward
+standardize(x) = (x .- mean(x)) ./ std(x)
+
+penguins = DataFrame(PalmerPenguins.load())
+dropmissing!(penguins)
+transform!(penguins, names(penguins, Real) .=> standardize => identity)
+transform!(penguins, :species => denserank => :species_idx)
+
+# do heavier birds have longer bills (or are they just heavier)?
+@model function bill_model(species, body_mass)
+    n_species = length(unique(species))
+    beta1 ~ filldist(Normal(0, 1), n_species)
+    beta2 ~ Normal(0, 1)
+    beta3 ~ filldist(Normal(0, 1), n_species)
+    sigma ~ Exponential(1)
+    mu := @. beta1[species] + beta2 * body_mass + beta3[species] * body_mass
+    bill_length_mm ~ MvNormal(mu, sigma)
+end
+
+prior_model = bill_model(penguins.species_idx, penguins.body_mass_g) 
+cond_model = prior_model | (; bill_length_mm = penguins.bill_length_mm)
+chain = sample(cond_model, NUTS(0.8), MCMCThreads(), 1000, 4)
+
+pred_species = repeat(1:3, inner = 50)
+pred_body_mass = repeat(range(-3, 3, length = 50), outer = 3)
+
+# Optionally set predictive uncertainty to 0
+pred_model = bill_model(pred_species, pred_body_mass) # | (; sigma = 0)
+pred = predict(pred_model, chain)
+```
+
+```@example pushforwardhist
+import FlexiChains.Makie as FM
+
+# Posterior predictive check vs observed
+observed = penguins.bill_length_mm
+FM.pushforwardhist(pred, @varname(bill_length_mm); observed)
+```
+
+```@example pushforwardcontinuous
+fig = Figure()
+ax = Axis(fig[1, 1]; xlabel = "body mass", ylabel = "bill length", limits = ((-3, 3), (-3, 3)))
+
+for (s, c) in zip(1:3, Makie.wong_colors())
+    ix = findall(==(s), pred_species)
+    FM.pushforwardcontinuous!(ax, pred, @varname(mu[ix]); x_grid = pred_body_mass[ix], color = c)
+end
+
+fig
+```
+
+```@example pushforwarddiscrete
+FM.pushforwarddiscrete(chain, @varname(beta3))
 ```
 
 ## [Customisation](@id makie-customisation)

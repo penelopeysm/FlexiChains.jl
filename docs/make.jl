@@ -1,3 +1,6 @@
+# Accept PalmerPenguins download on CI
+ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
+
 using Pkg: Pkg
 Pkg.develop(Pkg.PackageSpec(; path = dirname(@__DIR__)))
 
@@ -19,6 +22,9 @@ using DynamicPPL: DynamicPPL
 using MCMCChains: MCMCChains
 using PairPlots: PairPlots
 using Turing: Turing
+using PalmerPenguins: PalmerPenguins
+using DataFrames: DataFrames
+
 
 links = InterLinks(
     "AdvancedHMC" => "https://turinglang.org/AdvancedHMC.jl/stable/",
