@@ -36,12 +36,11 @@ function _plot_pushforwarddiscrete!(
     nq = size(qs, 1)
     n = size(qs, 2)
     n_bands = div(nq, 2)
-    median_idx = div(nq + 1, 2)
     positions = collect(1:n)
-    medians = qs[median_idx, :]
 
+    p = nothing
     for i in 1:n_bands
-        Makie.barplot!(
+        p = Makie.barplot!(
             ax,
             positions,
             qs[nq + 1 - i, :];
@@ -55,16 +54,7 @@ function _plot_pushforwarddiscrete!(
         )
     end
 
-    Makie.scatter!(
-        ax,
-        vertical ? positions : medians,
-        vertical ? medians : positions;
-        color = color,
-        marker = (vertical ? :hline : :vline),
-        markersize = 16,
-    )
-
-    p = if baseline !== nothing && !residual
+    if baseline !== nothing && !residual
         Makie.scatter!(
             ax,
             vertical ? positions : baseline,

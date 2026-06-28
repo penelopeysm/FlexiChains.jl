@@ -96,9 +96,9 @@ function FC.Makie.pushforwardcontinuous!(
             kwargs...,
         )
     end
-    Makie.lines!(ax, xs, qs[median_idx, :]; color = color, linewidth = 2)
+    p = Makie.lines!(ax, xs, qs[median_idx, :]; color = color, linewidth = 2)
 
-    p = if residual
+    if residual
         Makie.hlines!(ax, [0.0]; color = :black, linestyle = :dash, linewidth = 1)
     elseif baseline !== nothing
         Makie.lines!(
