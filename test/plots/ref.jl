@@ -165,32 +165,32 @@ const REFTEST_SPECS = [
 
     # Betancourt quantile plots
     RefTestSpec(
-        MakieBE(), "pushforwardcontinuous",
-        () -> FC.Makie.pushforwardcontinuous(conn_chn, :f_grid; x_grid = CONN_XGRID, baseline = CONN_BASELINE)
+        MakieBE(), "pushforward_continuous",
+        () -> FC.Makie.pushforward_continuous(conn_chn, :f_grid; x_grid = CONN_XGRID, baseline = CONN_BASELINE)
     ),
     RefTestSpec(
-        MakieBE(), "pushforwardcontinuous_residual",
-        () -> FC.Makie.pushforwardcontinuous(conn_chn, :f_grid; x_grid = CONN_XGRID, baseline = CONN_BASELINE, residual = true)
+        MakieBE(), "pushforward_continuous_residual",
+        () -> FC.Makie.pushforward_continuous(conn_chn, :f_grid; x_grid = CONN_XGRID, baseline = CONN_BASELINE, residual = true)
     ),
     RefTestSpec(
-        MakieBE(), "pushforwarddiscrete",
-        () -> FC.Makie.pushforwarddiscrete(disc_chn, :beta; baseline = DISC_BASELINE)
+        MakieBE(), "pushforward_discrete",
+        () -> FC.Makie.pushforward_discrete(disc_chn, :beta; baseline = DISC_BASELINE)
     ),
     RefTestSpec(
-        MakieBE(), "pushforwarddiscrete_horizontal",
-        () -> FC.Makie.pushforwarddiscrete(disc_chn, :beta; baseline = DISC_BASELINE, vertical = false)
+        MakieBE(), "pushforward_discrete_horizontal",
+        () -> FC.Makie.pushforward_discrete(disc_chn, :beta; baseline = DISC_BASELINE, vertical = false)
     ),
     RefTestSpec(
-        MakieBE(), "pushforwarddiscrete_residual",
-        () -> FC.Makie.pushforwarddiscrete(disc_chn, :beta; baseline = DISC_BASELINE, residual = true)
+        MakieBE(), "pushforward_discrete_residual",
+        () -> FC.Makie.pushforward_discrete(disc_chn, :beta; baseline = DISC_BASELINE, residual = true)
     ),
     RefTestSpec(
-        MakieBE(), "pushforwardhist",
-        () -> FC.Makie.pushforwardhist(hist_chn, :y_pred; nbins = 20)
+        MakieBE(), "pushforward_hist",
+        () -> FC.Makie.pushforward_hist(hist_chn, :y_pred; nbins = 20)
     ),
     RefTestSpec(
-        MakieBE(), "pushforwardhist_observed",
-        () -> FC.Makie.pushforwardhist(hist_chn, :y_pred; nbins = 20, observed = HIST_OBSERVED)
+        MakieBE(), "pushforward_hist_observed",
+        () -> FC.Makie.pushforward_hist(hist_chn, :y_pred; nbins = 20, observed = HIST_OBSERVED)
     ),
 ]
 

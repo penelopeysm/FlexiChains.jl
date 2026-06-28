@@ -222,9 +222,9 @@ Makie.save("ridgeline_makie.png", ans.figure); # hide
 These plots are based on Michael Betancourt's [`mcmc_visualization_tools`](https://github.com/betanalpha/mcmc_visualization_tools).
 
 ```@docs
-FlexiChains.Makie.pushforwardcontinuous
-FlexiChains.Makie.pushforwarddiscrete
-FlexiChains.Makie.pushforwardhist
+FlexiChains.Makie.pushforward_continuous
+FlexiChains.Makie.pushforward_discrete
+FlexiChains.Makie.pushforward_hist
 ```
 
 ### Example
@@ -262,28 +262,28 @@ pred_model = bill_model(pred_species, pred_body_mass) # | (; sigma = 0)
 pred = predict(pred_model, chain)
 ```
 
-```@example pushforwardhist
+```@example pushforward_hist
 import FlexiChains.Makie as FM
 
 # Posterior predictive check vs observed
 observed = penguins.bill_length_mm
-FM.pushforwardhist(pred, @varname(bill_length_mm); observed)
+FM.pushforward_hist(pred, @varname(bill_length_mm); observed)
 ```
 
-```@example pushforwardcontinuous
+```@example pushforward_continuous
 fig = Figure()
 ax = Axis(fig[1, 1]; xlabel = "body mass", ylabel = "bill length", limits = ((-3, 3), (-3, 3)))
 
 for (s, c) in zip(1:3, Makie.wong_colors())
     ix = findall(==(s), pred_species)
-    FM.pushforwardcontinuous!(ax, pred, @varname(mu[ix]); x_grid = pred_body_mass[ix], color = c)
+    FM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid = pred_body_mass[ix], color = c)
 end
 
 fig
 ```
 
-```@example pushforwarddiscrete
-FM.pushforwarddiscrete(chain, @varname(beta3))
+```@example pushforward_discrete
+FM.pushforward_discrete(chain, @varname(beta3))
 ```
 
 ## [Customisation](@id makie-customisation)

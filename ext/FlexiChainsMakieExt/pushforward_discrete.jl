@@ -1,4 +1,4 @@
-function _pushforwarddiscrete_bands(data, quantiles, baseline, residual)
+function _pushforward_discrete_bands(data, quantiles, baseline, residual)
     isodd(length(quantiles)) || throw(ArgumentError("`quantiles` must have odd length"))
     n = length(data)
     if residual && baseline === nothing
@@ -22,7 +22,7 @@ function _pushforwarddiscrete_bands(data, quantiles, baseline, residual)
     return qs
 end
 
-function _plot_pushforwarddiscrete!(
+function _plot_pushforward_discrete!(
         ax::Makie.Axis,
         data;
         quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
@@ -32,7 +32,7 @@ function _plot_pushforwarddiscrete!(
         vertical::Bool = true,
         kwargs...,
     )
-    qs = _pushforwarddiscrete_bands(data, quantiles, baseline, residual)
+    qs = _pushforward_discrete_bands(data, quantiles, baseline, residual)
     nq = size(qs, 1)
     n = size(qs, 2)
     n_bands = div(nq, 2)
@@ -71,11 +71,11 @@ end
 
 
 """
-    FlexiChains.Makie.pushforwarddiscrete(chn, param_or_params; vertical=true, kwargs...)
+    FlexiChains.Makie.pushforward_discrete(chn, param_or_params; vertical=true, kwargs...)
 
 Plot each component of an array parameter as an independent quantile bar, with nested
-intervals shown as stacked bands. Unlike [`pushforwardcontinuous`](@ref
-FlexiChains.Makie.pushforwardcontinuous), components are not connected; each bar is separated from
+intervals shown as stacked bands. Unlike [`pushforward_continuous`](@ref
+FlexiChains.Makie.pushforward_continuous), components are not connected; each bar is separated from
 its neighbours , making this appropriate when the components have no natural ordering or
 functional relationship (e.g. group-level intercepts in a hierarchical model).
 
@@ -90,7 +90,7 @@ This function is a port of [Michael Betancourt's
 - `residual`: if `true`, subtract `baseline` before banding (requires `baseline`).
 - `figure`, `axis`: `NamedTuple`s forwarded to `Makie.Figure` / `Makie.Axis`.
 """
-function FC.Makie.pushforwarddiscrete(
+function FC.Makie.pushforward_discrete(
         chn::FC.FlexiChain,
         param;
         figure = (;),
@@ -99,11 +99,11 @@ function FC.Makie.pushforwarddiscrete(
     )
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
     ax = Makie.Axis(fig[1, 1]; axis...)
-    _, p = FC.Makie.pushforwarddiscrete!(ax, chn, param; kwargs...)
+    _, p = FC.Makie.pushforward_discrete!(ax, chn, param; kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
 end
 
-function FC.Makie.pushforwarddiscrete!(
+function FC.Makie.pushforward_discrete!(
         ax::Makie.Axis, chn::FC.FlexiChain, param;
         vertical::Bool = true,
         kwargs...,
@@ -126,9 +126,9 @@ function FC.Makie.pushforwarddiscrete!(
         ax.xlabel = "value"
         ax.ylabel = "parameter"
     end
-    return _plot_pushforwarddiscrete!(ax, data; vertical, kwargs...)
+    return _plot_pushforward_discrete!(ax, data; vertical, kwargs...)
 end
 
-function FC.Makie.pushforwarddiscrete!(chn::FC.FlexiChain, param; kwargs...)
-    return FC.Makie.pushforwarddiscrete!(Makie.current_axis(), chn, param; kwargs...)
+function FC.Makie.pushforward_discrete!(chn::FC.FlexiChain, param; kwargs...)
+    return FC.Makie.pushforward_discrete!(Makie.current_axis(), chn, param; kwargs...)
 end

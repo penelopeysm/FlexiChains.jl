@@ -1,6 +1,6 @@
 rep2(vals) = repeat(vals, inner = 2)
 
-function _plot_pushforwardhist!(
+function _plot_pushforward_hist!(
         ax::Makie.Axis,
         stacked_data;  # niters x nchains x nparams
         observed = nothing,
@@ -51,7 +51,7 @@ function _plot_pushforwardhist!(
 end
 
 """
-    FlexiChains.Makie.pushforwardhist(chn, param_or_params; observed=nothing, nbins=25, kwargs...)
+    FlexiChains.Makie.pushforward_hist(chn, param_or_params; observed=nothing, nbins=25, kwargs...)
 
 Posterior predictive check via histograms. For each posterior draw, the predictive values
 are binned into a histogram; the resulting per-bin count distributions are summarised as
@@ -67,7 +67,7 @@ This function is a port of [Michael Betancourt's
 - `quantiles`: odd-length vector of levels in 0–1. Defaults to `[0.1, 0.2, ..., 0.9]`.
 - `figure`, `axis`: `NamedTuple`s forwarded to `Makie.Figure` / `Makie.Axis`.
 """
-function FC.Makie.pushforwardhist(
+function FC.Makie.pushforward_hist(
         chn::FC.FlexiChain,
         param;
         figure = (;),
@@ -76,11 +76,11 @@ function FC.Makie.pushforwardhist(
     )
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
     ax = Makie.Axis(fig[1, 1]; xlabel = "value", ylabel = "counts", axis...)
-    _, p = FC.Makie.pushforwardhist!(ax, chn, param; kwargs...)
+    _, p = FC.Makie.pushforward_hist!(ax, chn, param; kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
 end
 
-function FC.Makie.pushforwardhist!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwargs...)
+function FC.Makie.pushforward_hist!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwargs...)
     sub = FC.PlotUtils.subset_and_split_chain(chn, param)
     ks = collect(keys(sub))
     isempty(ks) && throw(ArgumentError("no parameters to plot"))
@@ -90,9 +90,9 @@ function FC.Makie.pushforwardhist!(ax::Makie.Axis, chn::FC.FlexiChain, param; kw
         d
     end
     stacked_data = stack(data) # niters × nchains × nparams
-    return _plot_pushforwardhist!(ax, stacked_data; kwargs...)
+    return _plot_pushforward_hist!(ax, stacked_data; kwargs...)
 end
 
-function FC.Makie.pushforwardhist!(chn::FC.FlexiChain, param; kwargs...)
-    return FC.Makie.pushforwardhist!(Makie.current_axis(), chn, param; kwargs...)
+function FC.Makie.pushforward_hist!(chn::FC.FlexiChain, param; kwargs...)
+    return FC.Makie.pushforward_hist!(Makie.current_axis(), chn, param; kwargs...)
 end
