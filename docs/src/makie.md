@@ -229,6 +229,8 @@ FlexiChains.Makie.pushforwardhist
 
 ### Example
 
+A *pushforward* distribution is what you get by pushing posterior draws through a function `g(θ)` — each draw of the parameters `θ` yields one draw of `g`, so the spread of `g` inherits posterior uncertainty. These plots summarise that induced distribution as nested quantile bands: a fitted curve (continuous), per-group summaries (discrete), or predictive histograms (hist).
+
 ```@example pushforward
 standardize(x) = (x .- mean(x)) ./ std(x)
 
