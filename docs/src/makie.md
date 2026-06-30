@@ -221,37 +221,33 @@ Makie.save("ridgeline_makie.png", ans.figure); # hide
 ## Pushforward plots
 
 These plots are based on Michael Betancourt's [`mcmc_visualization_tools`](https://github.com/betanalpha/mcmc_visualization_tools).
-
-```@docs
-FlexiChains.Makie.pushforward_continuous
-FlexiChains.Makie.pushforward_continuous!
-FlexiChains.Makie.pushforward_discrete
-FlexiChains.Makie.pushforward_discrete!
-FlexiChains.Makie.pushforward_hist
-FlexiChains.Makie.pushforward_hist!
-```
+We include a worked example to motivate and demonstrate the use of these plots.
 
 ### Example
 
-A *pushforward* distribution is what you get by pushing posterior draws through a function of your choice `f(θ)` — each draw of the parameters `θ` yields one draw of `f`, so the spread of `f` inherits posterior uncertainty.
-The pushforward plots summarise that uncertainty as nested quantile bands: a fitted curve (continuous), per-group summaries (discrete), or predictive histograms (hist).
+A *pushforward* distribution is obtained by mapping a function over a distribution: specifically, if some random variable `θ` has distribution `p(θ)`, then the pushforward of `θ` through a function `f` is the distribution of `Y = f(θ)`.
 
-Below, `f` is the model's posterior predictive distribution for `pushforward_hist`, predicted bill length as function of body mass for `pushforward_continuous`, and the `beta3` interaction coefficients for `pushforward_discrete`.
+In Bayesian inference, we're often interested in taking posterior draws `θ ~ p(θ | D)` (as represented in a chain) and pushing this through some function `f` to obtain a new distribution.
+For example, `f` may be the function which generates posterior predictive draws, in which case the pushforward distribution is the posterior predictive distribution.
 
-In this example, we'll analyze whether heavier penguins have longer beaks, and whether such an effect might vary by species.
+Each parameter draw `θ` yields a different draw of `f`, so the spread of `f` inherits posterior uncertainty.
+The pushforward plots in this section visualise that uncertainty as nested quantile bands, displayed as either a fitted curve (`pushforward_continuous`), per-group summaries (`pushforward_discrete`), or predictive histograms (`pushforward_hist`).
+
+We'll concoct an example with the [Palmer penguins dataset](https://github.com/devmotion/PalmerPenguins.jl) to show how these plots can be used.
 
 ```@example pushforward
 using Turing, DataFrames, PalmerPenguins, CairoMakie
 import FlexiChains.Makie as FM
 using StatsBase: denserank
 
+# Load data and normalise continuous variables
 standardize(x) = (x .- mean(x)) ./ std(x)
-
 penguins = DataFrame(PalmerPenguins.load())
 dropmissing!(penguins)
 transform!(penguins, names(penguins, Real) .=> standardize => identity)
 transform!(penguins, :species => denserank => :species_idx)
 
+# Define a model for penguin bill length as a function of species and body mass
 @model function bill_model(species, body_mass)
     n_species = length(unique(species))
     beta1 ~ filldist(Normal(0, 1), n_species)
@@ -260,7 +256,8 @@ transform!(penguins, :species => denserank => :species_idx)
     sigma ~ Exponential(1)
     mu := @. beta1[species] + beta2 * body_mass + beta3[species] * body_mass
     bill_length_mm ~ MvNormal(mu, sigma)
-end;
+end
+nothing # hide
 ```
 
 We model a penguin's bill length as a function of its species (`beta1`), its body mass (`beta2`), and the interaction between them (`beta3`), i.e., we ask "does the effect of body mass vary by species?".
@@ -270,47 +267,65 @@ Next, we condition the model on the observed data and run MCMC.
 ```@example pushforward
 prior_model = bill_model(penguins.species_idx, penguins.body_mass_g) 
 cond_model = prior_model | (; bill_length_mm = penguins.bill_length_mm)
-chain = sample(cond_model, NUTS(0.8), MCMCThreads(), 1000, 4);
+chain = sample(cond_model, NUTS(0.8), MCMCThreads(), 1000, 4)
+nothing # hide
 ```
 
-A common starting point is to plot the posterior predictive distribution; it can help us (at least superficially) test if the model captured basic patterns in the input data.
-We can plot a summary histogram with uncertainty bands using `pushforward_hist`.
+A common starting point is to plot the posterior predictive distribution (see also [the Turing.jl docs](https://turinglang.org/docs/usage/predictive-distributions/) on this); it can help us (at least superficially) test if the model captured basic patterns in the input data.
+We can plot a summary histogram with uncertainty bands using [`pushforward_hist`](@ref FlexiChains.Makie.pushforward_hist).
+By specifying the `observed` keyword argument we can also overlay the observed data so that we can visually compare the two distributions.
 
 ```@example pushforward
-observed = penguins.bill_length_mm
+# Note that we pass the `prior_model` here, not the conditioned model, so that
+# we can sample new draws for the conditioned variables (i.e., bill length).
+# This is explained in the Turing docs linked above.
 ppd = predict(prior_model, chain)
-FM.pushforward_hist(ppd, @varname(bill_length_mm); observed)
+
+observed = penguins.bill_length_mm
+FM.pushforward_hist(ppd, @varname(bill_length_mm); observed=observed)
 ```
 
 We may also be interested in how predicted bill length changes with increasing body mass, and how this varies by species.
-For this, we can make use of `pushforward_continuous` by feeding it a grid of body mass values (z-standardized here).
+For this, we can make use of [`pushforward_continuous`](@ref FlexiChains.Makie.pushforward_continuous) by feeding it a grid of body mass values (z-standardized here).
 
 In the example below, we have set `sigma = 0` to drop the predictive uncertainty; we're interested only in the uncertainty of the means here.
 
 ```@example pushforward
+# Set up the grid of body mass values and species indices
 pred_body_mass = repeat(range(-3, 3, length = 50), outer = 3)
 pred_species = repeat(1:3, inner = 50)
 
-pred_model = bill_model(pred_species, pred_body_mass) | (; sigma = 0)
+# For each draw of the parameters in the chain, compute the predicted
+# bill length for each combination of species and body mass.
+pred_model = fix(bill_model(pred_species, pred_body_mass), (; sigma = 0))
 pred = predict(pred_model, chain)
 
+# Plot the predicted means with uncertainty bands, coloured by species.
 fig = Figure()
 ax = Axis(fig[1, 1]; xlabel = "body mass", ylabel = "bill length", limits = ((-3, 3), (-3, 3)))
-
 for (s, color) in zip(1:3, Makie.wong_colors())
     ix = findall(==(s), pred_species)
     x_grid = pred_body_mass[ix]
-    FM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid, color)
+    FM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid=x_grid, color=color)
 end
 
 fig
 ```
 
-Finally, if we want to examine the distributions of discrete parameters, such as the main or interaction effect of species, we can use `pushforward_discrete`.
+Finally, if we want to examine the distributions of discrete parameters, such as the main or interaction effect of species, we can use [`pushforward_discrete`](@ref FlexiChains.Makie.pushforward_discrete).
 Here, we'll look at the interaction effect to see if there's any evidence for the effect of body mass varying by species.
 
 ```@example pushforward
 FM.pushforward_discrete(chain, @varname(beta3))
+```
+
+```@docs
+FlexiChains.Makie.pushforward_continuous
+FlexiChains.Makie.pushforward_continuous!
+FlexiChains.Makie.pushforward_discrete
+FlexiChains.Makie.pushforward_discrete!
+FlexiChains.Makie.pushforward_hist
+FlexiChains.Makie.pushforward_hist!
 ```
 
 ## [Customisation](@id makie-customisation)
