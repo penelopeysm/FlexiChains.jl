@@ -58,7 +58,13 @@ ENV["GKSwstype"] = "100"
 
 makedocs(;
     sitename = "FlexiChains.jl",
-    format = Documenter.HTML(; assets = ["assets/custom.css"]),
+    format = Documenter.HTML(;
+        # Some pictures are larger than the default threshold of 8 KB
+        example_size_threshold = 12 * 2^10, # 12 KB
+        # And some pages are larger than the default threshold of 100 KB
+        size_threshold_warn = 200 * 2^10, # 200 KB
+        assets = ["assets/custom.css"],
+    ),
     modules = modules,
     pages = [
         "index.md",
@@ -78,7 +84,7 @@ makedocs(;
         "migration.md",
     ],
     checkdocs = :exports,
-    warnonly = true,
+    warnonly = false,
     doctest = false,
     plugins = [links],
 )

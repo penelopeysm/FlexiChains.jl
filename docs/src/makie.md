@@ -56,7 +56,7 @@ This is the same model as used on the Plots.jl documentation page.
 ```@example 1
 using FlexiChains, CairoMakie, Turing
 
-using FlexiChains.Makie # For the plotting functions.
+import FlexiChains.Makie as FM # For the plotting functions.
 
 @model function f()
     x ~ Normal()
@@ -89,10 +89,11 @@ Makie.save("plot_makie.png", ans.figure); # hide
 
 ```@docs
 FlexiChains.Makie.traceplot
+FlexiChains.Makie.traceplot!
 ```
 
 ```@example 1
-traceplot(chn)
+FM.traceplot(chn)
 Makie.save("traceplot_makie.png", ans.figure); # hide
 ```
 
@@ -133,7 +134,7 @@ FlexiChains.Makie.mixeddensity!
 ```
 
 ```@example 1
-mixeddensity(chn)
+FM.mixeddensity(chn)
 Makie.save("mixeddensity_makie.png", ans.figure); # hide
 ```
 
@@ -147,7 +148,7 @@ FlexiChains.Makie.meanplot!
 ```
 
 ```@example 1
-meanplot(chn)
+FM.meanplot(chn)
 Makie.save("meanplot_makie.png", ans.figure); # hide
 ```
 
@@ -161,7 +162,7 @@ FlexiChains.Makie.autocorplot!
 ```
 
 ```@example 1
-autocorplot(chn)
+FM.autocorplot(chn)
 Makie.save("autocorplot_makie.png", ans.figure); # hide
 ```
 
@@ -175,7 +176,7 @@ FlexiChains.Makie.rankplot!
 ```
 
 ```@example 1
-rankplot(chn)
+FM.rankplot(chn)
 Makie.save("rankplot_makie.png", ans.figure); # hide
 ```
 
@@ -193,7 +194,7 @@ FlexiChains.Makie.forestplot!
 ```
 
 ```@example 1
-forestplot(chn)
+FM.forestplot(chn)
 Makie.save("forestplot_makie.png", ans.figure); # hide
 ```
 
@@ -211,7 +212,7 @@ FlexiChains.Makie.ridgeline!
 ```
 
 ```@example 1
-ridgeline(chn)
+FM.ridgeline(chn)
 Makie.save("ridgeline_makie.png", ans.figure); # hide
 ```
 
@@ -223,8 +224,11 @@ These plots are based on Michael Betancourt's [`mcmc_visualization_tools`](https
 
 ```@docs
 FlexiChains.Makie.pushforward_continuous
+FlexiChains.Makie.pushforward_continuous!
 FlexiChains.Makie.pushforward_discrete
+FlexiChains.Makie.pushforward_discrete!
 FlexiChains.Makie.pushforward_hist
+FlexiChains.Makie.pushforward_hist!
 ```
 
 ### Example
@@ -238,7 +242,7 @@ In this example, we'll analyze whether heavier penguins have longer beaks, and w
 
 ```@example pushforward
 using Turing, DataFrames, PalmerPenguins, CairoMakie
-import FlexiChains.Makie as FCM
+import FlexiChains.Makie as FM
 using StatsBase: denserank
 
 standardize(x) = (x .- mean(x)) ./ std(x)
@@ -275,7 +279,7 @@ We can plot a summary histogram with uncertainty bands using `pushforward_hist`.
 ```@example pushforward
 observed = penguins.bill_length_mm
 ppd = predict(prior_model, chain)
-FCM.pushforward_hist(ppc, @varname(bill_length_mm); observed)
+FM.pushforward_hist(ppd, @varname(bill_length_mm); observed)
 ```
 
 We may also be interested in how predicted bill length changes with increasing body mass, and how this varies by species.
@@ -296,7 +300,7 @@ ax = Axis(fig[1, 1]; xlabel = "body mass", ylabel = "bill length", limits = ((-3
 for (s, color) in zip(1:3, Makie.wong_colors())
     ix = findall(==(s), pred_species)
     x_grid = pred_body_mass[ix]
-    FCM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid, color)
+    FM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid, color)
 end
 
 fig
@@ -306,7 +310,7 @@ Finally, if we want to examine the distributions of discrete parameters, such as
 Here, we'll look at the interaction effect to see if there's any evidence for the effect of body mass varying by species.
 
 ```@example pushforward
-FCM.pushforward_discrete(chain, @varname(beta3))
+FM.pushforward_discrete(chain, @varname(beta3))
 ```
 
 ## [Customisation](@id makie-customisation)
@@ -336,7 +340,7 @@ Makie.save("custom_layout_makie.png", ans.figure); # hide
 Pass a vector of colours (one per chain) via the `color` keyword, or a categorical colormap via `colormap`:
 
 ```@example 1
-traceplot(chn, [@varname(x), @varname(y)];
+FM.traceplot(chn, [@varname(x), @varname(y)];
     color=[(:red, 0.6), (:blue, 0.6), (:green, 0.6)],
     # or e.g. colormap=:tab10
 )
@@ -354,7 +358,7 @@ Makie.save("custom_colors_makie.png", ans.figure); # hide
 Use `legend_position` to move the legend (`:bottom`, `:right`, or `:none`):
 
 ```@example 1
-traceplot(chn; legend_position=:right)
+FM.traceplot(chn; legend_position=:right)
 Makie.save("custom_legend_makie.png", ans.figure); # hide
 ```
 
