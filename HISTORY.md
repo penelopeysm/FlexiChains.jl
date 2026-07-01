@@ -1,3 +1,7 @@
+# 0.6.21
+
+Improved the automatic legend generated for Plots.jl plots.
+
 # 0.6.20
 
 Added Makie implementations of pushforward plots, following the examples in [Michael Betancourt's visualisation tools](https://github.com/betanalpha/mcmc_visualization_tools/).
