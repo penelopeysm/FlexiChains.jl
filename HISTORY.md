@@ -1,3 +1,9 @@
+# 0.6.20
+
+Added Makie implementations of pushforward plots, following the examples in [Michael Betancourt's visualisation tools](https://github.com/betanalpha/mcmc_visualization_tools/).
+These allow you to visualise the way in which posterior uncertainty is propagated through a function.
+Full worked examples of these are given in [the docs](https://pysm.dev/FlexiChains.jl/stable/makie/#Pushforward-plots).
+
 # 0.6.19
 
 Improved the internal structure of `VNChain`s constructed from `Array`s, such that `rand(chn)` returns `DynamicPPL.ParamsWithStats` or `DynamicPPL.VarNamedTuple` (but unfortunately, only if DynamicPPL is loaded, since those types are defined there).

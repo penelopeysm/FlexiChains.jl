@@ -116,6 +116,11 @@ function setup_figure_and_layout(nrows_default::Int, ncols_default::Int, layout:
     return nrows, ncols, figure
 end
 
+_band_alpha(i, n_bands) = 0.2 + 0.7 * i / n_bands
+
+include("FlexiChainsMakieExt/pushforward_continuous.jl")
+include("FlexiChainsMakieExt/pushforward_discrete.jl")
+include("FlexiChainsMakieExt/pushforward_hist.jl")
 include("FlexiChainsMakieExt/density.jl")
 include("FlexiChainsMakieExt/hist.jl")
 include("FlexiChainsMakieExt/mixeddensity.jl")

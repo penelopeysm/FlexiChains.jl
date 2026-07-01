@@ -94,8 +94,39 @@ function make_test_chain(rng)
     ]
     return FlexiChain{Symbol}(N_iters, N_chains, dicts)
 end
-rng = StableRNG(42)
-chn = make_test_chain(rng)
+chn = make_test_chain(StableRNG(42))
+
+# --- Betancourt demo chains: analytic, structured, deterministic ---
+
+# conn: f_grid[n] ~ N(alpha + beta * x[n], s) over an x-grid -> real linear trend
+const CONN_XGRID = collect(range(-3.0, 3.0; length = 12))
+function make_conn_chain(rng)
+    N_iters, N_chains, N_params = 150, 2, length(CONN_XGRID)
+    alpha_true, beta_true, s = 1.0, 2.0, 0.8
+    arr = (alpha_true .+ beta_true .* reshape(CONN_XGRID, 1, 1, :)) .+ s .* randn(rng, N_iters, N_chains, N_params)
+    return FlexiChain{Symbol}(arr, :f_grid)
+end
+const CONN_BASELINE = [1.0 + 2.0 * x for x in CONN_XGRID]   # true line for overlay/residual
+conn_chn = make_conn_chain(StableRNG(101))
+
+# disc: beta[1..5] with distinct, spread means
+const DISC_MEANS = [-2.0, -0.5, 0.0, 1.5, 3.0]
+function make_disc_chain(rng)
+    N_iters, N_chains, N_params = 150, 2, length(DISC_MEANS)
+    arr = reshape(DISC_MEANS, 1, 1, :) .+ 0.5 .* randn(rng, N_iters, N_chains, N_params)
+    return FlexiChain{Symbol}(arr, :beta)
+end
+const DISC_BASELINE = copy(DISC_MEANS)
+disc_chn = make_disc_chain(StableRNG(202))
+
+# hist: predictive array y_pred[1..40], skewed shape; plus observed data
+function make_hist_chain(rng)
+    N_iters, N_chains, N_params = 150, 2, 40
+    arr = exp.(0.5 .* randn(rng, N_iters, N_chains, N_params))
+    return FlexiChain{Symbol}(arr, :y_pred)
+end
+const HIST_OBSERVED = exp.(0.5 .* randn(StableRNG(7), 40))  # observed data for overlay
+hist_chn = make_hist_chain(StableRNG(303))
 
 const REFTEST_SPECS = [
     # MakieExt
@@ -131,6 +162,36 @@ const REFTEST_SPECS = [
     # PairPlotsExt
     RefTestSpec(MakieBE(), "pairplot", () -> PairPlots.pairplot(chn; pool_chains = false)),
     RefTestSpec(MakieBE(), "pairplot_pooled", () -> PairPlots.pairplot(chn; pool_chains = true)),
+
+    # Betancourt quantile plots
+    RefTestSpec(
+        MakieBE(), "pushforward_continuous",
+        () -> FC.Makie.pushforward_continuous(conn_chn, :f_grid; x_grid = CONN_XGRID, baseline = CONN_BASELINE)
+    ),
+    RefTestSpec(
+        MakieBE(), "pushforward_continuous_residual",
+        () -> FC.Makie.pushforward_continuous(conn_chn, :f_grid; x_grid = CONN_XGRID, baseline = CONN_BASELINE, residual = true)
+    ),
+    RefTestSpec(
+        MakieBE(), "pushforward_discrete",
+        () -> FC.Makie.pushforward_discrete(disc_chn, :beta; baseline = DISC_BASELINE)
+    ),
+    RefTestSpec(
+        MakieBE(), "pushforward_discrete_horizontal",
+        () -> FC.Makie.pushforward_discrete(disc_chn, :beta; baseline = DISC_BASELINE, vertical = false)
+    ),
+    RefTestSpec(
+        MakieBE(), "pushforward_discrete_residual",
+        () -> FC.Makie.pushforward_discrete(disc_chn, :beta; baseline = DISC_BASELINE, residual = true)
+    ),
+    RefTestSpec(
+        MakieBE(), "pushforward_hist",
+        () -> FC.Makie.pushforward_hist(hist_chn, :y_pred; nbins = 20)
+    ),
+    RefTestSpec(
+        MakieBE(), "pushforward_hist_observed",
+        () -> FC.Makie.pushforward_hist(hist_chn, :y_pred; nbins = 20, observed = HIST_OBSERVED)
+    ),
 ]
 
 @testset verbose = true "Reference tests" begin

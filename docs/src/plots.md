@@ -67,7 +67,7 @@ We'll make a model with different types of parameters (continuous, discrete, and
 ```@example plotsjl
 using FlexiChains, StatsPlots, Turing
 
-using FlexiChains.Plots # For the plotting functions.
+import FlexiChains.Plots as FP # For the plotting functions.
 
 @model function f()
     x ~ Normal()
@@ -119,7 +119,7 @@ FlexiChains.Plots.traceplot!
 ```
 
 ```@example plotsjl
-traceplot(chn)
+FP.traceplot(chn)
 savefig("traceplot.svg"); nothing # hide
 ```
 
@@ -163,7 +163,7 @@ FlexiChains.Plots.meanplot!
 ```
 
 ```@example plotsjl
-meanplot(chn)
+FP.meanplot(chn)
 savefig("meanplot.svg"); nothing # hide
 ```
 
@@ -177,7 +177,7 @@ FlexiChains.Plots.rankplot!
 ```
 
 ```@example plotsjl
-rankplot(chn)
+FP.rankplot(chn)
 savefig("rankplot.svg"); nothing # hide
 ```
 
@@ -191,7 +191,7 @@ FlexiChains.Plots.autocorplot!
 ```
 
 ```@example plotsjl
-autocorplot(chn)
+FP.autocorplot(chn)
 savefig("autocorplot.svg"); nothing # hide
 ```
 
@@ -205,7 +205,7 @@ FlexiChains.Plots.mixeddensity!
 ```
 
 ```@example plotsjl
-mixeddensity(chn)
+FP.mixeddensity(chn)
 savefig("mixeddensity.svg"); nothing # hide
 ```
 
