@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Converting to/from arrays · FlexiChains.jl</title><meta name="title" content="Converting to/from arrays · FlexiChains.jl"/><meta property="og:title" content="Converting to/from arrays · FlexiChains.jl"/><meta property="twitter:title" content="Converting to/from arrays · FlexiChains.jl"/><meta name="description" content="Documentation for FlexiChains.jl."/><meta property="og:description" content="Documentation for FlexiChains.jl."/><meta property="twitter:description" content="Documentation for FlexiChains.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/custom.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">FlexiChains.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">FlexiChains.jl</a></li><li><a class="tocitem" href="../turing/">Usage with Turing.jl</a></li><li><a class="tocitem" href="../summarising/">Summarising</a></li><li><a class="tocitem" href="../indexing/">Indexing</a></li><li><a class="tocitem" href="../samples/">Accessing samples</a></li><li class="is-active"><a class="tocitem" href>Converting to/from arrays</a><ul class="internal"><li><a class="tocitem" href="#api-fromarray"><span>Converting from arrays</span></a></li><li><a class="tocitem" href="#api-flatten"><span>Converting to arrays</span></a></li><li><a class="tocitem" href="#Summaries"><span>Summaries</span></a></li><li><a class="tocitem" href="#Docstrings"><span>Docstrings</span></a></li></ul></li><li><a class="tocitem" href="../plotting/">Plotting overview</a></li><li><a class="tocitem" href="../plots/">Plotting: Plots.jl</a></li><li><a class="tocitem" href="../makie/">Plotting: Makie.jl</a></li><li><a class="tocitem" href="../integrations/">Integrations with other packages</a></li><li><a class="tocitem" href="../api/">Public API</a></li><li><a class="tocitem" href="../contributing/">Contributing</a></li><li><a class="tocitem" href="../why/">Why FlexiChains?</a></li><li><a class="tocitem" href="../whynot/">Why not FlexiChains?</a></li><li><a class="tocitem" href="../migration/">Migrating from MCMCChains</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Converting to/from arrays</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Converting to/from arrays</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/penelopeysm/FlexiChains.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/penelopeysm/FlexiChains.jl/blob/main/docs/src/arrays.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="arrays"><a class="docs-heading-anchor" href="#arrays">Converting to/from arrays</a><a id="arrays-1"></a><a class="docs-heading-anchor-permalink" href="#arrays" title="Permalink"></a></h1><p>Many MCMC libraries return samples in the form of 3D arrays. FlexiChains therefore provides methods to convert from and to 3D arrays, to maximise interoperability with other libraries.</p><p>FlexiChains&#39; representation of MCMC samples is richer than a plain array: it includes parameter/extra names, extra information about the structure of each parameter, metadata, and so on. This means that when converting <em>from</em> an array, you need to provide some additional information. Likewise, when converting <em>to</em> an array, some information will inevitably be lost. However, the conversion methods are designed to bridge this gap as far as possible.</p><p>FlexiChains works with arrays that have dimensions <strong><code>iters x chains x parameters</code></strong>.</p><h2 id="api-fromarray"><a class="docs-heading-anchor" href="#api-fromarray">Converting from arrays</a><a id="api-fromarray-1"></a><a class="docs-heading-anchor-permalink" href="#api-fromarray" title="Permalink"></a></h2><p>You can use a <code>FlexiChain</code> constructor to convert a 3D array to a <code>FlexiChain</code>. It is easiest to explain by example (the docstring, which has all the necessary detail, is at the bottom of this page). Here is a simple example where each column in the array corresponds to a scalar parameter:</p><pre><code class="language-julia hljs">using FlexiChains: FlexiChain, Parameter, Extra
+
+arr = rand(10, 4, 3)   # 10 iterations, 4 chains, 3 parameters
+names = (Parameter(:x), Parameter(:y), Extra(:lp))  # note: must be tuple
+
+FlexiChain{Symbol}(arr, names)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr90">╭─</span><span class="sgr1">FlexiChain (10 iterations, 4 chains)</span><span class="sgr90"> ────────────────────────────────────────╮</span>
+<span class="sgr90">│</span> <span class="sgr38_5" style="color:#ff875f">↓ iter  = 1:10</span>                                                               <span class="sgr90">│</span>
+<span class="sgr90">│</span> <span class="sgr38_5" style="color:#0087d7">→ chain = 1:4</span>                                                                <span class="sgr90">│</span>
+<span class="sgr90">│</span>                                                                              <span class="sgr90">│</span>
+<span class="sgr90">│</span> <span class="sgr1">Parameters (2)</span><span class="sgr90"> ── Symbol</span>                                                     <span class="sgr90">│</span>
+<span class="sgr90">│</span>  <span class="sgr32">Float64</span>  x, y                                                               <span class="sgr90">│</span>
+<span class="sgr90">│</span>                                                                              <span class="sgr90">│</span>
+<span class="sgr90">│</span> <span class="sgr1">Extras (1)</span>                                                                   <span class="sgr90">│</span>
+<span class="sgr90">│</span>  <span class="sgr32">Float64</span>  lp                                                                 <span class="sgr90">│</span>
+<span class="sgr90">╰──────────────────────────────────────────────────────────────────────────────╯</span></code></pre><p>For convenience, this constructor also allows you to specify parameters that are array-valued, by specifying their sizes. In this example, the last four columns of <code>arr</code> will be interpreted as a single parameter <code>z</code> that is a 2x2 matrix:</p><pre><code class="language-julia hljs">arr = rand(10, 4, 6)   # 10 iterations, 4 chains, 6 (scalar) parameters
+
+names = (
+    Parameter(:x),            # Scalar
+    Parameter(:y),            # Scalar
+    Parameter(:z) =&gt; (2, 2)   # Matrix
+)
+
+chn = FlexiChain{Symbol}(arr, names)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr90">╭─</span><span class="sgr1">FlexiChain (10 iterations, 4 chains)</span><span class="sgr90"> ────────────────────────────────────────╮</span>
+<span class="sgr90">│</span> <span class="sgr38_5" style="color:#ff875f">↓ iter  = 1:10</span>                                                               <span class="sgr90">│</span>
+<span class="sgr90">│</span> <span class="sgr38_5" style="color:#0087d7">→ chain = 1:4</span>                                                                <span class="sgr90">│</span>
+<span class="sgr90">│</span>                                                                              <span class="sgr90">│</span>
+<span class="sgr90">│</span> <span class="sgr1">Parameters (3)</span><span class="sgr90"> ── Symbol</span>                                                     <span class="sgr90">│</span>
+<span class="sgr90">│</span>  <span class="sgr32">Float64        </span>  x, y                                                       <span class="sgr90">│</span>
+<span class="sgr90">│</span>  <span class="sgr32">Matrix{Float64}</span>  z                                                          <span class="sgr90">│</span>
+<span class="sgr90">│</span>                                                                              <span class="sgr90">│</span>
+<span class="sgr90">│</span> <span class="sgr1">Extras (0)</span>                                                                   <span class="sgr90">│</span>
+<span class="sgr90">│</span> <span class="sgr90"> (none)</span>                                                                      <span class="sgr90">│</span>
+<span class="sgr90">╰──────────────────────────────────────────────────────────────────────────────╯</span></code></pre><p>You can see the reshaped parameter <code>z</code> here</p><pre><code class="language-julia hljs">chn[:z, iter=1, chain=1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2×2 Matrix{Float64}:
+ 0.366685  0.513472
+ 0.943798  0.736656</code></pre><p>is derived from</p><pre><code class="language-julia hljs">arr[1, 1, 3:6]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4-element Vector{Float64}:
+ 0.366685313555864
+ 0.9437976178654645
+ 0.5134715651069042
+ 0.7366558931698535</code></pre><h2 id="api-flatten"><a class="docs-heading-anchor" href="#api-flatten">Converting to arrays</a><a id="api-flatten-1"></a><a class="docs-heading-anchor-permalink" href="#api-flatten" title="Permalink"></a></h2><p>When flattening a <code>FlexiChain</code> to an array, the structure of each parameter is lost: array-valued parameters, for example, are flattened to consecutive columns.</p><p>To retain parameter names, you can convert to a <code>DimArray</code>, which will have a <code>:param</code> dimension that stores the names:</p><pre><code class="language-julia hljs">using FlexiChains: DimArray
+
+# Create a chain from an array, much like above.
+arr = randn(10, 4, 6)   # 10 iterations, 4 chains, 6 parameters
+chn = FlexiChain{Symbol}(arr, (
+    Parameter(:x),            # Scalar
+    Parameter(:y),            # Scalar
+    Parameter(:z) =&gt; (2, 2)   # Matrix
+))
+
+# Convert it back to an array.
+da = DimArray(chn)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr90">┌ </span><span class="sgr38_5" style="color:#ff875f">10</span>×<span class="sgr38_5" style="color:#0087d7">4</span>×<span class="sgr38_5" style="color:#5fd7ff">6</span> DimArray{Float64, 3}<span class="sgr90"> ┐</span>
+<span class="sgr90">├─────────────────────────────┴─────────────────────────────── dims ┐</span>
+  <span class="sgr38_5" style="color:#ff875f">↓ iter</span> Sampled{Int64} <span class="sgr38_5" style="color:#ff875f">1:10</span> <span class="sgr38_5" style="color:#808080">ForwardOrdered</span> <span class="sgr38_5" style="color:#808080">Regular</span> <span class="sgr38_5" style="color:#808080">Points</span>,
+  <span class="sgr38_5" style="color:#0087d7">→ chain</span> Sampled{Int64} <span class="sgr38_5" style="color:#0087d7">1:4</span> <span class="sgr38_5" style="color:#808080">ForwardOrdered</span> <span class="sgr38_5" style="color:#808080">Regular</span> <span class="sgr38_5" style="color:#808080">Points</span>,
+  <span class="sgr38_5" style="color:#5fd7ff">↗ param</span> Categorical{Symbol} <span class="sgr38_5" style="color:#5fd7ff">[:x, …, Symbol(&quot;z[2, 2]&quot;)]</span> <span class="sgr38_5" style="color:#808080">Unordered</span>
+<span class="sgr90">└───────────────────────────────────────────────────────────────────┘</span>
+[<span class="sgr38_5" style="color:#ff875f">:</span>, <span class="sgr38_5" style="color:#0087d7">:</span>, <span class="sgr38_5" style="color:#5fd7ff">1</span>]
+  <span class="sgr38_5" style="color:#ff875f">↓</span> <span class="sgr38_5" style="color:#0087d7">→</span>   <span class="sgr38_5" style="color:#0087d7">1</span>           <span class="sgr38_5" style="color:#0087d7">2</span>           <span class="sgr38_5" style="color:#0087d7">3</span>            <span class="sgr38_5" style="color:#0087d7">4</span>
+  <span class="sgr38_5" style="color:#ff875f">1</span>    -0.0495876  -0.908281   -0.644123     2.72793
+  <span class="sgr38_5" style="color:#ff875f">2</span>    -0.82553     0.960107    1.40142      1.36638
+  <span class="sgr38_5" style="color:#ff875f">3</span>     0.0595851  -0.499062   -0.908304     0.390244
+  ⋮                                         
+  <span class="sgr38_5" style="color:#ff875f">7</span>    -0.0278819  -1.55952    -0.277092     1.11805
+  <span class="sgr38_5" style="color:#ff875f">8</span>    -0.681772    0.0427349   0.00658991  -0.634649
+  <span class="sgr38_5" style="color:#ff875f">9</span>     0.520828   -1.74258     0.808981     0.530587
+ <span class="sgr38_5" style="color:#ff875f">10</span>     1.45799    -0.597609    0.0243545    0.172232</code></pre><p>This should recover the data in the original array:</p><pre><code class="language-julia hljs">da == arr</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>If the parameter names are not needed, you can convert to a plain <code>Array</code> as well.</p><pre><code class="language-julia hljs">Array(chn)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10×4×6 Array{Float64, 3}:
+[:, :, 1] =
+ -0.0495876  -0.908281   -0.644123     2.72793
+ -0.82553     0.960107    1.40142      1.36638
+  0.0595851  -0.499062   -0.908304     0.390244
+ -1.84812     0.209606    0.0504958   -0.612876
+ -0.886989   -0.196657   -0.167364     1.46979
+ -0.49586    -0.238306   -0.556608     1.11712
+ -0.0278819  -1.55952    -0.277092     1.11805
+ -0.681772    0.0427349   0.00658991  -0.634649
+  0.520828   -1.74258     0.808981     0.530587
+  1.45799    -0.597609    0.0243545    0.172232
+
+[:, :, 2] =
+ -1.23052   -1.03386    -0.227081   -0.161573
+ -0.402552  -0.966879    0.0595814  -0.955724
+ -2.07794   -0.704531    1.09334    -0.34483
+  1.51136    2.15497     0.41255     1.8149
+  0.444676  -1.07446     0.858583    0.478336
+ -0.298092  -0.124098   -2.3007      0.828869
+ -1.41548   -0.898874   -1.2325      0.869409
+ -1.04541   -0.0246756   0.643427    2.1215
+  0.299524  -0.249575    0.0187507   0.209174
+  0.57888   -0.449442   -0.828306    0.870592
+
+[:, :, 3] =
+ -0.631709   0.396633   -0.520579  -0.202236
+ -1.60824   -0.393686    0.90146   -2.45651
+ -1.16776    0.456927   -1.55088    0.458002
+ -0.311278   0.301969   -0.125181   0.0640164
+ -0.381491  -1.13645    -0.57131   -0.967203
+ -0.477847   0.936862    0.646264  -0.117896
+ -0.433241   0.600311   -1.98002   -0.383895
+  0.718073  -1.59649     0.519363   1.78639
+ -1.18439   -0.0853943   0.538354  -0.315449
+  0.548979  -1.36351     0.693614  -1.146
+
+[:, :, 4] =
+ -0.549209  -1.84009    -0.948781  -0.194371
+  1.17514    1.78247     1.22031    0.7965
+ -0.748729   0.119499    1.56442   -1.61612
+ -0.228937  -0.287887    0.468274   0.352685
+ -1.01702   -1.72158    -0.455287   0.504048
+  0.366295  -0.859865    0.37923    0.0428357
+ -0.320014   0.512151    0.780986   0.00831346
+  0.935614   0.0646292  -0.545516  -0.206283
+  0.727409   0.0201582  -0.990323  -0.00877413
+ -1.36752    0.428629    0.874948   0.448272
+
+[:, :, 5] =
+ -1.20701    -1.53825     1.74839   -1.71633
+ -0.914404    0.0343852   1.25502    1.31021
+ -0.100467    0.388381   -0.588826   0.936089
+  0.824086    1.80401    -0.358851   0.64436
+ -0.244129   -1.36548     0.605353  -0.656555
+  0.258735   -0.455843   -0.192461   0.433115
+  0.0548998   0.535666    0.16451    0.0109399
+ -0.482728    0.797407    1.67609   -0.398544
+  0.0793846   0.593857    1.73394   -0.126068
+  1.26424    -0.23415     1.32611   -1.20593
+
+[:, :, 6] =
+ -0.979696   0.261665   0.0177021  -1.13858
+ -0.828103   1.14921    0.756507    0.735828
+ -0.381891   2.05477   -1.43502     0.132107
+ -1.58896    0.495141  -0.031013    0.944623
+  0.508401  -0.40807    1.53555    -0.185982
+  1.59557   -0.575171  -0.180006    1.11355
+ -0.670843  -0.032523   1.88776     0.70679
+ -1.2725    -1.2372    -1.76085     0.148972
+ -0.714583   1.35011    1.57893    -0.234448
+  1.14502    1.08448    1.46046     0.898478</code></pre><h2 id="Summaries"><a class="docs-heading-anchor" href="#Summaries">Summaries</a><a id="Summaries-1"></a><a class="docs-heading-anchor-permalink" href="#Summaries" title="Permalink"></a></h2><p><code>FlexiSummary</code> objects can also be converted <em>to</em> arrays: depending on how many of their dimensions were collapsed, the resulting array will have different dimensions. However, there is presently no way to convert an array into a <code>FlexiSummary</code>.</p><pre><code class="language-julia hljs">using FlexiChains: summarystats
+
+fs = summarystats(chn)
+da = DimArray(fs)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr90">┌ </span><span class="sgr38_5" style="color:#ff875f">9</span>×<span class="sgr38_5" style="color:#0087d7">6</span> DimArray{Float64, 2}<span class="sgr90"> ┐</span>
+<span class="sgr90">├──────────────────────────┴────────────────────────────────── dims ┐</span>
+  <span class="sgr38_5" style="color:#ff875f">↓ stat</span> Categorical{Symbol} <span class="sgr38_5" style="color:#ff875f">[:mean, …, :q95]</span> <span class="sgr38_5" style="color:#808080">Unordered</span>,
+  <span class="sgr38_5" style="color:#0087d7">→ param</span> Categorical{Symbol} <span class="sgr38_5" style="color:#0087d7">[:x, …, Symbol(&quot;z[2, 2]&quot;)]</span> <span class="sgr38_5" style="color:#808080">Unordered</span>
+<span class="sgr90">└───────────────────────────────────────────────────────────────────┘</span>
+ <span class="sgr38_5" style="color:#ff875f">↓</span> <span class="sgr38_5" style="color:#0087d7">→</span>           <span class="sgr38_5" style="color:#0087d7">:x</span>           <span class="sgr38_5" style="color:#0087d7">:y</span>        …    <span class="sgr38_5" style="color:#0087d7">Symbol(&quot;z[2, 2]&quot;)</span>
+  <span class="sgr38_5" style="color:#ff875f">:mean</span>       0.00190607  -0.0694671      0.197655
+  <span class="sgr38_5" style="color:#ff875f">:std</span>        0.953345     1.04608        1.0384
+  <span class="sgr38_5" style="color:#ff875f">:mcse</span>       0.37901      0.184905       0.145296
+  <span class="sgr38_5" style="color:#ff875f">:ess_bulk</span>   6.89865     31.1375        55.3072
+  <span class="sgr38_5" style="color:#ff875f">:ess_tail</span>  44.6796      51.0067     …  51.0067
+  <span class="sgr38_5" style="color:#ff875f">:rhat</span>       1.11984      1.05285        0.992448
+  <span class="sgr38_5" style="color:#ff875f">:q5</span>        -1.56867     -1.4486        -1.44271
+  <span class="sgr38_5" style="color:#ff875f">:q50</span>       -0.0387348   -0.142835       0.140539
+  <span class="sgr38_5" style="color:#ff875f">:q95</span>        1.45858      1.83023        1.61018</code></pre><h2 id="Docstrings"><a class="docs-heading-anchor" href="#Docstrings">Docstrings</a><a id="Docstrings-1"></a><a class="docs-heading-anchor-permalink" href="#Docstrings" title="Permalink"></a></h2><article><details class="docstring" open="true"><summary id="FlexiChains.FlexiChain-Union{Tuple{T}, Tuple{AbstractArray{T, 3}, Any}} where T"><a class="docstring-binding" href="#FlexiChains.FlexiChain-Union{Tuple{T}, Tuple{AbstractArray{T, 3}, Any}} where T"><code>FlexiChains.FlexiChain</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">FlexiChain{TKey}(
+    arr::AbstractArray{T,3},
+    key_spec::Union{TKey,Tuple};
+    iter_indices = 1:size(arr, 1),
+    chain_indices = 1:size(arr, 2),
+    sampling_time = fill(missing, size(arr, 2)),
+    last_sampler_state = fill(missing, size(arr, 2)),
+) where {T}</code></pre><p>Construct a <code>FlexiChain</code> from a 3D array with dimensions <code>(iters, chains, params)</code>.</p><p><strong>Key specification</strong></p><p>The <code>key_spec</code> argument can be a single <code>parameter::TKey</code>, in which case the resulting <code>FlexiChain</code> will have a single vector-valued parameter with that name.</p><p>Alternatively, you can pass a tuple which specifies how columns in the third dimension are mapped to <code>Parameter</code> or <code>Extra</code> keys. Columns are consumed left-to-right. Each element of <code>key_spec</code> must either be:</p><ul><li><code>key::ParameterOrExtra{&lt;:TKey}</code>: consumes one column and stores it as a scalar value with the given <code>key</code>; or</li><li><code>key::ParameterOrExtra =&gt; (dims...)</code>: consumes <code>prod(dims)</code> columns, reshapes each sample to <code>dims</code>, and stores it with the given <code>key</code>.</li></ul><p>The total number of columns consumed must equal <code>size(arr, 3)</code>.</p><p><strong>Metadata</strong></p><p><code>iter_indices</code> and <code>chain_indices</code> can be used to specify the iteration and chain indices, respectively. By default, these are <code>1:niters</code> and <code>1:nchains</code>, but can be any vector of integers of the appropriate length. <code>sampling_time</code> and <code>last_sampler_state</code> are used to store metadata about each chain. They should be given as vectors of length <code>nchains</code> (even if there is only one chain).</p><p><strong>Example usage</strong></p><pre><code class="language-julia hljs">using FlexiChains: FlexiChain, Parameter, Extra
+
+arr = randn(100, 4, 6) # iters x chains x params
+
+# `x` and `lp` are scalars; but `z` is a 2x2 matrix, so it consumes 4 columns.
+chn = FlexiChain{Symbol}(arr, (Parameter(:x), Parameter(:z) =&gt; (2,2), Extra(:lp)))</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/penelopeysm/FlexiChains.jl/blob/7de9c05fe918028aba10f6b1d222e1b007711949/src/chain.jl#L433-L475">source</a></section></details></article><article><details class="docstring" open="true"><summary id="DimensionalData.DimArray-Tuple{FlexiChains.FlexiChain}"><a class="docstring-binding" href="#DimensionalData.DimArray-Tuple{FlexiChains.FlexiChain}"><code>DimensionalData.DimArray</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">DimensionalData.DimArray(
+    chain::FlexiChain{TKey};
+    warn::Bool=true,
+    eltype_filter=Any,
+    parameters_only::Bool=true,
+) where {TKey}</code></pre><p>Convert a FlexiChain into a 3-dimensional <code>DimArray</code> with dimensions <code>(:iter, :chain, :param)</code>.</p><p>This proceeds by first splitting array-valued parameters into scalar leaves, then extracting all scalar parameters whose element type subtypes <code>eltype_filter</code> and stacking them into a 3D array.</p><p>Keys whose values do not subtype <code>eltype_filter</code> after splitting are skipped (with a warning if <code>warn=true</code>).</p><p>If <code>parameters_only=true</code> (the default), then two things happen:</p><ul><li><p>Only parameters (not extras) are included in the <code>DimArray</code>. Otherwise, both parameters and extras are included.</p></li><li><p>The keys in the <code>:param</code> dimension of the resulting <code>DimArray</code> are just <code>TKey</code>, i.e., the <code>Parameter</code> wrapper is removed. Otherwise, the keys will be <code>Union{Parameter{&lt;:TKey},Extra}</code>.</p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/penelopeysm/FlexiChains.jl/blob/7de9c05fe918028aba10f6b1d222e1b007711949/src/flatten.jl#L79-L105">source</a></section><section><div><pre><code class="language-julia hljs">DimensionalData.DimArray(
+    summary::FlexiSummary{TKey};
+    warn::Bool=true,
+    eltype_filter=Any,
+    parameters_only::Bool=true,
+) where {TKey}</code></pre><p>Convert a <code>FlexiSummary</code> into a <code>DimArray</code> with a <code>:param</code> dimension appended after the non-collapsed dimensions of the summary. For example:</p><table><tr><th style="text-align: left">Summary produced via</th><th style="text-align: left">Dimensions of resulting <code>DimArray</code></th></tr><tr><td style="text-align: left"><code>mean(chn)</code></td><td style="text-align: left"><code>(:param)</code></td></tr><tr><td style="text-align: left"><code>mean(chn; dims=:iter)</code></td><td style="text-align: left"><code>(:chain, :param)</code></td></tr><tr><td style="text-align: left"><code>mean(chn; dims=:chain)</code></td><td style="text-align: left"><code>(:iter, :param)</code></td></tr><tr><td style="text-align: left"><code>summarystats(chn)</code></td><td style="text-align: left"><code>(:stat, :param)</code></td></tr><tr><td style="text-align: left"><code>collapse(chn, [mean, std]; dims=:iter)</code></td><td style="text-align: left"><code>(:chain, :stat, :param)</code></td></tr></table><p><strong>Keyword arguments</strong></p><ul><li><p><code>eltype_filter::Any</code>: retain only parameters whose values subtype <code>eltype_filter</code>. For example, if <code>eltype_filter=Float64</code>, then integer-valued parameters are dropped.</p></li><li><p><code>parameters_only::Bool=true</code>: whether to include only parameters (not extras) in the resulting <code>DimArray</code>.</p></li><li><p><code>warn::Bool=true</code>: whether to issue a warning if any keys are skipped due to their values not subtyping <code>eltype_filter</code>.</p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/penelopeysm/FlexiChains.jl/blob/7de9c05fe918028aba10f6b1d222e1b007711949/src/flatten.jl#L183-L212">source</a></section></details></article><article><details class="docstring" open="true"><summary id="Core.Array-Tuple{FlexiChains.FlexiChain}"><a class="docstring-binding" href="#Core.Array-Tuple{FlexiChains.FlexiChain}"><code>Core.Array</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">Base.Array(
+    chain::FlexiChain;
+    kwargs...
+)</code></pre><p>Convert a <code>FlexiChain</code> into a standard <code>Array</code> with dimensions <code>(iter, chain, param)</code>. This is the same as the conversion to <a href="#DimensionalData.DimArray-Tuple{FlexiChains.FlexiChain}"><code>DimensionalData.DimArray</code></a>, except that the dimension metadata is discarded.</p><p>See <a href="#DimensionalData.DimArray-Tuple{FlexiChains.FlexiChain}"><code>DimensionalData.DimArray(::FlexiChains.FlexiChain)</code></a> for more details on the conversion process and available keyword arguments.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/penelopeysm/FlexiChains.jl/blob/7de9c05fe918028aba10f6b1d222e1b007711949/src/flatten.jl#L160-L172">source</a></section><section><div><pre><code class="language-julia hljs">Base.Array(
+    summary::FlexiSummary;
+    kwargs...
+)</code></pre><p>Convert a <code>FlexiSummary</code> into a standard <code>Array</code>. This is the same as the conversion to <a href="#DimensionalData.DimArray-Tuple{FlexiChains.FlexiChain}"><code>DimensionalData.DimArray</code></a>, except that the dimension metadata is discarded.</p><p>See <a href="#DimensionalData.DimArray-Tuple{FlexiChains.FlexiSummary}"><code>DimensionalData.DimArray(::FlexiChains.FlexiSummary)</code></a> for details.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/penelopeysm/FlexiChains.jl/blob/7de9c05fe918028aba10f6b1d222e1b007711949/src/flatten.jl#L266-L276">source</a></section></details></article><article><details class="docstring" open="true"><summary id="DimensionalData.DimArray-Tuple{FlexiChains.FlexiSummary}"><a class="docstring-binding" href="#DimensionalData.DimArray-Tuple{FlexiChains.FlexiSummary}"><code>DimensionalData.DimArray</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">DimensionalData.DimArray(
+    chain::FlexiChain{TKey};
+    warn::Bool=true,
+    eltype_filter=Any,
+    parameters_only::Bool=true,
+) where {TKey}</code></pre><p>Convert a FlexiChain into a 3-dimensional <code>DimArray</code> with dimensions <code>(:iter, :chain, :param)</code>.</p><p>This proceeds by first splitting array-valued parameters into scalar leaves, then extracting all scalar parameters whose element type subtypes <code>eltype_filter</code> and stacking them into a 3D array.</p><p>Keys whose values do not subtype <code>eltype_filter</code> after splitting are skipped (with a warning if <code>warn=true</code>).</p><p>If <code>parameters_only=true</code> (the default), then two things happen:</p><ul><li><p>Only parameters (not extras) are included in the <code>DimArray</code>. Otherwise, both parameters and extras are included.</p></li><li><p>The keys in the <code>:param</code> dimension of the resulting <code>DimArray</code> are just <code>TKey</code>, i.e., the <code>Parameter</code> wrapper is removed. Otherwise, the keys will be <code>Union{Parameter{&lt;:TKey},Extra}</code>.</p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/penelopeysm/FlexiChains.jl/blob/7de9c05fe918028aba10f6b1d222e1b007711949/src/flatten.jl#L79-L105">source</a></section><section><div><pre><code class="language-julia hljs">DimensionalData.DimArray(
+    summary::FlexiSummary{TKey};
+    warn::Bool=true,
+    eltype_filter=Any,
+    parameters_only::Bool=true,
+) where {TKey}</code></pre><p>Convert a <code>FlexiSummary</code> into a <code>DimArray</code> with a <code>:param</code> dimension appended after the non-collapsed dimensions of the summary. For example:</p><table><tr><th style="text-align: left">Summary produced via</th><th style="text-align: left">Dimensions of resulting <code>DimArray</code></th></tr><tr><td style="text-align: left"><code>mean(chn)</code></td><td style="text-align: left"><code>(:param)</code></td></tr><tr><td style="text-align: left"><code>mean(chn; dims=:iter)</code></td><td style="text-align: left"><code>(:chain, :param)</code></td></tr><tr><td style="text-align: left"><code>mean(chn; dims=:chain)</code></td><td style="text-align: left"><code>(:iter, :param)</code></td></tr><tr><td style="text-align: left"><code>summarystats(chn)</code></td><td style="text-align: left"><code>(:stat, :param)</code></td></tr><tr><td style="text-align: left"><code>collapse(chn, [mean, std]; dims=:iter)</code></td><td style="text-align: left"><code>(:chain, :stat, :param)</code></td></tr></table><p><strong>Keyword arguments</strong></p><ul><li><p><code>eltype_filter::Any</code>: retain only parameters whose values subtype <code>eltype_filter</code>. For example, if <code>eltype_filter=Float64</code>, then integer-valued parameters are dropped.</p></li><li><p><code>parameters_only::Bool=true</code>: whether to include only parameters (not extras) in the resulting <code>DimArray</code>.</p></li><li><p><code>warn::Bool=true</code>: whether to issue a warning if any keys are skipped due to their values not subtyping <code>eltype_filter</code>.</p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/penelopeysm/FlexiChains.jl/blob/7de9c05fe918028aba10f6b1d222e1b007711949/src/flatten.jl#L183-L212">source</a></section></details></article><article><details class="docstring" open="true"><summary id="Core.Array-Tuple{FlexiChains.FlexiSummary}"><a class="docstring-binding" href="#Core.Array-Tuple{FlexiChains.FlexiSummary}"><code>Core.Array</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">Base.Array(
+    chain::FlexiChain;
+    kwargs...
+)</code></pre><p>Convert a <code>FlexiChain</code> into a standard <code>Array</code> with dimensions <code>(iter, chain, param)</code>. This is the same as the conversion to <a href="#DimensionalData.DimArray-Tuple{FlexiChains.FlexiChain}"><code>DimensionalData.DimArray</code></a>, except that the dimension metadata is discarded.</p><p>See <a href="#DimensionalData.DimArray-Tuple{FlexiChains.FlexiChain}"><code>DimensionalData.DimArray(::FlexiChains.FlexiChain)</code></a> for more details on the conversion process and available keyword arguments.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/penelopeysm/FlexiChains.jl/blob/7de9c05fe918028aba10f6b1d222e1b007711949/src/flatten.jl#L160-L172">source</a></section><section><div><pre><code class="language-julia hljs">Base.Array(
+    summary::FlexiSummary;
+    kwargs...
+)</code></pre><p>Convert a <code>FlexiSummary</code> into a standard <code>Array</code>. This is the same as the conversion to <a href="#DimensionalData.DimArray-Tuple{FlexiChains.FlexiChain}"><code>DimensionalData.DimArray</code></a>, except that the dimension metadata is discarded.</p><p>See <a href="#DimensionalData.DimArray-Tuple{FlexiChains.FlexiSummary}"><code>DimensionalData.DimArray(::FlexiChains.FlexiSummary)</code></a> for details.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/penelopeysm/FlexiChains.jl/blob/7de9c05fe918028aba10f6b1d222e1b007711949/src/flatten.jl#L266-L276">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../samples/">« Accessing samples</a><a class="docs-footer-nextpage" href="../plotting/">Plotting overview »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Wednesday 1 July 2026 01:43">Wednesday 1 July 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
