@@ -267,7 +267,7 @@ Next, we condition the model on the observed data and run MCMC.
 ```@example pushforward
 prior_model = bill_model(penguins.species_idx, penguins.body_mass_g) 
 cond_model = prior_model | (; bill_length_mm = penguins.bill_length_mm)
-chain = sample(cond_model, NUTS(0.8), MCMCThreads(), 1000, 4)
+chain = sample(cond_model, NUTS(0.8), MCMCThreads(), 1000, 4; progress = false)
 nothing # hide
 ```
 
@@ -282,7 +282,7 @@ By specifying the `observed` keyword argument we can also overlay the observed d
 ppd = predict(prior_model, chain)
 
 observed = penguins.bill_length_mm
-FM.pushforward_hist(ppd, @varname(bill_length_mm); observed=observed)
+FM.pushforward_hist(ppd, @varname(bill_length_mm); observed = observed)
 ```
 
 We may also be interested in how predicted bill length changes with increasing body mass, and how this varies by species.
@@ -306,7 +306,7 @@ ax = Axis(fig[1, 1]; xlabel = "body mass", ylabel = "bill length", limits = ((-3
 for (s, color) in zip(1:3, Makie.wong_colors())
     ix = findall(==(s), pred_species)
     x_grid = pred_body_mass[ix]
-    FM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid=x_grid, color=color)
+    FM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid = x_grid, color = color)
 end
 
 fig
