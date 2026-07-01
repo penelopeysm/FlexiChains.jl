@@ -5,6 +5,7 @@ using RecipesBase: RecipesBase, @recipe, @userplot, @series, plot, plot!
 using StatsBase: StatsBase
 
 const DEFAULT_MARGIN = (8, :mm)
+const DEFAULT_LEGEND_TITLE_FONT_SIZE = 10
 
 ####################
 # custom overloads #
@@ -185,7 +186,9 @@ end
     # Set labels
     xguide --> "iteration number"
     yguide --> "value"
-    label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(t.chn)))
+    label --> permutedims(map(string, FC.chain_indices(t.chn)))
+    legend_title --> "chain"
+    legend_title_font_pointsize --> DEFAULT_LEGEND_TITLE_FONT_SIZE
     title --> t.param.name
     return x, y
 end
@@ -211,7 +214,9 @@ end
             yticks --> nothing
             yshowaxis --> false
             title --> "$(FC.get_name(r.param))"
-            label --> "chain $chn_idx"
+            label --> string(chn_idx)
+            legend_title --> "chain"
+            legend_title_font_pointsize --> DEFAULT_LEGEND_TITLE_FONT_SIZE
             bins --> 25
             normalize --> :pdf
             rank_vec
@@ -232,7 +237,9 @@ Plot of running mean.
     # Set labels
     xguide --> "iteration number"
     yguide --> "mean"
-    label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(t.chn)))
+    label --> permutedims(map(string, FC.chain_indices(t.chn)))
+    legend_title --> "chain"
+    legend_title_font_pointsize --> DEFAULT_LEGEND_TITLE_FONT_SIZE
     title --> t.param.name
     return x, y
 end
@@ -250,7 +257,9 @@ Plot of autocorrelation.
     # Set labels
     xguide --> "lag"
     yguide --> "autocorrelation"
-    label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(t.chn)))
+    label --> permutedims(map(string, FC.chain_indices(t.chn)))
+    legend_title --> "chain"
+    legend_title_font_pointsize --> DEFAULT_LEGEND_TITLE_FONT_SIZE
     title --> t.param.name
     return x, y
 end
@@ -287,7 +296,9 @@ Density plot for continuous data.
     if d.pool_chains
         label --> "pooled"
     else
-        label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
+        label --> permutedims(map(string, FC.chain_indices(d.chn)))
+        legend_title --> "chain"
+        legend_title_font_pointsize --> DEFAULT_LEGEND_TITLE_FONT_SIZE
     end
     title --> d.param.name
     return x, y
@@ -308,7 +319,9 @@ Histogram for discrete data.
     if h.pool_chains
         label --> "pooled"
     else
-        label --> permutedims(map(cidx -> "chain $cidx", FC.chain_indices(h.chn)))
+        label --> permutedims(map(string, FC.chain_indices(h.chn)))
+        legend_title --> "chain"
+        legend_title_font_pointsize --> DEFAULT_LEGEND_TITLE_FONT_SIZE
     end
     title --> h.param.name
     bins --> 25
@@ -330,8 +343,9 @@ Violin plot, with optional box plot overlay.
         xticks --> []
         x = [1]
     else
-        labels = map(cidx -> "chain $cidx", FC.chain_indices(t.chn))
+        labels = map(string, FC.chain_indices(t.chn))
         x = repeat(labels; inner = niters)
+        xguide --> "chain"
     end
     @series begin
         seriestype := :violin
