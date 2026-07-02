@@ -1,5 +1,5 @@
 repos:
-  - repo: https://github.com/fredrikekre/runic-pre-commit
-    rev: 2792c2717d22e0de68ad1d0b3f2bddb7a649403f # v2.2.0
-    hooks:
-      - id: runic
+- repo: https://github.com/JuliaEditorSupport/JuliaFormatter.jl
+  rev: c8c21f5bb7fce7ccd0ead0f4fa70c3878a0cdd66 # v2.10.1
+  hooks:
+  - id: "jlfmt"
