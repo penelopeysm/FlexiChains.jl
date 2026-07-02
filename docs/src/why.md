@@ -58,12 +58,10 @@ mchain = sample(Xoshiro(468), f2(), MH(), 50; chain_type=MCMCChains.Chains);
 you will find that it errors, because `n` is stored as `2.0` in the chain:
 
 ```@example types
-try #hide
-    returned(f2(), mchain)
-catch e
-    ;
-    showerror(stdout, e);
-end # hide
+#! format: off
+try # hide
+returned(f2(), mchain)
+catch e; showerror(stdout, e); end # hide
 ```
 
 Now, you *could* work around this with `zeros(Int(n))`, but that's deeply unsatisfying, because `n` really *should* be an integer.
@@ -134,12 +132,10 @@ So far, so good; we can sample from everything just fine.
 The trouble comes when you want to use something like `predict` or `returned` which involves feeding the samples from the chain back into the model.
 
 ```@example varlen
+#! format: off
 try #hide
-    predict(model, mchain)
-catch e
-    ;
-    showerror(stdout, e);
-end # hide
+returned(f2(), mchain)
+catch e; showerror(stdout, e); end # hide
 ```
 
 !!! warning
@@ -181,12 +177,10 @@ setprogress!(false) # hide
     x ~ Normal()
     y := "$x"
 end
-try #hide
-    mchain = sample(Xoshiro(468), hasstring(), MH(), 50; chain_type=MCMCChains.Chains)
-catch e
-    ;
-    showerror(stdout, e);
-end # hide
+#! format: off
+try # hide
+mchain = sample(Xoshiro(468), hasstring(), MH(), 50; chain_type=MCMCChains.Chains)
+catch e; showerror(stdout, e); end # hide
 ```
 
 FlexiChains will let you store anything you like!
