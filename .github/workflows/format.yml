@@ -18,4 +18,4 @@ jobs:
       - name: Check formatting
         run: |
           julia -e 'using Pkg; Pkg.Apps.add(name="JuliaFormatter", version=v"2.10.1")'
-          ~/.julia/bin/jlfmt --check .
+          ~/.julia/bin/jlfmt --check --verbose .
