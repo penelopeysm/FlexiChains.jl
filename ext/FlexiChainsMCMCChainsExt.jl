@@ -29,7 +29,7 @@ function FlexiChains.FlexiChain{Symbol}(chains::MCMCChains.Chains)
     iter_indices = Base.range(chains)
     chain_indices = MCMCChains.chains(chains) # bizarre function name, yeah
 
-    data = OrderedDict{FlexiChains.ParameterOrExtra{Symbol}, Matrix}()
+    data = OrderedDict{FlexiChains.ParameterOrExtra{Symbol},Matrix}()
 
     # Parameters section
     param_names = if haskey(chains.name_map, :parameters)
@@ -59,21 +59,28 @@ function FlexiChains.FlexiChain{Symbol}(chains::MCMCChains.Chains)
     has_vector_metadata = (
         # trivially true if there are multiple chains
         nc > 1 ||
-            # attempt to infer from start/stop time
-            (hasproperty(chains.info, MCStartTimeKey) && chains.info.start_time isa AbstractVector) ||
-            (hasproperty(chains.info, MCStopTimeKey) && chains.info.stop_time isa AbstractVector)
+        # attempt to infer from start/stop time
+        (
+            hasproperty(chains.info, MCStartTimeKey) &&
+            chains.info.start_time isa AbstractVector
+        ) ||
+        (
+            hasproperty(chains.info, MCStopTimeKey) &&
+            chains.info.stop_time isa AbstractVector
+        )
     )
 
-    sampling_time = if hasproperty(chains.info, MCStartTimeKey) &&
-            hasproperty(chains.info, MCStopTimeKey)
-        start_time = getfield(chains.info, MCStartTimeKey)
-        stop_time = getfield(chains.info, MCStopTimeKey)
-        starts = has_vector_metadata ? start_time : [start_time]
-        stops = has_vector_metadata ? stop_time : [stop_time]
-        Float64.(stops .- starts)
-    else
-        fill(missing, nc)
-    end
+    sampling_time =
+        if hasproperty(chains.info, MCStartTimeKey) &&
+           hasproperty(chains.info, MCStopTimeKey)
+            start_time = getfield(chains.info, MCStartTimeKey)
+            stop_time = getfield(chains.info, MCStopTimeKey)
+            starts = has_vector_metadata ? start_time : [start_time]
+            stops = has_vector_metadata ? stop_time : [stop_time]
+            Float64.(stops .- starts)
+        else
+            fill(missing, nc)
+        end
 
     last_sampler_state = if hasproperty(chains.info, MCSamplerStateKey)
         st = getfield(chains.info, MCSamplerStateKey)
@@ -83,11 +90,13 @@ function FlexiChains.FlexiChain{Symbol}(chains::MCMCChains.Chains)
     end
 
     return FlexiChains.FlexiChain{Symbol}(
-        ni, nc, data;
-        iter_indices = iter_indices,
-        chain_indices = chain_indices,
-        sampling_time = sampling_time,
-        last_sampler_state = last_sampler_state,
+        ni,
+        nc,
+        data;
+        iter_indices=iter_indices,
+        chain_indices=chain_indices,
+        sampling_time=sampling_time,
+        last_sampler_state=last_sampler_state,
     )
 end
 
@@ -105,9 +114,8 @@ the output that you get directly from sampling with Turing + MCMCChains.
 """
 function MCMCChains.Chains(fchain::FlexiChain{T}) where {T}
     ni, nc = size(fchain)
-    array_of_dicts = [
-        FlexiChains.parameters_at(fchain; iter = i, chain = j) for i in 1:ni, j in 1:nc
-    ]
+    array_of_dicts =
+        [FlexiChains.parameters_at(fchain; iter=i, chain=j) for i in 1:ni, j in 1:nc]
     # Construct array of parameter names and array of values. NOTE: Regardless of the type
     # of `T`, we will always promote to `VarName` here because that allows us to keep track
     # of sub-parameters correctly.
@@ -115,7 +123,7 @@ function MCMCChains.Chains(fchain::FlexiChain{T}) where {T}
     # Extract the parameter names and values from each transition.
     split_dicts = map(array_of_dicts) do d
         nms_and_vs = if isempty(d)
-            Tuple{VarName, Any}[]
+            Tuple{VarName,Any}[]
         else
             # Force conversion of keys to VarNames, so that we can split them up with
             # varname_and_value_leaves.
@@ -132,16 +140,15 @@ function MCMCChains.Chains(fchain::FlexiChain{T}) where {T}
         return OrderedDict(zip(nms, vs))
     end
     varnames = collect(names_set)
-    values = [
-        get(split_dicts[i, j], key, missing) for i in 1:ni, key in varnames, j in 1:nc
-    ]
+    values =
+        [get(split_dicts[i, j], key, missing) for i in 1:ni, key in varnames, j in 1:nc]
     # Once we're done processing the VarNames, we convert them back to Symbols because
     # that's what will fit into MCMCChains.
     varname_symbols = map(Symbol, varnames)
 
     # Handle non-parameter keys
     internal_keys = Symbol[]
-    internal_values = Array{Real, 3}(undef, ni, 0, nc)
+    internal_values = Array{Real,3}(undef, ni, 0, nc)
     for k in FlexiChains.extras(fchain)
         v = map(identity, fchain[k])
         if eltype(v) <: Real
@@ -161,7 +168,7 @@ function MCMCChains.Chains(fchain::FlexiChain{T}) where {T}
 
     # Bundle Symbol -> VarName Dict if necessary (this is a Turing compatibility shim)
     info = if T <: VarName
-        (varname_to_symbol = OrderedDict(zip(varnames, varname_symbols)),)
+        (varname_to_symbol=OrderedDict(zip(varnames, varname_symbols)),)
     else
         (;)
     end
@@ -173,12 +180,7 @@ function MCMCChains.Chains(fchain::FlexiChain{T}) where {T}
     if !all(ismissing, st)
         starts = zeros(Float64, nc)
         stops = Float64.(coalesce.(st, 0.0))
-        info = merge(
-            info, (;
-                MCStartTimeKey => starts,
-                MCStopTimeKey => stops,
-            )
-        )
+        info = merge(info, (; MCStartTimeKey => starts, MCStopTimeKey => stops))
     end
 
     # Preserve last sampler state if available.
@@ -192,9 +194,9 @@ function MCMCChains.Chains(fchain::FlexiChain{T}) where {T}
         all_values,
         all_symbols,
         # Note that Turing.jl stores all other keys in the 'internals' section.
-        (; internals = internal_keys);
-        info = info,
-        iterations = parent(FlexiChains.iter_indices(fchain)),
+        (; internals=internal_keys);
+        info=info,
+        iterations=parent(FlexiChains.iter_indices(fchain)),
     )
 end
 

@@ -40,9 +40,7 @@ using Test
     end
 
     @testset "without extras" begin
-        d = OrderedDict(
-            Parameter(:x) => randn(N_iters, N_chains),
-        )
+        d = OrderedDict(Parameter(:x) => randn(N_iters, N_chains))
         chn = FlexiChain{Symbol}(N_iters, N_chains, d)
         idata = InferenceObjects.convert_to_inference_data(chn)
         @test haskey(idata, :posterior)
@@ -51,11 +49,8 @@ using Test
 
     @testset "array-valued parameters" begin
         d = [
-            OrderedDict(
-                    Parameter(:x) => randn(2, 3),
-                    Parameter(:y) => randn(),
-                )
-                for _ in 1:N_iters, _ in 1:N_chains
+            OrderedDict(Parameter(:x) => randn(2, 3), Parameter(:y) => randn()) for
+            _ in 1:N_iters, _ in 1:N_chains
         ]
         chn = FlexiChain{Symbol}(N_iters, N_chains, d)
         idata = InferenceObjects.convert_to_inference_data(chn)
@@ -63,7 +58,7 @@ using Test
         @test size(idata.posterior.x) == (N_iters, N_chains, 2, 3)
         @test size(idata.posterior.y) == (N_iters, N_chains)
 
-        @test parent(idata.posterior.x) == parent(chn[:x, stack = true])
+        @test parent(idata.posterior.x) == parent(chn[:x, stack=true])
     end
 
     @testset "stats key renaming" begin
@@ -87,10 +82,8 @@ using Test
         @test :step_size_nom in stats_keys
         @test :diverging in stats_keys
 
-        @test parent(idata.sample_stats.energy) ==
-            parent(chn[Extra(:hamiltonian_energy)])
-        @test parent(idata.sample_stats.diverging) ==
-            parent(chn[Extra(:numerical_error)])
+        @test parent(idata.sample_stats.energy) == parent(chn[Extra(:hamiltonian_energy)])
+        @test parent(idata.sample_stats.diverging) == parent(chn[Extra(:numerical_error)])
     end
 
     @testset "group=:prior" begin
@@ -99,7 +92,7 @@ using Test
             Extra(:lp) => randn(N_iters, N_chains),
         )
         chn = FlexiChain{Symbol}(N_iters, N_chains, d)
-        idata = InferenceObjects.convert_to_inference_data(chn; group = :prior)
+        idata = InferenceObjects.convert_to_inference_data(chn; group=:prior)
 
         @test haskey(idata, :prior)
         @test haskey(idata, :sample_stats_prior)
@@ -110,11 +103,10 @@ using Test
     @testset "VarName-keyed chain" begin
         d = [
             OrderedDict(
-                    Parameter(@varname(x)) => randn(),
-                    Parameter(@varname(y)) => randn(2),
-                    Extra(:lp) => randn(),
-                )
-                for _ in 1:N_iters, _ in 1:N_chains
+                Parameter(@varname(x)) => randn(),
+                Parameter(@varname(y)) => randn(2),
+                Extra(:lp) => randn(),
+            ) for _ in 1:N_iters, _ in 1:N_chains
         ]
         chn = FlexiChain{VarName}(N_iters, N_chains, d)
         idata = InferenceObjects.convert_to_inference_data(chn)
@@ -125,7 +117,7 @@ using Test
         @test only(keys(idata.sample_stats)) == :lp
 
         @test parent(idata.posterior.x) == parent(chn[@varname(x)])
-        @test parent(idata.posterior.y) == parent(chn[@varname(y), stack = true])
+        @test parent(idata.posterior.y) == parent(chn[@varname(y), stack=true])
         @test parent(idata.sample_stats.lp) == parent(chn[Extra(:lp)])
     end
 end

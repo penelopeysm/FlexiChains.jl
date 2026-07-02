@@ -1,5 +1,5 @@
 function _default_density_axis(k::FC.ParameterOrExtra)
-    return (xlabel = "value", ylabel = "density", title = string(k.name))
+    return (xlabel="value", ylabel="density", title=string(k.name))
 end
 
 """
@@ -19,16 +19,16 @@ $(FC.PlotUtils._PARAM_DOCSTRING("Makie.density"))
 $(MAKIE_KWARGS_DOCSTRING)
 """
 function Makie.density(
-        chn::FC.FlexiChain,
-        param_or_params = FC.Parameter.(FC.parameters(chn));
-        pool_chains::Bool = false,
-        layout::Union{Tuple{Int, Int}, Nothing} = nothing,
-        legend_position::Symbol = :bottom,
-        figure = (;),
-        axis = (;),
-        legend = (;),
-        kwargs...,
-    )
+    chn::FC.FlexiChain,
+    param_or_params=FC.Parameter.(FC.parameters(chn));
+    pool_chains::Bool=false,
+    layout::Union{Tuple{Int,Int},Nothing}=nothing,
+    legend_position::Symbol=:bottom,
+    figure=(;),
+    axis=(;),
+    legend=(;),
+    kwargs...,
+)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
@@ -54,23 +54,29 @@ end
 ########################
 # Single axis plotting #
 ########################
-function Makie.density(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
+function Makie.density(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
     return Makie.density!(
-        Makie.Axis(grid; _default_density_axis(k)..., axis...), chn, param; kwargs...
+        Makie.Axis(grid; _default_density_axis(k)..., axis...),
+        chn,
+        param;
+        kwargs...,
     )
 end
 function Makie.density!(
-        ax::Makie.Axis, chn::FC.FlexiChain, param; pool_chains::Bool = false, kwargs...
-    )
+    ax::Makie.Axis,
+    chn::FC.FlexiChain,
+    param;
+    pool_chains::Bool=false,
+    kwargs...,
+)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
-    a, p = Makie.density!(
-        ax, FC.PlotUtils.FlexiChainDensity(chn, k, pool_chains); kwargs...
-    )
+    a, p =
+        Makie.density!(ax, FC.PlotUtils.FlexiChainDensity(chn, k, pool_chains); kwargs...)
     return Makie.AxisPlot(a, p)
 end
 function Makie.density!(chn::FC.FlexiChain, param; kwargs...)
@@ -85,13 +91,13 @@ function Makie.density!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainDensity; kwarg
     FC.PlotUtils.check_eltype_is_real(y)
     p = nothing
     if d.pool_chains
-        p = Makie.density!(ax, vec(y); label = "pooled", kwargs...)
+        p = Makie.density!(ax, vec(y); label="pooled", kwargs...)
     else
         labels = permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
         nchains = size(y, 2)
         colors = determine_chain_colors(nchains, NamedTuple(kwargs))
         for (label, datacol, color) in zip(labels, eachcol(y), colors)
-            p = Makie.density!(ax, datacol; label = label, kwargs..., color = color)
+            p = Makie.density!(ax, datacol; label=label, kwargs..., color=color)
         end
     end
     return Makie.AxisPlot(ax, p)

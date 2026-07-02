@@ -23,10 +23,11 @@ struct _Segment
     bold::Bool
     color::Symbol
 end
-_Segment(text::String; bold::Bool = false, color::Symbol = :normal) = _Segment(text, bold, color)
+_Segment(text::String; bold::Bool=false, color::Symbol=:normal) =
+    _Segment(text, bold, color)
 
 function _print_segment(io::IO, s::_Segment)
-    printstyled(io, s.text; bold = s.bold, color = s.color)
+    printstyled(io, s.text; bold=s.bold, color=s.color)
     return textwidth(s.text)
 end
 
@@ -35,25 +36,25 @@ function _box_width(io::IO)
 end
 
 function _box_header(io::IO, width::Int, title::AbstractString)
-    printstyled(io, '╭', "─"; color = _BOX_COLOR)
-    printstyled(io, title; bold = true)
+    printstyled(io, '╭', "─"; color=_BOX_COLOR)
+    printstyled(io, title; bold=true)
     used = 2 + textwidth(title)
     fill = max(width - used - 1, 0)
     if fill > 1
-        printstyled(io, " ", "─"^(fill - 1); color = _BOX_COLOR)
+        printstyled(io, " ", "─"^(fill - 1); color=_BOX_COLOR)
     elseif fill == 1
-        printstyled(io, " "; color = _BOX_COLOR)
+        printstyled(io, " "; color=_BOX_COLOR)
     end
-    return printstyled(io, '╮'; color = _BOX_COLOR)
+    return printstyled(io, '╮'; color=_BOX_COLOR)
 end
 
 function _box_content(f::Function, io::IO, width::Int)
-    printstyled(io, "│"; color = _BOX_COLOR)
+    printstyled(io, "│"; color=_BOX_COLOR)
     print(io, " ")
     visible = f(io)::Int
     pad = max(width - visible - 4, 0)
     print(io, " "^(pad + 1))
-    return printstyled(io, "│"; color = _BOX_COLOR)
+    return printstyled(io, "│"; color=_BOX_COLOR)
 end
 
 function _box_content(io::IO, width::Int, segments::Vector{_Segment})
@@ -67,13 +68,13 @@ function _box_content(io::IO, width::Int, segments::Vector{_Segment})
 end
 
 function _box_empty(io::IO, width::Int)
-    printstyled(io, "│"; color = _BOX_COLOR)
+    printstyled(io, "│"; color=_BOX_COLOR)
     print(io, " "^max(width - 2, 0))
-    return printstyled(io, "│"; color = _BOX_COLOR)
+    return printstyled(io, "│"; color=_BOX_COLOR)
 end
 
 function _box_bottom(io::IO, width::Int)
-    return printstyled(io, "╰", "─"^max(width - 2, 0), "╯"; color = _BOX_COLOR)
+    return printstyled(io, "╰", "─"^max(width - 2, 0), "╯"; color=_BOX_COLOR)
 end
 
 # ── Text helpers ─────────────────────────────────────────────────
@@ -117,12 +118,12 @@ function _print_dims(io::IO, chain::FlexiChain, width::Int)
     chain_range = _show_range(FlexiChains.chain_indices(chain))
     label_width = max(textwidth("iter"), textwidth("chain"))
     for (clr, sym, label, range) in (
-            (DD.dimcolor(1), DD.dimsymbol(1), "iter", iter_range),
-            (DD.dimcolor(2), DD.dimsymbol(2), "chain", chain_range),
-        )
+        (DD.dimcolor(1), DD.dimsymbol(1), "iter", iter_range),
+        (DD.dimcolor(2), DD.dimsymbol(2), "chain", chain_range),
+    )
         _box_content(io, width) do io
             s = "$sym $(rpad(label, label_width)) = $range"
-            printstyled(io, s; color = clr)
+            printstyled(io, s; color=clr)
             return textwidth(s)
         end
         println(io)
@@ -140,7 +141,7 @@ function _eltype_groups(cs::ChainOrSummary, kind::Symbol)
     else
         throw(ArgumentError("kind must be :parameters or :extras"))
     end
-    groups = OrderedDict{String, Vector{String}}()
+    groups = OrderedDict{String,Vector{String}}()
     for (key, display_name) in entries
         tstr = string(eltype(cs._data[key]))
         if !haskey(groups, tstr)
@@ -152,8 +153,10 @@ function _eltype_groups(cs::ChainOrSummary, kind::Symbol)
 end
 
 function _print_eltype_groups(
-        io::IO, groups::OrderedDict{String, Vector{String}}, width::Int,
-    )
+    io::IO,
+    groups::OrderedDict{String,Vector{String}},
+    width::Int,
+)
 
     max_type_cap = max(width ÷ 2, 12)
     raw_tw = maximum(textwidth(t) for t in keys(groups))
@@ -174,7 +177,7 @@ function _print_eltype_groups(
             _box_content(io, width) do io
                 if li == 1
                     print(io, " ")
-                    printstyled(io, display_type; color = _ELTYPE_COLOR)
+                    printstyled(io, display_type; color=_ELTYPE_COLOR)
                     print(io, "  ", line, trailing)
                 else
                     print(io, " "^prefix_width, line, trailing)
@@ -188,20 +191,22 @@ function _print_eltype_groups(
 end
 
 function _print_section(
-        io::IO, width::Int, title::String,
-        eltype_groups::OrderedDict{String, Vector{String}};
-        subtitle::String = "",
-    )
+    io::IO,
+    width::Int,
+    title::String,
+    eltype_groups::OrderedDict{String,Vector{String}};
+    subtitle::String="",
+)
     _box_empty(io, width)
     println(io)
-    segments = [_Segment(title; bold = true)]
+    segments = [_Segment(title; bold=true)]
     if !isempty(subtitle)
-        push!(segments, _Segment(subtitle; color = :light_black))
+        push!(segments, _Segment(subtitle; color=:light_black))
     end
     _box_content(io, width, segments)
     println(io)
     return if isempty(eltype_groups)
-        _box_content(io, width, [_Segment(" (none)"; color = :light_black)])
+        _box_content(io, width, [_Segment(" (none)"; color=:light_black)])
         println(io)
     else
         _print_eltype_groups(io, eltype_groups, width)
@@ -221,15 +226,18 @@ function Base.show(io::IO, ::MIME"text/plain", chain::FlexiChain{TKey}) where {T
     _print_dims(io, chain, width)
 
     _print_section(
-        io, width,
+        io,
+        width,
         "Parameters ($(length(parameters(chain))))",
         _eltype_groups(chain, :parameters);
-        subtitle = " ── $TKey",
+        subtitle=" ── $TKey",
     )
 
     _print_section(
-        io, width, "Extras ($(length(extras(chain))))",
-        _eltype_groups(chain, :extras)
+        io,
+        width,
+        "Extras ($(length(extras(chain))))",
+        _eltype_groups(chain, :extras),
     )
 
     _box_bottom(io, width)
@@ -243,7 +251,7 @@ function _print_summary_dims(io::IO, summary::FlexiSummary, width::Int)
     ci = chain_indices(summary)
     si = stat_indices(summary)
 
-    all_dims = Tuple{String, Union{String, Nothing}}[
+    all_dims = Tuple{String,Union{String,Nothing}}[
         ("iter", isnothing(ii) ? nothing : _show_range(ii)),
         ("chain", isnothing(ci) ? nothing : _show_range(ci)),
         ("stat", isnothing(si) ? nothing : _show_range(si)),
@@ -255,7 +263,7 @@ function _print_summary_dims(io::IO, summary::FlexiSummary, width::Int)
         _box_content(io, width) do io
             if isnothing(range)
                 s = "  $(rpad(label, label_width))   collapsed"
-                printstyled(io, s; color = :white)
+                printstyled(io, s; color=:white)
             else
                 sym = DD.dimsymbol(color_counter)
                 clr = DD.dimcolor(color_counter)
@@ -267,7 +275,7 @@ function _print_summary_dims(io::IO, summary::FlexiSummary, width::Int)
                     range
                 end
                 s = prefix * range_str
-                printstyled(io, s; color = clr)
+                printstyled(io, s; color=clr)
             end
             return textwidth(s)
         end
@@ -280,40 +288,33 @@ function _print_summary_dims(io::IO, summary::FlexiSummary, width::Int)
 end
 
 function _print_summary_table(
-        io::IO, summary::FlexiSummary, param_names::Vector, si, width::Int,
-    )
+    io::IO,
+    summary::FlexiSummary,
+    param_names::Vector,
+    si,
+    width::Int,
+)
     _box_empty(io, width)
     println(io)
-    _box_content(io, width, [_Segment("Summary"; bold = true)])
+    _box_content(io, width, [_Segment("Summary"; bold=true)])
     println(io)
 
     MAX_COL_WIDTH = 12
     inner_width = width - 4
     colpadding = 2
 
-    header_col = [
-        "param",
-        map(p -> _truncate(_pretty_value(p), MAX_COL_WIDTH), param_names)...,
-    ]
+    header_col =
+        ["param", map(p -> _truncate(_pretty_value(p), MAX_COL_WIDTH), param_names)...]
 
     stat_cols = if isnothing(si)
-        [
-            [
-                "",
-                [
-                    _truncate(_pretty_value(summary[pn]), MAX_COL_WIDTH) for
-                        pn in param_names
-                ]...,
-            ],
-        ]
+        [["", [_truncate(_pretty_value(summary[pn]), MAX_COL_WIDTH) for pn in param_names]...],]
     else
         map(enumerate(parent(si))) do (stat_i, stat_name)
             [
                 String(stat_name)
                 [
-                    _truncate(
-                            _pretty_value(summary[pn][stat_i]), MAX_COL_WIDTH
-                        ) for pn in param_names
+                    _truncate(_pretty_value(summary[pn][stat_i]), MAX_COL_WIDTH) for
+                    pn in param_names
                 ]...
             ]
         end
@@ -348,14 +349,14 @@ function _print_summary_table(
             for j in 1:max_cols
                 s = lpad(row[j], colwidths[j] + colpadding)
                 if i == 1 || j == 1
-                    printstyled(io, s; bold = true)
+                    printstyled(io, s; bold=true)
                 else
                     print(io, s)
                 end
                 visible += textwidth(s)
             end
             if truncated
-                printstyled(io, "  …"; color = :light_black)
+                printstyled(io, "  …"; color=:light_black)
                 visible += 3
             end
             return visible
@@ -399,14 +400,18 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
 
     param_names = parameters(summary)
     _print_section(
-        io, width,
-        "Parameters ($(length(param_names)))", _eltype_groups(summary, :parameters);
-        subtitle = " ── $TKey",
+        io,
+        width,
+        "Parameters ($(length(param_names)))",
+        _eltype_groups(summary, :parameters);
+        subtitle=" ── $TKey",
     )
 
     _print_section(
-        io, width,
-        "Extras ($(length(extras(summary))))", _eltype_groups(summary, :extras),
+        io,
+        width,
+        "Extras ($(length(extras(summary))))",
+        _eltype_groups(summary, :extras),
     )
 
     if isnothing(ii) && isnothing(ci) && !isempty(param_names)

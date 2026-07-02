@@ -16,16 +16,16 @@ $(FC.PlotUtils._PARAM_DOCSTRING("Makie.plot"))
 $(MAKIE_KWARGS_DOCSTRING)
 """
 function Makie.plot(
-        chn::FC.FlexiChain,
-        param_or_params = FC.Parameter.(FC.parameters(chn));
-        layout::Union{Tuple{Int, Int}, Nothing} = nothing,
-        legend_position::Symbol = :bottom,
-        pool_chains::Bool = false,
-        figure = (;),
-        axis = (;),
-        legend = (;),
-        kwargs...,
-    )
+    chn::FC.FlexiChain,
+    param_or_params=FC.Parameter.(FC.parameters(chn));
+    layout::Union{Tuple{Int,Int},Nothing}=nothing,
+    legend_position::Symbol=:bottom,
+    pool_chains::Bool=false,
+    figure=(;),
+    axis=(;),
+    legend=(;),
+    kwargs...,
+)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = collect(keys(chn))
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))

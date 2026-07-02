@@ -1,15 +1,17 @@
 using MCMCDiagnosticTools: MCMCDiagnosticTools
 
 # Convert the output of `MCMCDiagnosticTools.gelmandiag` into a FlexiSummary
-function _gelmandiag_summary(
-        ::Type{TKey}, kept_keys, psrf, psrfci
-    ) where {TKey}
-    data = OrderedDict{ParameterOrExtra{<:TKey}, Array{Float64, 3}}()
+function _gelmandiag_summary(::Type{TKey}, kept_keys, psrf, psrfci) where {TKey}
+    data = OrderedDict{ParameterOrExtra{<:TKey},Array{Float64,3}}()
     for (i, k) in enumerate(kept_keys)
         data[Parameter(k)] = reshape([psrf[i], psrfci[i]], 1, 1, 2)
     end
     return FlexiSummary{TKey}(
-        data, nothing, nothing, _make_categorical([:psrf, :psrfci]), false
+        data,
+        nothing,
+        nothing,
+        _make_categorical([:psrf, :psrfci]),
+        false,
     )
 end
 
@@ -34,11 +36,11 @@ Other keyword arguments are forwarded to
 [`MCMCDiagnosticTools.gelmandiag`](@extref).
 """
 function MCMCDiagnosticTools.gelmandiag(
-        chain::FlexiChain{TKey};
-        warn::Bool = true,
-        kwargs...,
-    ) where {TKey}
-    dimarr = DD.DimArray(chain; warn = warn, eltype_filter = Real, parameters_only = true)
+    chain::FlexiChain{TKey};
+    warn::Bool=true,
+    kwargs...,
+) where {TKey}
+    dimarr = DD.DimArray(chain; warn=warn, eltype_filter=Real, parameters_only=true)
     result = MCMCDiagnosticTools.gelmandiag(parent(dimarr); kwargs...)
     return _gelmandiag_summary(TKey, DD.lookup(dimarr, :param), result.psrf, result.psrfci)
 end
@@ -66,16 +68,15 @@ Other keyword arguments are forwarded to
 [`MCMCDiagnosticTools.gelmandiag_multivariate`](@extref).
 """
 function MCMCDiagnosticTools.gelmandiag_multivariate(
-        chain::FlexiChain{TKey};
-        warn::Bool = true,
-        kwargs...,
-    ) where {TKey}
-    dimarr = DD.DimArray(chain; warn = warn, eltype_filter = Real, parameters_only = true)
+    chain::FlexiChain{TKey};
+    warn::Bool=true,
+    kwargs...,
+) where {TKey}
+    dimarr = DD.DimArray(chain; warn=warn, eltype_filter=Real, parameters_only=true)
     result = MCMCDiagnosticTools.gelmandiag_multivariate(parent(dimarr); kwargs...)
-    summary = _gelmandiag_summary(
-        TKey, DD.lookup(dimarr, :param), result.psrf, result.psrfci
-    )
-    return (; summary, psrf_multivariate = result.psrfmultivariate)
+    summary =
+        _gelmandiag_summary(TKey, DD.lookup(dimarr, :param), result.psrf, result.psrfci)
+    return (; summary, psrf_multivariate=result.psrfmultivariate)
 end
 
 """
@@ -102,39 +103,43 @@ Other keyword arguments are forwarded to
 [`MCMCDiagnosticTools.discretediag`](@extref).
 """
 function MCMCDiagnosticTools.discretediag(
-        chain::FlexiChain{TKey};
-        warn::Bool = true,
-        kwargs...,
-    ) where {TKey}
-    dimarr = DD.DimArray(chain; warn = warn, eltype_filter = Integer, parameters_only = true)
-    between_vals, within_vals = MCMCDiagnosticTools.discretediag(
-        parent(dimarr); kwargs...
-    )
+    chain::FlexiChain{TKey};
+    warn::Bool=true,
+    kwargs...,
+) where {TKey}
+    dimarr = DD.DimArray(chain; warn=warn, eltype_filter=Integer, parameters_only=true)
+    between_vals, within_vals = MCMCDiagnosticTools.discretediag(parent(dimarr); kwargs...)
     kept_keys = DD.lookup(dimarr, :param)
     stat_names = _make_categorical([:stat, :df, :pvalue])
 
     # Between-chain summary: both iter and chain dimensions collapsed
-    between_data = OrderedDict{ParameterOrExtra{<:TKey}, Array{Float64, 3}}()
+    between_data = OrderedDict{ParameterOrExtra{<:TKey},Array{Float64,3}}()
     for (i, k) in enumerate(kept_keys)
         between_data[Parameter(k)] = reshape(
             Float64[between_vals.stat[i], between_vals.df[i], between_vals.pvalue[i]],
-            1, 1, 3,
+            1,
+            1,
+            3,
         )
     end
     between = FlexiSummary{TKey}(between_data, nothing, nothing, stat_names, false)
 
     # Within-chain summary: iter dimension collapsed, chain dimension kept
     num_chains = length(FlexiChains.chain_indices(chain))
-    within_data = OrderedDict{ParameterOrExtra{<:TKey}, Array{Float64, 3}}()
+    within_data = OrderedDict{ParameterOrExtra{<:TKey},Array{Float64,3}}()
     for (i, k) in enumerate(kept_keys)
-        vals = Array{Float64, 3}(undef, 1, num_chains, 3)
+        vals = Array{Float64,3}(undef, 1, num_chains, 3)
         vals[1, :, 1] = within_vals.stat[i, :]
         vals[1, :, 2] = within_vals.df[i, :]
         vals[1, :, 3] = within_vals.pvalue[i, :]
         within_data[Parameter(k)] = vals
     end
     within = FlexiSummary{TKey}(
-        within_data, nothing, FlexiChains.chain_indices(chain), stat_names, false,
+        within_data,
+        nothing,
+        FlexiChains.chain_indices(chain),
+        stat_names,
+        false,
     )
 
     return (; between, within)

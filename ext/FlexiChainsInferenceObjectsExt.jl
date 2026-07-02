@@ -32,13 +32,15 @@ chain's extras are assigned to `:sample_stats` if `group` is `:posterior`, and t
 Other keyword arguments are passed to `InferenceObjects.convert_to_dataset`.
 """
 function InferenceObjects.convert_to_inference_data(
-        chain::FlexiChain{<:TKey}; group::Symbol = POSTERIOR_GROUP, kwargs...
-    ) where {TKey}
+    chain::FlexiChain{<:TKey};
+    group::Symbol=POSTERIOR_GROUP,
+    kwargs...,
+) where {TKey}
     # Handle parameters
-    parameter_arrays = OrderedDict{Symbol, AbstractArray{<:Real}}()
+    parameter_arrays = OrderedDict{Symbol,AbstractArray{<:Real}}()
     for param in FlexiChains.parameters(chain)
         arr_of_draws = _rename_iter_dim(chain[param])
-        if !(eltype(arr_of_draws) <: Union{Real, AbstractArray{<:Real}})
+        if !(eltype(arr_of_draws) <: Union{Real,AbstractArray{<:Real}})
             @warn "Variable $param is not a real-valued parameter, skipping."
             continue
         end
@@ -50,7 +52,7 @@ function InferenceObjects.convert_to_inference_data(
         return InferenceObjects.InferenceData(; group => group_dataset)
 
     # Handle extras
-    sample_stats = OrderedDict{Symbol, AbstractArray{<:Real}}()
+    sample_stats = OrderedDict{Symbol,AbstractArray{<:Real}}()
     for k in FlexiChains.extras(chain)
         arr_of_draws = _rename_iter_dim(chain[k])
         sym = Symbol(k)
@@ -65,7 +67,8 @@ function InferenceObjects.convert_to_inference_data(
     sample_stats_dataset = InferenceObjects.convert_to_dataset(sample_stats; kwargs...)
 
     return InferenceObjects.InferenceData(;
-        group => group_dataset, group_sample_stats => sample_stats_dataset
+        group => group_dataset,
+        group_sample_stats => sample_stats_dataset,
     )
 end
 
@@ -75,7 +78,7 @@ function _rename_iter_dim(arr::DD.AbstractDimArray)
 end
 
 _stack_draws(arr::AbstractArray{<:Real}) = arr
-function _stack_draws(arr::AbstractMatrix{<:AbstractArray{<:Real, N}}) where {N}
+function _stack_draws(arr::AbstractMatrix{<:AbstractArray{<:Real,N}}) where {N}
     return permutedims(stack(arr), (N + 1, N + 2, ntuple(identity, N)...))
 end
 

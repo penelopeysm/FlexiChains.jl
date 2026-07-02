@@ -7,7 +7,7 @@ using StatsBase: StatsBase
 using KernelDensity: KernelDensity
 
 const FC = FlexiChains
-const MakieGrids = Union{Makie.GridPosition, Makie.GridSubposition}
+const MakieGrids = Union{Makie.GridPosition,Makie.GridSubposition}
 
 const MAKIE_KWARGS_DOCSTRING = """
 - `figure::NamedTuple`: Additional keyword arguments passed to the `Makie.Figure` constructor.
@@ -31,29 +31,29 @@ Keyword arguments are forwarded to `Makie.Legend`.
 Returns the created `Makie.Legend`, or `nothing` if no legend was added.
 """
 function maybe_add_legend(
-        fig::Makie.Figure,
-        chn::FC.FlexiChain,
-        colors::AbstractVector,
-        legend_position::Symbol;
-        kwargs...,
-    )
+    fig::Makie.Figure,
+    chn::FC.FlexiChain,
+    colors::AbstractVector,
+    legend_position::Symbol;
+    kwargs...,
+)
     legend_position == :none && return nothing
     nrows, ncols = size(fig.layout)
     labels = map(string, FC.chain_indices(chn))
-    elems = map(color -> Makie.PolyElement(; color = color), colors)
+    elems = map(color -> Makie.PolyElement(; color=color), colors)
     l = if legend_position == :bottom
         colpos = ncols > 1 ? range(1, ncols) : 1
         Makie.Legend(
-            fig[nrows + 1, colpos],
+            fig[nrows+1, colpos],
             elems,
             labels,
             "Chain";
-            orientation = :horizontal,
+            orientation=:horizontal,
             kwargs...,
         )
     elseif legend_position == :right
         rowpos = nrows > 1 ? range(1, nrows) : 1
-        Makie.Legend(fig[rowpos, ncols + 1], elems, labels, "Chain"; kwargs...)
+        Makie.Legend(fig[rowpos, ncols+1], elems, labels, "Chain"; kwargs...)
     else
         error(
             "unsupported value for `legend_position`: permitted values are `:right`, `:bottom` or `:none`",
@@ -103,14 +103,19 @@ end
 This function sets up the figure and layout for the given number of rows and columns, unless
 the user has manually specified a layout, in which case it uses that instead.
 """
-function setup_figure_and_layout(nrows_default::Int, ncols_default::Int, layout::Union{Nothing, Tuple{Int, Int}}, figure)
+function setup_figure_and_layout(
+    nrows_default::Int,
+    ncols_default::Int,
+    layout::Union{Nothing,Tuple{Int,Int}},
+    figure,
+)
     nrows, ncols = if isnothing(layout)
         nrows_default, ncols_default
     else
         layout
     end
     figure = Makie.Figure(;
-        size = (FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
+        size=(FC.PlotUtils.DEFAULT_WIDTH * ncols, FC.PlotUtils.DEFAULT_HEIGHT * nrows),
         figure...,
     )
     return nrows, ncols, figure

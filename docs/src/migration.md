@@ -18,17 +18,21 @@ It is really the same as calling `sample(model, Prior(), MCMCSerial(), n_iters, 
 
     ```@example migration
     using DynamicPPL, AbstractMCMC, MCMCChains, FlexiChains, Random, Distributions
-
+    
     function prior_chain(
         rng::Random.AbstractRNG,
         model::DynamicPPL.Model,
         niters::Int,
         nchains::Int,
-        ::Type{Tchn}
+        ::Type{Tchn},
     ) where {Tchn}
         vi = DynamicPPL.OnlyAccsVarInfo()
         vi = DynamicPPL.setacc!!(vi, DynamicPPL.RawValueAccumulator(true))
-        ps = [DynamicPPL.ParamsWithStats(last(DynamicPPL.init!!(rng, model, vi, InitFromPrior(), UnlinkAll()))) for _ in 1:niters, _ in 1:nchains]
+        ps = [
+            DynamicPPL.ParamsWithStats(
+                last(DynamicPPL.init!!(rng, model, vi, InitFromPrior(), UnlinkAll())),
+            ) for _ in 1:niters, _ in 1:nchains
+        ]
         return AbstractMCMC.from_samples(Tchn, ps)
     end
     ```
@@ -403,7 +407,7 @@ For FlexiChains, since the parameters do not form an array dimension, it is not 
 
 `MCMCChains.get` and `MCMCChains.get_params` allow you to extract a NamedTuple mapping parameter names to their samples.
 This is needed because MCMCChains stores samples as a 3D array.
- 
+
 For example:
 
 ```@example migration
@@ -427,6 +431,7 @@ MCMCChains's default is `include_all=false`, so if you _do_ want FlexiChains's b
 ## E2. Final sampler states
 
 !!! note
+
     The code examples here are not run since they require Turing.
 
 When sampling a **single** chain with Turing + MCMCChains, if you specify `save_state=true`, the final sampler state will be bundled inside the chain.
@@ -471,7 +476,8 @@ Thus, for example, if you wanted to plot only `y`, then you could do:
 ```@example migration
 using StatsPlots
 plot(fchain, [@varname(y)])
-savefig("fchainplot.svg"); nothing # hide
+savefig("fchainplot.svg");
+nothing # hide
 ```
 
 ![FlexiChains plots](fchainplot.svg)
@@ -481,7 +487,8 @@ With MCMCChains you would probably be best off subsetting the chain to variables
 ```@example migration
 mchain_yonly = group(mchain, :y)
 plot(mchain_yonly)
-savefig("mchainplot.svg"); nothing # hide
+savefig("mchainplot.svg");
+nothing # hide
 ```
 
 ![MCMCChains plots](mchainplot.svg)

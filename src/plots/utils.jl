@@ -53,9 +53,10 @@ This ensures that each plotting function can simply loop over the keys of the re
 and plot each one, without needing to worry about the structure of the data.
 """
 function subset_and_split_chain(
-        chn::FlexiChain{TKey}, param_or_params
-    )::FlexiChain where {TKey}
-    parameters_to_plot = if param_or_params isa Union{AbstractVector, Colon}
+    chn::FlexiChain{TKey},
+    param_or_params,
+)::FlexiChain where {TKey}
+    parameters_to_plot = if param_or_params isa Union{AbstractVector,Colon}
         _get_multi_keys(TKey, keys(chn), param_or_params)
     else
         # Assume it's a single key. No, don't ask what happens if the key type is an
@@ -78,7 +79,7 @@ function check_eltype_is_real(::AbstractArray{T}) where {T}
     return if !(T <: Real)
         throw(
             ArgumentError(
-                "plotting functions only support real-valued data; got data of type $T"
+                "plotting functions only support real-valued data; got data of type $T",
             ),
         )
     end
@@ -92,9 +93,9 @@ estimate*: the empirical quantile is computed per chain (per column) and then av
 across chains. Returns a vector of the same length as `quantile_levels`.
 """
 function compute_quantile_bands(
-        data::AbstractMatrix{<:Real},
-        quantile_levels::AbstractVector{<:Real},
-    )
+    data::AbstractMatrix{<:Real},
+    quantile_levels::AbstractVector{<:Real},
+)
     nchains = size(data, 2)
     acc = zeros(length(quantile_levels))
     for c in 1:nchains
@@ -113,7 +114,7 @@ function get_bin_edges(values::AbstractArray, nbins::Integer)
     if lo == hi
         hi = lo + eps(lo) # Don't make the bin have 0 width.
     end
-    return collect(range(lo, hi; length = nbins + 1))
+    return collect(range(lo, hi; length=nbins + 1))
 end
 
 """
@@ -159,9 +160,9 @@ Returns an `iter × chain × nbins` array where `counts[i, c, b]` is the number 
 that fell in bin `b` for draw `(i, c)`.
 """
 function bin_count_matrices(
-        values::AbstractArray{<:Real, 3}, # iter × chain × component
-        edges::AbstractVector{<:Real}
-    )
+    values::AbstractArray{<:Real,3}, # iter × chain × component
+    edges::AbstractVector{<:Real},
+)
     n_iter, n_chain, _ = size(values)
     n_bins = length(edges) - 1
     counts = zeros(Int, n_iter, n_chain, n_bins)
@@ -171,12 +172,12 @@ function bin_count_matrices(
     return counts
 end
 
-struct FlexiChainTrace{TKey, Tp <: ParameterOrExtra{<:TKey}}
+struct FlexiChainTrace{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
 end
 
-struct FlexiChainRank{TKey, Tp <: ParameterOrExtra{<:TKey}}
+struct FlexiChainRank{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
     # indicates which one to plot
@@ -185,23 +186,26 @@ struct FlexiChainRank{TKey, Tp <: ParameterOrExtra{<:TKey}}
     # need to calculate ranks across all chains, even if we only plot one.
     ranks::DD.DimMatrix{<:Real}
 end
-function get_ranks(chn::FlexiChain{TKey}, param::Tp) where {TKey, Tp <: ParameterOrExtra{<:TKey}}
+function get_ranks(
+    chn::FlexiChain{TKey},
+    param::Tp,
+) where {TKey,Tp<:ParameterOrExtra{<:TKey}}
     return StatsBase.tiedrank(chn[param])
 end
 
-struct FlexiChainRankOverlay{TKey, Tp <: ParameterOrExtra{<:TKey}}
+struct FlexiChainRankOverlay{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
     ranks::DD.DimMatrix{<:Real} # same as above
 end
 
-struct FlexiChainHistogram{TKey, Tp <: ParameterOrExtra{<:TKey}}
+struct FlexiChainHistogram{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
     pool_chains::Bool
 end
 
-function runningmean(v::AbstractVector{<:Union{Real, Missing}})
+function runningmean(v::AbstractVector{<:Union{Real,Missing}})
     y = similar(v, Float64)
     n = 0
     sum = zero(eltype(v))
@@ -214,7 +218,7 @@ function runningmean(v::AbstractVector{<:Union{Real, Missing}})
     end
     return y
 end
-struct FlexiChainMean{TKey, Tp <: ParameterOrExtra{<:TKey}}
+struct FlexiChainMean{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
 end
@@ -223,28 +227,28 @@ end
 Calculate default lags for autocorrelation plots. This is directly taken from StatsBase.jl.
 """
 function default_lags(chn::FlexiChain)
-    return 1:min(niters(chn) - 1, round(Int, 10 * log10(niters(chn))))
+    return 1:min(niters(chn)-1, round(Int, 10*log10(niters(chn))))
 end
-struct FlexiChainAutoCor{TKey, Tp <: ParameterOrExtra{<:TKey}, Tl <: AbstractVector{Int}}
+struct FlexiChainAutoCor{TKey,Tp<:ParameterOrExtra{<:TKey},Tl<:AbstractVector{Int}}
     chn::FlexiChain{TKey}
     param::Tp
     lags::Tl
     demean::Bool
 end
 
-struct FlexiChainMixedDensity{TKey, Tp <: ParameterOrExtra{<:TKey}}
+struct FlexiChainMixedDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
     pool_chains::Bool
 end
 
-struct FlexiChainDensity{TKey, Tp <: ParameterOrExtra{<:TKey}}
+struct FlexiChainDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
     pool_chains::Bool
 end
 
-struct FlexiChainViolin{TKey, Tp <: ParameterOrExtra{<:TKey}}
+struct FlexiChainViolin{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
     pool_chains::Bool
@@ -259,7 +263,15 @@ struct FlexiChainForest{TKey}
     interval::Symbol
     hdi_method::Symbol
     levels::Vector{Float64}
-    function FlexiChainForest(chn::FlexiChain{TKey}, params::Vector, pool_chains::Bool, point = :median, interval = :quantile, hdi_method = :unimodal, levels = DEFAULT_INTERVALS) where {TKey}
+    function FlexiChainForest(
+        chn::FlexiChain{TKey},
+        params::Vector,
+        pool_chains::Bool,
+        point=:median,
+        interval=:quantile,
+        hdi_method=:unimodal,
+        levels=DEFAULT_INTERVALS,
+    ) where {TKey}
         point in (:mean, :median) ||
             throw(ArgumentError("point must be :mean or :median, got :$point"))
         interval in (:quantile, :hdi) ||
@@ -267,7 +279,15 @@ struct FlexiChainForest{TKey}
         all(l -> 0 < l < 1, levels) ||
             throw(ArgumentError("interval levels must be in (0, 1)"))
         sorted_levels = sort(collect(Float64, levels))
-        return new{TKey}(chn, params, pool_chains, point, interval, hdi_method, sorted_levels)
+        return new{TKey}(
+            chn,
+            params,
+            pool_chains,
+            point,
+            interval,
+            hdi_method,
+            sorted_levels,
+        )
     end
 end
 

@@ -34,7 +34,7 @@ arr = rand(10, 4, 6)   # 10 iterations, 4 chains, 6 (scalar) parameters
 names = (
     Parameter(:x),            # Scalar
     Parameter(:y),            # Scalar
-    Parameter(:z) => (2, 2)   # Matrix
+    Parameter(:z) => (2, 2),   # Matrix
 )
 
 chn = FlexiChain{Symbol}(arr, names)
@@ -66,7 +66,7 @@ arr = randn(10, 4, 6)   # 10 iterations, 4 chains, 6 parameters
 chn = FlexiChain{Symbol}(arr, (
     Parameter(:x),            # Scalar
     Parameter(:y),            # Scalar
-    Parameter(:z) => (2, 2)   # Matrix
+    Parameter(:z) => (2, 2),   # Matrix
 ))
 
 # Convert it back to an array.

@@ -36,7 +36,7 @@ chain = sample(model, NUTS(), 5; chain_type=VNChain)
 ```
 
 !!! note
-    
+
     We only run 5 MCMC iterations here to keep the output in the following sections small.
 
 ## Key types
@@ -53,6 +53,7 @@ For a `FlexiChain{T}`, all `Parameter` keys must wrap objects that subtype `T`.
 `VNChain` is an alias for `FlexiChain{VarName}`, i.e., the parameters are stored as `VarName`s, which is the natural output for Turing.jl.
 
 !!! note "SymChain"
+
     For other modelling packages it may sometimes be more natural to store parameters as `Symbol`s instead of `VarName`s.
     In that case, you can use `SymChain` (an alias for `FlexiChain{Symbol}`) instead of `VNChain`.
 
@@ -77,9 +78,9 @@ chain[@varname(mu)]
     When looking up a parameter, you do not need to wrap the `VarName` in `FlexiChains.Parameter(...)`: this will be automatically done for you. `Extra` keys always need to be wrapped (*but* see also [the shortcut for Symbol-based indexing below](@ref symbol-indexing)).
 
 !!! note "DimMatrix"
-    
+
     Indexing into a `FlexiChain` returns a [`DimensionalData.DimMatrix`](@extref DimensionalData DimArrays). This behaves exactly like a regular `Matrix`, but additionally carries extra information about its dimensions.
-    
+
     This allows you to keep track of what each dimension means, and also allows for more advanced indexing operations, which are described in [the 'indexing' page](./indexing.md).
 
 For vector-valued parameters like `theta`, this works in exactly the same way, except that you get a `DimMatrix` of vectors.
@@ -92,6 +93,7 @@ chain[@varname(theta)]
 MCMCChains by default will break vector-valued parameters into multiple scalar-valued parameters called `theta[1]`, `theta[2]`, etc., whereas FlexiChains keeps them together as they were defined in the model.
 
 !!! tip "If you want a 3D array..."
+
     If you want to access `theta` as a 3D array of shape `(num_iterations, num_chains, length(theta))`, you can also pass the keyword argument `stack=true` to `getindex`:
 
     ```@example 1
@@ -109,7 +111,7 @@ In this way, you can 'break down', or access nested fields of, larger parameters
 That is, if your model has `x ~ dist`, FlexiChains will let you access some field or index of `x`.
 
 !!! note "Heterogeneous data"
-    
+
     If some samples of `x` have one element and others have two elements, attempting to access `x[2]` will return an array with `missing` values for the samples where `x` only has one element.
 
 You can also use keyword arguments when indexing to specify which chains or iterations you are interested in.
@@ -140,6 +142,7 @@ chain[Extra(:logjoint)]
 ```
 
 !!! warning
+
     In older versions of Turing.jl, MCMCChains would store the log-joint probability as `:lp`. FlexiChains uses `:logjoint` instead, which is clearer. Since Turing v0.42, both MCMCChains and FlexiChains use `:logjoint`.
 
 If there is no ambiguity in the symbol `:logjoint`, then you can use a shortcut which is described in the next section.
@@ -155,11 +158,11 @@ chain[:mu] # parameter
 ```
 
 !!! note "What does unambiguous mean?"
-    
+
     In this case, because the only key `k` for which `Symbol(k.name) == :mu` is `Parameter(@varname(mu))`, we can safely identify `Parameter(@varname(mu))` as the key that we want. If this chain also had an extra key called `Extra(:mu)`, then this would be ambiguous, and FlexiChains would throw an error.
 
 !!! note "No sub-varnames"
-    
+
     You cannot use `chain[Symbol("theta[1]")]` as a replacement for `chain[@varname(theta[1])]`.
 
 Likewise, we can omit wrapping `:logjoint` in `Extra(...)`:
@@ -209,6 +212,7 @@ summarystats(chain)
 ```
 
 !!! note
+
     The large number of NaN's and Inf's here are just because of the very short chain length. On a real chain you would get proper statistics.
 
 To index into this, you can use a similar syntax as for `FlexiChain`s:
@@ -225,6 +229,7 @@ ss[@varname(mu), stat=At(:mean)]
 ```
 
 !!! note
+
     Note that the `At` selector from DimensionalData.jl is needed here to specify the name of the statistic we're interested in.
 
 Alternatively, you can directly convert the `FlexiSummary` into an array and manipulate it as you would any other array.
@@ -267,7 +272,7 @@ These functions can all be applied to a `FlexiChain` with their usual signatures
 Keyword arguments of the original functions are also supported, for example `MCMCDiagnosticTools.ess(chain; kind=:tail)` returns the tail ESS.
 
 !!! note "Other summary functions"
-    
+
     If you want to apply a summary function that isn't listed above, you can manually use [`FlexiChains.collapse`](@ref). If it is something that is worth appearing in FlexiChains proper, please do open an issue!
 
 ### Collapsed dimensions
@@ -287,11 +292,13 @@ or `dims=:chain` (although that is probably less useful).
 If you want to sample a fewer number of iterations first and then resume it later, you can use the following:
 
 ```@example 1
-chn1 = sample(model, NUTS(), 10;
-    chain_type=VNChain, save_state=true
-)
-chn2 = sample(model, NUTS(), 10;
-    chain_type=VNChain, initial_state=only(FlexiChains.last_sampler_state(chn1))
+chn1 = sample(model, NUTS(), 10; chain_type=VNChain, save_state=true)
+chn2 = sample(
+    model,
+    NUTS(),
+    10;
+    chain_type=VNChain,
+    initial_state=only(FlexiChains.last_sampler_state(chn1)),
 )
 ```
 
@@ -302,14 +309,14 @@ combined_chn = vcat(chn1, chn2)
 ```
 
 !!! note "The `initial_state` argument"
-    
+
     When performing **single-chain sampling** with `sample(model, spl, N; initial_state=state)`, `initial_state` should be either `nothing` (to start a new chain) or the state to resume from.
     For **multiple-chain sampling** with `sample(model, spl, MCMCThreads(), N, C)`, `initial_state` should be a vector of length `C`, where `initial_state[i]` is the state to resume the `i`-th chain from (or `nothing` to start a new chain).
-    
+
     To obtain the saved final state of a chain, you can use [`FlexiChains.last_sampler_state`](@ref).
     This always returns a vector of states with length equal to the number of chains.
     Note that this applies also if you only sampled a single chain, in which case the returned value is a vector of length 1: you will therefore have to use `only()` to extract the state itself.
-    
+
     The above applies equally to `MCMCSerial()` and `MCMCDistributed()`.
 
 ## Initialising MCMC sampling from a FlexiChain
@@ -320,7 +327,8 @@ Note that this is different from _resuming sampling_ from a saved sampler state,
 For example, to start a new chain from the fifth iteration and first chain contained inside `chain`, you can do
 
 ```@example 1
-chn3 = sample(model, MH(), 5; chain_type=VNChain, initial_params=InitFromParams(chain, 5, 1))
+chn3 =
+    sample(model, MH(), 5; chain_type=VNChain, initial_params=InitFromParams(chain, 5, 1))
 ```
 
 Since this only uses the parameters which are already part of the chain, this does not require you to use `save_state=true` for the original chain.
@@ -350,7 +358,8 @@ using StatsPlots
 
 # Or omit the second argument to plot all parameters.
 plot(chain, [@varname(tau), @varname(theta[1])])
-savefig("plot_ex.svg"); nothing # hide
+savefig("plot_ex.svg");
+nothing # hide
 ```
 
 ![Trace and density plots for mu, tau, and theta1](plot_ex.svg)

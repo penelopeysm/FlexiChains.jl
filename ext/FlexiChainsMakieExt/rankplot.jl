@@ -4,7 +4,7 @@ function _default_rankplot_axis(k::FC.ParameterOrExtra, chn_idx)
     else
         "$(FC.get_name(k)) (chain $(chn_idx))"
     end
-    return (xlabel = "rank", title = title)
+    return (xlabel="rank", title=title)
 end
 
 """
@@ -25,29 +25,30 @@ $(FC.PlotUtils._PARAM_DOCSTRING("FlexiChains.Makie.rankplot"))
 $(MAKIE_KWARGS_DOCSTRING)
 """
 function FC.Makie.rankplot(
-        chn::FC.FlexiChain,
-        param_or_params = FC.Parameter.(FC.parameters(chn));
-        overlay::Bool = false,
-        layout::Union{Tuple{Int, Int}, Nothing} = nothing,
-        legend_position::Symbol = :bottom,
-        figure = (;),
-        axis = (;),
-        legend = (;),
-        kwargs...,
-    )
+    chn::FC.FlexiChain,
+    param_or_params=FC.Parameter.(FC.parameters(chn));
+    overlay::Bool=false,
+    layout::Union{Tuple{Int,Int},Nothing}=nothing,
+    legend_position::Symbol=:bottom,
+    figure=(;),
+    axis=(;),
+    legend=(;),
+    kwargs...,
+)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     nc = FC.nchains(chn)
     nc == 1 && @warn "Only one chain to plot, so the rank plot will be uninformative"
     keys_to_plot = collect(keys(chn))
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nplots_per_key = overlay ? 1 : nc
-    nrows, ncols, figure = setup_figure_and_layout(length(keys_to_plot), nplots_per_key, layout, figure)
+    nrows, ncols, figure =
+        setup_figure_and_layout(length(keys_to_plot), nplots_per_key, layout, figure)
     a, p = nothing, nothing
     # Precompute ranks
     ranks = Dict(k => FC.PlotUtils.get_ranks(chn, k) for k in keys_to_plot)
     # This order means that plots go from left to right before going to the next row
     indices = Iterators.product(1:ncols, 1:nrows)
-    for ((col, row), k) in zip(indices, repeat(keys_to_plot, inner = nplots_per_key))
+    for ((col, row), k) in zip(indices, repeat(keys_to_plot, inner=nplots_per_key))
         this_ranks = ranks[k]
         chn_idx, plot_obj = if overlay
             (nothing, FC.PlotUtils.FlexiChainRankOverlay(chn, k, this_ranks))
@@ -72,18 +73,31 @@ end
 ########################
 # Single axis plotting #
 ########################
-function FC.Makie.rankplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
+function FC.Makie.rankplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
     # TODO: Error if there is already something at the grid position?
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
     return FC.Makie.rankplot!(
-        Makie.Axis(grid; _default_rankplot_axis(k, nothing)..., axis...), chn, param; kwargs...
+        Makie.Axis(grid; _default_rankplot_axis(k, nothing)..., axis...),
+        chn,
+        param;
+        kwargs...,
     )
 end
-function FC.Makie.rankplot!(ax::Makie.Axis, chn::FC.FlexiChain, param; overlay = false, kwargs...)
+function FC.Makie.rankplot!(
+    ax::Makie.Axis,
+    chn::FC.FlexiChain,
+    param;
+    overlay=false,
+    kwargs...,
+)
     nc = FC.nchains(chn)
     if !overlay && nc > 1
-        throw(ArgumentError("to plot onto a single axis, you must set overlay=true to plot all chains together"))
+        throw(
+            ArgumentError(
+                "to plot onto a single axis, you must set overlay=true to plot all chains together",
+            ),
+        )
     end
     nc == 1 && @warn "Only one chain to plot, so the rank plot will be uninformative"
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
@@ -103,16 +117,20 @@ function FC.Makie.rankplot!(chn::FC.FlexiChain, param; kwargs...)
 end
 
 function FC.Makie.rankplot!(ax::Makie.Axis, r::FC.PlotUtils.FlexiChainRank; kwargs...)
-    data = r.ranks[chain = r.chn_idx]
-    p = Makie.hist!(ax, data; bins = 25, kwargs...)
+    data = r.ranks[chain=r.chn_idx]
+    p = Makie.hist!(ax, data; bins=25, kwargs...)
     return Makie.AxisPlot(ax, p)
 end
 
-function FC.Makie.rankplot!(ax::Makie.Axis, r::FC.PlotUtils.FlexiChainRankOverlay; kwargs...)
+function FC.Makie.rankplot!(
+    ax::Makie.Axis,
+    r::FC.PlotUtils.FlexiChainRankOverlay;
+    kwargs...,
+)
     p = nothing
     for (chn_idx, data) in zip(FC.chain_indices(r.chn), eachcol(r.ranks))
         label = "chain $(chn_idx)"
-        p = Makie.stephist!(ax, data; label = label, bins = 25, kwargs...)
+        p = Makie.stephist!(ax, data; label=label, bins=25, kwargs...)
     end
     return Makie.AxisPlot(ax, p)
 end

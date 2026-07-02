@@ -23,15 +23,15 @@ function _pushforward_discrete_bands(data, quantiles, baseline, residual)
 end
 
 function _plot_pushforward_discrete!(
-        ax::Makie.Axis,
-        data;
-        quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
-        baseline = nothing,
-        residual = false,
-        color = Makie.Cycled(1),
-        vertical::Bool = true,
-        kwargs...,
-    )
+    ax::Makie.Axis,
+    data;
+    quantiles=FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
+    baseline=nothing,
+    residual=false,
+    color=Makie.Cycled(1),
+    vertical::Bool=true,
+    kwargs...,
+)
     qs = _pushforward_discrete_bands(data, quantiles, baseline, residual)
     nq = size(qs, 1)
     n = size(qs, 2)
@@ -43,13 +43,13 @@ function _plot_pushforward_discrete!(
         p = Makie.barplot!(
             ax,
             positions,
-            qs[nq + 1 - i, :];
-            fillto = qs[i, :],
-            alpha = _band_alpha(i, n_bands),
-            color = color,
-            strokewidth = 0,
-            direction = vertical ? :y : :x,
-            width = 0.6,
+            qs[nq+1-i, :];
+            fillto=qs[i, :],
+            alpha=_band_alpha(i, n_bands),
+            color=color,
+            strokewidth=0,
+            direction=vertical ? :y : :x,
+            width=0.6,
             kwargs...,
         )
     end
@@ -59,11 +59,13 @@ function _plot_pushforward_discrete!(
             ax,
             vertical ? positions : baseline,
             vertical ? baseline : positions;
-            color = :black, marker = :xcross, markersize = 12
+            color=:black,
+            marker=:xcross,
+            markersize=12,
         )
     elseif residual
         func! = vertical ? Makie.hlines! : Makie.vlines!
-        func!(ax, [0.0]; color = :black, linestyle = :dash, linewidth = 1)
+        func!(ax, [0.0]; color=:black, linestyle=:dash, linewidth=1)
     end
 
     return Makie.AxisPlot(ax, p)
@@ -91,12 +93,12 @@ This function is a port of [Michael Betancourt's
 - `figure`, `axis`: `NamedTuple`s forwarded to `Makie.Figure` / `Makie.Axis`.
 """
 function FC.Makie.pushforward_discrete(
-        chn::FC.FlexiChain,
-        param;
-        figure = (;),
-        axis = (;),
-        kwargs...,
-    )
+    chn::FC.FlexiChain,
+    param;
+    figure=(;),
+    axis=(;),
+    kwargs...,
+)
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
     ax = Makie.Axis(fig[1, 1]; axis...)
     _, p = FC.Makie.pushforward_discrete!(ax, chn, param; kwargs...)
@@ -104,10 +106,12 @@ function FC.Makie.pushforward_discrete(
 end
 
 function FC.Makie.pushforward_discrete!(
-        ax::Makie.Axis, chn::FC.FlexiChain, param;
-        vertical::Bool = true,
-        kwargs...,
-    )
+    ax::Makie.Axis,
+    chn::FC.FlexiChain,
+    param;
+    vertical::Bool=true,
+    kwargs...,
+)
     sub = FC.PlotUtils.subset_and_split_chain(chn, param)
     ks = collect(keys(sub))
     isempty(ks) && throw(ArgumentError("no parameters to plot"))

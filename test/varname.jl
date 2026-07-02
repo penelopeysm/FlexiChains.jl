@@ -1,14 +1,7 @@
 module FCVarNameTests
 
 using FlexiChains:
-    FlexiChains,
-    FlexiChain,
-    FlexiSummary,
-    Parameter,
-    Extra,
-    VarName,
-    @varname,
-    Prefixed
+    FlexiChains, FlexiChain, FlexiSummary, Parameter, Extra, VarName, @varname, Prefixed
 using AbstractPPL: Iden, @opticof
 using DimensionalData: DimensionalData as DD
 using OrderedCollections: OrderedDict
@@ -23,14 +16,14 @@ using Test
         d = Dict(
             Parameter(@varname(a)) => 1.0,
             Parameter(@varname(b)) => [2.0, 3.0],
-            Parameter(@varname(c)) => (x = 4.0, y = 5.0),
+            Parameter(@varname(c)) => (x=4.0, y=5.0),
         )
         chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
 
         @testset "ordinary VarName" begin
             @test chain[@varname(a)] == fill(1.0, N_iters, 1)
             @test chain[@varname(b)] == fill([2.0, 3.0], N_iters, 1)
-            @test chain[@varname(c)] == fill((x = 4.0, y = 5.0), N_iters, 1)
+            @test chain[@varname(c)] == fill((x=4.0, y=5.0), N_iters, 1)
             @test_throws KeyError chain[@varname(d)]
             @test chain[@varname(b[1])] == fill(2.0, N_iters, 1)
             @test chain[@varname(b[2])] == fill(3.0, N_iters, 1)
@@ -43,7 +36,7 @@ using Test
         @testset "using Symbol" begin
             @test chain[:a] == fill(1.0, N_iters, 1)
             @test chain[:b] == fill([2.0, 3.0], N_iters, 1)
-            @test chain[:c] == fill((x = 4.0, y = 5.0), N_iters, 1)
+            @test chain[:c] == fill((x=4.0, y=5.0), N_iters, 1)
             @test_throws KeyError chain[:d]
             # If you want to do fancy sub-indexing you had better use VarNames
             @test_throws KeyError chain[Symbol("b[1]")]
@@ -58,7 +51,7 @@ using Test
             # The first sample of `a` has `a[1]` only, but the second has
             # both `a[1]` and `a[2]`
             d = Dict(Parameter(@varname(a)) => [[1.0], [2.0, 3.0]])
-            chn = FlexiChain{VarName}(2, 1, d; iter_indices = [6, 7])
+            chn = FlexiChain{VarName}(2, 1, d; iter_indices=[6, 7])
             @test chn[@varname(a)] == reshape([[1.0], [2.0, 3.0]], 2, 1)
             @test chn[@varname(a[1])] == reshape([1.0, 2.0], 2, 1)
             # when indexing into `a[2]` we should get a `missing` for the first sample
@@ -67,21 +60,21 @@ using Test
             @test_throws KeyError chn[@varname(a[3])]
 
             # For good measure we'll throw in some iter subsetting too
-            @test chn[@varname(a), iter = 2] == [[2.0, 3.0]]
-            @test chn[@varname(a[1]), iter = 2] == [2.0]
-            @test isequal(chn[@varname(a[2]), iter = 1], [missing])
-            @test chn[@varname(a[2]), iter = 2] == [3.0]
-            @test_throws KeyError chn[@varname(a[3]), iter = 2]
-            @test chn[@varname(a), iter = DD.At(7)] == [[2.0, 3.0]]
-            @test chn[@varname(a[1]), iter = DD.At(7)] == [2.0]
-            @test isequal(chn[@varname(a[2]), iter = 1], [missing])
-            @test chn[@varname(a[2]), iter = DD.At(7)] == [3.0]
-            @test_throws KeyError chn[@varname(a[3]), iter = DD.At(7)]
+            @test chn[@varname(a), iter=2] == [[2.0, 3.0]]
+            @test chn[@varname(a[1]), iter=2] == [2.0]
+            @test isequal(chn[@varname(a[2]), iter=1], [missing])
+            @test chn[@varname(a[2]), iter=2] == [3.0]
+            @test_throws KeyError chn[@varname(a[3]), iter=2]
+            @test chn[@varname(a), iter=DD.At(7)] == [[2.0, 3.0]]
+            @test chn[@varname(a[1]), iter=DD.At(7)] == [2.0]
+            @test isequal(chn[@varname(a[2]), iter=1], [missing])
+            @test chn[@varname(a[2]), iter=DD.At(7)] == [3.0]
+            @test_throws KeyError chn[@varname(a[3]), iter=DD.At(7)]
             # and chain
-            @test chn[@varname(a), chain = 1] == [[1.0], [2.0, 3.0]]
-            @test chn[@varname(a[1]), chain = 1] == [1.0, 2.0]
-            @test isequal(chn[@varname(a[2]), chain = 1], [missing, 3.0])
-            @test_throws KeyError chn[@varname(a[3]), chain = 1]
+            @test chn[@varname(a), chain=1] == [[1.0], [2.0, 3.0]]
+            @test chn[@varname(a[1]), chain=1] == [1.0, 2.0]
+            @test isequal(chn[@varname(a[2]), chain=1], [missing, 3.0])
+            @test_throws KeyError chn[@varname(a[3]), chain=1]
         end
     end
 
@@ -91,22 +84,20 @@ using Test
             # use OrderedDict so that we can also test order
             d = OrderedDict(
                 Parameter(@varname(a)) => 1.0,
-                Parameter(@varname(c)) => (x = 4.0, y = 5.0),
+                Parameter(@varname(c)) => (x=4.0, y=5.0),
                 Parameter(@varname(b)) => [2.0, 3.0],
                 Extra("hello") => 3.0,
             )
             chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
             chain2 = FlexiChains._split_varnames(chain)
-            @test collect(keys(chain2)) == (
-                [
-                    Parameter(@varname(a)),
-                    Parameter(@varname(c.x)),
-                    Parameter(@varname(c.y)),
-                    Parameter(@varname(b[1])),
-                    Parameter(@varname(b[2])),
-                    Extra("hello"),
-                ]
-            )
+            @test collect(keys(chain2)) == ([
+                Parameter(@varname(a)),
+                Parameter(@varname(c.x)),
+                Parameter(@varname(c.y)),
+                Parameter(@varname(b[1])),
+                Parameter(@varname(b[2])),
+                Extra("hello"),
+            ])
         end
 
         @testset "TKey = Symbol" begin
@@ -114,22 +105,20 @@ using Test
             # use OrderedDict so that we can also test order
             d = OrderedDict(
                 Parameter(:a) => 1.0,
-                Parameter(:c) => (x = 4.0, y = 5.0),
+                Parameter(:c) => (x=4.0, y=5.0),
                 Parameter(:b) => [2.0, 3.0],
                 Extra("hello") => 3.0,
             )
             chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
             chain2 = FlexiChains._split_varnames(chain)
-            @test collect(keys(chain2)) == (
-                [
-                    Parameter(:a),
-                    Parameter(Symbol("c.x")),
-                    Parameter(Symbol("c.y")),
-                    Parameter(Symbol("b[1]")),
-                    Parameter(Symbol("b[2]")),
-                    Extra("hello"),
-                ]
-            )
+            @test collect(keys(chain2)) == ([
+                Parameter(:a),
+                Parameter(Symbol("c.x")),
+                Parameter(Symbol("c.y")),
+                Parameter(Symbol("b[1]")),
+                Parameter(Symbol("b[2]")),
+                Extra("hello"),
+            ])
         end
 
         @testset "TKey = String" begin
@@ -137,22 +126,20 @@ using Test
             # use OrderedDict so that we can also test order
             d = OrderedDict(
                 Parameter("a") => 1.0,
-                Parameter("c") => (x = 4.0, y = 5.0),
+                Parameter("c") => (x=4.0, y=5.0),
                 Parameter("b") => [2.0, 3.0],
                 Extra("hello") => 3.0,
             )
             chain = FlexiChain{String}(N_iters, 1, fill(d, N_iters))
             chain2 = FlexiChains._split_varnames(chain)
-            @test collect(keys(chain2)) == (
-                [
-                    Parameter("a"),
-                    Parameter("c.x"),
-                    Parameter("c.y"),
-                    Parameter("b[1]"),
-                    Parameter("b[2]"),
-                    Extra("hello"),
-                ]
-            )
+            @test collect(keys(chain2)) == ([
+                Parameter("a"),
+                Parameter("c.x"),
+                Parameter("c.y"),
+                Parameter("b[1]"),
+                Parameter("b[2]"),
+                Extra("hello"),
+            ])
         end
 
         @testset "other unsupported keys" begin
@@ -172,13 +159,12 @@ using Test
                 chain = FlexiChain{K}(N_iters, 1, fill(d, N_iters))
                 @test isequal(FlexiChains._split_varnames(chain), chain)
                 # check order of keys are unchanged
-                @test collect(keys(FlexiChains._split_varnames(chain))) == collect(keys(chain))
+                @test collect(keys(FlexiChains._split_varnames(chain))) ==
+                      collect(keys(chain))
             end
 
             @testset "if there are non-scalar values" begin
-                d = OrderedDict(
-                    Parameter(K(:b)) => [2.0, 3.0],
-                )
+                d = OrderedDict(Parameter(K(:b)) => [2.0, 3.0])
                 chain = FlexiChain{K}(N_iters, 1, fill(d, N_iters))
                 @test_throws ArgumentError FlexiChains._split_varnames(chain)
             end
@@ -289,7 +275,7 @@ using Test
                     Parameter(@varname(a.x)) => 1.0,
                     Parameter(@varname(a.y)) => [2.0, 3.0],
                     Parameter(@varname(b)) => 10.0,
-                    Parameter(@varname(m.p)) => (; q = 20.0),
+                    Parameter(@varname(m.p)) => (; q=20.0),
                 )
                 chain = FlexiChain{VarName}(N_iters, N_chains, fill(d, N_iters, N_chains))
 
@@ -327,9 +313,9 @@ using Test
                 end
 
                 @testset "with iter/chain kwargs" begin
-                    result = chain[Prefixed(:x), iter = 1:2]
+                    result = chain[Prefixed(:x), iter=1:2]
                     @test size(result) == (2, N_chains)
-                    result2 = chain[Prefixed(:x), chain = 1]
+                    result2 = chain[Prefixed(:x), chain=1]
                     @test size(result2) == (N_iters,)
                 end
 
@@ -354,7 +340,7 @@ using Test
                     Parameter(@varname(b)) => 10.0,
                 )
                 chain = FlexiChain{VarName}(N_iters, N_chains, fill(d, N_iters, N_chains))
-                fs = mean(chain; dims = :iter)
+                fs = mean(chain; dims=:iter)
 
                 @testset "simple prefix match" begin
                     result = fs[Prefixed(:x)]

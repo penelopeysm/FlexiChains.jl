@@ -31,11 +31,11 @@ The two `FlexiChain`s being merged must have the same dimensions.
 The chain indices and metadata are taken from the second chain. Those in the first chain are
 silently ignored.
 """
-function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1, TKey2}
+function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1,TKey2}
     # Check size
     size(c1) == size(c2) || throw(
         DimensionMismatch(
-            "cannot merge FlexiChains with different sizes $(size(c1)) and $(size(c2))."
+            "cannot merge FlexiChains with different sizes $(size(c1)) and $(size(c2)).",
         ),
     )
     # Promote key type if necessary and warn
@@ -50,8 +50,8 @@ function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1, 
     # TODO: This function has to access internal data, urk
     TValNew = Base.promote_type(eltype(valtype(c1._data)), eltype(valtype(c2._data)))
     # Merge the data dictionaries
-    d1 = OrderedDict{ParameterOrExtra{<:TKeyNew}, Matrix{<:TValNew}}(c1._data)
-    d2 = OrderedDict{ParameterOrExtra{<:TKeyNew}, Matrix{<:TValNew}}(c2._data)
+    d1 = OrderedDict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c1._data)
+    d2 = OrderedDict{ParameterOrExtra{<:TKeyNew},Matrix{<:TValNew}}(c2._data)
     merged_data = merge(d1, d2)
     # Merge structures element-wise
     merged_structures = map(merge_structures, c1._structures, c2._structures)
@@ -59,11 +59,11 @@ function Base.merge(c1::FlexiChain{TKey1}, c2::FlexiChain{TKey2}) where {TKey1, 
         niters(c1),
         nchains(c1),
         merged_data;
-        structures = merged_structures,
-        iter_indices = FlexiChains.iter_indices(c2),
-        chain_indices = FlexiChains.chain_indices(c2),
-        sampling_time = FlexiChains.sampling_time(c2),
-        last_sampler_state = FlexiChains.last_sampler_state(c2),
+        structures=merged_structures,
+        iter_indices=FlexiChains.iter_indices(c2),
+        chain_indices=FlexiChains.chain_indices(c2),
+        sampling_time=FlexiChains.sampling_time(c2),
+        last_sampler_state=FlexiChains.last_sampler_state(c2),
     )
 end
 
@@ -84,22 +84,16 @@ in neither summary are filled with `missing`.
 If the key types are different, the resulting `FlexiSummary` will have a promoted key type,
 and a warning will be issued.
 """
-function Base.merge(
-        s1::FlexiSummary{TKey1}, s2::FlexiSummary{TKey2}
-    ) where {TKey1, TKey2}
+function Base.merge(s1::FlexiSummary{TKey1}, s2::FlexiSummary{TKey2}) where {TKey1,TKey2}
     # Validate iter and chain indices match. This is stricter than merge on FlexiChain, but
     # for summaries, I'm genuinely unsure of how one can ever have a situation where one
     # would want to merge summaries with different iteration or chain indices. (To the
     # reader: please feel free to open issues / PRs if you have a use case!)
     s1._iter_indices == s2._iter_indices || throw(
-        DimensionMismatch(
-            "cannot merge FlexiSummaries with different iteration indices."
-        ),
+        DimensionMismatch("cannot merge FlexiSummaries with different iteration indices."),
     )
     s1._chain_indices == s2._chain_indices || throw(
-        DimensionMismatch(
-            "cannot merge FlexiSummaries with different chain indices."
-        ),
+        DimensionMismatch("cannot merge FlexiSummaries with different chain indices."),
     )
     # Collect stat names
     stats1 = parent(s1._stat_indices)
@@ -123,9 +117,9 @@ function Base.merge(
     chain_size = s1._chain_indices === nothing ? 1 : length(s1._chain_indices)
     stat_size = length(all_stats)
     # Merge data
-    new_data = OrderedDict{ParameterOrExtra{<:TKeyNew}, Array{<:Any, 3}}()
+    new_data = OrderedDict{ParameterOrExtra{<:TKeyNew},Array{<:Any,3}}()
     for k in all_keys
-        arr = Array{Any, 3}(missing, iter_size, chain_size, stat_size)
+        arr = Array{Any,3}(missing, iter_size, chain_size, stat_size)
         # Fill from s1 first.
         if haskey(s1._data, k)
             # In principle this could be optimised to check if s2 has the combination of key
@@ -149,12 +143,16 @@ function Base.merge(
     # only one stat in the result (for example, merge(mean(chn1), mean(chn2))).
     new_drop = s1._drop_stat_dim && s2._drop_stat_dim && length(all_stats) == 1
     return FlexiSummary{TKeyNew}(
-        new_data, s1._iter_indices, s1._chain_indices, new_si, new_drop,
+        new_data,
+        s1._iter_indices,
+        s1._chain_indices,
+        new_si,
+        new_drop,
     )
 end
 
 function Base.merge(s1::FlexiSummary, s2::FlexiSummary, rest::FlexiSummary...)
-    return foldl(merge, rest; init = merge(s1, s2))
+    return foldl(merge, rest; init=merge(s1, s2))
 end
 
 """

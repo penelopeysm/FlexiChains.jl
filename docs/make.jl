@@ -2,7 +2,7 @@
 ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
 
 using Pkg: Pkg
-Pkg.develop(Pkg.PackageSpec(; path = dirname(@__DIR__)))
+Pkg.develop(Pkg.PackageSpec(; path=dirname(@__DIR__)))
 
 using Documenter
 using DocumenterInterLinks
@@ -57,16 +57,16 @@ old_GKSwstype = get(ENV, "GKSwstype", nothing)
 ENV["GKSwstype"] = "100"
 
 makedocs(;
-    sitename = "FlexiChains.jl",
-    format = Documenter.HTML(;
+    sitename="FlexiChains.jl",
+    format=Documenter.HTML(;
         # Some pictures are larger than the default threshold of 8 KB
-        example_size_threshold = 12 * 2^10, # 12 KB
+        example_size_threshold=12 * 2^10, # 12 KB
         # And some pages are larger than the default threshold of 100 KB
-        size_threshold_warn = 200 * 2^10, # 200 KB
-        assets = ["assets/custom.css"],
+        size_threshold_warn=200 * 2^10, # 200 KB
+        assets=["assets/custom.css"],
     ),
-    modules = modules,
-    pages = [
+    modules=modules,
+    pages=[
         "index.md",
         "turing.md",
         "summarising.md",
@@ -83,10 +83,10 @@ makedocs(;
         "whynot.md",
         "migration.md",
     ],
-    checkdocs = :exports,
-    warnonly = false,
-    doctest = false,
-    plugins = [links],
+    checkdocs=:exports,
+    warnonly=false,
+    doctest=false,
+    plugins=[links],
 )
 
 # Restore original environment variable

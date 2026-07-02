@@ -1,5 +1,5 @@
 function _default_ridgeline_axis()
-    return (xlabel = "value",)
+    return (xlabel="value",)
 end
 
 function _get_kde(samples::AbstractArray, scale)
@@ -32,21 +32,21 @@ $(FC.PlotUtils._PARAM_DOCSTRING("FlexiChains.Makie.ridgeline"))
 $(MAKIE_KWARGS_DOCSTRING)
 """
 function FC.Makie.ridgeline(
-        chn::FC.FlexiChain,
-        param_or_params = FC.Parameter.(FC.parameters(chn));
-        pool_chains::Bool = false,
-        legend_position::Symbol = :bottom,
-        figure = (;),
-        axis = (;),
-        legend = (;),
-        kwargs...,
-    )
+    chn::FC.FlexiChain,
+    param_or_params=FC.Parameter.(FC.parameters(chn));
+    pool_chains::Bool=false,
+    legend_position::Symbol=:bottom,
+    figure=(;),
+    axis=(;),
+    legend=(;),
+    kwargs...,
+)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nparams = length(keys_to_plot)
     fig = Makie.Figure(;
-        size = (
+        size=(
             FC.PlotUtils.DEFAULT_WIDTH,
             max(FC.PlotUtils.DEFAULT_HEIGHT, 60 * nparams + 100),
         ),
@@ -69,9 +69,13 @@ end
 # Single axis plotting #
 ########################
 function FC.Makie.ridgeline(
-        grid::MakieGrids, chn::FC.FlexiChain, param_or_params;
-        pool_chains::Bool = false, axis = (;), kwargs...
-    )
+    grid::MakieGrids,
+    chn::FC.FlexiChain,
+    param_or_params;
+    pool_chains::Bool=false,
+    axis=(;),
+    kwargs...,
+)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
     return FC.Makie.ridgeline!(
@@ -82,13 +86,18 @@ function FC.Makie.ridgeline(
 end
 
 function FC.Makie.ridgeline!(
-        ax::Makie.Axis, chn::FC.FlexiChain, param_or_params;
-        pool_chains::Bool = false, kwargs...
-    )
+    ax::Makie.Axis,
+    chn::FC.FlexiChain,
+    param_or_params;
+    pool_chains::Bool=false,
+    kwargs...,
+)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
     return FC.Makie.ridgeline!(
-        ax, FC.PlotUtils.FlexiChainRidgeline(chn, ks, pool_chains); kwargs...
+        ax,
+        FC.PlotUtils.FlexiChainRidgeline(chn, ks, pool_chains);
+        kwargs...,
     )
 end
 
@@ -97,9 +106,11 @@ function FC.Makie.ridgeline!(chn::FC.FlexiChain, param_or_params; kwargs...)
 end
 
 function FC.Makie.ridgeline!(
-        ax::Makie.Axis, d::FC.PlotUtils.FlexiChainRidgeline;
-        scale::Float64 = 0.8, kwargs...
-    )
+    ax::Makie.Axis,
+    d::FC.PlotUtils.FlexiChainRidgeline;
+    scale::Float64=0.8,
+    kwargs...,
+)
     params = d.params
     nparams = length(params)
     nchains = FC.nchains(d.chn)
@@ -115,16 +126,24 @@ function FC.Makie.ridgeline!(
             xs, dens_scaled = _get_kde(data, scale)
             ys_upper = y_base .+ dens_scaled
             p = Makie.band!(
-                ax, xs, fill(y_base, length(xs)), ys_upper;
-                kwargs..., color = only(colors),
+                ax,
+                xs,
+                fill(y_base, length(xs)),
+                ys_upper;
+                kwargs...,
+                color=only(colors),
             )
         else
             for (j, datacol) in enumerate(eachcol(data))
                 xs, dens_scaled = _get_kde(datacol, scale)
                 ys_upper = y_base .+ dens_scaled
                 p = Makie.band!(
-                    ax, xs, fill(y_base, length(xs)), ys_upper;
-                    kwargs..., color = colors[j],
+                    ax,
+                    xs,
+                    fill(y_base, length(xs)),
+                    ys_upper;
+                    kwargs...,
+                    color=colors[j],
                 )
             end
         end

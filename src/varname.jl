@@ -19,7 +19,7 @@ any VarName that ends with the target VarName. For example, if the key is
 
 Note that `Prefixed` is only supported for `VarName`s, and not for general keys.
 """
-struct Prefixed{T <: VarName}
+struct Prefixed{T<:VarName}
     target_vn::T
 end
 Base.show(io::IO, prefixed::Prefixed) = print(io, "Prefixed($(prefixed.target_vn))")
@@ -38,10 +38,14 @@ transformed, then the transformed elements are returned and the rest are `missin
 `orig_vn` is the VarName that the user attempted to access. It is used only for error
 reporting.
 """
-function _map_optic(::AbstractPPL.Iden, arr::AbstractArray, ::Union{VarName, Prefixed})
+function _map_optic(::AbstractPPL.Iden, arr::AbstractArray, ::Union{VarName,Prefixed})
     return arr
 end
-function _map_optic(optic::AbstractPPL.AbstractOptic, arr::AbstractArray, orig_vn::Union{VarName, Prefixed})
+function _map_optic(
+    optic::AbstractPPL.AbstractOptic,
+    arr::AbstractArray,
+    orig_vn::Union{VarName,Prefixed},
+)
     found = false
     results = map(arr) do elem
         if AbstractPPL.canview(optic, elem)
@@ -63,11 +67,11 @@ is a parameter) and applies the `optic` function to the data before returning it
 reporting.
 """
 function _getindex_optic_and_vn(
-        vn_keys::AbstractVector{<:VarName},
-        vn::VarName{sym},
-        optic::AbstractPPL.AbstractOptic,
-        orig_vn::VarName{sym},
-    )::Tuple{AbstractPPL.AbstractOptic, VarName} where {sym}
+    vn_keys::AbstractVector{<:VarName},
+    vn::VarName{sym},
+    optic::AbstractPPL.AbstractOptic,
+    orig_vn::VarName{sym},
+)::Tuple{AbstractPPL.AbstractOptic,VarName} where {sym}
     if vn in vn_keys
         return (optic, vn)
     else
@@ -91,7 +95,10 @@ Overloaded method which provides extra functionality when indexing by VarNames.
 function _get_raw_data(cs::ChainOrSummary{<:VarName}, vn_param::Parameter{<:VarName})
     orig_vn = vn_param.name
     optic, vn = _getindex_optic_and_vn(
-        FlexiChains.parameters(cs), orig_vn, AbstractPPL.Iden(), orig_vn
+        FlexiChains.parameters(cs),
+        orig_vn,
+        AbstractPPL.Iden(),
+        orig_vn,
     )
     # can't use get_raw_data in this line or else it will recurse.
     raw = cs._data[Parameter(vn)]
@@ -116,11 +123,17 @@ in the chain, then that will be returned. If not, then `@varname(x)` will be che
 and if that is a vector-valued parameter then all of its first entries will be returned.
 """
 function Base.getindex(
-        fchain::FlexiChain{<:VarName}, vn::VarName;
-        iter = Colon(), chain = Colon(), stack = nothing
-    )
+    fchain::FlexiChain{<:VarName},
+    vn::VarName;
+    iter=Colon(),
+    chain=Colon(),
+    stack=nothing,
+)
     raw = _get_raw_data(fchain, Parameter(vn))
-    return _raw_to_user_data(fchain, raw; name = string(Parameter(vn)), stack = stack)[iter = iter, chain = chain]
+    return _raw_to_user_data(fchain, raw; name=string(Parameter(vn)), stack=stack)[
+        iter=iter,
+        chain=chain,
+    ]
 end
 """
     Base.getindex(
@@ -137,15 +150,20 @@ Turing.jl models.
 $(SUMMARY_GETINDEX_KWARGS)
 """
 function Base.getindex(
-        fs::FlexiSummary{<:VarName},
-        vn::VarName;
-        iter = _UNSPECIFIED_KWARG,
-        chain = _UNSPECIFIED_KWARG,
-        stat = _UNSPECIFIED_KWARG,
-        stack = nothing,
-    )
+    fs::FlexiSummary{<:VarName},
+    vn::VarName;
+    iter=_UNSPECIFIED_KWARG,
+    chain=_UNSPECIFIED_KWARG,
+    stat=_UNSPECIFIED_KWARG,
+    stack=nothing,
+)
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
-    user_data = _raw_to_user_data(fs, _get_raw_data(fs, Parameter(vn)); name = string(Parameter(vn)), stack = stack)
+    user_data = _raw_to_user_data(
+        fs,
+        _get_raw_data(fs, Parameter(vn));
+        name=string(Parameter(vn)),
+        stack=stack,
+    )
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
@@ -165,8 +183,11 @@ function shares_tail(vn::VarName, target_vn::VarName)
     return false
 end
 function _prefixed_get_key_and_optic(
-        vns::Set{<:VarName}, target_vn::VarName, optic::AbstractPPL.AbstractOptic, original_prefixed::Prefixed
-    )
+    vns::Set{<:VarName},
+    target_vn::VarName,
+    optic::AbstractPPL.AbstractOptic,
+    original_prefixed::Prefixed,
+)
     matching_vns = collect(filter(vn -> shares_tail(vn, target_vn), vns))
     if isempty(matching_vns)
         # No matches found; but maybe we need to strip off some optics from the tail of
@@ -181,16 +202,30 @@ function _prefixed_get_key_and_optic(
             init_optic = AbstractPPL.oinit(target_vn_optic)
             new_optic = Base.cat(AbstractPPL.olast(target_vn_optic), optic)
             new_target_vn = VarName{AbstractPPL.getsym(target_vn)}(init_optic)
-            return _prefixed_get_key_and_optic(vns, new_target_vn, new_optic, original_prefixed)
+            return _prefixed_get_key_and_optic(
+                vns,
+                new_target_vn,
+                new_optic,
+                original_prefixed,
+            )
         end
     elseif length(matching_vns) > 1
-        throw(ArgumentError("Multiple matches found for $(original_prefixed): ($(join(matching_vns, ", ")))"))
+        throw(
+            ArgumentError(
+                "Multiple matches found for $(original_prefixed): ($(join(matching_vns, ", ")))",
+            ),
+        )
     else
         return only(matching_vns), optic
     end
 end
 function prefixed_get_key_and_optic(vns::Set{<:VarName}, prefixed::Prefixed)
-    return _prefixed_get_key_and_optic(vns, prefixed.target_vn, AbstractPPL.Iden(), prefixed)
+    return _prefixed_get_key_and_optic(
+        vns,
+        prefixed.target_vn,
+        AbstractPPL.Iden(),
+        prefixed,
+    )
 end
 
 """
@@ -203,16 +238,27 @@ Get a parameter from the chain that matches the target VarName but with an arbit
 See [`Prefixed`](@ref) for details.
 """
 function Base.getindex(
-        fchain::FlexiChain{<:VarName}, prefixed::Prefixed;
-        iter = Colon(), chain = Colon(), stack = nothing
-    )
+    fchain::FlexiChain{<:VarName},
+    prefixed::Prefixed;
+    iter=Colon(),
+    chain=Colon(),
+    stack=nothing,
+)
     vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fchain)), prefixed)
     # We could use get_raw_data here, but we don't need to since we already calculated the
     # split between vn and optic (get_raw_data would just recalculate it).
     combined_vn = AbstractPPL.append_optic(vn, optic)
     raw = fchain._data[Parameter(vn)]
     raw_with_optic = _map_optic(optic, raw, prefixed)
-    return _raw_to_user_data(fchain, raw_with_optic; name = string(Parameter(combined_vn)), stack = stack)[iter = iter, chain = chain]
+    return _raw_to_user_data(
+        fchain,
+        raw_with_optic;
+        name=string(Parameter(combined_vn)),
+        stack=stack,
+    )[
+        iter=iter,
+        chain=chain,
+    ]
 end
 """
     Base.getindex(
@@ -227,17 +273,22 @@ Get a parameter from the summary that matches the target VarName but with an arb
 prefix. See [`Prefixed`](@ref) for details.
 """
 function Base.getindex(
-        fs::FlexiSummary{<:VarName},
-        prefixed::Prefixed;
-        iter = _UNSPECIFIED_KWARG,
-        chain = _UNSPECIFIED_KWARG,
-        stat = _UNSPECIFIED_KWARG,
-        stack = nothing,
-    )
+    fs::FlexiSummary{<:VarName},
+    prefixed::Prefixed;
+    iter=_UNSPECIFIED_KWARG,
+    chain=_UNSPECIFIED_KWARG,
+    stat=_UNSPECIFIED_KWARG,
+    stack=nothing,
+)
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     vn, optic = prefixed_get_key_and_optic(Set(FlexiChains.parameters(fs)), prefixed)
     raw = fs._data[Parameter(vn)]
     combined_vn = AbstractPPL.append_optic(vn, optic)
-    user_data = _raw_to_user_data(fs, _map_optic(optic, raw, prefixed); name = string(Parameter(combined_vn)), stack = stack)
+    user_data = _raw_to_user_data(
+        fs,
+        _map_optic(optic, raw, prefixed);
+        name=string(Parameter(combined_vn)),
+        stack=stack,
+    )
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end

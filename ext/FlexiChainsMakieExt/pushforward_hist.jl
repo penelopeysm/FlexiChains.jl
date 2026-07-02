@@ -1,14 +1,14 @@
-rep2(vals) = repeat(vals, inner = 2)
+rep2(vals) = repeat(vals, inner=2)
 
 function _plot_pushforward_hist!(
-        ax::Makie.Axis,
-        stacked_data;  # niters x nchains x nparams
-        observed = nothing,
-        nbins::Integer = 25,
-        quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
-        color = Makie.Cycled(1),
-        kwargs...,
-    )
+    ax::Makie.Axis,
+    stacked_data;  # niters x nchains x nparams
+    observed=nothing,
+    nbins::Integer=25,
+    quantiles=FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
+    color=Makie.Cycled(1),
+    kwargs...,
+)
     isodd(length(quantiles)) || throw(ArgumentError("`quantiles` must have odd length"))
     edges = FC.PlotUtils.get_bin_edges(stacked_data, nbins)
     # counts is iter × chain × nbins
@@ -24,8 +24,8 @@ function _plot_pushforward_hist!(
     end
 
     xs = Float64[]
-    for b in 1:(length(edges) - 1)
-        push!(xs, edges[b], edges[b + 1])
+    for b in 1:(length(edges)-1)
+        push!(xs, edges[b], edges[b+1])
     end
 
     for i in 1:n_bands
@@ -33,18 +33,18 @@ function _plot_pushforward_hist!(
             ax,
             xs,
             rep2(qs[i, :]),
-            rep2(qs[nq + 1 - i, :]);
-            alpha = _band_alpha(i, n_bands),
-            color = color,
+            rep2(qs[nq+1-i, :]);
+            alpha=_band_alpha(i, n_bands),
+            color=color,
             kwargs...,
         )
     end
 
-    p = Makie.lines!(ax, xs, rep2(qs[median_idx, :]); color = color, linewidth = 2)
+    p = Makie.lines!(ax, xs, rep2(qs[median_idx, :]); color=color, linewidth=2)
 
     if observed !== nothing
         obs = FC.PlotUtils.histogram_counts(observed, edges)
-        p = Makie.lines!(ax, xs, rep2(Float64.(obs)); color = :black, linewidth = 2)
+        p = Makie.lines!(ax, xs, rep2(Float64.(obs)); color=:black, linewidth=2)
     end
 
     return Makie.AxisPlot(ax, p)
@@ -68,14 +68,14 @@ This function is a port of [Michael Betancourt's
 - `figure`, `axis`: `NamedTuple`s forwarded to `Makie.Figure` / `Makie.Axis`.
 """
 function FC.Makie.pushforward_hist(
-        chn::FC.FlexiChain,
-        param;
-        figure = (;),
-        axis = (;),
-        kwargs...,
-    )
+    chn::FC.FlexiChain,
+    param;
+    figure=(;),
+    axis=(;),
+    kwargs...,
+)
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
-    ax = Makie.Axis(fig[1, 1]; xlabel = "value", ylabel = "counts", axis...)
+    ax = Makie.Axis(fig[1, 1]; xlabel="value", ylabel="counts", axis...)
     _, p = FC.Makie.pushforward_hist!(ax, chn, param; kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
 end

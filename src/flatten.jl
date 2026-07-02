@@ -37,7 +37,7 @@ Likewise for `AbstractString`-keyed chains; the keys are converted back to stand
 """
 function _split_varnames(cs::ChainOrSummary{Symbol})
     N = cs isa FlexiChain ? 2 : 3
-    new_data = OrderedDict{ParameterOrExtra{<:VarName}, Array{<:Any, N}}()
+    new_data = OrderedDict{ParameterOrExtra{<:VarName},Array{<:Any,N}}()
     for (k, v) in cs._data
         new_key = k isa Parameter ? Parameter(VarName{k.name}()) : k
         new_data[new_key] = v
@@ -48,7 +48,7 @@ function _split_varnames(cs::ChainOrSummary{Symbol})
 end
 function _split_varnames(cs::ChainOrSummary{<:AbstractString})
     N = cs isa FlexiChain ? 2 : 3
-    new_data = OrderedDict{ParameterOrExtra{<:VarName}, Array{<:Any, N}}()
+    new_data = OrderedDict{ParameterOrExtra{<:VarName},Array{<:Any,N}}()
     for (k, v) in cs._data
         new_key = k isa Parameter ? Parameter(VarName{Symbol(k.name)}()) : k
         new_data[new_key] = v
@@ -70,7 +70,11 @@ function _split_varnames(cs::ChainOrSummary)
         if eltype(v) <: Real
             continue
         else
-            throw(ArgumentError("key $(k) in the chain has data of type $(eltype(v)), which is not scalar-valued; variable names cannot be split for this chain. Please use a chain with key type VarName or Symbol if you want to use variable name splitting."))
+            throw(
+                ArgumentError(
+                    "key $(k) in the chain has data of type $(eltype(v)), which is not scalar-valued; variable names cannot be split for this chain. Please use a chain with key type VarName or Symbol if you want to use variable name splitting.",
+                ),
+            )
         end
     end
     return cs
@@ -104,11 +108,11 @@ If `parameters_only=true` (the default), then two things happen:
   be `Union{Parameter{<:TKey},Extra}`.
 """
 function DD.DimArray(
-        chain::FlexiChain{TKey};
-        warn::Bool = true,
-        eltype_filter::Type{T} = Any,
-        parameters_only::Bool = true,
-    ) where {TKey, T}
+    chain::FlexiChain{TKey};
+    warn::Bool=true,
+    eltype_filter::Type{T}=Any,
+    parameters_only::Bool=true,
+) where {TKey,T}
     chain = FlexiChains._split_varnames(chain)
     kept_keys = if parameters_only
         TKey[]
@@ -171,11 +175,11 @@ See [`DimensionalData.DimArray(::FlexiChains.FlexiChain)`](@ref) for more detail
 conversion process and available keyword arguments.
 """
 function Base.Array(
-        chain::FlexiChain{TKey};
-        warn::Bool = true,
-        eltype_filter::Type{T} = Any,
-        parameters_only::Bool = true,
-    ) where {TKey, T}
+    chain::FlexiChain{TKey};
+    warn::Bool=true,
+    eltype_filter::Type{T}=Any,
+    parameters_only::Bool=true,
+) where {TKey,T}
     da = DD.DimArray(chain; warn, eltype_filter, parameters_only)
     return parent(da)
 end
@@ -211,11 +215,11 @@ non-collapsed dimensions of the summary. For example:
   not subtyping `eltype_filter`.
 """
 function DD.DimArray(
-        summary::FlexiSummary{TKey};
-        warn::Bool = true,
-        eltype_filter::Type{T} = Any,
-        parameters_only::Bool = true,
-    ) where {TKey, T}
+    summary::FlexiSummary{TKey};
+    warn::Bool=true,
+    eltype_filter::Type{T}=Any,
+    parameters_only::Bool=true,
+) where {TKey,T}
     summary = FlexiChains._split_varnames(summary)
     kept_keys = if parameters_only
         TKey[]
@@ -236,7 +240,7 @@ function DD.DimArray(
             dropped = if isempty(dim_indices_to_drop)
                 v
             else
-                dropdims(v; dims = dim_indices_to_drop)
+                dropdims(v; dims=dim_indices_to_drop)
             end
             push!(kept_arrays, dropped)
         else
@@ -275,16 +279,20 @@ Convert a `FlexiSummary` into a standard `Array`. This is the same as the conver
 See [`DimensionalData.DimArray(::FlexiChains.FlexiSummary)`](@ref) for details.
 """
 function Base.Array(
-        summary::FlexiSummary{TKey};
-        warn::Bool = true,
-        eltype_filter::Type{T} = Any,
-        parameters_only::Bool = true,
-    ) where {TKey, T}
+    summary::FlexiSummary{TKey};
+    warn::Bool=true,
+    eltype_filter::Type{T}=Any,
+    parameters_only::Bool=true,
+) where {TKey,T}
     da = DD.DimArray(summary; warn, eltype_filter, parameters_only)
     return parent(da)
 end
 
-function _prepare_chain_or_summary(cs::ChainOrSummary; split_varnames::Bool = true, parameters_only::Bool = true)
+function _prepare_chain_or_summary(
+    cs::ChainOrSummary;
+    split_varnames::Bool=true,
+    parameters_only::Bool=true,
+)
     if parameters_only
         cs = FlexiChains.subset_parameters(cs)
     end
@@ -308,8 +316,8 @@ function _check_duplicate_keys(ks)
         throw(
             ArgumentError(
                 "duplicate column names after converting keys to Symbols: " *
-                    join(unique(duplicates), ", "),
-            )
+                join(unique(duplicates), ", "),
+            ),
         )
     end
 end
@@ -397,19 +405,19 @@ julia> df = DataFrame(Wide(mean(chn)))
    2 │ b          0.5
 ```
 """
-struct Wide{F <: ChainOrSummary, N <: NamedTuple}
+struct Wide{F<:ChainOrSummary,N<:NamedTuple}
     cs::F
     # A precomputed mapping from Symbol(k) => k for all keys in `cs`.
     symbol_to_keys::N
 
-    function Wide(cs::ChainOrSummary; split_varnames::Bool = true, parameters_only::Bool = true)
+    function Wide(cs::ChainOrSummary; split_varnames::Bool=true, parameters_only::Bool=true)
         cs = _prepare_chain_or_summary(cs; split_varnames, parameters_only)
         # Strip parameter/extra wrappers and convert to Symbol for column names.
         ks = Tuple(FlexiChains.get_name.(keys(cs)))
         sym_ks = Symbol.(ks)
         _check_duplicate_keys(sym_ks)
         symbol_to_keys = NamedTuple{sym_ks}(ks)
-        return new{typeof(cs), typeof(symbol_to_keys)}(cs, symbol_to_keys)
+        return new{typeof(cs),typeof(symbol_to_keys)}(cs, symbol_to_keys)
     end
 end
 
@@ -472,12 +480,12 @@ from keys. Otherwise, the `Parameter`/`Extra` wrappers are retained. If you want
 them, you can use [`FlexiChains.get_name`](@ref) on the `param` column of the resulting
 table.
 """
-struct Long{F <: FlexiChain, K <: Tuple}
+struct Long{F<:FlexiChain,K<:Tuple}
     chn::F
     # The keys for the param column: unwrapped if parameters_only, wrapped otherwise.
     original_keys::K
 
-    function Long(chn::FlexiChain; split_varnames::Bool = true, parameters_only::Bool = true)
+    function Long(chn::FlexiChain; split_varnames::Bool=true, parameters_only::Bool=true)
         chn = _prepare_chain_or_summary(chn; split_varnames, parameters_only)
         original_keys = if parameters_only
             Tuple(FlexiChains.get_name.(keys(chn)))
@@ -485,7 +493,7 @@ struct Long{F <: FlexiChain, K <: Tuple}
             Tuple(keys(chn))
         end
         _check_duplicate_keys(original_keys)
-        return new{typeof(chn), typeof(original_keys)}(chn, original_keys)
+        return new{typeof(chn),typeof(original_keys)}(chn, original_keys)
     end
 end
 
@@ -495,16 +503,17 @@ Tables.columnaccess(::Type{<:Wide}) = true
 Tables.columnaccess(::Type{<:Long}) = true
 
 # Default Tables.jl implementation for FlexiChain and FlexiSummary itself
-Tables.columns(chn::FlexiChain) = Wide(chn; split_varnames = true, parameters_only = true)
-Tables.columns(fs::FlexiSummary) = Wide(fs; split_varnames = true, parameters_only = true)
+Tables.columns(chn::FlexiChain) = Wide(chn; split_varnames=true, parameters_only=true)
+Tables.columns(fs::FlexiSummary) = Wide(fs; split_varnames=true, parameters_only=true)
 
 # Wide chain
-Tables.columnnames(s::Wide{<:FlexiChain}) = [FlexiChains.ITER_DIM_NAME, FlexiChains.CHAIN_DIM_NAME, keys(s.symbol_to_keys)...]
+Tables.columnnames(s::Wide{<:FlexiChain}) =
+    [FlexiChains.ITER_DIM_NAME, FlexiChains.CHAIN_DIM_NAME, keys(s.symbol_to_keys)...]
 function Tables.getcolumn(s::Wide{<:FlexiChain}, col::Symbol)
     return if col === FlexiChains.ITER_DIM_NAME
-        repeat(iter_indices(s.cs); outer = FlexiChains.nchains(s.cs))
+        repeat(iter_indices(s.cs); outer=FlexiChains.nchains(s.cs))
     elseif col === FlexiChains.CHAIN_DIM_NAME
-        repeat(chain_indices(s.cs); inner = FlexiChains.niters(s.cs))
+        repeat(chain_indices(s.cs); inner=FlexiChains.niters(s.cs))
     else
         vec(s.cs[s.symbol_to_keys[col]])
     end
@@ -545,13 +554,17 @@ function Tables.getcolumn(w::Wide{<:FlexiSummary}, col::Symbol)
     nparams = length(w.symbol_to_keys)
     return if col === FlexiChains.PARAM_DIM_NAME
         ks = collect(values(w.symbol_to_keys))
-        repeat(ks; inner = nic)
+        repeat(ks; inner=nic)
     elseif col === FlexiChains.ITER_DIM_NAME
-        ii === nothing && throw(ArgumentError("summary does not have an iter dimension; should not happen"))
-        repeat(ii; outer = nparams)
+        ii === nothing && throw(
+            ArgumentError("summary does not have an iter dimension; should not happen"),
+        )
+        repeat(ii; outer=nparams)
     elseif col === FlexiChains.CHAIN_DIM_NAME
-        ci === nothing && throw(ArgumentError("summary does not have a chain dimension; should not happen"))
-        repeat(ci; outer = nparams)
+        ci === nothing && throw(
+            ArgumentError("summary does not have a chain dimension; should not happen"),
+        )
+        repeat(ci; outer=nparams)
     elseif col === FlexiChains.STAT_DIM_NAME
         if si === nothing
             if ii === nothing && ci === nothing
@@ -560,21 +573,35 @@ function Tables.getcolumn(w::Wide{<:FlexiSummary}, col::Symbol)
                 vcat([parent(w.cs[k]) for k in values(w.symbol_to_keys)]...)
             end
         else
-            throw(ArgumentError("summary has a non-collapse stat dimension but :stat column was requested; should not happen"))
+            throw(
+                ArgumentError(
+                    "summary has a non-collapse stat dimension but :stat column was requested; should not happen",
+                ),
+            )
         end
     else
         # named stat dimension.
         if si === nothing
-            throw(ArgumentError("summary does not have a stat dimension; should not happen"))
+            throw(
+                ArgumentError("summary does not have a stat dimension; should not happen"),
+            )
         else
             if col in parent(si)
                 if ii === nothing && ci === nothing
-                    [w.cs[k, stat = At(col)] for k in values(w.symbol_to_keys)]
+                    [w.cs[k, stat=At(col)] for k in values(w.symbol_to_keys)]
                 else
-                    vcat([parent(w.cs[k, stat = At(col)]) for k in values(w.symbol_to_keys)]...)
+                    vcat(
+                        [
+                            parent(w.cs[k, stat=At(col)]) for k in values(w.symbol_to_keys)
+                        ]...,
+                    )
                 end
             else
-                throw(ArgumentError("summary does not have a stat named $col; should not happen"))
+                throw(
+                    ArgumentError(
+                        "summary does not have a stat named $col; should not happen",
+                    ),
+                )
             end
         end
     end
@@ -582,15 +609,23 @@ end
 
 # Long
 const VALUE_COL_NAME = :value
-Tables.columnnames(::Long) = [FlexiChains.ITER_DIM_NAME, FlexiChains.CHAIN_DIM_NAME, FlexiChains.PARAM_DIM_NAME, VALUE_COL_NAME]
+Tables.columnnames(::Long) = [
+    FlexiChains.ITER_DIM_NAME,
+    FlexiChains.CHAIN_DIM_NAME,
+    FlexiChains.PARAM_DIM_NAME,
+    VALUE_COL_NAME,
+]
 function Tables.getcolumn(s::Long, col::Symbol)
     nkeys = length(s.original_keys)
     return if col === FlexiChains.ITER_DIM_NAME
-        repeat(iter_indices(s.chn); outer = FlexiChains.nchains(s.chn) * nkeys)
+        repeat(iter_indices(s.chn); outer=FlexiChains.nchains(s.chn) * nkeys)
     elseif col === FlexiChains.CHAIN_DIM_NAME
-        repeat(chain_indices(s.chn); inner = FlexiChains.niters(s.chn), outer = nkeys)
+        repeat(chain_indices(s.chn); inner=FlexiChains.niters(s.chn), outer=nkeys)
     elseif col === FlexiChains.PARAM_DIM_NAME
-        repeat(collect(s.original_keys); inner = FlexiChains.niters(s.chn) * FlexiChains.nchains(s.chn))
+        repeat(
+            collect(s.original_keys);
+            inner=FlexiChains.niters(s.chn) * FlexiChains.nchains(s.chn),
+        )
     elseif col === VALUE_COL_NAME
         mapreduce(vcat, s.original_keys) do k
             vec(s.chn[k])

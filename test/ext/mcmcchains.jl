@@ -14,9 +14,14 @@ using Test
             return z ~ LKJCholesky(3, 2.0)
         end
         mcmcc = sample(
-            Xoshiro(468), f(), NUTS(), 20; chain_type = MCMCChains.Chains, verbose = false
+            Xoshiro(468),
+            f(),
+            NUTS(),
+            20;
+            chain_type=MCMCChains.Chains,
+            verbose=false,
         )
-        flexic = sample(Xoshiro(468), f(), NUTS(), 20; chain_type = VNChain, verbose = false)
+        flexic = sample(Xoshiro(468), f(), NUTS(), 20; chain_type=VNChain, verbose=false)
         new_mcmcc = MCMCChains.Chains(flexic)
 
         @testset "the data itself" begin
@@ -48,13 +53,18 @@ using Test
 
         @testset "sampler state is preserved with save_state=true" begin
             flexic_with_state = sample(
-                Xoshiro(468), f(), NUTS(), 20;
-                chain_type = VNChain, verbose = false, save_state = true,
+                Xoshiro(468),
+                f(),
+                NUTS(),
+                20;
+                chain_type=VNChain,
+                verbose=false,
+                save_state=true,
             )
             mc_with_state = MCMCChains.Chains(flexic_with_state)
             @test hasproperty(mc_with_state.info, :samplerstate)
             @test mc_with_state.info.samplerstate ==
-                FlexiChains.last_sampler_state(flexic_with_state)
+                  FlexiChains.last_sampler_state(flexic_with_state)
         end
     end
 
@@ -63,9 +73,9 @@ using Test
         # all the other fields.
         niters, nchains, nparams = 10, 3, 5
         rand_da() = DimArray(rand(nparams), Dim{:param}(1:nparams))
-        dict_of_arrays = Dict{ParameterOrExtra{Symbol}, Matrix}(
+        dict_of_arrays = Dict{ParameterOrExtra{Symbol},Matrix}(
             Parameter(:params) => [rand_da() for _ in 1:niters, _ in 1:nchains],
-            Extra(:lp) => rand(niters, nchains)
+            Extra(:lp) => rand(niters, nchains),
         )
         chn = FlexiChain{Symbol}(niters, nchains, dict_of_arrays)
         @test size(chn[:params]) == (niters, nchains, nparams)
@@ -89,7 +99,7 @@ using Test
         end
 
         @testset "single chain" begin
-            chn = sample(g(), MH(), 100; verbose = false)
+            chn = sample(g(), MH(), 100; verbose=false)
             fc = FlexiChain{Symbol}(chn)
 
             @test fc isa FlexiChain{Symbol}
@@ -114,7 +124,7 @@ using Test
 
         @testset "multiple chains" begin
             ni, nc = 100, 3
-            chn = sample(g(), MH(), MCMCSerial(), ni, nc; verbose = false)
+            chn = sample(g(), MH(), MCMCSerial(), ni, nc; verbose=false)
             fc = FlexiChain{Symbol}(chn)
             @test size(fc) == (ni, nc)
             for name in names(chn, :parameters)
@@ -128,7 +138,7 @@ using Test
         end
 
         @testset "sampler state is preserved" begin
-            chn = sample(g(), MH(), 50; verbose = false, save_state = true)
+            chn = sample(g(), MH(), 50; verbose=false, save_state=true)
             @test hasproperty(chn.info, :samplerstate)
             fc = FlexiChain{Symbol}(chn)
             lss = FlexiChains.last_sampler_state(fc)

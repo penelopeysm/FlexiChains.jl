@@ -1,11 +1,15 @@
 module FCSerialiseTests
 
-using FlexiChains: FlexiChains, FlexiChain, FlexiSummary, VNChain, Parameter, Extra, summarystats
+using FlexiChains:
+    FlexiChains, FlexiChain, FlexiSummary, VNChain, Parameter, Extra, summarystats
 using JLD2: jldsave, load
 using Serialization: serialize, deserialize
 using Test
 
-function test_isequal_and_same_keys(cs1::Union{FlexiChain, FlexiSummary}, cs2::Union{FlexiChain, FlexiSummary})
+function test_isequal_and_same_keys(
+    cs1::Union{FlexiChain,FlexiSummary},
+    cs2::Union{FlexiChain,FlexiSummary},
+)
     @test isequal(cs1, cs2)
     # Check that ordering of keys is the same, because isequal() on FlexiChain/FlexiSummary
     # doesn't check that (because OrderedDict equality doesn't check order).

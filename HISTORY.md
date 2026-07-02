@@ -242,8 +242,8 @@ This is a breaking release, which is designed to add *true* support for DynamicP
 The most obvious change in this version is when using Turing.jl with FlexiChains.
 If `chn` is a `VNChain` sampled from Turing,
 
- - `FlexiChains.values_at` will now return a `DynamicPPL.ParamsWithStats` instead of an `OrderedDict{ParameterOrExtra{<:VarName}}`.
- - `FlexiChains.parameters_at` will now return a `VarNamedTuple` instead of an `OrderedDict{VarName}`.
+  - `FlexiChains.values_at` will now return a `DynamicPPL.ParamsWithStats` instead of an `OrderedDict{ParameterOrExtra{<:VarName}}`.
+  - `FlexiChains.parameters_at` will now return a `VarNamedTuple` instead of an `OrderedDict{VarName}`.
 
 This is designed to maximise interoperability with other parts of DynamicPPL / Turing.
 For example, it is now trivial to obtain a `VarNamedTuple` of parameters from a chain, and then re-evaluate the model at those parameters using `InitFromParams(FlexiChains.parameters_at(chn, i, j))`.
@@ -255,8 +255,8 @@ For example, it is now trivial to obtain a `VarNamedTuple` of parameters from a 
 
 In order to do this, it introduces two new functions:
 
-- `FlexiChains.reconstruct_values(chn::FlexiChain{T}, i, j, structure)`
-- `FlexiChains.reconstruct_parameters(chn::FlexiChain{T}, i, j, structure)`
+  - `FlexiChains.reconstruct_values(chn::FlexiChain{T}, i, j, structure)`
+  - `FlexiChains.reconstruct_parameters(chn::FlexiChain{T}, i, j, structure)`
 
 where `i` and `j` are the iteration and chain indices, and `structure` is the relevant entry in the `structures` field of the chain.
 
@@ -283,32 +283,32 @@ Note that because `DynamicPPL.ParamsWithStats` is *exactly* a wrapper around a `
 This patch adds compatibility for DynamicPPL 0.40 and Turing 0.43.
 Specifically:
 
-- The signature of the `DynamicPPL.pointwise_logdensities` family of functions has been updated to match the new signature in DynamicPPL 0.40 (i.e., it no longer takes an optional `Val{whichlogprob}` argument).
-- Added an implementation of `AbstractMCMC.to_samples(::Type{ParamsWithStats}, chn, model)` (even though it is not used elsewhere in FlexiChains)
+  - The signature of the `DynamicPPL.pointwise_logdensities` family of functions has been updated to match the new signature in DynamicPPL 0.40 (i.e., it no longer takes an optional `Val{whichlogprob}` argument).
+  - Added an implementation of `AbstractMCMC.to_samples(::Type{ParamsWithStats}, chn, model)` (even though it is not used elsewhere in FlexiChains)
 
 However, the user should note that this release is not *completely* compatible with DynamicPPL.
 In particular, the following issues still remain.
 
-- `FlexiChains.parameters_at` returns an `OrderedDict{VarName}`.
-  (It would ideally return a `VarNamedTuple`.)
+  - `FlexiChains.parameters_at` returns an `OrderedDict{VarName}`.
+    (It would ideally return a `VarNamedTuple`.)
 
-- Functions such as `returned` and `predict` assume that the shape of any array containing random variables is constant across all iterations.
-  (DynamicPPL 0.40 already mandates that the shape of an array containing random variables does not change *within* a single model evaluation, but it is still possible for the shape to change *across* iterations.)
+  - Functions such as `returned` and `predict` assume that the shape of any array containing random variables is constant across all iterations.
+    (DynamicPPL 0.40 already mandates that the shape of an array containing random variables does not change *within* a single model evaluation, but it is still possible for the shape to change *across* iterations.)
 
-  For example, consider this model.
+    For example, consider this model.
 
-  ```julia
-  @model function f()
-      n ~ Poisson(5)
-      x = zeros(n + 2)
-      x[1] ~ Normal()
-      x[2] ~ Normal()
-  end
-  ```
+    ```julia
+    @model function f()
+        n ~ Poisson(5)
+        x = zeros(n + 2)
+        x[1] ~ Normal()
+        x[2] ~ Normal()
+    end
+    ```
 
-  In this model, although the shape of `x` is constant within one evaluation of the model, it can vary from iteration to iteration.
-  Sampling a chain will work, but subsequently using that chain with `returned` or `predict` *may* give errors.
-  (If *all* of the elements of `x` are random variables, then they will *definitely* work correctly.)
+    In this model, although the shape of `x` is constant within one evaluation of the model, it can vary from iteration to iteration.
+    Sampling a chain will work, but subsequently using that chain with `returned` or `predict` *may* give errors.
+    (If *all* of the elements of `x` are random variables, then they will *definitely* work correctly.)
 
 Note that these issues are also present in MCMCChains, and so none of these are reasons to avoid using FlexiChains.
 
@@ -395,10 +395,10 @@ FlexiChains now has what I consider to be a reasonably stable core set of functi
 
 ## Summaries
 
-- There is now [a dedicated page in the documentation for summaries](https://pysm.dev/FlexiChains.jl/stable/summarising).
-- `StatsBase.mad`, `Statistics.quantile`, `StatsBase.geomean`, `StatsBase.harmmean`, and `StatsBase.iqr` have been implemented.
-- `PosteriorStats.hdi` and `PosteriorStats.eti` have been implemented in an extension.
-- The signature of functions passed to `FlexiChains.collapse` has been simplified. It used to be that the signature would differ depending on whether you were collapsing over iterations, chains, or both. Now all the function needs to do is to collapse a vector to a single value (regardless of which dimensions are being collapsed over).
+  - There is now [a dedicated page in the documentation for summaries](https://pysm.dev/FlexiChains.jl/stable/summarising).
+  - `StatsBase.mad`, `Statistics.quantile`, `StatsBase.geomean`, `StatsBase.harmmean`, and `StatsBase.iqr` have been implemented.
+  - `PosteriorStats.hdi` and `PosteriorStats.eti` have been implemented in an extension.
+  - The signature of functions passed to `FlexiChains.collapse` has been simplified. It used to be that the signature would differ depending on whether you were collapsing over iterations, chains, or both. Now all the function needs to do is to collapse a vector to a single value (regardless of which dimensions are being collapsed over).
 
 # 0.0.3
 
@@ -433,8 +433,8 @@ A new function `FlexiChains.has_same_data(chn1, chn2; strict)` has been added to
 
 On top of `Base.keys(chn)` and `FlexiChains.parameters(chn)`, the following functions have been added:
 
-- `Base.values(chn; parameters_only)`
-- `Base.pairs(chn; parameters_only)`
+  - `Base.values(chn; parameters_only)`
+  - `Base.pairs(chn; parameters_only)`
 
 to extract the matrices, or key-matrix pairs, from a chain. The boolean `parameters_only` can be used to restrict the output to only parameter keys.
 
@@ -472,7 +472,7 @@ There are **many** breaking changes to FlexiChains.jl's interface in this releas
 As the version number suggests, this is still a very early release of FlexiChains.jl, and the API is likely to change in future versions.
 When the API has somewhat stabilised, the version number will be incremented to 0.1.0.
 
-My current belief is that the core functionality of FlexiChains (base data types, indexing, and summary functions) is largely in place. 
+My current belief is that the core functionality of FlexiChains (base data types, indexing, and summary functions) is largely in place.
 However, I would like to have some real-world battle testing before releasing 0.1.0.
 
 The main changes in 0.0.2 are:
@@ -483,9 +483,9 @@ Indexing into a FlexiChain now returns `DimensionalData.DimArray` types.
 
 User-facing changes:
 
- - This is a much richer representation of the data and allows you to index into the resulting matrix with powerful selectors. To make this easier, FlexiChains re-exports all of DimensionalData's selectors.
- - The iteration and chain dimensions are now always explicitly represented, even if there is only one chain. This is probably for the better anyway since it makes the behaviour more consistent.
- - Functions such as `DynamicPPL.returned` now also return a `DimMatrix`.
+  - This is a much richer representation of the data and allows you to index into the resulting matrix with powerful selectors. To make this easier, FlexiChains re-exports all of DimensionalData's selectors.
+  - The iteration and chain dimensions are now always explicitly represented, even if there is only one chain. This is probably for the better anyway since it makes the behaviour more consistent.
+  - Functions such as `DynamicPPL.returned` now also return a `DimMatrix`.
 
 Indexing into a `FlexiSummary` also returns `DimArray`s, unless all dimensions have been collapsed, in which case it just returns the single value in the array.
 
@@ -495,9 +495,9 @@ Summaries have been completely reworked.
 
 User-facing changes:
 
-- `StatsBase.summarystats` provides a super-quick way to generate summary functions for an entire chain. If the chain type is VarName, this will additionally split VarNames up into their individual scalar-valued components. `summarystats` is re-exported by FlexiChains.
-- More high-level functions have been added, namely `ess`, `rhat`, and `mcse` from MCMCDiagnosticTools, as well as `Statistics.quantile`. All of these are re-exported by FlexiChains.
-- For low-level, highly customised summary functions, there is now only a single function: `FlexiChains.collapse`. This function also allows you to specify multiple summary functions of your choice.
+  - `StatsBase.summarystats` provides a super-quick way to generate summary functions for an entire chain. If the chain type is VarName, this will additionally split VarNames up into their individual scalar-valued components. `summarystats` is re-exported by FlexiChains.
+  - More high-level functions have been added, namely `ess`, `rhat`, and `mcse` from MCMCDiagnosticTools, as well as `Statistics.quantile`. All of these are re-exported by FlexiChains.
+  - For low-level, highly customised summary functions, there is now only a single function: `FlexiChains.collapse`. This function also allows you to specify multiple summary functions of your choice.
 
 Furthermore, if you collapse both the iteration and chain dimensions (this is the default when applying summary functions), a nice summary table will be pretty-printed in the REPL.
 
