@@ -1,4 +1,4 @@
-export transform_values
+@public transform_values
 
 """
     FlexiChains.transform_values(chn::FlexiChain{T}, args...)

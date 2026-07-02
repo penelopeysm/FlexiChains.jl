@@ -73,6 +73,7 @@ makedocs(;
         "indexing.md",
         "samples.md",
         "arrays.md",
+        "modifying.md",
         "plotting.md",
         "plots.md",
         "makie.md",

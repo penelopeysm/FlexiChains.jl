@@ -142,7 +142,7 @@ end
 """
     FlexiChains.map_keys(f, cs::ChainOrSummary{T})::ChainOrSummary{S} where {T,S}
 
-Rename the keys of a `FlexiChain` or `FlexiSummary` by applying the function `f` to each key.
+Change the keys of a `FlexiChain` or `FlexiSummary` by applying the function `f` to each key.
 
 `f` must have the signature `f(::ParameterOrExtra{<:T}) -> ParameterOrExtra{<:S}`. It must return a unique key for each input key.
 
@@ -159,7 +159,7 @@ end
 """
     FlexiChains.map_parameters(f, cs::ChainOrSummary{T})::ChainOrSummary{S} where {T,S}
 
-Rename the parameters of a `FlexiChain` or `FlexiSummary` by applying the function `f` to each parameter name.
+Change the parameters of a `FlexiChain` or `FlexiSummary` by applying the function `f` to each parameter name.
 
 `f` must have the signature `f(::T) -> S`. It must return a unique parameter for each input parameter.
 """
