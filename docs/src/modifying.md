@@ -1,4 +1,4 @@
-# Modifying data
+# [Modifying data](@id modifying)
 
 While `FlexiChain` and `FlexiSummary` are intended to be immutable, there are scenarios where you may want to modify the data that they contain.
 

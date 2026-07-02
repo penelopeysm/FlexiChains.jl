@@ -250,14 +250,25 @@ We'll concoct an example with the [Palmer penguins dataset](https://github.com/d
 ```@example pushforward
 using Turing, DataFrames, PalmerPenguins, CairoMakie
 import FlexiChains.Makie as FM
-using StatsBase: denserank
+using StatsBase: denserank, fit, ZScoreTransform, reconstruct
 
-# Load data and normalise continuous variables
-standardize(x) = (x .- mean(x)) ./ std(x)
+# Load data
 penguins = DataFrame(PalmerPenguins.load())
+
+# Drop missing values first (this ensures that standardisation doesn't trip over)
 dropmissing!(penguins)
+
+# Fit standardisation transforms so we can unstandardise predictions later
+bill_zs = fit(ZScoreTransform, Float64.(penguins.bill_length_mm))
+mass_zs = fit(ZScoreTransform, Float64.(penguins.body_mass_g))
+
+# Tidy up the data
+standardize(x) = (x .- mean(x)) ./ std(x)
 transform!(penguins, names(penguins, Real) .=> standardize => identity)
 transform!(penguins, :species => denserank => :species_idx)
+
+# Save the mapping from species index (integer) to species name (string)
+species_names = sort(unique(penguins[!, [:species, :species_idx]]), :species_idx).species
 
 # Define a model for penguin bill length as a function of species and body mass
 @model function bill_model(species, body_mass)
@@ -287,18 +298,29 @@ A common starting point is to plot the posterior predictive distribution (see al
 We can plot a summary histogram with uncertainty bands using [`pushforward_hist`](@ref FlexiChains.Makie.pushforward_hist).
 By specifying the `observed` keyword argument we can also overlay the observed data so that we can visually compare the two distributions.
 
+Before plotting, we can use [`transform_values`](@ref FlexiChains.transform_values) to unstandardise the predictions back to physical units (see [Modifying data](@ref modifying) for more details).
+
 ```@example pushforward
 # Note that we pass the `prior_model` here, not the conditioned model, so that
 # we can sample new draws for the conditioned variables (i.e., bill length).
 # This is explained in the Turing docs linked above.
 ppd = predict(prior_model, chain)
 
-observed = penguins.bill_length_mm
-FM.pushforward_hist(ppd, @varname(bill_length_mm); observed=observed)
+# Unstandardise the predicted and observed bill lengths
+using FlexiChains: transform_values
+ppd = transform_values(ppd, :bill_length_mm => (v -> reconstruct(bill_zs, v)))
+observed = reconstruct(bill_zs, penguins.bill_length_mm)
+
+FM.pushforward_hist(
+    ppd,
+    @varname(bill_length_mm);
+    observed=observed,
+    axis=(; xlabel="bill length (mm)"),
+)
 ```
 
 We may also be interested in how predicted bill length changes with increasing body mass, and how this varies by species.
-For this, we can make use of [`pushforward_continuous`](@ref FlexiChains.Makie.pushforward_continuous) by feeding it a grid of body mass values (z-standardized here).
+For this, we can make use of [`pushforward_continuous`](@ref FlexiChains.Makie.pushforward_continuous) by feeding it a grid of body mass values.
 
 In the example below, we have set `sigma = 0` to drop the predictive uncertainty; we're interested only in the uncertainty of the means here.
 
@@ -312,14 +334,20 @@ pred_species = repeat(1:3, inner=50)
 pred_model = fix(bill_model(pred_species, pred_body_mass), (; sigma=0))
 pred = predict(pred_model, chain)
 
+# Unstandardise the predicted means
+using FlexiChains: transform_values
+pred = transform_values(pred, :mu => (v -> reconstruct(bill_zs, v)))
+
 # Plot the predicted means with uncertainty bands, coloured by species.
 fig = Figure()
-ax = Axis(fig[1, 1]; xlabel="body mass", ylabel="bill length", limits=((-3, 3), (-3, 3)))
-for (s, color) in zip(1:3, Makie.wong_colors())
+ax = Axis(fig[1, 1]; xlabel="body mass (g)", ylabel="bill length (mm)")
+colors = Makie.wong_colors()[1:3]
+for (s, color) in enumerate(colors)
     ix = findall(==(s), pred_species)
-    x_grid = pred_body_mass[ix]
+    x_grid = reconstruct(mass_zs, pred_body_mass[ix])
     FM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid=x_grid, color=color)
 end
+axislegend(ax, [PolyElement(; color=c) for c in colors], species_names; position=:lt)
 
 fig
 ```
