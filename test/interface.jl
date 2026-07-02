@@ -9,7 +9,8 @@ using FlexiChains:
     ParameterOrExtra,
     @varname,
     VarName,
-    transform_values
+    transform_values,
+    DimArray
 using DimensionalData: DimensionalData as DD, At, Not
 using OrderedCollections: OrderedDict
 using AbstractMCMC: AbstractMCMC
@@ -1253,6 +1254,18 @@ using Random: Xoshiro
 
             # Must specify output key
             @test_throws ArgumentError transform_values(chn, [:a, :b] => (+))
+        end
+
+        @testset "DimVector use case" begin
+            Ni, Nc = 10, 3
+            cs = [randn(2) for _ in 1:Ni, _ in 1:Nc]
+            d = OrderedDict(Parameter(:x) => cs)
+            chn = FlexiChain{Symbol}(Ni, Nc, d)
+
+            f(v) = DimArray(v, DD.Dim{:whatever}([:a, :b]))
+            chn2 = transform_values(chn, :x => f)
+            @test chn2[:x, stack=true] isa DD.DimArray{Float64,3}
+            @test DD.name.(DD.dims(chn2[:x, stack=true])) == (:iter, :chain, :whatever)
         end
     end
 end
