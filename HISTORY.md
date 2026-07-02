@@ -1,3 +1,8 @@
+# 0.6.21
+
+Added `FlexiChains.transform_values` which maps a function over the values stored in a `FlexiChain`, returning a new `FlexiChain` with the transformed values.
+Please see [the docs](https://pysm.dev/FlexiChains.jl/stable/modifying) for more information and example usecases.
+
 # 0.6.20
 
 Added Makie implementations of pushforward plots, following the examples in [Michael Betancourt's visualisation tools](https://github.com/betanalpha/mcmc_visualization_tools/).
