@@ -8,7 +8,7 @@ If you have a package that you think could benefit from some custom behaviour wi
 
 ## Formatting
 
-FlexiChains currently uses [JuliaFormatter.jl](https://github.com/JuliaEditorSupport/JuliaFormatter.jl/) for formatting.
+FlexiChains currently uses [JuliaFormatter.jl](https://github.com/JuliaEditorSupport/JuliaFormatter.jl/) for formatting, specifically, **version 2.10.1**.
 This is enforced on GitHub CI.
 
 JuliaFormatter can be a tiny bit slow which is annoying if you are running it via pre-commit.
