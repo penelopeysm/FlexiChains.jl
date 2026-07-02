@@ -31,9 +31,9 @@ My aim is to release a version 1.0 as soon as possible.
 (In general, I strongly subscribe to the view that packages that are used by the public should release 1.0 as soon as possible: see [this issue](https://github.com/JuliaRegistries/General/issues/111019).)
 My preconditions for FlexiChains 1.0 are twofold:
 
-1. I am happy with the core design and APIs of the package. For example, I don't really care about which statistic functions are implemented, but I do care that they return sensible data structures.
+ 1. I am happy with the core design and APIs of the package. For example, I don't really care about which statistic functions are implemented, but I do care that they return sensible data structures.
 
-1. The package has been tested by a people in the wild, to catch any obvious gaps or drawbacks.
+ 2. The package has been tested by a people in the wild, to catch any obvious gaps or drawbacks.
 
 As of April 2026, I think that (1) is already satisfied: the data structures and APIs are pretty much where I want them to be, and I expect that future changes will mostly be addition of new functionality rather than breaking changes.
 However, I am still waiting for (2) to really happen, and I would like to see more people using the package and giving feedback before I release 1.0.

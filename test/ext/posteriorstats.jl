@@ -1,6 +1,7 @@
 module FlexiChainsPosteriorStatsTests
 
-using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra, VarName, @varname, FlexiSummary
+using FlexiChains:
+    FlexiChains, FlexiChain, Parameter, Extra, VarName, @varname, FlexiSummary
 using DimensionalData: DimensionalData as DD, val, At
 using OrderedCollections: OrderedDict
 using PosteriorStats: PosteriorStats
@@ -18,28 +19,24 @@ using Test
         chain = FlexiChain{Symbol}(
             N_iters,
             N_chains,
-            OrderedDict(
-                Parameter(:a) => as,
-                Parameter(:b) => bs,
-                Extra("c") => cs,
-            )
+            OrderedDict(Parameter(:a) => as, Parameter(:b) => bs, Extra("c") => cs),
         )
 
         @testset "basic return types" begin
             for func in (PosteriorStats.hdi, PosteriorStats.eti)
-                fs = func(chain; prob = 0.95)
+                fs = func(chain; prob=0.95)
                 @test fs isa FlexiSummary
                 @test FlexiChains.iter_indices(fs) === nothing
                 @test FlexiChains.chain_indices(fs) === nothing
                 @test FlexiChains.stat_indices(fs) === nothing
 
-                fsi = func(chain; prob = 0.95, dims = :chain)
+                fsi = func(chain; prob=0.95, dims=:chain)
                 @test fsi isa FlexiSummary
                 @test FlexiChains.iter_indices(fsi) == FlexiChains.iter_indices(chain)
                 @test FlexiChains.chain_indices(fsi) === nothing
                 @test FlexiChains.stat_indices(fsi) === nothing
 
-                fsc = func(chain; prob = 0.95, dims = :iter)
+                fsc = func(chain; prob=0.95, dims=:iter)
                 @test fsc isa FlexiSummary
                 @test FlexiChains.iter_indices(fsc) === nothing
                 @test FlexiChains.chain_indices(fsc) == FlexiChains.chain_indices(chain)
@@ -48,34 +45,47 @@ using Test
         end
 
         @testset "split_interval kwarg" begin
-            fs_hdi = PosteriorStats.hdi(chain; prob = 0.95, split_interval = false)
-            fs_split_hdi = PosteriorStats.hdi(chain; prob = 0.95, split_interval = true)
+            fs_hdi = PosteriorStats.hdi(chain; prob=0.95, split_interval=false)
+            fs_split_hdi = PosteriorStats.hdi(chain; prob=0.95, split_interval=true)
             @test FlexiChains.iter_indices(fs_split_hdi) === nothing
             @test FlexiChains.chain_indices(fs_split_hdi) === nothing
             @test FlexiChains.stat_indices(fs_split_hdi) == [:hdi_lower, :hdi_upper]
             for k in keys(fs_split_hdi)
-                @test fs_split_hdi[k, stat = At(:hdi_lower)] == leftendpoint(fs_hdi[k])
-                @test fs_split_hdi[k, stat = At(:hdi_upper)] == rightendpoint(fs_hdi[k])
+                @test fs_split_hdi[k, stat=At(:hdi_lower)] == leftendpoint(fs_hdi[k])
+                @test fs_split_hdi[k, stat=At(:hdi_upper)] == rightendpoint(fs_hdi[k])
             end
 
-            fsi_split_hdi = PosteriorStats.hdi(chain; dims = :chain, prob = 0.95, split_interval = true)
+            fsi_split_hdi =
+                PosteriorStats.hdi(chain; dims=:chain, prob=0.95, split_interval=true)
             @test FlexiChains.iter_indices(fsi_split_hdi) == FlexiChains.iter_indices(chain)
             @test FlexiChains.chain_indices(fsi_split_hdi) === nothing
             @test FlexiChains.stat_indices(fs_split_hdi) == [:hdi_lower, :hdi_upper]
 
-            fsc_split_hdi = PosteriorStats.hdi(chain; dims = :iter, prob = 0.95, split_interval = true)
+            fsc_split_hdi =
+                PosteriorStats.hdi(chain; dims=:iter, prob=0.95, split_interval=true)
             @test FlexiChains.iter_indices(fsc_split_hdi) === nothing
-            @test FlexiChains.chain_indices(fsc_split_hdi) == FlexiChains.chain_indices(chain)
+            @test FlexiChains.chain_indices(fsc_split_hdi) ==
+                  FlexiChains.chain_indices(chain)
             @test FlexiChains.stat_indices(fsc_split_hdi) == [:hdi_lower, :hdi_upper]
 
-            fs_split_eti = PosteriorStats.eti(chain; prob = 0.95, split_interval = true)
+            fs_split_eti = PosteriorStats.eti(chain; prob=0.95, split_interval=true)
             @test FlexiChains.iter_indices(fs_split_eti) === nothing
             @test FlexiChains.chain_indices(fs_split_eti) === nothing
             @test FlexiChains.stat_indices(fs_split_eti) == [:eti_lower, :eti_upper]
 
             # If we use method=:multimodal, split_interval should be ignored
-            @test_logs (:warn, r"Returning the original FlexiSummary without splitting") PosteriorStats.hdi(chain; prob = 0.95, method = :multimodal, split_interval = true)
-            fs_multimodal = PosteriorStats.hdi(chain; prob = 0.95, method = :multimodal, split_interval = true)
+            @test_logs (:warn, r"Returning the original FlexiSummary without splitting") PosteriorStats.hdi(
+                chain;
+                prob=0.95,
+                method=:multimodal,
+                split_interval=true,
+            )
+            fs_multimodal = PosteriorStats.hdi(
+                chain;
+                prob=0.95,
+                method=:multimodal,
+                split_interval=true,
+            )
             @test FlexiChains.stat_indices(fs_multimodal) === nothing
         end
 
@@ -84,8 +94,8 @@ using Test
             @test_logs (:info, expected_message) PosteriorStats.hdi(chain)
             @test_logs (:info, expected_message) PosteriorStats.eti(chain)
 
-            @test_logs PosteriorStats.hdi(chain; prob = 0.95)
-            @test_logs PosteriorStats.eti(chain; prob = 0.95)
+            @test_logs PosteriorStats.hdi(chain; prob=0.95)
+            @test_logs PosteriorStats.eti(chain; prob=0.95)
         end
     end
 
@@ -104,16 +114,15 @@ using Test
         @test result.loo isa PosteriorStats.PSISLOOResult
         # check that the result is same as if we had passed the loglikelihood array directly
         result_direct = PosteriorStats.loo(loglikes[:, :, 1:2])
-        @test PosteriorStats.elpd_estimates(result.loo) == PosteriorStats.elpd_estimates(result_direct)
+        @test PosteriorStats.elpd_estimates(result.loo) ==
+              PosteriorStats.elpd_estimates(result_direct)
     end
 
     @testset "loo with VarName-keyed chain and array-valued params" begin
         N_iters, N_chains = 100, 2
         d = [
-            OrderedDict(
-                    Parameter(@varname(y)) => [-rand(), -rand()],
-                )
-                for _ in 1:N_iters, _ in 1:N_chains
+            OrderedDict(Parameter(@varname(y)) => [-rand(), -rand()]) for
+            _ in 1:N_iters, _ in 1:N_chains
         ]
         chn = FlexiChain{VarName}(N_iters, N_chains, d)
         result = PosteriorStats.loo(chn)

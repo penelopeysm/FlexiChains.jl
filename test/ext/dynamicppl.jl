@@ -4,7 +4,14 @@ using AbstractMCMC: AbstractMCMC
 using DimensionalData: DimensionalData as DD
 using Distributions
 using DynamicPPL
-using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra, _make_prior_chain, _make_posterior_chain
+using FlexiChains:
+    FlexiChains,
+    FlexiChain,
+    VNChain,
+    Parameter,
+    Extra,
+    _make_prior_chain,
+    _make_posterior_chain
 using LinearAlgebra: I
 using OffsetArrays: OffsetArray
 using PosteriorStats: PosteriorStats
@@ -30,7 +37,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
             _, accs = DynamicPPL.init!!(model, accs, InitFromParams(chn, i, 1), UnlinkAll())
             raw_values = get_raw_values(accs)
             for vn in (@varname(x), @varname(y))
-                @test raw_values[vn] == chn[vn, iter = i, chain = 1]
+                @test raw_values[vn] == chn[vn, iter=i, chain=1]
             end
         end
     end
@@ -45,8 +52,8 @@ _LOGJOINT_KEY = Extra(:logjoint)
         z = 1.0
         model = f(z)
 
-        ps = _make_prior_chain(Xoshiro(468), model, 50, 3; make_chain = false)
-        c = _make_prior_chain(Xoshiro(468), model, 50, 3; make_chain = true)
+        ps = _make_prior_chain(Xoshiro(468), model, 50, 3; make_chain=false)
+        c = _make_prior_chain(Xoshiro(468), model, 50, 3; make_chain=true)
         @test FlexiChains.parameters(c) == [@varname(x), @varname(y)]
         @test c[@varname(x)] == map(p -> p.params[@varname(x)], ps)
         @test c[@varname(y)] == c[@varname(x)] .+ 1
@@ -66,21 +73,21 @@ _LOGJOINT_KEY = Extra(:logjoint)
             x ~ Normal()
             y = zeros(3)
             y[2] ~ Normal()
-            z = (; a = nothing)
+            z = (; a=nothing)
             return z.a ~ Normal()
         end
         Ni, Nc = 10, 2
 
         # These should give the same results, but chn is just the ParamsWithStats
         # bundled into a VNChain.
-        chn = _make_prior_chain(Xoshiro(468), f(), Ni, Nc; make_chain = true)
-        pwss = _make_prior_chain(Xoshiro(468), f(), Ni, Nc; make_chain = false)
+        chn = _make_prior_chain(Xoshiro(468), f(), Ni, Nc; make_chain=true)
+        pwss = _make_prior_chain(Xoshiro(468), f(), Ni, Nc; make_chain=false)
 
         for i in 1:Ni, c in 1:Nc
-            prms = FlexiChains.parameters_at(chn; iter = i, chain = c)
+            prms = FlexiChains.parameters_at(chn; iter=i, chain=c)
             @test prms isa VarNamedTuple
             @test prms == pwss[i, c].params
-            vals = FlexiChains.values_at(chn; iter = i, chain = c)
+            vals = FlexiChains.values_at(chn; iter=i, chain=c)
             @test vals isa DynamicPPL.ParamsWithStats
             @test vals == pwss[i, c]
         end
@@ -92,11 +99,11 @@ _LOGJOINT_KEY = Extra(:logjoint)
             y ~ Normal()
             return nothing
         end
-        chn = _make_prior_chain(f(), 10, 1; make_chain = true)
+        chn = _make_prior_chain(f(), 10, 1; make_chain=true)
         @test rand(chn) isa DynamicPPL.ParamsWithStats
-        @test rand(chn; parameters_only = true) isa DynamicPPL.VarNamedTuple
+        @test rand(chn; parameters_only=true) isa DynamicPPL.VarNamedTuple
         @test rand(chn, 5) isa Vector{<:DynamicPPL.ParamsWithStats}
-        @test rand(chn, 5; parameters_only = true) isa Vector{<:DynamicPPL.VarNamedTuple}
+        @test rand(chn, 5; parameters_only=true) isa Vector{<:DynamicPPL.VarNamedTuple}
     end
 
     @testset "AbstractMCMC.to_samples" begin
@@ -109,14 +116,14 @@ _LOGJOINT_KEY = Extra(:logjoint)
         # Make the chain first
         z = 1.0
         model = f(z)
-        ps = _make_prior_chain(Xoshiro(468), model, 50, 1; make_chain = false)
-        c = _make_prior_chain(Xoshiro(468), model, 50, 1; make_chain = true)
+        ps = _make_prior_chain(Xoshiro(468), model, 50, 1; make_chain=false)
+        c = _make_prior_chain(Xoshiro(468), model, 50, 1; make_chain=true)
 
         # Then convert back to ParamsWithStats
         @model function newmodel()
             error(
                 "This model should never be run, because there is structure info" *
-                    " in the chain.",
+                " in the chain.",
             )
             x ~ Normal()
             return nothing
@@ -143,8 +150,8 @@ _LOGJOINT_KEY = Extra(:logjoint)
             x ~ Normal()
             return y ~ Normal(x)
         end
-        model = f() | (; y = 1.0)
-        chn = _make_prior_chain(model, 100, 1; make_chain = true)
+        model = f() | (; y=1.0)
+        chn = _make_prior_chain(model, 100, 1; make_chain=true)
         xs = chn[@varname(x)]
         expected_logprior = logpdf.(Normal(), xs)
         expected_loglike = logpdf.(Normal.(xs), 1.0)
@@ -176,7 +183,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 x ~ Normal()
                 return y ~ Normal()
             end
-            chn = _make_prior_chain(xonly(), 100, 1; make_chain = true)
+            chn = _make_prior_chain(xonly(), 100, 1; make_chain=true)
             @test_throws "not found in chain" logprior(xy(), chn)
             @test_throws "not found in chain" loglikelihood(xy(), chn)
             @test_throws "not found in chain" logjoint(xy(), chn)
@@ -190,7 +197,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 return nothing
             end
             model = offset_lp(2.0)
-            chn = _make_prior_chain(model, 50, 1; make_chain = true)
+            chn = _make_prior_chain(model, 50, 1; make_chain=true)
             lprior = logprior(model, chn)
             @test logprior(model, chn) ≈ logpdf.(Normal(), chn[@varname(x[-2])])
             @test loglikelihood(model, chn) ≈ logpdf.(Normal.(chn[@varname(x[-2])]), 2.0)
@@ -204,7 +211,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
         end
         model = f(1.0)
 
-        chn = _make_prior_chain(model, 100, 1; make_chain = true)
+        chn = _make_prior_chain(model, 100, 1; make_chain=true)
         xs = chn[@varname(x)]
 
         @testset "logdensities" begin
@@ -243,11 +250,12 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 x ~ Normal()
                 return y ~ Normal()
             end
-            chn = _make_prior_chain(xonly(), 100, 1; make_chain = true)
+            chn = _make_prior_chain(xonly(), 100, 1; make_chain=true)
             @test_throws "not found in chain" DynamicPPL.pointwise_logdensities(xy(), chn)
             @test_throws "not found in chain" DynamicPPL.pointwise_loglikelihoods(xy(), chn)
             @test_throws "not found in chain" DynamicPPL.pointwise_prior_logdensities(
-                xy(), chn
+                xy(),
+                chn,
             )
         end
 
@@ -259,7 +267,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 return nothing
             end
             model = offset_pld(2.0)
-            chn = _make_prior_chain(model, 50, 1; make_chain = true)
+            chn = _make_prior_chain(model, 50, 1; make_chain=true)
             plds = DynamicPPL.pointwise_logdensities(model, chn)
             @test plds[@varname(x[-2])] == logpdf.(Normal(), chn[@varname(x[-2])])
             @test plds[@varname(y)] == logpdf.(Normal.(chn[@varname(x[-2])]), 2.0)
@@ -275,7 +283,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
             y = randn(2)
             z = randn(2)
             model = array_pw(y, z)
-            chn = _make_prior_chain(model, 50, 1; make_chain = true)
+            chn = _make_prior_chain(model, 50, 1; make_chain=true)
 
             plds = DynamicPPL.pointwise_logdensities(model, chn)
             @test plds[@varname(x)] == logpdf.(Ref(MvNormal(zeros(2), I)), chn[@varname(x)])
@@ -287,10 +295,10 @@ _LOGJOINT_KEY = Extra(:logjoint)
 
             pplds = DynamicPPL.pointwise_prior_logdensities(model, chn)
             @test pplds[@varname(x)] ==
-                logpdf.(Ref(MvNormal(zeros(2), I)), chn[@varname(x)])
+                  logpdf.(Ref(MvNormal(zeros(2), I)), chn[@varname(x)])
             @test !haskey(pplds, @varname(y))
 
-            plds = DynamicPPL.pointwise_logdensities(model, chn; factorize = true)
+            plds = DynamicPPL.pointwise_logdensities(model, chn; factorize=true)
             for (x_pld, y_pld, x_val) in
                 zip(plds[@varname(x)], plds[@varname(y)], chn[@varname(x)])
                 @test x_pld isa Vector{<:Real}
@@ -303,7 +311,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 @test y_pld[2] == logpdf(Normal(x_val[2], 1), y[2])
             end
 
-            plls = DynamicPPL.pointwise_loglikelihoods(model, chn; factorize = true)
+            plls = DynamicPPL.pointwise_loglikelihoods(model, chn; factorize=true)
             for (y_pll, x_val) in zip(plls[@varname(y)], chn[@varname(x)])
                 @test y_pll isa Vector{<:Real}
                 @test length(y_pll) == 2
@@ -311,7 +319,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 @test y_pll[2] == logpdf(Normal(x_val[2], 1), y[2])
             end
 
-            pplds = DynamicPPL.pointwise_prior_logdensities(model, chn; factorize = true)
+            pplds = DynamicPPL.pointwise_prior_logdensities(model, chn; factorize=true)
             for (x_ppld, x_val) in zip(pplds[@varname(x)], chn[@varname(x)])
                 @test x_ppld isa Vector{<:Real}
                 @test length(x_ppld) == 2
@@ -328,7 +336,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
             return x + y[1] + y[2]
         end
         model = f()
-        chn = _make_prior_chain(model, 100, 1; make_chain = true)
+        chn = _make_prior_chain(model, 100, 1; make_chain=true)
         expected_rtnd = chn[@varname(x)] .+ chn[@varname(y[1])] .+ chn[@varname(y[2])]
 
         rtnd = returned(model, chn)
@@ -339,10 +347,10 @@ _LOGJOINT_KEY = Extra(:logjoint)
 
         @testset "works even for dists that hasvalue isn't implemented for" begin
             @model function f_product()
-                return x ~ product_distribution((; a = Normal()))
+                return x ~ product_distribution((; a=Normal()))
             end
             model = f_product()
-            chn = _make_prior_chain(model, 100, 1; make_chain = true)
+            chn = _make_prior_chain(model, 100, 1; make_chain=true)
             rets = returned(f_product(), chn)
             @test chn[@varname(x)] == rets
         end
@@ -355,7 +363,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 x ~ Normal()
                 return y ~ Normal()
             end
-            chn = _make_prior_chain(xonly(), 100, 1; make_chain = true)
+            chn = _make_prior_chain(xonly(), 100, 1; make_chain=true)
             @test_throws "not found in chain" returned(xy(), chn)
         end
 
@@ -364,9 +372,9 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 x ~ Normal()
                 return DD.DimArray(randn(2, 3), (:a, :b))
             end
-            chn = _make_prior_chain(return_dimarray(), 50, 1; make_chain = true)
+            chn = _make_prior_chain(return_dimarray(), 50, 1; make_chain=true)
             rets = returned(return_dimarray(), chn)
-            @test rets isa DD.DimArray{T, 4} where {T}
+            @test rets isa DD.DimArray{T,4} where {T}
             @test size(rets) == (50, 1, 2, 3)
             @test DD.name.(DD.dims(rets)) == (:iter, :chain, :a, :b)
         end
@@ -382,7 +390,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 return first(x)
             end
             model = offset()
-            chn = _make_prior_chain(model, 50, 1; make_chain = true)
+            chn = _make_prior_chain(model, 50, 1; make_chain=true)
             rets = returned(model, chn)
             @test rets == chn[@varname(x[-2])]
         end
@@ -403,15 +411,15 @@ _LOGJOINT_KEY = Extra(:logjoint)
             x ~ Normal()
             return y ~ Normal(x)
         end
-        model = f() | (; y = 4.0)
+        model = f() | (; y=4.0)
 
         # Sanity check
         chn = _make_posterior_chain(StableRNG(468), model, 2000, 1)
-        @test isapprox(mean(chn[@varname(x)]), 2.0; atol = 0.1)
-        @test isapprox(mean(chn[@varname(m[1])]), 0.0; atol = 0.1)
-        @test isapprox(mean(chn[@varname(m[2])]), 0.0; atol = 0.1)
-        @test isapprox(mean(chn[@varname(p[1])]), 0.0; atol = 0.1)
-        @test isapprox(mean(chn[@varname(p[2])]), 0.0; atol = 0.1)
+        @test isapprox(mean(chn[@varname(x)]), 2.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(m[1])]), 0.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(m[2])]), 0.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(p[1])]), 0.0; atol=0.1)
+        @test isapprox(mean(chn[@varname(p[2])]), 0.0; atol=0.1)
 
         @testset "chain values are actually used" begin
             pdns = predict(StableRNG(468), f(), chn)
@@ -423,7 +431,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
             # expect that the chain's mean of x is approx 2.0.
             # So the posterior predictions for y should be centred on
             # 2.0 (ish).
-            @test isapprox(mean(pdns[@varname(y)]), 2.0; atol = 0.1)
+            @test isapprox(mean(pdns[@varname(y)]), 2.0; atol=0.1)
         end
 
         @testset "logp" begin
@@ -449,7 +457,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
         end
 
         @testset "include_all=false" begin
-            pdns = predict(f(), chn; include_all = false)
+            pdns = predict(f(), chn; include_all=false)
             # Check that the only parameter in the chain is the prediction for y.
             @test only(Set(FlexiChains.parameters(pdns))) == @varname(y)
         end
@@ -486,7 +494,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 x[-2] ~ Normal()
                 return y ~ Normal(x[-2])
             end
-            cond_model = offset2() | (; y = 2.0)
+            cond_model = offset2() | (; y=2.0)
             chn = _make_posterior_chain(StableRNG(468), cond_model, 2000, 1)
             @test mean(chn[@varname(x[-2])]) ≈ 1.0 atol = 0.05
             pdns = predict(StableRNG(468), offset2(), chn)
@@ -504,8 +512,8 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 y ~ Normal(sum(x))
                 return prod(x)
             end
-            cond_model = varlen_single() | (; y = 1.0)
-            chn = _make_prior_chain(cond_model, 100, 1; make_chain = true)
+            cond_model = varlen_single() | (; y=1.0)
+            chn = _make_prior_chain(cond_model, 100, 1; make_chain=true)
             # Sanity check
             @test chn[@varname(n)] == length.(chn[@varname(x)])
             # Check that returned and predict both work. For returned we can also
@@ -529,8 +537,8 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 y ~ Normal(sum(x))
                 return prod(x)
             end
-            cond_model = varlen_dense() | (; y = 1.0)
-            chn = _make_prior_chain(cond_model, 100, 1; make_chain = true)
+            cond_model = varlen_dense() | (; y=1.0)
+            chn = _make_prior_chain(cond_model, 100, 1; make_chain=true)
             # Sanity check
             @test chn[@varname(n)] == length.(chn[@varname(x)])
             # Check that returned and predict both work. For returned we can also
@@ -556,8 +564,8 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 y ~ Normal(sum(x[1:n]))
                 return prod(x[1:n])
             end
-            cond_model = varlen_nondense() | (; y = 1.0)
-            chn = _make_prior_chain(cond_model, 100, 1; make_chain = true)
+            cond_model = varlen_nondense() | (; y=1.0)
+            chn = _make_prior_chain(cond_model, 100, 1; make_chain=true)
             # Check that returned and predict both work.
             @test returned(cond_model, chn) isa DD.DimArray
             pdns = predict(varlen_nondense(), chn)
@@ -576,7 +584,7 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 return y .~ Normal(x)
             end
             model = f(randn(10))
-            chain = _make_prior_chain(model, 500, 3; make_chain = true)
+            chain = _make_prior_chain(model, 500, 3; make_chain=true)
             result = PosteriorStats.loo(model, chain)
             @test result.param_names == [@varname(y[i]) for i in 1:10]
             @test result.loo isa PosteriorStats.PSISLOOResult
@@ -588,12 +596,12 @@ _LOGJOINT_KEY = Extra(:logjoint)
                 return y ~ MvNormal(x, I)
             end
             model = farray(randn(2))
-            chain = _make_prior_chain(model, 500, 3; make_chain = true)
-            result = PosteriorStats.loo(model, chain; factorize = true)
+            chain = _make_prior_chain(model, 500, 3; make_chain=true)
+            result = PosteriorStats.loo(model, chain; factorize=true)
             @test result.param_names == [@varname(y[i]) for i in 1:2]
             @test result.loo isa PosteriorStats.PSISLOOResult
 
-            result = PosteriorStats.loo(model, chain; factorize = false)
+            result = PosteriorStats.loo(model, chain; factorize=false)
             @test result.param_names == [@varname(y)]
             @test result.loo isa PosteriorStats.PSISLOOResult
         end
@@ -602,22 +610,22 @@ _LOGJOINT_KEY = Extra(:logjoint)
     @testset "adds structures when converting from Array" begin
         arr = randn(10, 3, 3)
         for key_spec in (
-                @varname(x),
-                (@varname(x1), @varname(x2), @varname(x3)),
-                (@varname(x1), @varname(x2) => (2,)),
-                (@varname(x1), @varname(x2) => (2,)),
-                (@varname(x1), @varname(x2), Extra(:logp)),
-            )
+            @varname(x),
+            (@varname(x1), @varname(x2), @varname(x3)),
+            (@varname(x1), @varname(x2) => (2,)),
+            (@varname(x1), @varname(x2) => (2,)),
+            (@varname(x1), @varname(x2), Extra(:logp)),
+        )
             chn = FlexiChains.VNChain(arr, @varname(x))
             # Note: this behaviour only works when DynamicPPL is loaded -- be careful about
             # moving this test to anywhere else
             @test rand(chn) isa DynamicPPL.ParamsWithStats
-            @test rand(chn; parameters_only = true) isa DynamicPPL.VarNamedTuple
+            @test rand(chn; parameters_only=true) isa DynamicPPL.VarNamedTuple
 
-            first_values = FlexiChains.values_at(chn; iter = 1, chain = 1)
+            first_values = FlexiChains.values_at(chn; iter=1, chain=1)
             @test first_values isa DynamicPPL.ParamsWithStats
 
-            first_params = FlexiChains.parameters_at(chn; iter = 1, chain = 1)
+            first_params = FlexiChains.parameters_at(chn; iter=1, chain=1)
             @test first_params == first_values.params
         end
     end

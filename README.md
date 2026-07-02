@@ -80,6 +80,5 @@ logjoint(model, chain)                 # log joint probability
 pointwise_logdensities(model, chain)   # log densities for each tilde-statement
 ```
 
-
 The [online documentation](https://pysm.dev/FlexiChains.jl) contains much more detail about FlexiChains and its interface.
 Please do check it out!

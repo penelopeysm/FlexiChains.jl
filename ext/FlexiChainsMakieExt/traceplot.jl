@@ -1,5 +1,5 @@
 function _default_traceplot_axis(k::FC.ParameterOrExtra)
-    return (xlabel = "iteration number", ylabel = "value", title = string(k.name))
+    return (xlabel="iteration number", ylabel="value", title=string(k.name))
 end
 
 """
@@ -17,15 +17,15 @@ $(FC.PlotUtils._PARAM_DOCSTRING("FlexiChains.Makie.traceplot"))
 $(MAKIE_KWARGS_DOCSTRING)
 """
 function FC.Makie.traceplot(
-        chn::FC.FlexiChain,
-        param_or_params = FC.Parameter.(FC.parameters(chn));
-        layout::Union{Tuple{Int, Int}, Nothing} = nothing,
-        legend_position::Symbol = :bottom,
-        figure = (;),
-        axis = (;),
-        legend = (;),
-        kwargs...,
-    )
+    chn::FC.FlexiChain,
+    param_or_params=FC.Parameter.(FC.parameters(chn));
+    layout::Union{Tuple{Int,Int},Nothing}=nothing,
+    legend_position::Symbol=:bottom,
+    figure=(;),
+    axis=(;),
+    legend=(;),
+    kwargs...,
+)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
@@ -49,13 +49,22 @@ end
 ########################
 # Single axis plotting #
 ########################
-function FC.Makie.traceplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
+function FC.Makie.traceplot(
+    grid::MakieGrids,
+    chn::FC.FlexiChain,
+    param;
+    axis=(;),
+    kwargs...,
+)
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
     return FC.Makie.traceplot!(
-        Makie.Axis(grid; _default_traceplot_axis(k)..., axis...), chn, param; kwargs...
+        Makie.Axis(grid; _default_traceplot_axis(k)..., axis...),
+        chn,
+        param;
+        kwargs...,
     )
 end
 function FC.Makie.traceplot!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwargs...)
@@ -79,7 +88,7 @@ function FC.Makie.traceplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainTrace; kw
     labels = permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
     colors = determine_chain_colors(nchains, NamedTuple(kwargs))
     for (label, datacol, color) in zip(labels, eachcol(y), colors)
-        p = Makie.lines!(ax, x, datacol; label = label, kwargs..., color = color)
+        p = Makie.lines!(ax, x, datacol; label=label, kwargs..., color=color)
     end
     return Makie.AxisPlot(ax, p)
 end

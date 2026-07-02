@@ -63,7 +63,8 @@ using Statistics: mean, median, std, var, quantile
 export mean, median, std, var, quantile
 using StatsBase: summarystats, mad
 export summarystats, mad
-using MCMCDiagnosticTools: ess, rhat, mcse, gelmandiag, gelmandiag_multivariate, discretediag, bfmi
+using MCMCDiagnosticTools:
+    ess, rhat, mcse, gelmandiag, gelmandiag_multivariate, discretediag, bfmi
 export ess, rhat, mcse, gelmandiag, gelmandiag_multivariate, discretediag, bfmi
 
 """
@@ -89,7 +90,7 @@ function _make_posterior_chain end
 # Attempt to precompile _some_ stuff, especially for VarName. This cuts the TTFX by about
 # 2-3x.
 @setup_workload begin
-    d = Dict{ParameterOrExtra{<:VarName}, Any}()
+    d = Dict{ParameterOrExtra{<:VarName},Any}()
     d[Parameter(@varname(a))] = 1
     ds = fill(d, 10, 2)
     @compile_workload begin
@@ -101,14 +102,22 @@ end
 function __init__()
     Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
         if exc.f === FlexiChains.PlotUtils.get_hdi_intervals
-            printstyled(io, "\n\n    To use interval=:hdi, please load PosteriorStats.jl first.\n"; color = :cyan)
+            printstyled(
+                io,
+                "\n\n    To use interval=:hdi, please load PosteriorStats.jl first.\n";
+                color=:cyan,
+            )
         end
     end
     Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
         if (exc.f === Base.firstindex || exc.f === Base.lastindex) &&
-                length(argtypes) == 1 &&
-                (argtypes[1] <: FlexiChain || argtypes[1] <: FlexiChains.FlexiSummary)
-            printstyled(io, "\n\n    Indexing into FlexiChains objects with `begin` or `end` does not work; please use `Begin` and `End` instead, which are equivalent."; color = :cyan)
+           length(argtypes) == 1 &&
+           (argtypes[1] <: FlexiChain || argtypes[1] <: FlexiChains.FlexiSummary)
+            printstyled(
+                io,
+                "\n\n    Indexing into FlexiChains objects with `begin` or `end` does not work; please use `Begin` and `End` instead, which are equivalent.";
+                color=:cyan,
+            )
         end
     end
     return nothing

@@ -33,9 +33,9 @@ Base.keytype(::FlexiChains.ChainOrSummary)
 
 If you ever need to construct a `FlexiChain` from scratch, there are exactly three ways to do so:
 
-- with an *array of dictionaries*, i.e., one dictionary per iteration;
-- with a *dictionary of arrays*, i.e., the values for each key are already grouped together;
-- from a 3D array of `iters x chains x params` (see the [converting from 3D arrays page](@ref api-fromarray) for discussion of this).
+  - with an *array of dictionaries*, i.e., one dictionary per iteration;
+  - with a *dictionary of arrays*, i.e., the values for each key are already grouped together;
+  - from a 3D array of `iters x chains x params` (see the [converting from 3D arrays page](@ref api-fromarray) for discussion of this).
 
 ```@docs
 FlexiChains.FlexiChain{TKey}(niters::Int, nchains::Int, array_of_dicts::AbstractArray{<:AbstractDict}) where TKey

@@ -1,5 +1,5 @@
 # No title: pushforward_continuous plots an array variable as a whole, not a single leaf.
-_default_pushforward_continuous_axis() = (xlabel = "index", ylabel = "value")
+_default_pushforward_continuous_axis() = (xlabel="index", ylabel="value")
 
 """
     FlexiChains.Makie.pushforward_continuous(chn, param_or_params; x_grid=nothing; kwargs...)
@@ -20,12 +20,12 @@ This is a port of [Michael Betancourt's
 - `figure`, `axis`: `NamedTuple`s forwarded to `Makie.Figure` / `Makie.Axis`.
 """
 function FC.Makie.pushforward_continuous(
-        chn::FC.FlexiChain,
-        param;
-        figure = (;),
-        axis = (;),
-        kwargs...,
-    )
+    chn::FC.FlexiChain,
+    param;
+    figure=(;),
+    axis=(;),
+    kwargs...,
+)
     _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
     ax = Makie.Axis(fig[1, 1]; _default_pushforward_continuous_axis()..., axis...)
     _, p = FC.Makie.pushforward_continuous!(ax, chn, param; kwargs...)
@@ -33,16 +33,16 @@ function FC.Makie.pushforward_continuous(
 end
 
 function FC.Makie.pushforward_continuous!(
-        ax::Makie.Axis,
-        chn::FC.FlexiChain,
-        param;
-        x_grid = nothing,
-        quantiles = FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
-        baseline = nothing,
-        residual = false,
-        color = Makie.Cycled(1),
-        kwargs...,
-    )
+    ax::Makie.Axis,
+    chn::FC.FlexiChain,
+    param;
+    x_grid=nothing,
+    quantiles=FC.PlotUtils.DEFAULT_QUANTILE_LEVELS,
+    baseline=nothing,
+    residual=false,
+    color=Makie.Cycled(1),
+    kwargs...,
+)
     isodd(length(quantiles)) || throw(ArgumentError("`quantiles` must have odd length"))
     sub = FC.PlotUtils.subset_and_split_chain(chn, param)
     ks = collect(keys(sub))
@@ -90,24 +90,24 @@ function FC.Makie.pushforward_continuous!(
             ax,
             xs,
             qs[i, :],
-            qs[nq + 1 - i, :];
-            alpha = _band_alpha(i, n_bands),
-            color = color,
+            qs[nq+1-i, :];
+            alpha=_band_alpha(i, n_bands),
+            color=color,
             kwargs...,
         )
     end
-    p = Makie.lines!(ax, xs, qs[median_idx, :]; color = color, linewidth = 2)
+    p = Makie.lines!(ax, xs, qs[median_idx, :]; color=color, linewidth=2)
 
     if residual
-        Makie.hlines!(ax, [0.0]; color = :black, linestyle = :dash, linewidth = 1)
+        Makie.hlines!(ax, [0.0]; color=:black, linestyle=:dash, linewidth=1)
     elseif baseline !== nothing
         Makie.lines!(
             ax,
             xs,
             collect(Float64, baseline);
-            color = :black,
-            linestyle = :dash,
-            linewidth = 2,
+            color=:black,
+            linestyle=:dash,
+            linewidth=2,
         )
     end
 

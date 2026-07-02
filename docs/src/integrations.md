@@ -33,7 +33,7 @@ Now suppose you want to sample with this and obtain a `FlexiChain{Symbol}`.
 As the docstrings above allude to, you will want to overload `to_nt_and_stats`:
 
 ```@example sampler
-FlexiChains.to_nt_and_stats(::T) = ((;hello=1.0), (;world=2.0))
+FlexiChains.to_nt_and_stats(::T) = ((; hello=1.0), (; world=2.0))
 ```
 
 Then you can do
@@ -46,7 +46,7 @@ Likewise for `VarNamedTuple` (although in this case, you should think carefully 
 
 ```@example sampler
 using DynamicPPL: VarNamedTuple, VarName
-FlexiChains.to_vnt_and_stats(::T) = (VarNamedTuple(hello=1.0), (;world=2.0))
+FlexiChains.to_vnt_and_stats(::T) = (VarNamedTuple(hello=1.0), (; world=2.0))
 sample(M(), S(), 10; chain_type=FlexiChain{VarName})
 ```
 
@@ -74,8 +74,11 @@ function LogDensityProblems.capabilities(::Type{LogTargetDensity})
 end
 
 chn = AbstractMCMC.sample(
-    LogTargetDensity(10), AdvancedHMC.NUTS(0.8), 20;
-    n_adapts=10, chain_type=FlexiChain{Symbol},
+    LogTargetDensity(10),
+    AdvancedHMC.NUTS(0.8),
+    20;
+    n_adapts=10,
+    chain_type=FlexiChain{Symbol},
 )
 ```
 
@@ -119,6 +122,7 @@ From here you can use the full functionality of ArviZ.jl, which includes various
 [Documentation for DimensionalDistributions.jl](https://github.com/sethaxen/DimensionalDistributions.jl)
 
 !!! note
+
     DimensionalDistributions.jl is not yet registered in the Julia package registry; at present you will need to install it from GitHub using `]add https://github.com/sethaxen/DimensionalDistributions.jl`.
 
 DimensionalDistributions.jl provides a `withdims` wrapper which lets you create a distribution that returns `DimVector`s:
@@ -144,6 +148,7 @@ chn2[@varname(x), stack=true]
 ```
 
 !!! note "Default behaviour"
+
     For `DimArray`-valued parameters, the `stack=true` keyword argument is not necessary in the current version of FlexiChains as stacking happens by default.
     However in a future version this will be changed such that the default behaviour even for `DimArray`s is to not stack.
     Thus it is recommended that you explicitly specify `stack=true` if you want this behaviour.
@@ -192,7 +197,16 @@ sigma = [15, 10, 16, 11, 9, 11, 10, 18]
     end
 end
 model = eightsch(J, y, sigma)
-chn = sample(model, NUTS(), MCMCSerial(), 2000, 4; chain_type=VNChain, progress=false, verbose=false)
+chn = sample(
+    model,
+    NUTS(),
+    MCMCSerial(),
+    2000,
+    4;
+    chain_type=VNChain,
+    progress=false,
+    verbose=false,
+)
 
 # Limit the parameters being plotted for readability
 vns = [@varname(tau), @varname(theta[1]), @varname(theta[2])]
@@ -310,20 +324,20 @@ isequal(chn, chn2)
 
 Note two things:
 
-1. If the serialisation and deserialisation steps are performed in different Julia sessions, you need to make sure that you have all necessary packages loaded in the second session.
-   In particular, if you use `save_state=true`, then you should load Turing.jl before deserialising, because Turing provides the sampler state types.
+ 1. If the serialisation and deserialisation steps are performed in different Julia sessions, you need to make sure that you have all necessary packages loaded in the second session.
+    In particular, if you use `save_state=true`, then you should load Turing.jl before deserialising, because Turing provides the sampler state types.
 
-2. If you are testing the integrity of (de)serialisation, you may find that `isequal()` on sampler state types may not return `true` even when the sampler states are the same.
-   This is because Julia's default definition of equality for structs is based on object identity, not on field values.
-   For example, the following returns `false` because `[1] !== [1]`.
+ 2. If you are testing the integrity of (de)serialisation, you may find that `isequal()` on sampler state types may not return `true` even when the sampler states are the same.
+    This is because Julia's default definition of equality for structs is based on object identity, not on field values.
+    For example, the following returns `false` because `[1] !== [1]`.
 
-   ```@example serialization
-   struct Foo{T}
-       t::T
-   end
-   
-   Foo([1]) == Foo([1])
-   ```
+    ```@example serialization
+    struct Foo{T}
+        t::T
+    end
+    
+    Foo([1]) == Foo([1])
+    ```
 
 ## Stan
 
@@ -338,14 +352,15 @@ This of course assumes that you already have the CSV files on disk somewhere, e.
 If you are using [StanSample.jl](https://github.com/StanJulia/StanSample.jl) you can also read data directly from a `SampleModel` once you have sampled with it.
 
 !!! note
+
     This code block is not run, as running it would necessitate setting up CmdStan on GitHub runners.
 
 ```julia
 using StanSample, FlexiChains
 
-sm = SampleModel(...)
+sm = SampleModel(args...)
 # Note: this mutates `sm` -- StanSample has a rather unconventional interface
-stan_sample(sm; data) 
+stan_sample(sm; data)
 
 # The key type has to be `Symbol`.
 chn = FlexiChain{Symbol}(sm)

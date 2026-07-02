@@ -20,10 +20,10 @@ $(FC.PlotUtils._PARAM_DOCSTRING("cornerplot"))
 $(FC.Plots._PLOTS_KWARGS_DOCSTRING)
 """
 function StatsPlots.cornerplot(
-        chn::FC.FlexiChain,
-        param_or_params = FC.Parameter.(FC.parameters(chn));
-        kwargs...
-    )
+    chn::FC.FlexiChain,
+    param_or_params=FC.Parameter.(FC.parameters(chn));
+    kwargs...,
+)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     data = DimArray(chn) # iters x chains x params
@@ -31,7 +31,13 @@ function StatsPlots.cornerplot(
     # Plots expects iters + chains to be pooled.
     # Weird bugs happen if we don't force concretisation. Just don't ask.
     data = Float64.(reshape(data, size(data, 1) * size(data, 2), size(data, 3)))
-    return StatsPlots.cornerplot(data; size = (600, 600), label = label, compact = true, kwargs...)
+    return StatsPlots.cornerplot(
+        data;
+        size=(600, 600),
+        label=label,
+        compact=true,
+        kwargs...,
+    )
 end
 
 ####################################################################################

@@ -36,7 +36,7 @@ subsetted = chn[iter=5, chain=1]
 and to access the data you will still need to index into it, which is rather awkward:
 
 ```@example samples
-(x = only(subsetted[@varname(x)]), y = only(subsetted[@varname(y)]))
+(x=only(subsetted[@varname(x)]), y=only(subsetted[@varname(y)]))
 ```
 
 More generally speaking, the operation above can be viewed as a transformation from column-oriented data to row-oriented data, or from a dict-of-arrays to an array-of-dicts.
@@ -55,6 +55,7 @@ In the case of a chain sampled from Turing, the returned container is `DynamicPP
 This is a high-fidelity representation of the data, and is exactly what you get when sampling with Turing.jl (for example, if you call `sample(...; chain_type=Any)`, you will get an array of `ParamsWithStats` objects).
 
 !!! info
+
     This is accomplished by storing a skeletal `VarNamedTuple` for each sample in the chain; if you are interested, see [the DynamicPPL docs](https://turinglang.org/DynamicPPL.jl/stable/vnt/manipulation/#Skeleton-VNTs) for more info.
 
 The main benefit of this is that you can feed this right back into Turing's API.
@@ -69,6 +70,7 @@ Sometimes, though, one might want different output formats.
 There is some support for converting to `NamedTuple` or `AbstractDict`, by passing an optional type argument.
 
 !!! warning
+
     Note that conversion to `NamedTuple` is lossy if you have `VarName`s that contain indexing or field access syntax (e.g., `x[1]` or `x.a`).
 
 ```@example samples
@@ -151,4 +153,3 @@ FlexiChains.values_at
 FlexiChains.parameters_at
 Base.rand
 ```
-

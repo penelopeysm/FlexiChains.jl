@@ -19,15 +19,14 @@ constituent real-valued elements. This is necessary for plotting. In practice th
 never be any reason to set this to `false`, unless you already know that your chain contains
 only scalar variables and you want to avoid the cost of splitting the variable names again.
 """
-function PairPlots.Series(
-        chn::FC.FlexiChain; split_varnames = true, kwargs...
-    )
+function PairPlots.Series(chn::FC.FlexiChain; split_varnames=true, kwargs...)
     split_chn = if split_varnames
         FC._split_varnames(chn)
     else
         chn
     end
-    all_data = NamedTuple(Symbol(FC.get_name(k)) => vec(split_chn[k]) for k in keys(split_chn))
+    all_data =
+        NamedTuple(Symbol(FC.get_name(k)) => vec(split_chn[k]) for k in keys(split_chn))
     return PairPlots.Series(all_data; kwargs...)
 end
 
@@ -68,14 +67,14 @@ $(FC.PlotUtils._PARAM_DOCSTRING("pairplot"))
 Other keyword arguments are passed to `PairPlots.pairplot`.
 """
 function PairPlots.pairplot(
-        chn::FC.FlexiChain,
-        param_or_params = FC.Parameter.(FC.parameters(chn));
-        args::Tuple = (),
-        pool_chains::Bool = false,
-        divergences = nothing,
-        divergences_kwargs::NamedTuple = (; markersize = 3, color = :red),
-        kwargs...
-    )
+    chn::FC.FlexiChain,
+    param_or_params=FC.Parameter.(FC.parameters(chn));
+    args::Tuple=(),
+    pool_chains::Bool=false,
+    divergences=nothing,
+    divergences_kwargs::NamedTuple=(; markersize=3, color=:red),
+    kwargs...,
+)
     # Get the divergences first, before we subset the chain
     divergence_mask = if divergences !== nothing
         m = chn[divergences]
@@ -89,7 +88,7 @@ function PairPlots.pairplot(
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     series = if pool_chains
         # already split above, so don't need to split again here
-        (PairPlots.Series(chn; split_varnames = false),)
+        (PairPlots.Series(chn; split_varnames=false),)
     else
         # Need to manually specify colours here because PairPlots
         # doesn't add them when directly plotting Series objects
@@ -98,15 +97,19 @@ function PairPlots.pairplot(
         color(i) = wc[mod1(i, length(wc))]
         Tuple(
             PairPlots.Series(
-                    chn[chain = ci];
-                    split_varnames = false,  # already split above
-                    label = "chain $ci", color = color(i), strokecolor = color(i),
-                ) for (i, ci) in enumerate(FC.chain_indices(chn))
+                chn[chain=ci];
+                split_varnames=false,  # already split above
+                label="chain $ci",
+                color=color(i),
+                strokecolor=color(i),
+            ) for (i, ci) in enumerate(FC.chain_indices(chn))
         )
     end
     # Identify divergent samples
     divergence_arg = if divergence_mask !== nothing && any(divergence_mask)
-        samples = NamedTuple(Symbol(FC.get_name(k)) => chn[k][divergence_mask] for k in keys(chn))
+        samples = NamedTuple(
+            Symbol(FC.get_name(k)) => chn[k][divergence_mask] for k in keys(chn)
+        )
         # Can't plot Series => (Scatter,): see
         # https://github.com/sefffal/PairPlots.jl/issues/80
         # (PairPlots.Series(samples; label="divergences", color=:red, strokecolor=:red) => (PairPlots.Scatter(; divergences_kwargs...),),)

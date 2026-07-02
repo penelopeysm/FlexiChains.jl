@@ -54,6 +54,7 @@ st[@varname(v[1]), stat=At(:mean)]  # Mean of first element of vector v
 ```
 
 !!! note "At()"
+
     Notice to access the _mean_ you have to use `stat=At(:mean)` rather than just `stat=:mean`. This seems a bit verbose, but is actually perfectly consistent with DimensionalData.jl's behaviour: `stat=1` means the first statistic, and `stat=At(:f)` means the statistic with the named index `:f`.
 
 For more details on indexing, please see the [Indexing page](./indexing.md).
@@ -91,7 +92,8 @@ In fact, behind the scenes, the actual name of the statistic is retained.
 This means that, for example, if you convert the result to a `DataFrame`, the column will be named `mean` rather than `stat`:
 
 ```@example stats
-using DataFrames; DataFrame(mn)
+using DataFrames;
+DataFrame(mn)
 ```
 
 ```@docs
@@ -119,8 +121,8 @@ For highest density intervals and equal-tailed intervals, you will need to load 
 
 There are two scenarios where the above are not enough:
 
-1. you want to calculate a specific set of statistics that is not the same as what `summarystats` does; or
-2. you want to calculate a completely custom statistic, which is not implemented above.
+ 1. you want to calculate a specific set of statistics that is not the same as what `summarystats` does; or
+ 2. you want to calculate a completely custom statistic, which is not implemented above.
 
 In both cases, you can directly use [`FlexiChains.collapse`] to achieve this.
 (But in the latter case, please do also consider opening an issue so that we can implement it!)
@@ -154,9 +156,9 @@ custom_stat = FlexiChains.collapse(chain, [mean_std_sum]; dims=:both)
 
 There are two things worth mentioning, which we will note in passing here without demonstrating (since they are also covered in the docstring):
 
-1. If there is only one function provided, you can additionally pass `drop_stat_dim=true` to remove the `:stat` dimension from the result, much like what `mean(chain)` et al. do.
+ 1. If there is only one function provided, you can additionally pass `drop_stat_dim=true` to remove the `:stat` dimension from the result, much like what `mean(chain)` et al. do.
 
-2. The name of the statistic is inferred from the function. Sometimes this doesn't work out nicely, for example if you pass an anonymous function. In this case you can provide a tuple of `(:name, function)` instead of just the function.
+ 2. The name of the statistic is inferred from the function. Sometimes this doesn't work out nicely, for example if you pass an anonymous function. In this case you can provide a tuple of `(:name, function)` instead of just the function.
 
 ## Merging summaries
 

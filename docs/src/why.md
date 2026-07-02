@@ -59,8 +59,11 @@ you will find that it errors, because `n` is stored as `2.0` in the chain:
 
 ```@example types
 try #hide
-returned(f2(), mchain)
-catch e; showerror(stdout, e); end # hide
+    returned(f2(), mchain)
+catch e
+    ;
+    showerror(stdout, e);
+end # hide
 ```
 
 Now, you *could* work around this with `zeros(Int(n))`, but that's deeply unsatisfying, because `n` really *should* be an integer.
@@ -121,7 +124,7 @@ setprogress!(false) # hide
 end
 
 model = varlen()
-cond_model = varlen() | (; y = 2.0)
+cond_model = varlen() | (; y=2.0)
 
 mchain = sample(Xoshiro(468), cond_model, MH(), 50; chain_type=MCMCChains.Chains)
 fchain = sample(Xoshiro(468), cond_model, MH(), 50; chain_type=FlexiChains.VNChain)
@@ -132,26 +135,30 @@ The trouble comes when you want to use something like `predict` or `returned` wh
 
 ```@example varlen
 try #hide
-predict(model, mchain)
-catch e; showerror(stdout, e); end # hide
+    predict(model, mchain)
+catch e
+    ;
+    showerror(stdout, e);
+end # hide
 ```
 
 !!! warning
+
     The above will *probably* fail, but it *can* actually run successfully, if you are lucky enough to get a sample where `n` is larger than or equal to that in all the other samples.
     If the built docs don't show an error, try running it in the REPL, and you'll find that it will almost always fail.
 
 The reason why MCMCChains fails here is because it does two things:
 
-1. It stores `x` as a series of elements `x[1]`, `x[2]`, and so on.
-2. When reconstructing the value of `x` for use in the model, it doesn't know how long `x` is *supposed* to be.
-   It determines this by running the model once, and taking the value of `x` from *that specific* run of the model.
+ 1. It stores `x` as a series of elements `x[1]`, `x[2]`, and so on.
+ 2. When reconstructing the value of `x` for use in the model, it doesn't know how long `x` is *supposed* to be.
+    It determines this by running the model once, and taking the value of `x` from *that specific* run of the model.
 
 This of course ignores the fact that `x` can have different lengths.
 
 In contrast, FlexiChains does two things:
 
-1. Where possible, it will store `x` as a single parameter.
-2. As a guard against situations where this isn't possible (e.g. if not all values of `x` are filled in), it *also* stores the structure of `x` as part of the chain, so that it can always reconstruct it correctly.
+ 1. Where possible, it will store `x` as a single parameter.
+ 2. As a guard against situations where this isn't possible (e.g. if not all values of `x` are filled in), it *also* stores the structure of `x` as part of the chain, so that it can always reconstruct it correctly.
 
 This means that regardless of what value `n` takes in the samples, `predict` and `returned` will always work correctly with FlexiChains.
 
@@ -175,8 +182,11 @@ setprogress!(false) # hide
     y := "$x"
 end
 try #hide
-mchain = sample(Xoshiro(468), hasstring(), MH(), 50; chain_type=MCMCChains.Chains)
-catch e; showerror(stdout, e); end # hide
+    mchain = sample(Xoshiro(468), hasstring(), MH(), 50; chain_type=MCMCChains.Chains)
+catch e
+    ;
+    showerror(stdout, e);
+end # hide
 ```
 
 FlexiChains will let you store anything you like!
@@ -221,7 +231,7 @@ That's because MCMCChains uses AxisArrays.jl under the hood, which allows you to
 FlexiChains retains the original `VarName`s used by Turing, which is a far richer type and allows you to use keys that actually carry meaning, rather than just being strings that _have_ to match exactly.
 
 ```@example reconstruct
-fchain[@varname(x.L[1,1])][iter=1, chain=1] # No space!
+fchain[@varname(x.L[1, 1])][iter=1, chain=1] # No space!
 ```
 
 ```@example reconstruct
@@ -326,7 +336,7 @@ It turns out that if `N` is small, MCMCChains does just fine, and is in fact eve
 using Chairmarks: @be
 
 function benchmark(N)
-    model = (longvec(N) | (y = rand(Xoshiro(468), Normal(2.0), N),))
+    model = (longvec(N) | (y=rand(Xoshiro(468), Normal(2.0), N),))
     mchain = sample(Xoshiro(468), model, NUTS(), 500; chain_type=MCMCChains.Chains);
     fchain = sample(Xoshiro(468), model, NUTS(), 500; chain_type=FlexiChains.VNChain);
     mt = @be predict(longvec(N), mchain)

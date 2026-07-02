@@ -12,49 +12,57 @@ const DEFAULT_MARGIN = (8, :mm)
 
 const _TRACEPLOT_SERIESTYPE = :traceplot
 function FC.Plots.traceplot(chn::FC.FlexiChain, args...; kwargs...)
-    return plot(chn, args...; kwargs..., seriestype = _TRACEPLOT_SERIESTYPE)
+    return plot(chn, args...; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
 end
 function FC.Plots.traceplot!(chn::FC.FlexiChain, args...; kwargs...)
-    return plot!(chn, args...; kwargs..., seriestype = _TRACEPLOT_SERIESTYPE)
+    return plot!(chn, args...; kwargs..., seriestype=_TRACEPLOT_SERIESTYPE)
 end
 
 const _MIXEDDENSITY_SERIESTYPE = :mixeddensity
 function FC.Plots.mixeddensity(chn::FC.FlexiChain, args...; kwargs...)
-    return plot(chn, args...; kwargs..., seriestype = _MIXEDDENSITY_SERIESTYPE)
+    return plot(chn, args...; kwargs..., seriestype=_MIXEDDENSITY_SERIESTYPE)
 end
 function FC.Plots.mixeddensity!(chn::FC.FlexiChain, args...; kwargs...)
-    return plot!(chn, args...; kwargs..., seriestype = _MIXEDDENSITY_SERIESTYPE)
+    return plot!(chn, args...; kwargs..., seriestype=_MIXEDDENSITY_SERIESTYPE)
 end
 
 const _MEANPLOT_SERIESTYPE = :meanplot
 function FC.Plots.meanplot(chn::FC.FlexiChain, args...; kwargs...)
-    return plot(chn, args...; kwargs..., seriestype = _MEANPLOT_SERIESTYPE)
+    return plot(chn, args...; kwargs..., seriestype=_MEANPLOT_SERIESTYPE)
 end
 function FC.Plots.meanplot!(chn::FC.FlexiChain, args...; kwargs...)
-    return plot!(chn, args...; kwargs..., seriestype = _MEANPLOT_SERIESTYPE)
+    return plot!(chn, args...; kwargs..., seriestype=_MEANPLOT_SERIESTYPE)
 end
 
 const _RANKPLOT_SERIESTYPE = :rankplot
 const _RANKOVERLAY_SERIESTYPE = :rankplot_overlay
-function FC.Plots.rankplot(chn::FC.FlexiChain, args...; overlay = false, kwargs...)
+function FC.Plots.rankplot(chn::FC.FlexiChain, args...; overlay=false, kwargs...)
     seriestype = overlay ? _RANKOVERLAY_SERIESTYPE : _RANKPLOT_SERIESTYPE
-    return plot(chn, args...; kwargs..., seriestype = seriestype)
+    return plot(chn, args...; kwargs..., seriestype=seriestype)
 end
-function FC.Plots.rankplot!(chn::FC.FlexiChain, args...; overlay = false, kwargs...)
+function FC.Plots.rankplot!(chn::FC.FlexiChain, args...; overlay=false, kwargs...)
     seriestype = overlay ? _RANKOVERLAY_SERIESTYPE : _RANKPLOT_SERIESTYPE
-    return plot!(chn, args...; kwargs..., seriestype = seriestype)
+    return plot!(chn, args...; kwargs..., seriestype=seriestype)
 end
 
 const _AUTOCORPLOT_SERIESTYPE = :autocorplot
 function FC.Plots.autocorplot(
-        chn::FC.FlexiChain, args...; lags = FC.PlotUtils.default_lags(chn), demean = true, kwargs...
-    )
-    return plot(chn, args...; kwargs..., lags, demean, seriestype = _AUTOCORPLOT_SERIESTYPE)
+    chn::FC.FlexiChain,
+    args...;
+    lags=FC.PlotUtils.default_lags(chn),
+    demean=true,
+    kwargs...,
+)
+    return plot(chn, args...; kwargs..., lags, demean, seriestype=_AUTOCORPLOT_SERIESTYPE)
 end
 function FC.Plots.autocorplot!(
-        chn::FC.FlexiChain, args...; lags = FC.PlotUtils.default_lags(chn), demean = true, kwargs...
-    )
-    return plot!(chn, args...; kwargs..., lags, demean, seriestype = _AUTOCORPLOT_SERIESTYPE)
+    chn::FC.FlexiChain,
+    args...;
+    lags=FC.PlotUtils.default_lags(chn),
+    demean=true,
+    kwargs...,
+)
+    return plot!(chn, args...; kwargs..., lags, demean, seriestype=_AUTOCORPLOT_SERIESTYPE)
 end
 
 const _VIOLINPLOT_SERIESTYPE = :violin
@@ -81,16 +89,16 @@ $(FC.Plots._PLOTS_KWARGS_DOCSTRING)
 """ RecipesBase.plot
 
 @recipe function _(
-        chn::FC.FlexiChain,
-        param_or_params = FC.Parameter.(FC.parameters(chn));
-        # NOTE: If you want FlexiChains' custom kwargs to be correctly captured here, you
-        # have to make sure that they don't overlap with any of the kwargs that
-        # Plots/StatsPlots itself defines, otherwise they will be swallowed!
-        lags = nothing,
-        demean = nothing,
-        with_box = false,
-        pool_chains = false,
-    )
+    chn::FC.FlexiChain,
+    param_or_params=FC.Parameter.(FC.parameters(chn));
+    # NOTE: If you want FlexiChains' custom kwargs to be correctly captured here, you
+    # have to make sure that they don't overlap with any of the kwargs that
+    # Plots/StatsPlots itself defines, otherwise they will be swallowed!
+    lags=nothing,
+    demean=nothing,
+    with_box=false,
+    pool_chains=false,
+)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     # When the user calls `plot(chn[, params])` without specifying a `seriestype`, we
@@ -167,8 +175,10 @@ Generic fallback recipe when the user specifies a `seriestype` we don't know how
 with.
 """
 @recipe function _(
-        chn::FC.FlexiChain{T}, param::FC.ParameterOrExtra{<:T}, seriestype::Symbol
-    ) where {T}
+    chn::FC.FlexiChain{T},
+    param::FC.ParameterOrExtra{<:T},
+    seriestype::Symbol,
+) where {T}
     x = FC.iter_indices(chn)
     y = FC._get_raw_data(chn, param)
     FC.PlotUtils.check_eltype_is_real(y)
@@ -191,7 +201,7 @@ end
 end
 
 @recipe function _(r::FC.PlotUtils.FlexiChainRank)
-    rank_vec = r.ranks[chain = r.chn_idx]
+    rank_vec = r.ranks[chain=r.chn_idx]
     seriestype := :histogram
     xguide --> "rank"
     yticks --> nothing
@@ -227,7 +237,7 @@ Plot of running mean.
     # Extract data
     x = FC.iter_indices(t.chn)
     data = FC._get_raw_data(t.chn, t.param)
-    y = mapslices(FC.PlotUtils.runningmean, data; dims = 1)
+    y = mapslices(FC.PlotUtils.runningmean, data; dims=1)
     FC.PlotUtils.check_eltype_is_real(y)
     # Set labels
     xguide --> "iteration number"
@@ -245,7 +255,7 @@ Plot of autocorrelation.
     # Extract data
     x = t.lags
     data = FC._get_raw_data(t.chn, t.param)
-    y = StatsBase.autocor(data, t.lags; demean = t.demean)
+    y = StatsBase.autocor(data, t.lags; demean=t.demean)
     FC.PlotUtils.check_eltype_is_real(y)
     # Set labels
     xguide --> "lag"
@@ -331,7 +341,7 @@ Violin plot, with optional box plot overlay.
         x = [1]
     else
         labels = map(cidx -> "chain $cidx", FC.chain_indices(t.chn))
-        x = repeat(labels; inner = niters)
+        x = repeat(labels; inner=niters)
     end
     @series begin
         seriestype := :violin

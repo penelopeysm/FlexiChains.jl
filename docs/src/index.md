@@ -7,19 +7,19 @@ Unlike traditional approaches that flatten everything to numeric arrays, FlexiCh
 
 Key features:
 
-- **Stores any Julia type.**
-  Scalars work, but so do vectors, matrices, and everything else.
+  - **Stores any Julia type.**
+    Scalars work, but so do vectors, matrices, and everything else.
 
-- **First-class Turing.jl integration.**
-  Simply add `chain_type=VNChain` to your `sample` call. (*Update:* As of Turing v0.45, FlexiChains is the default!)
+  - **First-class Turing.jl integration.**
+    Simply add `chain_type=VNChain` to your `sample` call. (*Update:* As of Turing v0.45, FlexiChains is the default!)
 
-- **Powerful and expressive indexing.**
-  You can access parameters in a variety of ways, using the full power of DimensionalData.jl selectors.
+  - **Powerful and expressive indexing.**
+    You can access parameters in a variety of ways, using the full power of DimensionalData.jl selectors.
 
-- **Built-in plotting.**
-  Both Plots.jl and Makie.jl backends are supported (work in progress!).
+  - **Built-in plotting.**
+    Both Plots.jl and Makie.jl backends are supported (work in progress!).
 
-- **Extensive integrations with other Julia packages.**
-  FlexiChains has a growing collection of package extensions to ensure maximum interoperability with the wider Julia ecosystem.
+  - **Extensive integrations with other Julia packages.**
+    FlexiChains has a growing collection of package extensions to ensure maximum interoperability with the wider Julia ecosystem.
 
 Read on to find out more!

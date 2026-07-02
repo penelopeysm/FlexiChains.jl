@@ -1,5 +1,5 @@
 function _default_meanplot_axis(k::FC.ParameterOrExtra)
-    return (xlabel = "iteration number", ylabel = "mean", title = string(k.name))
+    return (xlabel="iteration number", ylabel="mean", title=string(k.name))
 end
 
 """
@@ -17,15 +17,15 @@ $(FC.PlotUtils._PARAM_DOCSTRING("FlexiChains.Makie.meanplot"))
 $(MAKIE_KWARGS_DOCSTRING)
 """
 function FC.Makie.meanplot(
-        chn::FC.FlexiChain,
-        param_or_params = FC.Parameter.(FC.parameters(chn));
-        layout::Union{Tuple{Int, Int}, Nothing} = nothing,
-        legend_position::Symbol = :bottom,
-        figure = (;),
-        axis = (;),
-        legend = (;),
-        kwargs...,
-    )
+    chn::FC.FlexiChain,
+    param_or_params=FC.Parameter.(FC.parameters(chn));
+    layout::Union{Tuple{Int,Int},Nothing}=nothing,
+    legend_position::Symbol=:bottom,
+    figure=(;),
+    axis=(;),
+    legend=(;),
+    kwargs...,
+)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
@@ -47,11 +47,14 @@ end
 ########################
 # Single axis plotting #
 ########################
-function FC.Makie.meanplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis = (;), kwargs...)
+function FC.Makie.meanplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
     chn = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
     return FC.Makie.meanplot!(
-        Makie.Axis(grid; _default_meanplot_axis(k)..., axis...), chn, param; kwargs...
+        Makie.Axis(grid; _default_meanplot_axis(k)..., axis...),
+        chn,
+        param;
+        kwargs...,
     )
 end
 function FC.Makie.meanplot!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwargs...)
@@ -67,13 +70,13 @@ end
 function FC.Makie.meanplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainMean; kwargs...)
     x = FC.iter_indices(d.chn)
     data = FC._get_raw_data(d.chn, d.param)
-    y = mapslices(FC.PlotUtils.runningmean, data; dims = 1)
+    y = mapslices(FC.PlotUtils.runningmean, data; dims=1)
     nchains = size(y, 2)
     p = nothing
     labels = permutedims(map(cidx -> "chain $cidx", FC.chain_indices(d.chn)))
     colors = determine_chain_colors(nchains, NamedTuple(kwargs))
     for (label, datacol, color) in zip(labels, eachcol(y), colors)
-        p = Makie.lines!(ax, x, datacol; label = label, kwargs..., color = color)
+        p = Makie.lines!(ax, x, datacol; label=label, kwargs..., color=color)
     end
     return Makie.AxisPlot(ax, p)
 end

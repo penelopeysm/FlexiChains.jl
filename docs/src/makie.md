@@ -4,6 +4,7 @@ Many parts of the Makie integration in FlexiChains are heavily lifted from [the 
 This includes some custom code to generate (e.g.) shared legends, which leads to slightly nicer plots than for Plots.jl (on top of Makie generally yielding nicer plots out of the box).
 
 !!! note
+
     You can also use Makie as a backend to make pair plots!
     This requires loading a Makie backend as well as PairPlots.jl.
     Please see the [PairPlots.jl integration section](@ref integrations-pairplots) for more details.
@@ -12,41 +13,44 @@ This includes some custom code to generate (e.g.) shared legends, which leads to
 
 For all functions `plotfunc` shown in the table of [the plotting page](./plotting.md), you can use the following invocation:
 
-1. Generate an entire `Makie.Figure`. This automatically generates a complete plot for you, including a legend.
+ 1. Generate an entire `Makie.Figure`. This automatically generates a complete plot for you, including a legend.
 
-   ```julia
-   plotfunc(
-       chn[, param_or_params];
-       figure=(;), axis=(;), legend=(;),
-       legend_position=:bottom,
-       kwargs...
-   )
-   ```
+    ```julia
+    plotfunc(
+        chn,
+        param_or_params;
+        figure=(;),
+        axis=(;),
+        legend=(;),
+        legend_position=:bottom,
+        kwargs...,
+    )
+    ```
 
-   `param_or_params` can be anything used to index into a chain (single parameters are also accepted).
-   If not specified, all parameters in the chain will be plotted.
+    `param_or_params` can be anything used to index into a chain (single parameters are also accepted).
+    It can also be omitted, in which case all parameters in the chain will be plotted.
 
-   Most keyword arguments are passed to the underlying Makie plotting functions, but there are some special ones which are handled by FlexiChains.
-   For more information about these, see the [customisation section below](@ref makie-customisation).
+    Most keyword arguments are passed to the underlying Makie plotting functions, but there are some special ones which are handled by FlexiChains.
+    For more information about these, see the [customisation section below](@ref makie-customisation).
 
 For functions which create only a single plot per parameter (e.g. `density`, or `traceplot`), the following options are also available.
 The intention is to allow you to build more complex figures using these as building blocks:
 
-2. Plot a single parameter onto an existing `Makie.Axis` object: this uses the 'mutating' version with an exclamation mark.
+ 2. Plot a single parameter onto an existing `Makie.Axis` object: this uses the 'mutating' version with an exclamation mark.
 
-   If `ax` is not specified, uses the current axis. Colours are handled the same way as above. `param` must be a single parameter.
+    If `ax` is not specified, uses the current axis. Colours are handled the same way as above. `param` must be a single parameter.
 
-   ```julia
-   plotfunc!([ax, ]chn, param; kwargs...)
-   ```
+    ```julia
+    plotfunc!([ax]chn, param; kwargs...)
+    ```
 
-3. Plot a single parameter onto a Makie grid position. This constructs a `Makie.Axis` for you, and as before you can pass options via the `axis` keyword argument. Colours are handled the same way as above. `param` must be a single parameter.
+ 3. Plot a single parameter onto a Makie grid position. This constructs a `Makie.Axis` for you, and as before you can pass options via the `axis` keyword argument. Colours are handled the same way as above. `param` must be a single parameter.
 
-   ```julia
-   f = Figure()
-   gp = f[1, 1]
-   plotfunc!(gp, chn, param; axis=(;), kwargs...)
-   ```
+    ```julia
+    f = Figure()
+    gp = f[1, 1]
+    plotfunc!(gp, chn, param; axis=(;), kwargs...)
+    ```
 
 ## Setup
 
@@ -65,8 +69,14 @@ import FlexiChains.Makie as FM # For the plotting functions.
 end
 
 chn = sample(
-    f(), MH(), MCMCThreads(), 1000, 3;
-    discard_initial=100, chain_type=VNChain, progress=false
+    f(),
+    MH(),
+    MCMCThreads(),
+    1000,
+    3;
+    discard_initial=100,
+    chain_type=VNChain,
+    progress=false,
 )
 ```
 
@@ -185,6 +195,7 @@ Makie.save("rankplot_makie.png", ans.figure); # hide
 ## Forest plots
 
 !!! info "Half-eye plots"
+
     To get a 'half-eye' look similar to R's `ggdist` package, you can compose `forestplot!` and `ridgeline!`.
     See e.g. the example [here](https://github.com/penelopeysm/FlexiChains.jl/pull/230).
 
@@ -203,6 +214,7 @@ Makie.save("forestplot_makie.png", ans.figure); # hide
 ## Ridgeline plots
 
 !!! info "Half-eye plots"
+
     To get a 'half-eye' look similar to R's `ggdist` package, you can compose `forestplot!` and `ridgeline!`.
     See e.g. the example [here](https://github.com/penelopeysm/FlexiChains.jl/pull/230).
 
@@ -265,9 +277,9 @@ We model a penguin's bill length as a function of its species (`beta1`), its bod
 Next, we condition the model on the observed data and run MCMC.
 
 ```@example pushforward
-prior_model = bill_model(penguins.species_idx, penguins.body_mass_g) 
-cond_model = prior_model | (; bill_length_mm = penguins.bill_length_mm)
-chain = sample(cond_model, NUTS(0.8), MCMCThreads(), 1000, 4; progress = false)
+prior_model = bill_model(penguins.species_idx, penguins.body_mass_g)
+cond_model = prior_model | (; bill_length_mm=penguins.bill_length_mm)
+chain = sample(cond_model, NUTS(0.8), MCMCThreads(), 1000, 4; progress=false)
 nothing # hide
 ```
 
@@ -282,7 +294,7 @@ By specifying the `observed` keyword argument we can also overlay the observed d
 ppd = predict(prior_model, chain)
 
 observed = penguins.bill_length_mm
-FM.pushforward_hist(ppd, @varname(bill_length_mm); observed = observed)
+FM.pushforward_hist(ppd, @varname(bill_length_mm); observed=observed)
 ```
 
 We may also be interested in how predicted bill length changes with increasing body mass, and how this varies by species.
@@ -292,21 +304,21 @@ In the example below, we have set `sigma = 0` to drop the predictive uncertainty
 
 ```@example pushforward
 # Set up the grid of body mass values and species indices
-pred_body_mass = repeat(range(-3, 3, length = 50), outer = 3)
-pred_species = repeat(1:3, inner = 50)
+pred_body_mass = repeat(range(-3, 3, length=50), outer=3)
+pred_species = repeat(1:3, inner=50)
 
 # For each draw of the parameters in the chain, compute the predicted
 # bill length for each combination of species and body mass.
-pred_model = fix(bill_model(pred_species, pred_body_mass), (; sigma = 0))
+pred_model = fix(bill_model(pred_species, pred_body_mass), (; sigma=0))
 pred = predict(pred_model, chain)
 
 # Plot the predicted means with uncertainty bands, coloured by species.
 fig = Figure()
-ax = Axis(fig[1, 1]; xlabel = "body mass", ylabel = "bill length", limits = ((-3, 3), (-3, 3)))
+ax = Axis(fig[1, 1]; xlabel="body mass", ylabel="bill length", limits=((-3, 3), (-3, 3)))
 for (s, color) in zip(1:3, Makie.wong_colors())
     ix = findall(==(s), pred_species)
     x_grid = pred_body_mass[ix]
-    FM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid = x_grid, color = color)
+    FM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid=x_grid, color=color)
 end
 
 fig
@@ -355,7 +367,9 @@ Makie.save("custom_layout_makie.png", ans.figure); # hide
 Pass a vector of colours (one per chain) via the `color` keyword, or a categorical colormap via `colormap`:
 
 ```@example 1
-FM.traceplot(chn, [@varname(x), @varname(y)];
+FM.traceplot(
+    chn,
+    [@varname(x), @varname(y)];
     color=[(:red, 0.6), (:blue, 0.6), (:green, 0.6)],
     # or e.g. colormap=:tab10
 )
@@ -365,6 +379,7 @@ Makie.save("custom_colors_makie.png", ans.figure); # hide
 ![Trace plots with custom colours](custom_colors_makie.png)
 
 !!! note
+
     To get the best effects with `colormap`, you should pass a categorical colormap such as `:tab10`.
     Continuous colormaps like `:viridis` will give poor results since it will use the first `n` colours of the colormap, which are all very similar!
 
