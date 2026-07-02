@@ -72,10 +72,10 @@ chain2[:x] .- chain[:x]   # Should be all 1.
 ```
 
 You can pass as many transformations as you like.
-The syntax is designed to be similar to that of `DataFrames.transform`, but has some slight differences: notably, the function being applied acts on *individual elements* of `chain[:x]` rather than the matrix as a whole.
+The syntax is designed to be similar to that of `DataFrames.transform`, but has some slight differences: notably, the function being applied acts on *individual draws* from `chain[:x]` rather than the matrix as a whole.
 
 You can also pass binary (or *n*-ary) functions to `transform_values` to combine multiple keys.
-Again, this is similar to `DataFrames.transform`, but the function combines individual elements of `chain[:x]` and `chain[:y]` rather than the matrices themselves.
+Again, this is similar to `DataFrames.transform`, but the function combines individual draws from `chain[:x]` and `chain[:y]` rather than the matrices themselves.
 
 ```@example modifications
 chain3 = transform_values(chain, [:x, :y] => (+) => :sum_xy)
