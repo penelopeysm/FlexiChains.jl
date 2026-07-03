@@ -73,6 +73,68 @@ function _maybe_getindex_with_summary_kwargs(user_data, summary_getindex_kwargs)
     end
 end
 
+"""
+    _resolve_getindex_key(
+        ::Type{TKey},
+        all_keys::Base.KeySet,
+        target
+    )::ParameterOrExtra{TKey} where {TKey}
+
+Helper function that, given a list of keys and a target key, tries to find the correct
+entry in `all_keys` that corresponds to the target.
+"""
+function _resolve_getindex_key(
+    ::Type{TKey},
+    all_keys::Base.KeySet,
+    target_sym::Symbol,
+)::ParameterOrExtra{<:TKey} where {TKey}
+    # TODO: `all_keys` should _really_ have the type
+    #     all_keys::Base.KeySet{<:ParameterOrExtra{<:TKey}}
+    # But again this fails on Julia 1.10. It's probably related to
+    # https://github.com/JuliaLang/julia/issues/59626
+    potential_keys = ParameterOrExtra{<:TKey}[]
+    for k in all_keys
+        # TODO: What happens if Symbol(...) fails on some weird type?
+        if Symbol(k.name) == target_sym
+            push!(potential_keys, k)
+        end
+    end
+    if length(potential_keys) == 0
+        throw(KeyError(target_sym))
+    elseif length(potential_keys) > 1
+        s = "multiple keys correspond to symbol :$target_sym.\n"
+        s *= "Possible options are: \n"
+        for k in potential_keys
+            if k isa Parameter{<:TKey}
+                s *= "  - Parameter($(k.name))\n"
+            elseif k isa Extra
+                s *= "  - Extra(:$(k.name))\n"
+            end
+        end
+        throw(KeyError(s))
+    else
+        return only(potential_keys)
+    end
+end
+function _resolve_getindex_key(
+    ::Type{TKey},
+    all_keys::Base.KeySet,
+    target::ParameterOrExtra{<:TKey},
+)::ParameterOrExtra{<:TKey} where {TKey}
+    if target in all_keys
+        return target
+    else
+        throw(KeyError(target))
+    end
+end
+function _resolve_getindex_key(
+    ::Type{TKey},
+    all_keys::Base.KeySet,
+    target::TKey,
+)::ParameterOrExtra{<:TKey} where {TKey}
+    _resolve_getindex_key(TKey, all_keys, Parameter(target))
+end
+
 ############################
 ### Unambiguous indexing ###
 ############################
@@ -136,53 +198,6 @@ function Base.getindex(
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
 end
 
-#################
-### By Symbol ###
-#################
-
-"""
-    _extract_potential_symbol_key(
-        all_keys::Base.KeySet{ParameterOrExtra{TKey}},
-        target_sym::Symbol
-    )::ParameterOrExtra{TKey} where {TKey}
-
-Helper function that, given a list of keys and a target `Symbol`, attempts to find
-a unique key that corresponds to the `Symbol`.
-"""
-function _extract_potential_symbol_key(
-    ::Type{TKey},
-    all_keys::Base.KeySet,
-    target_sym::Symbol,
-)::ParameterOrExtra{<:TKey} where {TKey}
-    # TODO: `all_keys` should _really_ have the type
-    #     all_keys::Base.KeySet{<:ParameterOrExtra{<:TKey}}
-    # But again this fails on Julia 1.10. It's probably related to
-    # https://github.com/JuliaLang/julia/issues/59626
-    potential_keys = ParameterOrExtra{<:TKey}[]
-    for k in all_keys
-        # TODO: What happens if Symbol(...) fails on some weird type?
-        if Symbol(k.name) == target_sym
-            push!(potential_keys, k)
-        end
-    end
-    if length(potential_keys) == 0
-        throw(KeyError(target_sym))
-    elseif length(potential_keys) > 1
-        s = "multiple keys correspond to symbol :$target_sym.\n"
-        s *= "Possible options are: \n"
-        for k in potential_keys
-            if k isa Parameter{<:TKey}
-                s *= "  - Parameter($(k.name))\n"
-            elseif k isa Extra
-                s *= "  - Extra(:$(k.name))\n"
-            end
-        end
-        throw(KeyError(s))
-    else
-        return only(potential_keys)
-    end
-end
-
 """
     Base.getindex(
         chain::FlexiChain, sym_key::Symbol;
@@ -212,7 +227,7 @@ function Base.getindex(
     chain=Colon(),
     stack=nothing,
 ) where {TKey}
-    k = _extract_potential_symbol_key(TKey, keys(fchain), sym_key)
+    k = _resolve_getindex_key(TKey, keys(fchain), sym_key)
     return fchain[k, iter=iter, chain=chain, stack=stack]
 end
 # Have to repeat for TKey = Symbol, otherwise the method for getindex(::FlexiChain{T}, ::T)
@@ -224,7 +239,7 @@ function Base.getindex(
     chain=Colon(),
     stack=nothing,
 )
-    k = _extract_potential_symbol_key(Symbol, keys(fchain), sym_key)
+    k = _resolve_getindex_key(Symbol, keys(fchain), sym_key)
     return fchain[k, iter=iter, chain=chain, stack=stack]
 end
 """
@@ -251,7 +266,7 @@ function Base.getindex(
     stat=_UNSPECIFIED_KWARG,
     stack=nothing,
 ) where {TKey}
-    k = _extract_potential_symbol_key(TKey, keys(fs), sym_key)
+    k = _resolve_getindex_key(TKey, keys(fs), sym_key)
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name=string(k), stack=stack)
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
@@ -265,7 +280,7 @@ function Base.getindex(
     stat=_UNSPECIFIED_KWARG,
     stack=nothing,
 )
-    k = _extract_potential_symbol_key(Symbol, keys(fs), sym_key)
+    k = _resolve_getindex_key(Symbol, keys(fs), sym_key)
     relevant_kwargs = _check_summary_kwargs(fs, iter, chain, stat)
     user_data = _raw_to_user_data(fs, _get_raw_data(fs, k); name=string(k), stack=stack)
     return _maybe_getindex_with_summary_kwargs(user_data, relevant_kwargs)
@@ -375,7 +390,7 @@ function _get_multi_key(
     k,
 )::ParameterOrExtra{<:TKey} where {TKey}
     if k isa Symbol
-        return _extract_potential_symbol_key(TKey, all_keys, k)
+        return _resolve_getindex_key(TKey, all_keys, k)
     elseif k isa ParameterOrExtra{<:TKey}
         return k
     elseif k isa TKey

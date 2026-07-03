@@ -2,7 +2,15 @@ module FCInterfaceTests
 
 using ComponentArrays: ComponentArray
 using FlexiChains:
-    FlexiChains, FlexiChain, Parameter, Extra, ParameterOrExtra, @varname, VarName
+    FlexiChains,
+    FlexiChain,
+    Parameter,
+    Extra,
+    ParameterOrExtra,
+    @varname,
+    VarName,
+    transform_values,
+    DimArray
 using DimensionalData: DimensionalData as DD, At, Not
 using OrderedCollections: OrderedDict
 using AbstractMCMC: AbstractMCMC
@@ -1197,6 +1205,67 @@ using Random: Xoshiro
         @testset "reproducibility" begin
             @test rand(Xoshiro(468), chn) == rand(Xoshiro(468), chn)
             @test rand(Xoshiro(468), chn, 2) == rand(Xoshiro(468), chn, 2)
+        end
+    end
+
+    @testset "transform_values" begin
+        Ni, Nc = 10, 3
+        a_vals = rand(Ni, Nc)
+        b_vals = rand(Ni, Nc)
+        d = OrderedDict(Parameter(@varname(a)) => a_vals, Parameter(@varname(b)) => b_vals)
+        chn = FlexiChain{VarName}(Ni, Nc, d)
+
+        @test FlexiChains.has_same_data(transform_values(chn), chn)
+        @test_throws ArgumentError transform_values(chn, :wut)
+
+        incr(x) = x + 1
+        dbl(x) = x * 2
+
+        @testset "k => f" begin
+            for k in (:a, @varname(a), Parameter(@varname(a)))
+                chn2 = transform_values(chn, k => incr)
+                @test chn[@varname(a)] == a_vals # Original chain unchanged.
+                @test chn2[@varname(a)] == chn[@varname(a)] .+ 1
+            end
+        end
+
+        @testset "multiple args" begin
+            chn2 = transform_values(chn, :a => incr, :b => dbl)
+            @test chn2[@varname(a)] == chn[@varname(a)] .+ 1
+            @test chn2[@varname(b)] == chn[@varname(b)] .* 2
+        end
+
+        @testset "k => f => newk" begin
+            for outk in (@varname(aplus1), Parameter(@varname(aplus1)), Extra(:ap1))
+                chn2 = transform_values(chn, :a => incr => outk)
+                @test chn2[outk] == chn[@varname(a)] .+ 1
+                @test chn2[@varname(a)] == chn[@varname(a)]
+            end
+
+            # Invalid key
+            @test_throws ArgumentError transform_values(chn, :a => incr => 1)
+        end
+
+        @testset "functions with arity > 1" begin
+            chn2 = transform_values(chn, [:a, :b] => (+) => @varname(sum_ab))
+            @test chn2[@varname(sum_ab)] == chn[@varname(a)] .+ chn[@varname(b)]
+            @test chn2[@varname(a)] == chn[@varname(a)]
+            @test chn2[@varname(b)] == chn[@varname(b)]
+
+            # Must specify output key
+            @test_throws ArgumentError transform_values(chn, [:a, :b] => (+))
+        end
+
+        @testset "DimVector use case" begin
+            Ni, Nc = 10, 3
+            cs = [randn(2) for _ in 1:Ni, _ in 1:Nc]
+            d = OrderedDict(Parameter(:x) => cs)
+            chn = FlexiChain{Symbol}(Ni, Nc, d)
+
+            f(v) = DimArray(v, DD.Dim{:whatever}([:a, :b]))
+            chn2 = transform_values(chn, :x => f)
+            @test chn2[:x, stack=true] isa DD.DimArray{Float64,3}
+            @test DD.name.(DD.dims(chn2[:x, stack=true])) == (:iter, :chain, :whatever)
         end
     end
 end
