@@ -121,19 +121,23 @@ function _wrap_items(
     # (a greedy algorithm). This could in principle be more fancy (e.g. Knuth-Plass)...
     current_line = NameWithSize[]
     remaining = available
-    while !isempty(items)
-        next_item = popfirst!(items)
+    n = length(items)
+    i = 1
+    while i <= n
+        next_item = items[i]
         tw = textwidth(next_item)
-        if tw + 1 > remaining
+        if tw + 1 > remaining && !isempty(current_line)
             # Can't fit the next one on this line, so push the current line and start a new
-            # one.
+            # one. But if the current line is empty, we have to put it on this line anyway.
             push!(lines, current_line)
             current_line = NameWithSize[]
             remaining = available
         end
         push!(current_line, next_item)
         remaining -= (tw + 2)
+        i += 1
     end
+    push!(lines, current_line)
     return lines
 end
 
