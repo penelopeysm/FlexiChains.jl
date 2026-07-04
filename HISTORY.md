@@ -1,3 +1,7 @@
+# 0.6.22
+
+When pretty-printing a FlexiChain, the size of array-valued parameters is now shown in the summary table.
+
 # 0.6.21
 
 Added `FlexiChains.transform_values` which maps a function over the values stored in a `FlexiChain`, returning a new `FlexiChain` with the transformed values.

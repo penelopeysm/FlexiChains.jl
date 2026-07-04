@@ -90,22 +90,54 @@ function _truncate_textwidth(s::AbstractString, maxw::Int)
     return s
 end
 
-function _wrap_items(items::Vector{String}, available::Int)
-    isempty(items) && return String[]
-    full = sum(textwidth, items) + 2 * (length(items) - 1)
-    limit = full > available ? available - 1 : available
-    lines = String[]
-    current = items[1]
-    for i in 2:length(items)
-        candidate = current * ", " * items[i]
-        if textwidth(candidate) > limit
-            push!(lines, current)
-            current = items[i]
-        else
-            current = candidate
+struct NameWithSize{T<:Union{Nothing,Tuple}}
+    name::String
+    size::T # nothing to indicate mixed size / non-array
+end
+Base.textwidth(nws::NameWithSize{Nothing}) = textwidth(nws.name)
+Base.textwidth(nws::NameWithSize{<:Tuple}) =
+    textwidth(nws.name) + 1 + textwidth("$(nws.size)")
+Base.show(io::IO, ::MIME"text/plain", nws::NameWithSize{Nothing}) = print(io, nws.name)
+function Base.show(io::IO, ::MIME"text/plain", nws::NameWithSize{<:Tuple})
+    print(io, nws.name)
+    print(io, " ")
+    printstyled(io, "$(nws.size)"; color=:white)
+end
+
+function _wrap_items(
+    items::Vector{NameWithSize},
+    available::Int,
+)::Vector{Vector{NameWithSize}}
+    isempty(items) && return Vector{NameWithSize}[]
+
+    # Calculate the total width of all items, including commas and spaces
+    full_tw = sum(textwidth, items) + 2 * (length(items) - 1)
+    # If it fits on one line, we can return as a single line
+    full_tw <= available && return [items]
+
+    lines = Vector{NameWithSize}[]
+
+    # Try to fit as many items as possible plus the trailing comma onto the current line
+    # (a greedy algorithm). This could in principle be more fancy (e.g. Knuth-Plass)...
+    current_line = NameWithSize[]
+    remaining = available
+    n = length(items)
+    i = 1
+    while i <= n
+        next_item = items[i]
+        tw = textwidth(next_item)
+        if tw + 1 > remaining && !isempty(current_line)
+            # Can't fit the next one on this line, so push the current line and start a new
+            # one. But if the current line is empty, we have to put it on this line anyway.
+            push!(lines, current_line)
+            current_line = NameWithSize[]
+            remaining = available
         end
+        push!(current_line, next_item)
+        remaining -= (tw + 2)
+        i += 1
     end
-    push!(lines, current)
+    push!(lines, current_line)
     return lines
 end
 
@@ -131,38 +163,48 @@ function _print_dims(io::IO, chain::FlexiChain, width::Int)
     return
 end
 
-function _eltype_groups(cs::ChainOrSummary, kind::Symbol)
-    entries = if kind === :parameters
-        pnames = parameters(cs)
-        zip(Parameter.(pnames), string.(pnames))
-    elseif kind === :extras
-        enames = extras(cs)
-        zip(enames, [string(e.name) for e in enames])
-    else
-        throw(ArgumentError("kind must be :parameters or :extras"))
-    end
-    groups = OrderedDict{String,Vector{String}}()
-    for (key, display_name) in entries
-        tstr = string(eltype(cs._data[key]))
-        if !haskey(groups, tstr)
-            groups[tstr] = String[]
+function _eltype_groups(cs::ChainOrSummary, is_parameters::Bool)
+    groups = OrderedDict{String,Vector{NameWithSize}}()
+    for key in keys(cs)
+        if is_parameters && key isa Extra
+            continue
+        elseif !is_parameters && key isa Parameter
+            continue
         end
-        push!(groups[tstr], display_name)
+
+        data = cs._data[key]
+        T = eltype(data)
+        T_str = string(T)
+        if !haskey(groups, T_str)
+            groups[T_str] = NameWithSize[]
+        end
+
+        sz = if T <: AbstractArray && !isempty(data)
+            # Check if data is all the same size
+            sz = size(first(data))
+            if all(x -> size(x) == sz, data)
+                sz
+            else
+                nothing
+            end
+        else
+            nothing
+        end
+        push!(groups[T_str], NameWithSize(string(get_name(key)), sz))
     end
     return groups
 end
 
 function _print_eltype_groups(
     io::IO,
-    groups::OrderedDict{String,Vector{String}},
+    groups::OrderedDict{String,Vector{NameWithSize}},
     width::Int,
 )
-
-    max_type_cap = max(width ÷ 2, 12)
-    raw_tw = maximum(textwidth(t) for t in keys(groups))
+    max_type_cap = max(div(width, 2), 12)
+    raw_tw = maximum(textwidth, keys(groups))
     max_tw = min(raw_tw, max_type_cap)
     prefix_width = 1 + max_tw + 2
-    available = max(width - 4 - prefix_width, 1)
+    names_width = max(width - 4 - prefix_width, 1)
 
     for (type_str, names) in groups
         display_type = if textwidth(type_str) > max_tw
@@ -170,19 +212,32 @@ function _print_eltype_groups(
         else
             rpad(type_str, max_tw)
         end
-        wrapped = _wrap_items(names, available)
+        wrapped = _wrap_items(names, names_width)
         nlines = length(wrapped)
-        for (li, line) in enumerate(wrapped)
+        for (li, nwss) in enumerate(wrapped)
             trailing = li < nlines ? "," : ""
             _box_content(io, width) do io
                 if li == 1
                     print(io, " ")
                     printstyled(io, display_type; color=_ELTYPE_COLOR)
-                    print(io, "  ", line, trailing)
+                    print(io, "  ")
                 else
-                    print(io, " "^prefix_width, line, trailing)
+                    print(io, " "^prefix_width)
                 end
-                return prefix_width + textwidth(line) + textwidth(trailing)
+                tw = prefix_width
+                n_nws = length(nwss)
+                for (i, nws) in enumerate(nwss)
+                    Base.show(io, MIME"text/plain"(), nws)
+                    tw += textwidth(nws)
+                    if i < n_nws
+                        print(io, ", ")
+                        tw += 2
+                    else
+                        print(io, trailing)
+                        tw += textwidth(trailing)
+                    end
+                end
+                return tw
             end
             println(io)
         end
@@ -194,7 +249,7 @@ function _print_section(
     io::IO,
     width::Int,
     title::String,
-    eltype_groups::OrderedDict{String,Vector{String}};
+    eltype_groups::OrderedDict{String,Vector{NameWithSize}};
     subtitle::String="",
 )
     _box_empty(io, width)
@@ -229,7 +284,7 @@ function Base.show(io::IO, ::MIME"text/plain", chain::FlexiChain{TKey}) where {T
         io,
         width,
         "Parameters ($(length(parameters(chain))))",
-        _eltype_groups(chain, :parameters);
+        _eltype_groups(chain, true);
         subtitle=" ── $TKey",
     )
 
@@ -237,7 +292,7 @@ function Base.show(io::IO, ::MIME"text/plain", chain::FlexiChain{TKey}) where {T
         io,
         width,
         "Extras ($(length(extras(chain))))",
-        _eltype_groups(chain, :extras),
+        _eltype_groups(chain, false),
     )
 
     _box_bottom(io, width)
@@ -403,7 +458,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
         io,
         width,
         "Parameters ($(length(param_names)))",
-        _eltype_groups(summary, :parameters);
+        _eltype_groups(summary, true);
         subtitle=" ── $TKey",
     )
 
@@ -411,7 +466,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
         io,
         width,
         "Extras ($(length(extras(summary))))",
-        _eltype_groups(summary, :extras),
+        _eltype_groups(summary, false),
     )
 
     if isnothing(ii) && isnothing(ci) && !isempty(param_names)
