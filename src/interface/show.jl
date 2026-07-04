@@ -112,7 +112,7 @@ function _wrap_items(
 
     # Calculate the total width of all items, including commas and spaces
     full_tw = sum(textwidth, items) + 2 * (length(items) - 1)
-    # If the total width exceeds the available width, we need to wrap it
+    # If it fits on one line, we can return as a single line
     full_tw <= available && return [items]
 
     lines = Vector{NameWithSize}[]
@@ -128,12 +128,11 @@ function _wrap_items(
             # Can't fit the next one on this line, so push the current line and start a new
             # one.
             push!(lines, current_line)
+            current_line = NameWithSize[]
             remaining = available
-        else
-            # Can fit on this line.
-            push!(current_line, next_item)
-            remaining -= (tw + 2)
         end
+        push!(current_line, next_item)
+        remaining -= (tw + 2)
     end
     return lines
 end
