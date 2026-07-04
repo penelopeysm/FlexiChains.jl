@@ -74,7 +74,7 @@ function FC.Makie.pushforward_hist(
     axis=(;),
     kwargs...,
 )
-    _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
+    fig = isempty(figure) ? Figure() : figure
     ax = Makie.Axis(fig[1, 1]; xlabel="value", ylabel="counts", axis...)
     _, p = FC.Makie.pushforward_hist!(ax, chn, param; kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)

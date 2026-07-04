@@ -26,7 +26,7 @@ function FC.Makie.pushforward_continuous(
     axis=(;),
     kwargs...,
 )
-    _, _, fig = setup_figure_and_layout(1, 1, nothing, figure)
+    fig = isempty(figure) ? Figure() : figure
     ax = Makie.Axis(fig[1, 1]; _default_pushforward_continuous_axis()..., axis...)
     _, p = FC.Makie.pushforward_continuous!(ax, chn, param; kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
