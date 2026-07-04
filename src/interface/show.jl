@@ -117,7 +117,8 @@ function _wrap_items(
 
     lines = Vector{NameWithSize}[]
 
-    # Try to fit as many items as possible plus the trailing comma onto the current line.
+    # Try to fit as many items as possible plus the trailing comma onto the current line
+    # (a greedy algorithm). This could in principle be more fancy (e.g. Knuth-Plass)...
     current_line = NameWithSize[]
     remaining = available
     while !isempty(items)
