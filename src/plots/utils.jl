@@ -36,6 +36,7 @@ using ..FlexiChains:
     _split_varnames,
     _get_raw_data,
     niters,
+    get_name,
     _get_multi_keys,
     _get_multi_key
 import DimensionalData as DD
@@ -55,7 +56,7 @@ and plot each one, without needing to worry about the structure of the data.
 function subset_and_split_chain(
     chn::FlexiChain{TKey},
     param_or_params,
-)::FlexiChain where {TKey}
+)::Tuple{FlexiChain,Dict} where {TKey}
     parameters_to_plot = if param_or_params isa Union{AbstractVector,Colon}
         _get_multi_keys(TKey, keys(chn), param_or_params)
     else
@@ -69,6 +70,14 @@ function subset_and_split_chain(
     chn = chn[parameters_to_plot]
     # Split into real-valued parameters if possible.
     return _split_varnames(chn)
+end
+
+function get_plot_param_name(
+    key::ParameterOrExtra{<:T},
+    plot_names::Dict{T,String},
+) where {T}
+    nm = get_name(key)
+    return get(plot_names, nm, string(nm))
 end
 
 """

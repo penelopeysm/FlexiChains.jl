@@ -26,7 +26,7 @@ function Makie.plot(
     legend=(;),
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = collect(keys(chn))
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nrows, ncols, figure = setup_figure_and_layout(length(keys_to_plot), 2, layout, figure)
@@ -36,15 +36,26 @@ function Makie.plot(
     for (i, (col, row)) in enumerate(indices)
         key_index = div(i - 1, 2) + 1
         k = keys_to_plot[key_index]
+        kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
         if i % 2 == 1
             a, p = FC.mtraceplot!(
-                Makie.Axis(figure[row, col]; _default_traceplot_axis(k)..., axis...),
+                Makie.Axis(
+                    figure[row, col];
+                    _default_traceplot_axis()...,
+                    title=kstr,
+                    axis...,
+                ),
                 FC.PlotUtils.FlexiChainTrace(chn, k);
                 kwargs...,
             )
         else
-            a, p = FlexiChains.mmixeddensity!(
-                Makie.Axis(figure[row, col]; _default_density_axis(k)..., axis...),
+            a, p = FlexiChains.Makie.mixeddensity!(
+                Makie.Axis(
+                    figure[row, col];
+                    _default_density_axis()...,
+                    title=kstr,
+                    axis...,
+                ),
                 FC.PlotUtils.FlexiChainMixedDensity(chn, k, pool_chains);
                 kwargs...,
             )
