@@ -1,5 +1,5 @@
 function _default_forestplot_axis()
-    return (xlabel="value",)
+    return (xlabel = "value",)
 end
 
 function _draw_point_and_intervals!(ax, y, color, point_val, interval_sets)
@@ -10,12 +10,12 @@ function _draw_point_and_intervals!(ax, y, color, point_val, interval_sets)
             Makie.linesegments!(
                 ax,
                 [Makie.Point2f(lo, y), Makie.Point2f(hi, y)];
-                color=color,
-                linewidth=lw,
+                color = color,
+                linewidth = lw,
             )
         end
     end
-    return Makie.scatter!(ax, [point_val], [y]; color=color, markersize=10)
+    return Makie.scatter!(ax, [point_val], [y]; color = color, markersize = 10)
 end
 
 ###############
@@ -58,26 +58,26 @@ $(FC.PlotUtils._PARAM_DOCSTRING("FlexiChains.Makie.forestplot"))
 $(MAKIE_KWARGS_DOCSTRING)
 """
 function FC.Makie.forestplot(
-    chn::FC.FlexiChain,
-    param_or_params=FC.Parameter.(FC.parameters(chn));
-    point::Symbol=:median,
-    interval::Symbol=:quantile,
-    hdi_method::Symbol=:unimodal,
-    levels=FC.PlotUtils.DEFAULT_INTERVALS,
-    pool_chains::Bool=false,
-    legend_position::Symbol=:bottom,
-    figure=(;),
-    axis=(;),
-    legend=(;),
-    kwargs...,
-)
+        chn::FC.FlexiChain,
+        param_or_params = FC.Parameter.(FC.parameters(chn));
+        point::Symbol = :median,
+        interval::Symbol = :quantile,
+        hdi_method::Symbol = :unimodal,
+        levels = FC.PlotUtils.DEFAULT_INTERVALS,
+        pool_chains::Bool = false,
+        legend_position::Symbol = :bottom,
+        figure = (;),
+        axis = (;),
+        legend = (;),
+        kwargs...,
+    )
     chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
-    kstrs = FC.PlotUtils.get_plot_param_name.(keys_to_plot, Ref(plot_names))
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
+    kstrs = FC.PlotUtils.get_plot_param_name.(keys_to_plot, Ref(plot_names))
     nparams = length(keys_to_plot)
     fig = Makie.Figure(;
-        size=(
+        size = (
             FC.PlotUtils.DEFAULT_WIDTH,
             max(FC.PlotUtils.DEFAULT_HEIGHT, 50 * nparams + 100),
         ),
@@ -89,6 +89,7 @@ function FC.Makie.forestplot(
         Makie.Axis(fig[1, 1]; _default_forestplot_axis()..., axis...),
         FC.PlotUtils.FlexiChainForest(
             chn,
+            collect(keys_to_plot),
             kstrs,
             pool_chains,
             point,
@@ -108,17 +109,17 @@ end
 # Single axis plotting #
 ########################
 function FC.Makie.forestplot(
-    grid::MakieGrids,
-    chn::FC.FlexiChain,
-    param_or_params;
-    point::Symbol=:median,
-    levels=FC.PlotUtils.DEFAULT_INTERVALS,
-    interval::Symbol=:quantile,
-    hdi_method::Symbol=:unimodal,
-    pool_chains::Bool=false,
-    axis=(;),
-    kwargs...,
-)
+        grid::MakieGrids,
+        chn::FC.FlexiChain,
+        param_or_params;
+        point::Symbol = :median,
+        levels = FC.PlotUtils.DEFAULT_INTERVALS,
+        interval::Symbol = :quantile,
+        hdi_method::Symbol = :unimodal,
+        pool_chains::Bool = false,
+        axis = (;),
+        kwargs...,
+    )
     chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
     kstrs = FC.PlotUtils.get_plot_param_name.(ks, Ref(plot_names))
@@ -126,6 +127,7 @@ function FC.Makie.forestplot(
         Makie.Axis(grid; _default_forestplot_axis()..., axis...),
         FC.PlotUtils.FlexiChainForest(
             chn,
+            ks,
             kstrs,
             pool_chains,
             point,
@@ -138,16 +140,16 @@ function FC.Makie.forestplot(
 end
 
 function FC.Makie.forestplot!(
-    ax::Makie.Axis,
-    chn::FC.FlexiChain,
-    param_or_params;
-    point::Symbol=:median,
-    levels=FC.PlotUtils.DEFAULT_INTERVALS,
-    interval::Symbol=:quantile,
-    hdi_method::Symbol=:unimodal,
-    pool_chains::Bool=false,
-    kwargs...,
-)
+        ax::Makie.Axis,
+        chn::FC.FlexiChain,
+        param_or_params;
+        point::Symbol = :median,
+        levels = FC.PlotUtils.DEFAULT_INTERVALS,
+        interval::Symbol = :quantile,
+        hdi_method::Symbol = :unimodal,
+        pool_chains::Bool = false,
+        kwargs...,
+    )
     chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
     kstrs = FC.PlotUtils.get_plot_param_name.(ks, Ref(plot_names))
@@ -155,6 +157,7 @@ function FC.Makie.forestplot!(
         ax,
         FC.PlotUtils.FlexiChainForest(
             chn,
+            ks,
             kstrs,
             pool_chains,
             point,
@@ -223,7 +226,7 @@ function FC.Makie.forestplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainForest; 
             dodge_total = min(0.4, 0.15 * nchains)
             offsets =
                 nchains > 1 ?
-                collect(range(dodge_total / 2, -dodge_total / 2; length=nchains)) : [0.0]
+                collect(range(dodge_total / 2, -dodge_total / 2; length = nchains)) : [0.0]
             for (j, (datacol, offset)) in enumerate(zip(eachcol(data), offsets))
                 col = collect(datacol)
                 p = _draw_point_and_intervals!(
@@ -236,7 +239,7 @@ function FC.Makie.forestplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainForest; 
             end
         end
     end
-    ax.yticks = (Float64.(nparams:-1:1), map(k -> string(k.name), params))
+    ax.yticks = (Float64.(nparams:-1:1), d.labels)
     Makie.ylims!(ax, 0.5, nparams + 0.5)
     return Makie.AxisPlot(ax, p)
 end
