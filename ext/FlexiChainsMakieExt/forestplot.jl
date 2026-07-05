@@ -71,8 +71,9 @@ function FC.Makie.forestplot(
     legend=(;),
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
+    kstrs = FC.PlotUtils.get_plot_param_name.(keys_to_plot, Ref(plot_names))
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nparams = length(keys_to_plot)
     fig = Makie.Figure(;
@@ -88,7 +89,7 @@ function FC.Makie.forestplot(
         Makie.Axis(fig[1, 1]; _default_forestplot_axis()..., axis...),
         FC.PlotUtils.FlexiChainForest(
             chn,
-            collect(keys_to_plot),
+            kstrs,
             pool_chains,
             point,
             interval,
@@ -118,13 +119,14 @@ function FC.Makie.forestplot(
     axis=(;),
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
+    kstrs = FC.PlotUtils.get_plot_param_name.(ks, Ref(plot_names))
     return FC.Makie.forestplot!(
         Makie.Axis(grid; _default_forestplot_axis()..., axis...),
         FC.PlotUtils.FlexiChainForest(
             chn,
-            ks,
+            kstrs,
             pool_chains,
             point,
             interval,
@@ -146,13 +148,14 @@ function FC.Makie.forestplot!(
     pool_chains::Bool=false,
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
+    kstrs = FC.PlotUtils.get_plot_param_name.(ks, Ref(plot_names))
     return FC.Makie.forestplot!(
         ax,
         FC.PlotUtils.FlexiChainForest(
             chn,
-            ks,
+            kstrs,
             pool_chains,
             point,
             interval,
