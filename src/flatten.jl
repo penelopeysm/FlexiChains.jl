@@ -15,6 +15,7 @@ original chain, and subsequently using that chain for functions such as `returne
 """
 function _split_varnames(cs::ChainOrSummary{<:VarName})
     vns = OrderedSet{VarName}()
+    plot_names = Dict{VarName,String}()
     for vn in FlexiChains.parameters(cs)
         d = _get_raw_data(cs, Parameter(vn))
         for i in eachindex(d)
@@ -22,8 +23,22 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
                 push!(vns, vn_leaf)
             end
         end
+        if eltype(d) <: DimArray{<:Any,1} && !isempty(d)
+            dimarr = first(d)
+            _dims = DD.dims(dimarr)
+            label_type = eltype(only(_dims))
+            if (label_type === Symbol || label_type <: AbstractString) &&
+               (all(x -> DD.dims(x) == _dims, d))
+                # vn_leaves is of the form vn[1], vn[2], ...
+                vn_leaves = AbstractPPL.varname_leaves(vn, dimarr)
+                for (vn_leaf, label) in zip(vn_leaves, only(_dims))
+                    prettylabel = label isa Symbol ? repr(label) : label
+                    plot_names[vn_leaf] = string(vn, "[", prettylabel, "]")
+                end
+            end
+        end
     end
-    return cs[[collect(vns)..., FlexiChains.extras(cs)...]]
+    return cs[[collect(vns)..., FlexiChains.extras(cs)...]], plot_names
 end
 
 """
@@ -43,8 +58,9 @@ function _split_varnames(cs::ChainOrSummary{Symbol})
         new_data[new_key] = v
     end
     vn_cs = FlexiChains._replace_data(cs, VarName, new_data)
-    split_cs = _split_varnames(vn_cs)
-    return FlexiChains.map_parameters(k -> Symbol(k), split_cs)
+    split_cs, plot_names = _split_varnames(vn_cs)
+    plot_names = Dict{Symbol,String}(Symbol(k) => v for (k, v) in plot_names)
+    return FlexiChains.map_parameters(k -> Symbol(k), split_cs), plot_names
 end
 function _split_varnames(cs::ChainOrSummary{<:AbstractString})
     N = cs isa FlexiChain ? 2 : 3
@@ -54,8 +70,9 @@ function _split_varnames(cs::ChainOrSummary{<:AbstractString})
         new_data[new_key] = v
     end
     vn_cs = FlexiChains._replace_data(cs, VarName, new_data)
-    split_cs = _split_varnames(vn_cs)
-    return FlexiChains.map_parameters(k -> String(Symbol(k)), split_cs)
+    split_cs, plot_names = _split_varnames(vn_cs)
+    plot_names = Dict{String,String}(String(Symbol(k)) => v for (k, v) in plot_names)
+    return FlexiChains.map_parameters(k -> String(Symbol(k)), split_cs), plot_names
 end
 
 """
@@ -65,7 +82,7 @@ For all other chains that are not keyed by `VarName` or `Symbol`, we check if al
 real-valued anyway. If they are, then we can just return the original chain. If not, this
 throws an error.
 """
-function _split_varnames(cs::ChainOrSummary)
+function _split_varnames(cs::ChainOrSummary{T}) where {T}
     for (k, v) in cs._data
         if eltype(v) <: Real
             continue
@@ -77,7 +94,7 @@ function _split_varnames(cs::ChainOrSummary)
             )
         end
     end
-    return cs
+    return cs, Dict{T,String}() # No plot names to return
 end
 
 """
@@ -113,7 +130,7 @@ function DD.DimArray(
     eltype_filter::Type{T}=Any,
     parameters_only::Bool=true,
 ) where {TKey,T}
-    chain = FlexiChains._split_varnames(chain)
+    chain, _ = FlexiChains._split_varnames(chain)
     kept_keys = if parameters_only
         TKey[]
     else
@@ -220,7 +237,7 @@ function DD.DimArray(
     eltype_filter::Type{T}=Any,
     parameters_only::Bool=true,
 ) where {TKey,T}
-    summary = FlexiChains._split_varnames(summary)
+    summary, _ = FlexiChains._split_varnames(summary)
     kept_keys = if parameters_only
         TKey[]
     else
@@ -297,7 +314,7 @@ function _prepare_chain_or_summary(
         cs = FlexiChains.subset_parameters(cs)
     end
     if split_varnames
-        cs = FlexiChains._split_varnames(cs)
+        cs, _ = FlexiChains._split_varnames(cs)
     end
     return cs
 end

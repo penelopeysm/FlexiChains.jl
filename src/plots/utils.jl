@@ -68,8 +68,7 @@ function subset_and_split_chain(
     # considerations when using VarName chains. See below for a full explanation.
     chn = chn[parameters_to_plot]
     # Split into real-valued parameters if possible.
-    chn = _split_varnames(chn)
-    return chn
+    return _split_varnames(chn)
 end
 
 """

@@ -89,7 +89,7 @@ using Test
                 Extra("hello") => 3.0,
             )
             chain = FlexiChain{VarName}(N_iters, 1, fill(d, N_iters))
-            chain2 = FlexiChains._split_varnames(chain)
+            chain2, _ = FlexiChains._split_varnames(chain)
             @test collect(keys(chain2)) == ([
                 Parameter(@varname(a)),
                 Parameter(@varname(c.x)),
@@ -110,7 +110,7 @@ using Test
                 Extra("hello") => 3.0,
             )
             chain = FlexiChain{Symbol}(N_iters, 1, fill(d, N_iters))
-            chain2 = FlexiChains._split_varnames(chain)
+            chain2, _ = FlexiChains._split_varnames(chain)
             @test collect(keys(chain2)) == ([
                 Parameter(:a),
                 Parameter(Symbol("c.x")),
@@ -131,7 +131,7 @@ using Test
                 Extra("hello") => 3.0,
             )
             chain = FlexiChain{String}(N_iters, 1, fill(d, N_iters))
-            chain2 = FlexiChains._split_varnames(chain)
+            chain2, _ = FlexiChains._split_varnames(chain)
             @test collect(keys(chain2)) == ([
                 Parameter("a"),
                 Parameter("c.x"),
@@ -157,9 +157,9 @@ using Test
                     Extra("hello") => 3.0,
                 )
                 chain = FlexiChain{K}(N_iters, 1, fill(d, N_iters))
-                @test isequal(FlexiChains._split_varnames(chain), chain)
+                @test isequal(first(FlexiChains._split_varnames(chain)), chain)
                 # check order of keys are unchanged
-                @test collect(keys(FlexiChains._split_varnames(chain))) ==
+                @test collect(keys(first(FlexiChains._split_varnames(chain)))) ==
                       collect(keys(chain))
             end
 

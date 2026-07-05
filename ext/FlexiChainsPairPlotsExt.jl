@@ -19,14 +19,20 @@ constituent real-valued elements. This is necessary for plotting. In practice th
 never be any reason to set this to `false`, unless you already know that your chain contains
 only scalar variables and you want to avoid the cost of splitting the variable names again.
 """
-function PairPlots.Series(chn::FC.FlexiChain; split_varnames=true, kwargs...)
-    split_chn = if split_varnames
+function PairPlots.Series(chn::FC.FlexiChain{T}; split_varnames=true, kwargs...) where {T}
+    split_chn, plot_names = if split_varnames
         FC._split_varnames(chn)
     else
-        chn
+        chn, Dict{T,String}()
+    end
+    # Helper function.
+    _get_name(k::Extra) = FC.get_name(k)
+    function _get_name(k::Parameter{<:T})
+        nm = FC.get_name(k)
+        get(plot_names, nm, nm)
     end
     all_data =
-        NamedTuple(Symbol(FC.get_name(k)) => vec(split_chn[k]) for k in keys(split_chn))
+        NamedTuple(Symbol(_get_name(k)) => vec(split_chn[k]) for k in keys(split_chn))
     return PairPlots.Series(all_data; kwargs...)
 end
 
