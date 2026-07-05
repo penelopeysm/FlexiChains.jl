@@ -43,7 +43,7 @@ function FC.Makie.autocorplot(
     for ((col, row), k) in zip(indices, keys_to_plot)
         kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
         a, p = FC.Makie.autocorplot!(
-            Makie.Axis(figure[row, col]; _default_autocorplot_axis(k)..., title=kstr, axis...),
+            Makie.Axis(figure[row, col]; _default_autocorplot_axis()..., title=kstr, axis...),
             FC.PlotUtils.FlexiChainAutoCor(chn, k, lags, demean);
             kwargs...,
         )
@@ -83,7 +83,6 @@ function FC.Makie.autocorplot!(
 )
     chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
-    kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
     a, p = FC.Makie.autocorplot!(
         ax,
         FC.PlotUtils.FlexiChainAutoCor(chn, k, lags, demean);
