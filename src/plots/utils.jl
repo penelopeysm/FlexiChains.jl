@@ -32,6 +32,8 @@ const DEFAULT_QUANTILE_LEVELS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 using ..FlexiChains:
     FlexiChain,
     ParameterOrExtra,
+    Parameter,
+    Extra,
     VarName,
     _split_varnames,
     _get_raw_data,
@@ -72,13 +74,17 @@ function subset_and_split_chain(
     return _split_varnames(chn)
 end
 
-function get_plot_param_name(
-    key::ParameterOrExtra{<:T},
-    plot_names::Dict{T,String},
-) where {T}
+"""
+Get the name to use when plotting a parameter. Usually this defaults to
+`string(get_name(key))`, but under some circumstances (specifically DimVectors) this can be
+overridden to provide more informative names. This is implemented in
+`FlexiChains._split_varnames`.
+"""
+function get_plot_param_name(key::Parameter{<:T}, plot_names::Dict{T,String}) where {T}
     nm = get_name(key)
     return get(plot_names, nm, string(nm))
 end
+get_plot_param_name(key::Extra, ::Dict) = string(get_name(key))
 
 """
 Check that the element type of the array is a subtype of `Real`.

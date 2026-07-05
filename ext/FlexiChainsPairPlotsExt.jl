@@ -25,14 +25,10 @@ function PairPlots.Series(chn::FC.FlexiChain{T}; split_varnames=true, kwargs...)
     else
         chn, Dict{T,String}()
     end
-    # Helper function.
-    _get_name(k::Extra) = FC.get_name(k)
-    function _get_name(k::Parameter{<:T})
-        nm = FC.get_name(k)
-        get(plot_names, nm, nm)
-    end
-    all_data =
-        NamedTuple(Symbol(_get_name(k)) => vec(split_chn[k]) for k in keys(split_chn))
+    all_data = NamedTuple(
+        Symbol(FC.PlotUtils.get_plot_param_name(k, plot_names)) => vec(split_chn[k]) for
+        k in keys(split_chn)
+    )
     return PairPlots.Series(all_data; kwargs...)
 end
 
