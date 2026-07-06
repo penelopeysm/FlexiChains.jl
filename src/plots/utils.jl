@@ -256,13 +256,13 @@ struct FlexiChainMixedDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     pool_chains::Bool
 end
 
-struct FlexiChainDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
+struct FlexiChainDensity{TKey, Tp <: ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
     pool_chains::Bool
 end
 
-struct FlexiChainViolin{TKey,Tp<:ParameterOrExtra{<:TKey}}
+struct FlexiChainViolin{TKey, Tp <: ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
     pool_chains::Bool
@@ -272,6 +272,7 @@ end
 struct FlexiChainForest{TKey}
     chn::FlexiChain{TKey}
     params::Vector
+    labels::Vector{String}
     pool_chains::Bool
     point::Symbol
     interval::Symbol
@@ -280,6 +281,7 @@ struct FlexiChainForest{TKey}
     function FlexiChainForest(
         chn::FlexiChain{TKey},
         params::Vector,
+        labels::Vector{String}
         pool_chains::Bool,
         point=:median,
         interval=:quantile,
@@ -296,6 +298,7 @@ struct FlexiChainForest{TKey}
         return new{TKey}(
             chn,
             params,
+            labels,
             pool_chains,
             point,
             interval,
