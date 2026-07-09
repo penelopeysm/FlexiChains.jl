@@ -25,8 +25,6 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
             for vn_leaf in AbstractPPL.varname_leaves(vn, first(d))
                 push!(vns, vn_leaf)
             end
-            # TODO: can we have more shortcircuits for scalars or other things? This is an
-            # obvious spot for perf improvements!
         else
             for i in eachindex(d)
                 for vn_leaf in AbstractPPL.varname_leaves(vn, d[i])
@@ -41,6 +39,8 @@ end
 # This helper function identifies cases where we don't need to check every single Niters x
 # Nchains elements, because they all have the same structure.
 _elems_have_fixed_vn_leaves(data::Array{T}) where {T<:Real} = !isempty(data)
+_elems_have_fixed_vn_leaves(data::Array{T}) where {T<:AbstractString} = !isempty(data)
+_elems_have_fixed_vn_leaves(data::Array{Symbol}) = !isempty(data)
 function _elems_have_fixed_vn_leaves(data::Array{T}) where {T<:AbstractArray}
     # If `T` is not even a concrete type, e.g. it's a Union of two different
     # AbstractArray types, then we have no hope.
@@ -52,8 +52,10 @@ function _elems_have_fixed_vn_leaves(data::Array{T}) where {T<:AbstractArray}
 end
 function _elems_have_fixed_vn_leaves(data::Array{T}) where {T<:Cholesky}
     (isconcretetype(T) && !isempty(data)) || return false
-    s = size(first(data))
-    return all(x -> size(x) == s, data)
+    f = first(data)
+    a = axes(f)
+    ul = f.uplo
+    return all(x -> axes(x) == a && x.uplo == ul, data)
 end
 _elems_have_fixed_vn_leaves(::Array) = false  # Fallback.
 
