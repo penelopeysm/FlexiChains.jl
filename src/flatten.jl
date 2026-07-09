@@ -429,8 +429,8 @@ struct Wide{F<:ChainOrSummary,N<:NamedTuple}
     function Wide(cs::ChainOrSummary; split_varnames::Bool=true, parameters_only::Bool=true)
         cs = _prepare_chain_or_summary(cs; split_varnames, parameters_only)
         # Strip parameter/extra wrappers and convert to Symbol for column names.
-        ks = Tuple(FlexiChains.get_name.(keys(cs)))
-        sym_ks = Symbol.(ks)
+        ks = Tuple(keys(cs))
+        sym_ks = Symbol.(get_name.(ks))
         _check_duplicate_keys(sym_ks)
         symbol_to_keys = NamedTuple{sym_ks}(ks)
         return new{typeof(cs),typeof(symbol_to_keys)}(cs, symbol_to_keys)
@@ -503,11 +503,7 @@ struct Long{F<:FlexiChain,K<:Tuple}
 
     function Long(chn::FlexiChain; split_varnames::Bool=true, parameters_only::Bool=true)
         chn = _prepare_chain_or_summary(chn; split_varnames, parameters_only)
-        original_keys = if parameters_only
-            Tuple(FlexiChains.get_name.(keys(chn)))
-        else
-            Tuple(keys(chn))
-        end
+        original_keys = Tuple(keys(chn))
         _check_duplicate_keys(original_keys)
         return new{typeof(chn),typeof(original_keys)}(chn, original_keys)
     end
@@ -531,7 +527,7 @@ function Tables.getcolumn(s::Wide{<:FlexiChain}, col::Symbol)
     elseif col === FlexiChains.CHAIN_DIM_NAME
         repeat(chain_indices(s.cs); inner=FlexiChains.niters(s.cs))
     else
-        vec(s.cs[s.symbol_to_keys[col]])
+        vec(s.cs._data[s.symbol_to_keys[col]])
     end
 end
 Tables.getcolumn(s::Wide, col::Int) = Tables.getcolumn(s, Tables.columnnames(s)[col])
