@@ -1,5 +1,6 @@
 # Utilities for 'flattening' chains.
 import Tables
+using LinearAlgebra: Cholesky
 
 """
     FlexiChains._split_varnames(cs::ChainOrSummary{<:VarName})
@@ -17,7 +18,7 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
     vns = OrderedSet{VarName}()
     for vn in FlexiChains.parameters(cs)
         d = _get_raw_data(cs, Parameter(vn))
-        if _is_fixed_size_array_data(d)
+        if _elems_have_fixed_vn_leaves(d)
             # Don't need to iterate over all array elements - just check the first one.
             # (Note that `d` could be Array{T,2} or Array{T,3} depending on whether `cs` is
             # a chain or summary.)
@@ -37,11 +38,22 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
     return cs[[collect(vns)..., FlexiChains.extras(cs)...]]
 end
 
-function _is_fixed_size_array_data(data::Array{T}) where {T}
-    # Returns true if every entry in `data` is an array of the same size.
-    (isconcretetype(T) && T <: AbstractArray && !isempty(data)) || return false
-    sz = size(first(data))
-    return all(x -> size(x) == sz, data)
+# This helper function identifies cases where we don't need to check every single Niters x
+# Nchains elements, because they all have the same structure.
+_elems_have_fixed_vn_leaves(data::Array{T}) where {T<:Real} = !isempty(data)
+function _elems_have_fixed_vn_leaves(data::Array{T}) where {T<:AbstractArray}
+    # If `T` is not even a concrete type, e.g. it's a Union of two different
+    # AbstractArray types, then we have no hope.
+    (isconcretetype(T) && !isempty(data)) || return false
+    # Checking axes is no less expensive than checking size, and axes works better because
+    # it catches things like OffsetArrays which have the same size but different offsets.
+    a = axes(first(data))
+    return all(x -> axes(x) == a, data)
+end
+function _elems_have_fixed_vn_leaves(data::Array{T}) where {T<:Cholesky}
+    (isconcretetype(T) && !isempty(data)) || return false
+    s = size(first(data))
+    return all(x -> size(x) == s, data)
 end
 
 """
