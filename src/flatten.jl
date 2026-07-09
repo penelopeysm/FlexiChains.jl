@@ -597,9 +597,9 @@ function Tables.getcolumn(w::Wide{<:FlexiSummary}, col::Symbol)
     elseif col === FlexiChains.STAT_DIM_NAME
         if si === nothing
             if ii === nothing && ci === nothing
-                [w.cs._data[k] for k in values(w.symbol_to_keys)]
+                [w.cs._data[k][] for k in values(w.symbol_to_keys)]
             else
-                vcat([parent(w.cs._data[k]) for k in values(w.symbol_to_keys)]...)
+                vcat([vec(w.cs._data[k]) for k in values(w.symbol_to_keys)]...)
             end
         else
             throw(
