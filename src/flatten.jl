@@ -17,13 +17,29 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
     vns = OrderedSet{VarName}()
     for vn in FlexiChains.parameters(cs)
         d = _get_raw_data(cs, Parameter(vn))
-        for i in eachindex(d)
-            for vn_leaf in AbstractPPL.varname_leaves(vn, d[i])
+        if _is_fixed_size_array_data(d)
+            # Don't need to iterate over all matrix elements - just check the first one.
+            for vn_leaf in AbstractPPL.varname_leaves(vn, first(d))
                 push!(vns, vn_leaf)
+            end
+            # TODO: can we have more shortcircuits for scalars or other things? This is an
+            # obvious spot for perf improvements!
+        else
+            for i in eachindex(d)
+                for vn_leaf in AbstractPPL.varname_leaves(vn, d[i])
+                    push!(vns, vn_leaf)
+                end
             end
         end
     end
     return cs[[collect(vns)..., FlexiChains.extras(cs)...]]
+end
+
+function _is_fixed_size_array_data(data::Matrix{T}) where {T}
+    # Returns true if every entry in `data` is an array of the same size.
+    (isconcretetype(T) && T <: AbstractArray && !isempty(data)) || return false
+    sz = size(first(data))
+    return all(x -> size(x) == sz, data)
 end
 
 """
