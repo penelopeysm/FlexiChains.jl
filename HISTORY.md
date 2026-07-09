@@ -1,3 +1,9 @@
+# 0.6.24
+
+Improved performance on a number of FlexiChains functions, including the Tables.jl interface.
+
+Fixed a bug where `Wide(::FlexiSummary; parameters_only=false)` would incorrectly yield results where the `Parameter` or `Extra` wrapper was dropped.
+
 # 0.6.23
 
 The plotting functions `pushforward_hist`, `pushforward_continuous`, and `pushforward_discrete` now use Makie's default figure size instead of that determined by `setup_figure_and_layout()`.
