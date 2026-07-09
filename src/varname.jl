@@ -102,7 +102,11 @@ function _get_raw_data(cs::ChainOrSummary{<:VarName}, vn_param::Parameter{<:VarN
     )
     # can't use get_raw_data in this line or else it will recurse.
     raw = cs._data[Parameter(vn)]
-    return _map_optic(optic, raw, orig_vn)
+    return if optic isa AbstractPPL.Iden
+        raw # No need to do the mapping
+    else
+        _map_optic(optic, raw, orig_vn)
+    end
 end
 
 """
