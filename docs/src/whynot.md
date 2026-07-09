@@ -6,34 +6,71 @@ Since I wrote one whole page saying why you _should_ use FlexiChains, here are t
 
 FlexiChains uses dictionaries as its internal storage, and it is fundamentally not type stable to index into a dictionary with an abstract value type.
 Consequently, the vast majority of operations in FlexiChains are not type stable.
-They are potentially also slower than equivalent operations in MCMCChains.
+They can sometimes also be slower than equivalent operations in MCMCChains.
 
-Personally, I consider this to be really unimportant, because chain manipulation and data access are hardly performance bottlenecks in a typical Bayesian workflow.
+Personally, I don't consider this to be important.
+Chain manipulation and data access are hardly performance bottlenecks in a typical Bayesian workflow.
+However, that isn't an excuse for gratuitously poor performance!
 If you find an instance where FlexiChains is unbearably slow, please do open an issue.
+I'm more than happy to look into it, or to suggest ways of working around it.
 
-Note that when interfacing with Turing models, [FlexiChains is typically faster](@ref why-perf).
+### For the interested reader...
+
+Performance differences typically arise because of the different data representation.
+In general, FlexiChains has a richer, more high-level, data structure, which avoids destroying information at early stages of processing.
+In contrast, MCMCChains immediately flattens everything into a 3D array.
+
+If you feed a chain back into a Turing model, e.g. with `predict`, Turing is actually much happier with the high-level, original data representation.
+With MCMCChains you have to pay the cost of 'unflattening'.
+That's why [FlexiChains is typically faster when interfacing with Turing models](@ref why-perf).
+
+Now, flattening is actually quite an expensive operation since it involves essentially reshuffling the entire chain's data in memory and is therefore `O(niters * nchains * nparams)`.
+Generally the means that things that involve flat representations of data (a simple example being conversion to DataFrame) are faster with MCMCChains, because this cost has already been paid upfront.
+With FlexiChains, you have to pay this cost every time you want to do something that requires a flat representation.
+
+```@example flat
+using FlexiChains: FlexiChain, Parameter
+using Chairmarks, DataFrames
+
+niter, nchain, nparam = 1000, 4, 100
+d = [Dict(Parameter(:x) => randn(nparam)) for _ in 1:niter, _ in 1:nchain]
+c = FlexiChain{Symbol}(niter, nchain, d)
+nothing # hide
+```
+
+```@example flat
+# FlexiChains
+@be DataFrame(c) samples=50 evals=1
+```
+
+```@example flat
+using MCMCChains
+m = MCMCChains.Chains(c)
+
+# MCMCChains
+@be DataFrame(m) samples=50 evals=1
+```
+
+However, you should be aware that this is not entirely a fair comparison, and the 'flattening' part of MCMCChains _has already taken place when the chain is constructed_.
+In particular, if you are doing some sampling via `sample(...; chain_type=MCMCChains.Chains)`, note that the chain construction is part of the `sample` call, and thus it will **appear** as if you are just waiting for MCMC sampling to finish, when in fact you are **also** waiting for the chain to be flattened.
+(If you have noticed MCMC sampling often being stuck at 100% for a while, this is why.)
+
+To show a fairer comparison, we can flatten the FlexiChain first.
+Note that `DataFrame(c)` defers to `DataFrame(Wide(c))` (see the [Tables.jl integration section](@ref integrations-tables) for more details).
+The constructor of `Wide` does the flattening for us, so if we pre-compute that, you will find that FlexiChains' performance is not so bad after all!
+
+```@example flat
+using FlexiChains: Wide
+w = Wide(c)
+@be DataFrame(w) samples=50 evals=1
+```
 
 ## Feature set
 
-MCMCChains probably still has more plotting and statistics functions available, even though FlexiChains is catching up quite rapidly.
-This is mainly because MCMCChains has been around for longer, and has had more contributors.
+There are still one or two more plotting and statistics functions that MCMCChains has that FlexiChains does not have yet.
+
+(Note that this isn't entirely a drawback: there are things in FlexiChains that MCMCChains doesn't have too.)
 
 I would be very happy to accept PRs porting some of this functionality to FlexiChains!
 
 In the meantime, you can always [convert your FlexiChain to a `DataFrame`](@ref integrations-tables), or an [`MCMCChains.Chains`](@ref) if you really need to.
-
-## Interface stability
-
-FlexiChains is still quite young, development is happening quite rapidly, and thus its interface may not be fully stable.
-On the other hand MCMCChains is largely stable (although you _may_ consider a lack of development to be a drawback).
-
-My aim is to release a version 1.0 as soon as possible.
-(In general, I strongly subscribe to the view that packages that are used by the public should release 1.0 as soon as possible: see [this issue](https://github.com/JuliaRegistries/General/issues/111019).)
-My preconditions for FlexiChains 1.0 are twofold:
-
- 1. I am happy with the core design and APIs of the package. For example, I don't really care about which statistic functions are implemented, but I do care that they return sensible data structures.
-
- 2. The package has been tested by a people in the wild, to catch any obvious gaps or drawbacks.
-
-As of April 2026, I think that (1) is already satisfied: the data structures and APIs are pretty much where I want them to be, and I expect that future changes will mostly be addition of new functionality rather than breaking changes.
-However, I am still waiting for (2) to really happen, and I would like to see more people using the package and giving feedback before I release 1.0.
