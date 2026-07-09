@@ -503,7 +503,11 @@ struct Long{F<:FlexiChain,K<:Tuple}
 
     function Long(chn::FlexiChain; split_varnames::Bool=true, parameters_only::Bool=true)
         chn = _prepare_chain_or_summary(chn; split_varnames, parameters_only)
-        original_keys = Tuple(keys(chn))
+        original_keys = if parameters_only
+            Tuple(FlexiChains.get_name.(keys(chn)))
+        else
+            Tuple(keys(chn))
+        end
         _check_duplicate_keys(original_keys)
         return new{typeof(chn),typeof(original_keys)}(chn, original_keys)
     end
