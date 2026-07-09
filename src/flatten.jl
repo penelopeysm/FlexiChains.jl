@@ -55,6 +55,7 @@ function _elems_have_fixed_vn_leaves(data::Array{T}) where {T<:Cholesky}
     s = size(first(data))
     return all(x -> size(x) == s, data)
 end
+_elems_have_fixed_vn_leaves(::Array) = false  # Fallback.
 
 """
     FlexiChains._split_varnames(cs::ChainOrSummary{Union{Symbol,<:AbstractString}})
