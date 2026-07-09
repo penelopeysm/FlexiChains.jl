@@ -425,8 +425,12 @@ julia> df = DataFrame(Wide(mean(chn)))
 """
 struct Wide{F<:ChainOrSummary,N<:NamedTuple}
     cs::F
-    # A precomputed mapping from Symbol(k) => k for all keys in `cs`.
+    # A precomputed mapping from Symbol(get_name(k)) => k for all keys in `cs`.
     symbol_to_keys::N
+    # For summaries, a flag to indicate whether or not the keys should be unwrapped
+    # for the param column. This isn't an issue for chains because Wide(chn) doesn't
+    # have a param column
+    parameters_only::Bool
 
     function Wide(cs::ChainOrSummary; split_varnames::Bool=true, parameters_only::Bool=true)
         cs = _prepare_chain_or_summary(cs; split_varnames, parameters_only)
@@ -435,7 +439,7 @@ struct Wide{F<:ChainOrSummary,N<:NamedTuple}
         sym_ks = Symbol.(get_name.(ks))
         _check_duplicate_keys(sym_ks)
         symbol_to_keys = NamedTuple{sym_ks}(ks)
-        return new{typeof(cs),typeof(symbol_to_keys)}(cs, symbol_to_keys)
+        return new{typeof(cs),typeof(symbol_to_keys)}(cs, symbol_to_keys, parameters_only)
     end
 end
 
@@ -576,6 +580,9 @@ function Tables.getcolumn(w::Wide{<:FlexiSummary}, col::Symbol)
     nparams = length(w.symbol_to_keys)
     return if col === FlexiChains.PARAM_DIM_NAME
         ks = collect(values(w.symbol_to_keys))
+        if w.parameters_only
+            ks = FlexiChains.get_name.(ks)
+        end
         repeat(ks; inner=nic)
     elseif col === FlexiChains.ITER_DIM_NAME
         ii === nothing && throw(
@@ -590,9 +597,9 @@ function Tables.getcolumn(w::Wide{<:FlexiSummary}, col::Symbol)
     elseif col === FlexiChains.STAT_DIM_NAME
         if si === nothing
             if ii === nothing && ci === nothing
-                [w.cs[k] for k in values(w.symbol_to_keys)]
+                [w.cs._data[k] for k in values(w.symbol_to_keys)]
             else
-                vcat([parent(w.cs[k]) for k in values(w.symbol_to_keys)]...)
+                vcat([parent(w.cs._data[k]) for k in values(w.symbol_to_keys)]...)
             end
         else
             throw(
@@ -609,8 +616,14 @@ function Tables.getcolumn(w::Wide{<:FlexiSummary}, col::Symbol)
             )
         else
             if col in parent(si)
+                # Perf optimisation. This is equivalent to
+                #     get_stat_val(k) = w.cs[k, stat=At(col)]
+                # but avoids the overhead of the getindex call when we know for certain
+                # that `k` is already a valid key in `w.cs._data`.
+                idx = findfirst(==(col), parent(si))
+                get_stat_val(k) = w.cs._data[k][1, 1, idx]
                 if ii === nothing && ci === nothing
-                    [w.cs[k, stat=At(col)] for k in values(w.symbol_to_keys)]
+                    [get_stat_val(k) for k in values(w.symbol_to_keys)]
                 else
                     vcat(
                         [
