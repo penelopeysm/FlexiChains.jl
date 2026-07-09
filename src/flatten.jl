@@ -18,7 +18,9 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
     for vn in FlexiChains.parameters(cs)
         d = _get_raw_data(cs, Parameter(vn))
         if _is_fixed_size_array_data(d)
-            # Don't need to iterate over all matrix elements - just check the first one.
+            # Don't need to iterate over all array elements - just check the first one.
+            # (Note that `d` could be Array{T,2} or Array{T,3} depending on whether `cs` is
+            # a chain or summary.)
             for vn_leaf in AbstractPPL.varname_leaves(vn, first(d))
                 push!(vns, vn_leaf)
             end
@@ -35,7 +37,7 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
     return cs[[collect(vns)..., FlexiChains.extras(cs)...]]
 end
 
-function _is_fixed_size_array_data(data::Matrix{T}) where {T}
+function _is_fixed_size_array_data(data::Array{T}) where {T}
     # Returns true if every entry in `data` is an array of the same size.
     (isconcretetype(T) && T <: AbstractArray && !isempty(data)) || return false
     sz = size(first(data))
@@ -499,17 +501,17 @@ table.
 struct Long{F<:FlexiChain,K<:Tuple}
     chn::F
     # The keys for the param column: unwrapped if parameters_only, wrapped otherwise.
-    original_keys::K
+    maybe_unwrapped_keys::K
 
     function Long(chn::FlexiChain; split_varnames::Bool=true, parameters_only::Bool=true)
         chn = _prepare_chain_or_summary(chn; split_varnames, parameters_only)
-        original_keys = if parameters_only
+        maybe_unwrapped_keys = if parameters_only
             Tuple(FlexiChains.get_name.(keys(chn)))
         else
             Tuple(keys(chn))
         end
-        _check_duplicate_keys(original_keys)
-        return new{typeof(chn),typeof(original_keys)}(chn, original_keys)
+        _check_duplicate_keys(maybe_unwrapped_keys)
+        return new{typeof(chn),typeof(maybe_unwrapped_keys)}(chn, maybe_unwrapped_keys)
     end
 end
 
@@ -636,20 +638,23 @@ Tables.columnnames(::Long) = [
     VALUE_COL_NAME,
 ]
 function Tables.getcolumn(s::Long, col::Symbol)
-    nkeys = length(s.original_keys)
+    nkeys = length(s.maybe_unwrapped_keys)
     return if col === FlexiChains.ITER_DIM_NAME
         repeat(iter_indices(s.chn); outer=FlexiChains.nchains(s.chn) * nkeys)
     elseif col === FlexiChains.CHAIN_DIM_NAME
         repeat(chain_indices(s.chn); inner=FlexiChains.niters(s.chn), outer=nkeys)
     elseif col === FlexiChains.PARAM_DIM_NAME
         repeat(
-            collect(s.original_keys);
+            collect(s.maybe_unwrapped_keys);
             inner=FlexiChains.niters(s.chn) * FlexiChains.nchains(s.chn),
         )
     elseif col === VALUE_COL_NAME
-        mapreduce(vcat, s.original_keys) do k
-            vec(s.chn[k])
+        # mapreduce(vcat, ...) is very slow (presumably quadratic behaviour?)
+        vs = map(s.maybe_unwrapped_keys) do k
+            wrapped_key = k isa ParameterOrExtra ? k : Parameter(k)
+            vec(s.chn._data[wrapped_key])
         end
+        vcat(vs...)
     else
         throw(ArgumentError("unknown column name: $col"))
     end
