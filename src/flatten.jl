@@ -527,6 +527,10 @@ function Tables.getcolumn(s::Wide{<:FlexiChain}, col::Symbol)
     elseif col === FlexiChains.CHAIN_DIM_NAME
         repeat(chain_indices(s.cs); inner=FlexiChains.niters(s.cs))
     else
+        # Because the chain has been constructed via `_prepare_chain_or_summary`, we know
+        # that `s.symbol_to_keys[col]` is actually a legitimate key in the raw data
+        # dictionary, so we can index directly into the data dict instead of the chain. This
+        # causes a huge performance improvement.
         vec(s.cs._data[s.symbol_to_keys[col]])
     end
 end
