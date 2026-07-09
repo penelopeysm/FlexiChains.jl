@@ -621,15 +621,14 @@ function Tables.getcolumn(w::Wide{<:FlexiSummary}, col::Symbol)
                 # but avoids the overhead of the getindex call when we know for certain
                 # that `k` is already a valid key in `w.cs._data`.
                 idx = findfirst(==(col), parent(si))
-                get_stat_val(k) = w.cs._data[k][1, 1, idx]
+                get_stat_val(k) = w.cs._data[k][:, :, idx]
                 if ii === nothing && ci === nothing
-                    [get_stat_val(k) for k in values(w.symbol_to_keys)]
+                    # get_stat_val returns 1x1x1 array
+                    [get_stat_val(k)[] for k in values(w.symbol_to_keys)]
                 else
-                    vcat(
-                        [
-                            parent(w.cs[k, stat=At(col)]) for k in values(w.symbol_to_keys)
-                        ]...,
-                    )
+                    # get_stat_val returns iters x 1 x 1 array or 1 x nchains x 1 array
+                    stat_vals = [vec(get_stat_val(k)) for k in values(w.symbol_to_keys)]
+                    vcat(stat_vals...)
                 end
             else
                 throw(
