@@ -44,7 +44,7 @@ function FC.Makie.pushforward_continuous!(
     kwargs...,
 )
     isodd(length(quantiles)) || throw(ArgumentError("`quantiles` must have odd length"))
-    sub = FC.PlotUtils.subset_and_split_chain(chn, param)
+    sub, _ = FC.PlotUtils.subset_and_split_chain(chn, param)
     ks = collect(keys(sub))
     isempty(ks) && throw(ArgumentError("no parameters to plot"))
     data = map(ks) do k

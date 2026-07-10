@@ -272,7 +272,7 @@ end
 struct FlexiChainForest{TKey}
     chn::FlexiChain{TKey}
     params::Vector
-    labels::Vector{String}
+    param_names::Vector{String}
     pool_chains::Bool
     point::Symbol
     interval::Symbol
@@ -281,7 +281,7 @@ struct FlexiChainForest{TKey}
     function FlexiChainForest(
         chn::FlexiChain{TKey},
         params::Vector,
-        labels::Vector{String},
+        param_names::Vector{String},
         pool_chains::Bool,
         point=:median,
         interval=:quantile,
@@ -298,7 +298,7 @@ struct FlexiChainForest{TKey}
         return new{TKey}(
             chn,
             params,
-            labels,
+            param_names,
             pool_chains,
             point,
             interval,
@@ -311,6 +311,7 @@ end
 struct FlexiChainRidgeline{TKey}
     chn::FlexiChain{TKey}
     params::Vector
+    param_names::Vector{String}
     pool_chains::Bool
 end
 

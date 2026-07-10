@@ -72,7 +72,7 @@ function FC.Makie.autocorplot(
     k = only(keys(chn))
     kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
     return FC.Makie.autocorplot!(
-        Makie.Axis(grid; _default_autocorplot_axis(k)..., title=kstr, axis...),
+        Makie.Axis(grid; _default_autocorplot_axis()..., title=kstr, axis...),
         chn,
         param;
         kwargs...,
@@ -86,7 +86,7 @@ function FC.Makie.autocorplot!(
     demean::Bool=true,
     kwargs...,
 )
-    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param)
+    chn, _ = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
     a, p = FC.Makie.autocorplot!(
         ax,

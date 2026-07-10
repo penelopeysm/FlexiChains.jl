@@ -239,7 +239,7 @@ function FC.Makie.forestplot!(ax::Makie.Axis, d::FC.PlotUtils.FlexiChainForest; 
             end
         end
     end
-    ax.yticks = (Float64.(nparams:-1:1), d.labels)
+    ax.yticks = (Float64.(nparams:-1:1), d.param_names)
     Makie.ylims!(ax, 0.5, nparams + 0.5)
     return Makie.AxisPlot(ax, p)
 end

@@ -112,15 +112,16 @@ function FC.Makie.pushforward_discrete!(
     vertical::Bool=true,
     kwargs...,
 )
-    sub = FC.PlotUtils.subset_and_split_chain(chn, param)
+    sub, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param)
     ks = collect(keys(sub))
+    kstrs = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in ks]
     isempty(ks) && throw(ArgumentError("no parameters to plot"))
     data = map(ks) do k
         d = FC.PlotUtils._get_raw_data(sub, k)
         FC.PlotUtils.check_eltype_is_real(d)
         d
     end
-    ticks = (1:length(ks), string.(FC.get_name.(ks)))
+    ticks = (1:length(ks), kstrs)
     if vertical
         ax.xticks = ticks
         ax.xlabel = "parameter"

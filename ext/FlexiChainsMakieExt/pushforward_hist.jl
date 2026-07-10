@@ -81,7 +81,7 @@ function FC.Makie.pushforward_hist(
 end
 
 function FC.Makie.pushforward_hist!(ax::Makie.Axis, chn::FC.FlexiChain, param; kwargs...)
-    sub = FC.PlotUtils.subset_and_split_chain(chn, param)
+    sub, _ = FC.PlotUtils.subset_and_split_chain(chn, param)
     ks = collect(keys(sub))
     isempty(ks) && throw(ArgumentError("no parameters to plot"))
     data = map(ks) do k

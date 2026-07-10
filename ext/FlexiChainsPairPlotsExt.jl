@@ -87,7 +87,7 @@ function PairPlots.pairplot(
     else
         nothing
     end
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, _ = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     series = if pool_chains
         # already split above, so don't need to split again here
         (PairPlots.Series(chn; split_varnames=false),)
