@@ -18,9 +18,9 @@ function _draw_point_and_intervals!(ax, y, color, point_val, interval_sets)
     return Makie.scatter!(ax, [point_val], [y]; color=color, markersize=10)
 end
 
-###############
+####################
 # Makie.forestplot #
-###############
+####################
 
 """
     FlexiChains.Makie.forestplot(
@@ -74,7 +74,7 @@ function FC.Makie.forestplot(
     chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
-    kstrs = FC.PlotUtils.get_plot_param_name.(keys_to_plot, Ref(plot_names))
+    kstrs = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in keys_to_plot]
     nparams = length(keys_to_plot)
     fig = Makie.Figure(;
         size=(
@@ -122,7 +122,7 @@ function FC.Makie.forestplot(
 )
     chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
-    kstrs = FC.PlotUtils.get_plot_param_name.(ks, Ref(plot_names))
+    kstrs = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in keys_to_plot]
     return FC.Makie.forestplot!(
         Makie.Axis(grid; _default_forestplot_axis()..., axis...),
         FC.PlotUtils.FlexiChainForest(
@@ -152,7 +152,7 @@ function FC.Makie.forestplot!(
 )
     chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
-    kstrs = FC.PlotUtils.get_plot_param_name.(ks, Ref(plot_names))
+    kstrs = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in keys_to_plot]
     return FC.Makie.forestplot!(
         ax,
         FC.PlotUtils.FlexiChainForest(

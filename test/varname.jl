@@ -157,10 +157,10 @@ using Test
                     Extra("hello") => 3.0,
                 )
                 chain = FlexiChain{K}(N_iters, 1, fill(d, N_iters))
-                @test isequal(first(FlexiChains._split_varnames(chain)), chain)
+                split_chain, _ = FlexiChains._split_varnames(chain)
+                @test isequal(split_chain, chain)
                 # check order of keys are unchanged
-                @test collect(keys(first(FlexiChains._split_varnames(chain)))) ==
-                      collect(keys(chain))
+                @test collect(keys(split_chain)) == collect(keys(chain))
             end
 
             @testset "if there are non-scalar values" begin
