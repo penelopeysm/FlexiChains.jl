@@ -3,7 +3,10 @@ import Tables
 using LinearAlgebra: Cholesky
 
 """
-    FlexiChains._split_varnames(cs::ChainOrSummary{<:VarName})
+    FlexiChains._split_varnames(
+        cs::ChainOrSummary{<:VarName};
+        collect_plot_names::Bool=false
+    )
 
 Split up a chain, which in general may contain array- or other-valued parameters, into a
 chain containing only scalar-valued parameters. This is done by replacing the original
@@ -13,8 +16,16 @@ then it is replaced by `x[1]`, `x[2]`, etc.
 This function is only used for summarising and plotting: note that calling this on an
 original chain, and subsequently using that chain for functions such as `returned` or
 `predict`, **will** lead to errors!
+
+Returns a tuple of the new chain and a dictionary which maps the new `VarName` keys to
+'pretty names' (i.e., Strings) used for plot labels. Ordinarily, plot labels are obtained by
+just converting the `VarName` to a String, but for DimVector parameters, we use the labels
+stored inside the DimVector itself. For all other parameters the plot label is just the
+default.
+
+If `collect_plot_names` is `false`, then the dictionary will always be empty.
 """
-function _split_varnames(cs::ChainOrSummary{<:VarName})
+function _split_varnames(cs::ChainOrSummary{<:VarName}; collect_plot_names::Bool=false)
     vns = OrderedSet{VarName}()
     plot_names = Dict{VarName,String}()
     for vn in FlexiChains.parameters(cs)
@@ -23,27 +34,25 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
             # Don't need to iterate over all array elements - just check the first one.
             # (Note that `d` could be Array{T,2} or Array{T,3} depending on whether `cs` is
             # a chain or summary.)
-            for vn_leaf in AbstractPPL.varname_leaves(vn, first(d))
+            d1 = first(d)
+            vn_leaves = AbstractPPL.varname_leaves(vn, d1)
+            for vn_leaf in vn_leaves
                 push!(vns, vn_leaf)
+            end
+            if collect_plot_names && eltype(d) <: DD.DimVector
+                dim = DD.dims(d1, 1)
+                label_type = eltype(dim)
+                if (label_type === Symbol || label_type <: AbstractString)
+                    for (vn_leaf, label) in zip(vn_leaves, dim)
+                        prettylabel = label isa Symbol ? repr(label) : label
+                        plot_names[vn_leaf] = string(vn, "[", prettylabel, "]")
+                    end
+                end
             end
         else
             for i in eachindex(d)
                 for vn_leaf in AbstractPPL.varname_leaves(vn, d[i])
                     push!(vns, vn_leaf)
-                end
-            end
-        end
-        if eltype(d) <: DimArray{<:Any,1} && !isempty(d)
-            dimarr = first(d)
-            _dims = DD.dims(dimarr)
-            label_type = eltype(only(_dims))
-            if (label_type === Symbol || label_type <: AbstractString) &&
-               (all(x -> DD.dims(x) == _dims, d))
-                # vn_leaves is of the form vn[1], vn[2], ...
-                vn_leaves = AbstractPPL.varname_leaves(vn, dimarr)
-                for (vn_leaf, label) in zip(vn_leaves, only(_dims))
-                    prettylabel = label isa Symbol ? repr(label) : label
-                    plot_names[vn_leaf] = string(vn, "[", prettylabel, "]")
                 end
             end
         end
@@ -75,7 +84,10 @@ end
 _elems_have_fixed_vn_leaves(::Array) = false  # Fallback.
 
 """
-    FlexiChains._split_varnames(cs::ChainOrSummary{Union{Symbol,<:AbstractString}})
+    FlexiChains._split_varnames(
+        cs::ChainOrSummary{Union{Symbol,<:AbstractString}};
+        collect_plot_names::Bool=false
+    )
 
 For `Symbol`-keyed chains, convert keys to `VarName`, split array-valued parameters into
 scalar leaves, then convert the keys back to `Symbol`.
@@ -83,7 +95,7 @@ scalar leaves, then convert the keys back to `Symbol`.
 Likewise for `AbstractString`-keyed chains; the keys are converted back to standard
 `String`.
 """
-function _split_varnames(cs::ChainOrSummary{Symbol})
+function _split_varnames(cs::ChainOrSummary{Symbol}; collect_plot_names::Bool=false)
     N = cs isa FlexiChain ? 2 : 3
     new_data = OrderedDict{ParameterOrExtra{<:VarName},Array{<:Any,N}}()
     for (k, v) in cs._data
@@ -91,11 +103,14 @@ function _split_varnames(cs::ChainOrSummary{Symbol})
         new_data[new_key] = v
     end
     vn_cs = FlexiChains._replace_data(cs, VarName, new_data)
-    split_cs, plot_names = _split_varnames(vn_cs)
+    split_cs, plot_names = _split_varnames(vn_cs; collect_plot_names=collect_plot_names)
     plot_names = Dict{Symbol,String}(Symbol(k) => v for (k, v) in plot_names)
     return FlexiChains.map_parameters(k -> Symbol(k), split_cs), plot_names
 end
-function _split_varnames(cs::ChainOrSummary{<:AbstractString})
+function _split_varnames(
+    cs::ChainOrSummary{<:AbstractString};
+    collect_plot_names::Bool=false,
+)
     N = cs isa FlexiChain ? 2 : 3
     new_data = OrderedDict{ParameterOrExtra{<:VarName},Array{<:Any,N}}()
     for (k, v) in cs._data
@@ -103,19 +118,19 @@ function _split_varnames(cs::ChainOrSummary{<:AbstractString})
         new_data[new_key] = v
     end
     vn_cs = FlexiChains._replace_data(cs, VarName, new_data)
-    split_cs, plot_names = _split_varnames(vn_cs)
+    split_cs, plot_names = _split_varnames(vn_cs; collect_plot_names=collect_plot_names)
     plot_names = Dict{String,String}(String(Symbol(k)) => v for (k, v) in plot_names)
     return FlexiChains.map_parameters(k -> String(Symbol(k)), split_cs), plot_names
 end
 
 """
-    FlexiChains._split_varnames(cs::ChainOrSummary)
+    FlexiChains._split_varnames(cs::ChainOrSummary; collect_plot_names::Bool=false)
 
 For all other chains that are not keyed by `VarName` or `Symbol`, we check if all keys are
 real-valued anyway. If they are, then we can just return the original chain. If not, this
 throws an error.
 """
-function _split_varnames(cs::ChainOrSummary{T}) where {T}
+function _split_varnames(cs::ChainOrSummary{T}; collect_plot_names::Bool=false) where {T}
     for (k, v) in cs._data
         if eltype(v) <: Real
             continue

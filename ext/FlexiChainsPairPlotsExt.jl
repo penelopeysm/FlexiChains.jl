@@ -21,7 +21,7 @@ only scalar variables and you want to avoid the cost of splitting the variable n
 """
 function PairPlots.Series(chn::FC.FlexiChain{T}; split_varnames=true, kwargs...) where {T}
     split_chn, plot_names = if split_varnames
-        FC._split_varnames(chn)
+        FC._split_varnames(chn; collect_plot_names=true)
     else
         chn, Dict{T,String}()
     end

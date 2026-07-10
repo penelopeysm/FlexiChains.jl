@@ -71,7 +71,7 @@ function subset_and_split_chain(
     # considerations when using VarName chains. See below for a full explanation.
     chn = chn[parameters_to_plot]
     # Split into real-valued parameters if possible.
-    return _split_varnames(chn)
+    return _split_varnames(chn; collect_plot_names=true)
 end
 
 """
@@ -256,13 +256,13 @@ struct FlexiChainMixedDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     pool_chains::Bool
 end
 
-struct FlexiChainDensity{TKey, Tp <: ParameterOrExtra{<:TKey}}
+struct FlexiChainDensity{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
     pool_chains::Bool
 end
 
-struct FlexiChainViolin{TKey, Tp <: ParameterOrExtra{<:TKey}}
+struct FlexiChainViolin{TKey,Tp<:ParameterOrExtra{<:TKey}}
     chn::FlexiChain{TKey}
     param::Tp
     pool_chains::Bool
@@ -281,7 +281,7 @@ struct FlexiChainForest{TKey}
     function FlexiChainForest(
         chn::FlexiChain{TKey},
         params::Vector,
-        labels::Vector{String}
+        labels::Vector{String},
         pool_chains::Bool,
         point=:median,
         interval=:quantile,
