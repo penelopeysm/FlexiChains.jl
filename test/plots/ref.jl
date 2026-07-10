@@ -5,9 +5,10 @@ using PairPlots
 using Plots
 using StatsPlots
 using OrderedCollections: OrderedDict
-using FlexiChains: FlexiChains as FC, FlexiChain, Parameter
+using FlexiChains: FlexiChains as FC, FlexiChain, Parameter, @varname, VarName
 using StableRNGs: StableRNG
 import PosteriorStats # For hdi forestplot
+import DimensionalData as DD
 using PixelMatch
 using PNGFiles
 using Test
@@ -94,6 +95,17 @@ function make_test_chain(rng)
 end
 chn = make_test_chain(StableRNG(42))
 
+function make_test_labelled_chain(rng)
+    N_iters, N_chains = 100, 2
+    dim = DD.Dim{:name}([:a, :b, :c])
+    dicts = [
+        OrderedDict(Parameter(@varname(x)) => DD.DimArray(randn(rng, 3), (dim,))) for
+        _ in 1:N_iters, _ in 1:N_chains
+    ]
+    return FlexiChain{VarName}(N_iters, N_chains, dicts)
+end
+labelled_chn = make_test_labelled_chain(StableRNG(42))
+
 # --- Betancourt demo chains: analytic, structured, deterministic ---
 
 # conn: f_grid[n] ~ N(alpha + beta * x[n], s) over an x-grid -> real linear trend
@@ -131,6 +143,7 @@ hist_chn = make_hist_chain(StableRNG(303))
 const REFTEST_SPECS = [
     # MakieExt
     RefTestSpec(MakieBE(), "mtraceplot", () -> FC.Makie.traceplot(chn)),
+    RefTestSpec(MakieBE(), "mtraceplot_labels", () -> FC.Makie.traceplot(labelled_chn)),
     RefTestSpec(MakieBE(), "mrankplot", () -> FC.Makie.rankplot(chn)),
     RefTestSpec(MakieBE(), "mrankplot_overlay", () -> FC.Makie.rankplot(chn; overlay=true)),
     RefTestSpec(
@@ -163,6 +176,7 @@ const REFTEST_SPECS = [
 
     # PlotsExt
     RefTestSpec(PlotsBE(), "traceplot", () -> FC.Plots.traceplot(chn)),
+    RefTestSpec(PlotsBE(), "traceplot_labels", () -> FC.Plots.traceplot(labelled_chn)),
     RefTestSpec(PlotsBE(), "rankplot", () -> FC.Plots.rankplot(chn)),
     RefTestSpec(PlotsBE(), "rankplot_overlay", () -> FC.Plots.rankplot(chn; overlay=true)),
     RefTestSpec(
