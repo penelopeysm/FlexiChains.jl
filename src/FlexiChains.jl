@@ -56,6 +56,11 @@ include("plots/plots.jl")
 include("plots/makie.jl")
 include("plots/shims.jl")
 
+# Extended in Pigeons extension
+function from_pigeons end
+@public from_pigeons
+function _internal_from_pigeons end
+
 # Convenience re-exports.
 export Wide, Long
 using DimensionalData: At, Near, Contains, (..), Touches, Where, Not, DimArray, Begin, End
