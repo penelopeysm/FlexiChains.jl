@@ -120,7 +120,6 @@ chain = sample(model, NUTS(), 3; chain_type=VNChain)
 
 In this chain, `theta` has one entry per school, but is stored as a plain `Vector`.
 While this is fine for many applications, attaching labels can help make it easier to analyse the data.
-For example:
 
 ```@example modifications
 using DimensionalData: DimArray, Dim
@@ -140,7 +139,16 @@ add_labels(v::Vector{<:Real}) = DimArray(v, Dim{:school}(school_names))
 chain = transform_values(chain, :theta => add_labels)
 ```
 
-With the labels present you can do something like this, which gives the same functionality as [tidybayes' `spread_draws`](https://mjskay.github.io/tidybayes/reference/spread_draws.html):
+For example, `DimVector` parameters get special labels when plotting:
+
+```@example modifications
+using CairoMakie
+
+FlexiChains.Makie.traceplot(chain, @varname(theta); layout=(4, 2))
+```
+
+Having the labels also benefits downstream analysis of any data extracted from the chain.
+For example, you can obtain the same functionality as [tidybayes' `spread_draws`](https://mjskay.github.io/tidybayes/reference/spread_draws.html):
 
 ```@example modifications
 using DataFrames
