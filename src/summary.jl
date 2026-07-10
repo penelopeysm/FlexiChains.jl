@@ -389,7 +389,7 @@ function collapse(
     drop_stat_dim::Bool=false,
 ) where {TKey}
     if split_varnames
-        chain = FlexiChains._split_varnames(chain)
+        chain, _ = FlexiChains._split_varnames(chain)
     end
     data = OrderedDict{ParameterOrExtra{<:TKey},AbstractArray{<:Any,3}}()
     names, funcs = _get_names_and_funcs(funcs)

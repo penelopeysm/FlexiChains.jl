@@ -41,9 +41,10 @@ function FC.Makie.ridgeline(
     legend=(;),
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
+    kstrs = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in keys_to_plot]
     nparams = length(keys_to_plot)
     fig = Makie.Figure(;
         size=(
@@ -56,7 +57,7 @@ function FC.Makie.ridgeline(
     colors = determine_chain_colors(pool_chains ? 1 : nchains, NamedTuple(kwargs))
     a, p = FC.Makie.ridgeline!(
         Makie.Axis(fig[1, 1]; _default_ridgeline_axis()..., axis...),
-        FC.PlotUtils.FlexiChainRidgeline(chn, collect(keys_to_plot), pool_chains);
+        FC.PlotUtils.FlexiChainRidgeline(chn, collect(keys_to_plot), kstrs, pool_chains);
         kwargs...,
     )
     if !pool_chains
@@ -76,11 +77,12 @@ function FC.Makie.ridgeline(
     axis=(;),
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
+    kstrs = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in ks]
     return FC.Makie.ridgeline!(
         Makie.Axis(grid; _default_ridgeline_axis()..., axis...),
-        FC.PlotUtils.FlexiChainRidgeline(chn, ks, pool_chains);
+        FC.PlotUtils.FlexiChainRidgeline(chn, ks, kstrs, pool_chains);
         kwargs...,
     )
 end
@@ -92,11 +94,12 @@ function FC.Makie.ridgeline!(
     pool_chains::Bool=false,
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
+    kstrs = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in ks]
     return FC.Makie.ridgeline!(
         ax,
-        FC.PlotUtils.FlexiChainRidgeline(chn, ks, pool_chains);
+        FC.PlotUtils.FlexiChainRidgeline(chn, ks, kstrs, pool_chains);
         kwargs...,
     )
 end
@@ -148,7 +151,7 @@ function FC.Makie.ridgeline!(
             end
         end
     end
-    ax.yticks = (Float64.(nparams:-1:1), map(k -> string(k.name), params))
+    ax.yticks = (Float64.(nparams:-1:1), d.param_names)
     Makie.ylims!(ax, 0.8, nparams + 1.1)
     return Makie.AxisPlot(ax, p)
 end

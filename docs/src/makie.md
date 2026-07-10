@@ -1,11 +1,13 @@
 # Plotting: Makie.jl
 
-Many parts of the Makie integration in FlexiChains are heavily lifted from [the (unreleased) ChainsMakie.jl package](https://simonsteiger.github.io/ChainsMakie.jl/dev/).
+FlexiChains provides a number of functions to visualise chains using the [Makie](https://makie.org) plotting library.
+
+Parts of the Makie integration in FlexiChains are heavily lifted from [the (unreleased) ChainsMakie.jl package](https://simonsteiger.github.io/ChainsMakie.jl/dev/), although there have also been further modifications made since then.
 This includes some custom code to generate (e.g.) shared legends, which leads to slightly nicer plots than for Plots.jl (on top of Makie generally yielding nicer plots out of the box).
 
 !!! note
 
-    You can also use Makie as a backend to make pair plots!
+    You can also use Makie as a backend to make pair / corner plots!
     This requires loading a Makie backend as well as PairPlots.jl.
     Please see the [PairPlots.jl integration section](@ref integrations-pairplots) for more details.
 
@@ -230,7 +232,7 @@ Makie.save("ridgeline_makie.png", ans.figure); # hide
 
 ![Ridgeline plots of the sampled chain](ridgeline_makie.png)
 
-## Pushforward plots
+## [Pushforward plots](@id pf-plots)
 
 These plots are based on Michael Betancourt's [`mcmc_visualization_tools`](https://github.com/betanalpha/mcmc_visualization_tools).
 We include a worked example to motivate and demonstrate the use of these plots.

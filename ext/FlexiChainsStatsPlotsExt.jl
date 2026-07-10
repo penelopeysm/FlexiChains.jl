@@ -24,10 +24,10 @@ function StatsPlots.cornerplot(
     param_or_params=FC.Parameter.(FC.parameters(chn));
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
+    label = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in keys_to_plot]
     data = DimArray(chn) # iters x chains x params
-    label = map(vn -> String(Symbol(vn)), lookup(data, FC.PARAM_DIM_NAME))
     # Plots expects iters + chains to be pooled.
     # Weird bugs happen if we don't force concretisation. Just don't ask.
     data = Float64.(reshape(data, size(data, 1) * size(data, 2), size(data, 3)))

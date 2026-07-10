@@ -16,17 +16,25 @@ only want to include a subset of keys, you should first subset the chain, for ex
 
 If `split_varnames` is `true`, then parameters in the chain will be split into their
 constituent real-valued elements. This is necessary for plotting. In practice there should
-never be any reason to set this to `false`, unless you already know that your chain contains
-only scalar variables and you want to avoid the cost of splitting the variable names again.
+never be any reason for end users to set this to `false`, unless you already know that your
+chain contains only scalar variables and you want to avoid the cost of splitting the
+variable names again.
 """
-function PairPlots.Series(chn::FC.FlexiChain; split_varnames=true, kwargs...)
-    split_chn = if split_varnames
-        FC._split_varnames(chn)
+function PairPlots.Series(
+    chn::FC.FlexiChain{T};
+    split_varnames=true,
+    _plot_names::Dict{T,String}=Dict{T,String}(),  # For internal use only!
+    kwargs...,
+) where {T}
+    split_chn, plot_names = if split_varnames
+        FC._split_varnames(chn; collect_plot_names=true)
     else
-        chn
+        chn, _plot_names
     end
-    all_data =
-        NamedTuple(Symbol(FC.get_name(k)) => vec(split_chn[k]) for k in keys(split_chn))
+    all_data = NamedTuple(
+        Symbol(FC.PlotUtils.get_plot_param_name(k, plot_names)) => vec(split_chn[k]) for
+        k in keys(split_chn)
+    )
     return PairPlots.Series(all_data; kwargs...)
 end
 
@@ -85,30 +93,26 @@ function PairPlots.pairplot(
     else
         nothing
     end
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     series = if pool_chains
-        # already split above, so don't need to split again here
-        (PairPlots.Series(chn; split_varnames=false),)
+        # already split above, so don't need to split again here -- but we do need to pass
+        # the plot names so that the Series object gets the correct names
+        (PairPlots.Series(chn; split_varnames=false, _plot_names=plot_names),)
     else
-        # Need to manually specify colours here because PairPlots
-        # doesn't add them when directly plotting Series objects
-        # https://github.com/sefffal/PairPlots.jl/pull/78
-        wc = wong_colors()
-        color(i) = wc[mod1(i, length(wc))]
         Tuple(
             PairPlots.Series(
                 chn[chain=ci];
-                split_varnames=false,  # already split above
+                split_varnames=false,
+                _plot_names=plot_names,
                 label="chain $ci",
-                color=color(i),
-                strokecolor=color(i),
             ) for (i, ci) in enumerate(FC.chain_indices(chn))
         )
     end
     # Identify divergent samples
     divergence_arg = if divergence_mask !== nothing && any(divergence_mask)
         samples = NamedTuple(
-            Symbol(FC.get_name(k)) => chn[k][divergence_mask] for k in keys(chn)
+            Symbol(FC.PlotUtils.get_plot_param_name(k, plot_names)) =>
+                chn[k][divergence_mask] for k in keys(chn)
         )
         # Can't plot Series => (Scatter,): see
         # https://github.com/sefffal/PairPlots.jl/issues/80

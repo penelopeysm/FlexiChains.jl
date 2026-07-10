@@ -1,5 +1,5 @@
-function _default_autocorplot_axis(k::FC.ParameterOrExtra)
-    return (xlabel="lag", ylabel="autocorrelation", title=string(k.name))
+function _default_autocorplot_axis()
+    return (xlabel="lag", ylabel="autocorrelation")
 end
 
 """
@@ -34,15 +34,21 @@ function FC.Makie.autocorplot(
     legend=(;),
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nrows, ncols, figure = setup_figure_and_layout(length(keys_to_plot), 1, layout, figure)
     a, p = nothing, nothing
     indices = Iterators.product(1:ncols, 1:nrows)
     for ((col, row), k) in zip(indices, keys_to_plot)
+        kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
         a, p = FC.Makie.autocorplot!(
-            Makie.Axis(figure[row, col]; _default_autocorplot_axis(k)..., axis...),
+            Makie.Axis(
+                figure[row, col];
+                _default_autocorplot_axis()...,
+                title=kstr,
+                axis...,
+            ),
             FC.PlotUtils.FlexiChainAutoCor(chn, k, lags, demean);
             kwargs...,
         )
@@ -62,10 +68,11 @@ function FC.Makie.autocorplot(
     axis=(;),
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
+    kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
     return FC.Makie.autocorplot!(
-        Makie.Axis(grid; _default_autocorplot_axis(k)..., axis...),
+        Makie.Axis(grid; _default_autocorplot_axis()..., title=kstr, axis...),
         chn,
         param;
         kwargs...,
@@ -79,7 +86,7 @@ function FC.Makie.autocorplot!(
     demean::Bool=true,
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param)
+    chn, _ = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
     a, p = FC.Makie.autocorplot!(
         ax,

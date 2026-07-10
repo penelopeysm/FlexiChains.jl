@@ -1,3 +1,8 @@
+# 0.6.26
+
+Improved the default parameter names used when plotting.
+When a parameter is a `DimVector` and has `Symbol` or `String` labels in its dimensions, the default plot names will now use those labels instead of generic `x[1]`, `x[2]`, etc.
+
 # 0.6.25
 
 Improved the error message when `transform_values` is passed an invalid output key type.

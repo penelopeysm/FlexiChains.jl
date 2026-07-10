@@ -31,7 +31,7 @@ function FC.Makie.mixeddensity(
     legend=(;),
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     isempty(keys_to_plot) && throw(ArgumentError("no parameters to plot"))
     nrows, ncols, figure = setup_figure_and_layout(length(keys_to_plot), 1, layout, figure)
@@ -39,13 +39,14 @@ function FC.Makie.mixeddensity(
     # This order means that plots go from left to right before going to the next row
     indices = Iterators.product(1:ncols, 1:nrows)
     for ((col, row), k) in zip(indices, keys_to_plot)
+        kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
         axis_kwargs = if isdiscrete(chn, k)
-            _default_histogram_axis(k)
+            _default_histogram_axis()
         else
-            _default_density_axis(k)
+            _default_density_axis()
         end
         a, p = FlexiChains.Makie.mixeddensity!(
-            Makie.Axis(figure[row, col]; axis_kwargs..., axis...),
+            Makie.Axis(figure[row, col]; axis_kwargs..., title=kstr, axis...),
             FC.PlotUtils.FlexiChainMixedDensity(chn, k, pool_chains);
             kwargs...,
         )
@@ -70,15 +71,16 @@ function FC.Makie.mixeddensity(
 )
     # TODO: Error if there is already something at the grid position?
     # See e.g. https://github.com/rafaqz/DimensionalData.jl/blob/6db30de4b2e1fc7f8611b7e1dc3f89dc02c78598/ext/DimensionalDataMakieExt.jl#L85-L96
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
+    kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
     axis_kwargs = if isdiscrete(chn, k)
-        _default_histogram_axis(k)
+        _default_histogram_axis()
     else
-        _default_density_axis(k)
+        _default_density_axis()
     end
     return FC.Makie.mixeddensity!(
-        Makie.Axis(grid; axis_kwargs..., axis...),
+        Makie.Axis(grid; axis_kwargs..., title=kstr, axis...),
         chn,
         param;
         kwargs...,
@@ -91,7 +93,7 @@ function FC.Makie.mixeddensity!(
     pool_chains::Bool=false,
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param)
+    chn, _ = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
     a, p = FC.Makie.mixeddensity!(
         ax,

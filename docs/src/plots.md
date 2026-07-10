@@ -1,7 +1,11 @@
 # Plotting: Plots.jl
 
-FlexiChains defines a few plot recipes which allows you to use [the Plots.jl ecosystem](@extref Plots :doc:`index`) to visualise chains.
-In particular, you will want to import StatsPlots.jl.
+FlexiChains defines a collection of plot recipes which allows you to use [the Plots.jl ecosystem](@extref Plots :doc:`index`) to visualise chains.
+In particular, to access these you will want to load StatsPlots.jl:
+
+```julia
+using StatsPlots
+```
 
 ## Plot types
 
@@ -28,10 +32,6 @@ There is currently one exception to this: `StatsPlots.cornerplot` is manually ov
 !!! warning "Identifier conflicts"
 
     Please note that the identifiers `traceplot`, `meanplot`, `mixeddensity`, and `autocorplot` are also exported by MCMCChains.jl (which uses Plots.jl as its backend), as well as the `FlexiChains.Makie` submodule. If you have imported more than one of these modules, you will need to disambiguate which function you want to use by prefixing it with the module name, e.g. `FlexiChains.Plots.traceplot`.
-
-!!! note "Feature parity with MCMCChains.jl"
-
-    There are still a couple fewer plotting options than in MCMCChains.jl. Other plot types will be added over time, but in the meantime if you need features from MCMCChains, you can convert a `FlexiChain` to an `MCMCChains.Chains` object using `MCMCChains.Chains(chn)`. Help with adding new plots is very much welcome!
 
 ## General interface
 

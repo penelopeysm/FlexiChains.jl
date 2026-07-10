@@ -32,10 +32,13 @@ const DEFAULT_QUANTILE_LEVELS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 using ..FlexiChains:
     FlexiChain,
     ParameterOrExtra,
+    Parameter,
+    Extra,
     VarName,
     _split_varnames,
     _get_raw_data,
     niters,
+    get_name,
     _get_multi_keys,
     _get_multi_key
 import DimensionalData as DD
@@ -55,7 +58,7 @@ and plot each one, without needing to worry about the structure of the data.
 function subset_and_split_chain(
     chn::FlexiChain{TKey},
     param_or_params,
-)::FlexiChain where {TKey}
+)::Tuple{FlexiChain,Dict} where {TKey}
     parameters_to_plot = if param_or_params isa Union{AbstractVector,Colon}
         _get_multi_keys(TKey, keys(chn), param_or_params)
     else
@@ -68,9 +71,20 @@ function subset_and_split_chain(
     # considerations when using VarName chains. See below for a full explanation.
     chn = chn[parameters_to_plot]
     # Split into real-valued parameters if possible.
-    chn = _split_varnames(chn)
-    return chn
+    return _split_varnames(chn; collect_plot_names=true)
 end
+
+"""
+Get the name to use when plotting a parameter. Usually this defaults to
+`string(get_name(key))`, but under some circumstances (specifically DimVectors) this can be
+overridden to provide more informative names. This is implemented in
+`FlexiChains._split_varnames`.
+"""
+function get_plot_param_name(key::Parameter{<:T}, plot_names::Dict{T,String}) where {T}
+    nm = get_name(key)
+    return get(plot_names, nm, string(nm))
+end
+get_plot_param_name(key::Extra, ::Dict) = string(get_name(key))
 
 """
 Check that the element type of the array is a subtype of `Real`.
@@ -258,6 +272,7 @@ end
 struct FlexiChainForest{TKey}
     chn::FlexiChain{TKey}
     params::Vector
+    param_names::Vector{String}
     pool_chains::Bool
     point::Symbol
     interval::Symbol
@@ -266,6 +281,7 @@ struct FlexiChainForest{TKey}
     function FlexiChainForest(
         chn::FlexiChain{TKey},
         params::Vector,
+        param_names::Vector{String},
         pool_chains::Bool,
         point=:median,
         interval=:quantile,
@@ -282,6 +298,7 @@ struct FlexiChainForest{TKey}
         return new{TKey}(
             chn,
             params,
+            param_names,
             pool_chains,
             point,
             interval,
@@ -294,6 +311,7 @@ end
 struct FlexiChainRidgeline{TKey}
     chn::FlexiChain{TKey}
     params::Vector
+    param_names::Vector{String}
     pool_chains::Bool
 end
 
