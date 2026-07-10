@@ -1,27 +1,27 @@
 # [Plotting overview](@id plotting)
 
-FlexiChains contains some support for visualising chains with Plots.jl and Makie.jl.
+FlexiChains contains a number of functions for visualising chains with Plots.jl and Makie.jl.
 
 ## Available functions
 
-Here is a rough overview of the current status:
+Here is a rough overview of the current status.
 
-| Type of plot                    | Plots.jl                                   | Makie.jl                                            |
-|:------------------------------- |:------------------------------------------ |:--------------------------------------------------- |
-| Trace + mixed density (default) | ✅ [`Plots.plot`](@ref)                     | ✅ [`Makie.plot`](@ref)                              |
-| Trace plots                     | ✅ [`FlexiChains.Plots.traceplot`](@ref)    | ✅ [`FlexiChains.Makie.traceplot`](@ref)             |
-| Density plots                   | ✅ [`Plots.density`](@ref)                  | ✅ [`Makie.density`](@ref)                           |
-| Histograms                      | ✅ [`Plots.histogram`](@ref)                | ✅ [`Makie.hist`](@ref) and [`Makie.stephist`](@ref) |
-| Mixed density plots             | ✅ [`FlexiChains.Plots.mixeddensity`](@ref) | ✅ [`FlexiChains.Makie.mixeddensity`](@ref)          |
-| Running mean plots              | ✅ [`FlexiChains.Plots.meanplot`](@ref)     | ✅ [`FlexiChains.Makie.meanplot`](@ref)              |
-| Autocorrelation plots           | ✅ [`FlexiChains.Plots.autocorplot`](@ref)  | ✅ [`FlexiChains.Makie.autocorplot`](@ref)           |
-| Rank plots                      | ✅ [`FlexiChains.Plots.rankplot`](@ref)     | ✅ [`FlexiChains.Makie.rankplot`](@ref)              |
-| Corner plots                    | ✅ [`StatsPlots.cornerplot`](@ref)          | ✅ [`PairPlots.pairplot`](@ref)                      |
-| Violin plots                    | ✅ [`StatsPlots.violin`](@ref)              | 🐌                                                   |
-| Energy plots                    | 🐌                                          | 🐌                                                   |
-| Forest plots                    | 🐌                                          | ✅ [`FlexiChains.Makie.forestplot`](@ref)            |
-| Ridgeline plots                 | 🐌                                          | ✅ [`FlexiChains.Makie.ridgeline`](@ref)             |
-| Predictive check plots          | 🐌                                          | 🐌                                                   |
+| Type of plot                       | Plots.jl                                   | Makie.jl                                                                                                                                                 |
+|:---------------------------------- |:------------------------------------------ |:-------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trace + mixed density (default)    | ✅ [`Plots.plot`](@ref)                     | ✅ [`Makie.plot`](@ref)                                                                                                                                   |
+| Trace plots                        | ✅ [`FlexiChains.Plots.traceplot`](@ref)    | ✅ [`FlexiChains.Makie.traceplot`](@ref)                                                                                                                  |
+| Density plots                      | ✅ [`Plots.density`](@ref)                  | ✅ [`Makie.density`](@ref)                                                                                                                                |
+| Histograms                         | ✅ [`Plots.histogram`](@ref)                | ✅ [`Makie.hist`](@ref) and [`Makie.stephist`](@ref)                                                                                                      |
+| Mixed density plots                | ✅ [`FlexiChains.Plots.mixeddensity`](@ref) | ✅ [`FlexiChains.Makie.mixeddensity`](@ref)                                                                                                               |
+| Running mean plots                 | ✅ [`FlexiChains.Plots.meanplot`](@ref)     | ✅ [`FlexiChains.Makie.meanplot`](@ref)                                                                                                                   |
+| Autocorrelation plots              | ✅ [`FlexiChains.Plots.autocorplot`](@ref)  | ✅ [`FlexiChains.Makie.autocorplot`](@ref)                                                                                                                |
+| Rank plots                         | ✅ [`FlexiChains.Plots.rankplot`](@ref)     | ✅ [`FlexiChains.Makie.rankplot`](@ref)                                                                                                                   |
+| Corner plots                       | ✅ [`StatsPlots.cornerplot`](@ref)          | ✅ [`PairPlots.pairplot`](@ref)                                                                                                                           |
+| Violin plots                       | ✅ [`StatsPlots.violin`](@ref)              | 🐌                                                                                                                                                        |
+| Energy plots                       | 🐌                                          | 🐌                                                                                                                                                        |
+| Forest plots                       | 🐌                                          | ✅ [`FlexiChains.Makie.forestplot`](@ref)                                                                                                                 |
+| Ridgeline plots                    | 🐌                                          | ✅ [`FlexiChains.Makie.ridgeline`](@ref)                                                                                                                  |
+| [Pushforward plots](@ref pf-plots) | 🐌                                          | ✅ [`FlexiChains.Makie.pushforward_continuous`](@ref), [`FlexiChains.Makie.pushforward_discrete`](@ref), and [`FlexiChains.Makie.pushforward_hist`](@ref) |
 
 All of the above functions have 'mutating' versions with a `!` suffix.
 
