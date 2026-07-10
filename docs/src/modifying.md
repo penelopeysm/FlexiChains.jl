@@ -51,7 +51,7 @@ map_parameters(g, chain)
 
 Note that both `map_keys` and `map_parameters` work with `FlexiSummary` as well.
 
-## Modifying values
+## [Modifying values](@id modifying-values)
 
 It is also possible to modify the *values* stored inside a `FlexiChain` (but not a `FlexiSummary`).
 This is done with the `transform_values` function:
