@@ -93,6 +93,10 @@ end
 Overloaded method which provides extra functionality when indexing by VarNames.
 """
 function _get_raw_data(cs::ChainOrSummary{<:VarName}, vn_param::Parameter{<:VarName})
+    # Shortcircuit if the VarName is already present as-is (this can save quite a bit of
+    # time in tight loops)
+    haskey(cs._data, vn_param) && return cs._data[vn_param]
+    # Otherwise we might need to split up the VarName into a prefix + an optic.
     orig_vn = vn_param.name
     optic, vn = _getindex_optic_and_vn(
         FlexiChains.parameters(cs),
@@ -100,7 +104,7 @@ function _get_raw_data(cs::ChainOrSummary{<:VarName}, vn_param::Parameter{<:VarN
         AbstractPPL.Iden(),
         orig_vn,
     )
-    # can't use get_raw_data in this line or else it will recurse.
+    # Can't use get_raw_data in this line or else it will recurse.
     raw = cs._data[Parameter(vn)]
     return _map_optic(optic, raw, orig_vn)
 end

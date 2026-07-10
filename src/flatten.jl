@@ -1,5 +1,6 @@
 # Utilities for 'flattening' chains.
 import Tables
+using LinearAlgebra: Cholesky
 
 """
     FlexiChains._split_varnames(cs::ChainOrSummary{<:VarName})
@@ -18,9 +19,18 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
     plot_names = Dict{VarName,String}()
     for vn in FlexiChains.parameters(cs)
         d = _get_raw_data(cs, Parameter(vn))
-        for i in eachindex(d)
-            for vn_leaf in AbstractPPL.varname_leaves(vn, d[i])
+        if _elems_have_fixed_vn_leaves(d)
+            # Don't need to iterate over all array elements - just check the first one.
+            # (Note that `d` could be Array{T,2} or Array{T,3} depending on whether `cs` is
+            # a chain or summary.)
+            for vn_leaf in AbstractPPL.varname_leaves(vn, first(d))
                 push!(vns, vn_leaf)
+            end
+        else
+            for i in eachindex(d)
+                for vn_leaf in AbstractPPL.varname_leaves(vn, d[i])
+                    push!(vns, vn_leaf)
+                end
             end
         end
         if eltype(d) <: DimArray{<:Any,1} && !isempty(d)
@@ -40,6 +50,29 @@ function _split_varnames(cs::ChainOrSummary{<:VarName})
     end
     return cs[[collect(vns)..., FlexiChains.extras(cs)...]], plot_names
 end
+
+# This helper function identifies cases where we don't need to check every single Niters x
+# Nchains elements, because they all have the same structure.
+_elems_have_fixed_vn_leaves(data::Array{T}) where {T<:Real} = !isempty(data)
+_elems_have_fixed_vn_leaves(data::Array{T}) where {T<:AbstractString} = !isempty(data)
+_elems_have_fixed_vn_leaves(data::Array{Symbol}) = !isempty(data)
+function _elems_have_fixed_vn_leaves(data::Array{T}) where {T<:AbstractArray}
+    # If `T` is not even a concrete type, e.g. it's a Union of two different
+    # AbstractArray types, then we have no hope.
+    (isconcretetype(T) && !isempty(data)) || return false
+    # Checking axes is no less expensive than checking size, and axes works better because
+    # it catches things like OffsetArrays which have the same size but different offsets.
+    a = axes(first(data))
+    return all(x -> axes(x) == a, data)
+end
+function _elems_have_fixed_vn_leaves(data::Array{T}) where {T<:Cholesky}
+    (isconcretetype(T) && !isempty(data)) || return false
+    f = first(data)
+    a = axes(f)
+    ul = f.uplo
+    return all(x -> axes(x) == a && x.uplo == ul, data)
+end
+_elems_have_fixed_vn_leaves(::Array) = false  # Fallback.
 
 """
     FlexiChains._split_varnames(cs::ChainOrSummary{Union{Symbol,<:AbstractString}})
@@ -424,17 +457,21 @@ julia> df = DataFrame(Wide(mean(chn)))
 """
 struct Wide{F<:ChainOrSummary,N<:NamedTuple}
     cs::F
-    # A precomputed mapping from Symbol(k) => k for all keys in `cs`.
+    # A precomputed mapping from Symbol(get_name(k)) => k for all keys in `cs`.
     symbol_to_keys::N
+    # For summaries, a flag to indicate whether or not the keys should be unwrapped
+    # for the param column. This isn't an issue for chains because Wide(chn) doesn't
+    # have a param column
+    parameters_only::Bool
 
     function Wide(cs::ChainOrSummary; split_varnames::Bool=true, parameters_only::Bool=true)
         cs = _prepare_chain_or_summary(cs; split_varnames, parameters_only)
         # Strip parameter/extra wrappers and convert to Symbol for column names.
-        ks = Tuple(FlexiChains.get_name.(keys(cs)))
-        sym_ks = Symbol.(ks)
+        ks = Tuple(keys(cs))
+        sym_ks = Symbol.(get_name.(ks))
         _check_duplicate_keys(sym_ks)
         symbol_to_keys = NamedTuple{sym_ks}(ks)
-        return new{typeof(cs),typeof(symbol_to_keys)}(cs, symbol_to_keys)
+        return new{typeof(cs),typeof(symbol_to_keys)}(cs, symbol_to_keys, parameters_only)
     end
 end
 
@@ -500,17 +537,17 @@ table.
 struct Long{F<:FlexiChain,K<:Tuple}
     chn::F
     # The keys for the param column: unwrapped if parameters_only, wrapped otherwise.
-    original_keys::K
+    maybe_unwrapped_keys::K
 
     function Long(chn::FlexiChain; split_varnames::Bool=true, parameters_only::Bool=true)
         chn = _prepare_chain_or_summary(chn; split_varnames, parameters_only)
-        original_keys = if parameters_only
+        maybe_unwrapped_keys = if parameters_only
             Tuple(FlexiChains.get_name.(keys(chn)))
         else
             Tuple(keys(chn))
         end
-        _check_duplicate_keys(original_keys)
-        return new{typeof(chn),typeof(original_keys)}(chn, original_keys)
+        _check_duplicate_keys(maybe_unwrapped_keys)
+        return new{typeof(chn),typeof(maybe_unwrapped_keys)}(chn, maybe_unwrapped_keys)
     end
 end
 
@@ -532,7 +569,10 @@ function Tables.getcolumn(s::Wide{<:FlexiChain}, col::Symbol)
     elseif col === FlexiChains.CHAIN_DIM_NAME
         repeat(chain_indices(s.cs); inner=FlexiChains.niters(s.cs))
     else
-        vec(s.cs[s.symbol_to_keys[col]])
+        # Because the chain has been constructed via `_prepare_chain_or_summary`, we know
+        # that `s.symbol_to_keys[col]` is actually a legitimate key in the raw data
+        # dictionary, so we can index directly into the data dict instead of the chain.
+        vec(s.cs._data[s.symbol_to_keys[col]])
     end
 end
 Tables.getcolumn(s::Wide, col::Int) = Tables.getcolumn(s, Tables.columnnames(s)[col])
@@ -571,6 +611,9 @@ function Tables.getcolumn(w::Wide{<:FlexiSummary}, col::Symbol)
     nparams = length(w.symbol_to_keys)
     return if col === FlexiChains.PARAM_DIM_NAME
         ks = collect(values(w.symbol_to_keys))
+        if w.parameters_only
+            ks = FlexiChains.get_name.(ks)
+        end
         repeat(ks; inner=nic)
     elseif col === FlexiChains.ITER_DIM_NAME
         ii === nothing && throw(
@@ -585,9 +628,9 @@ function Tables.getcolumn(w::Wide{<:FlexiSummary}, col::Symbol)
     elseif col === FlexiChains.STAT_DIM_NAME
         if si === nothing
             if ii === nothing && ci === nothing
-                [w.cs[k] for k in values(w.symbol_to_keys)]
+                [w.cs._data[k][] for k in values(w.symbol_to_keys)]
             else
-                vcat([parent(w.cs[k]) for k in values(w.symbol_to_keys)]...)
+                vcat([vec(w.cs._data[k]) for k in values(w.symbol_to_keys)]...)
             end
         else
             throw(
@@ -604,14 +647,19 @@ function Tables.getcolumn(w::Wide{<:FlexiSummary}, col::Symbol)
             )
         else
             if col in parent(si)
+                # Perf optimisation. This is equivalent to
+                #     get_stat_val(k) = w.cs[k, stat=At(col)]
+                # but avoids the overhead of the getindex call when we know for certain
+                # that `k` is already a valid key in `w.cs._data`.
+                idx = findfirst(==(col), parent(si))
+                get_stat_val(k) = w.cs._data[k][:, :, idx]
                 if ii === nothing && ci === nothing
-                    [w.cs[k, stat=At(col)] for k in values(w.symbol_to_keys)]
+                    # get_stat_val returns 1x1x1 array
+                    [get_stat_val(k)[] for k in values(w.symbol_to_keys)]
                 else
-                    vcat(
-                        [
-                            parent(w.cs[k, stat=At(col)]) for k in values(w.symbol_to_keys)
-                        ]...,
-                    )
+                    # get_stat_val returns iters x 1 x 1 array or 1 x nchains x 1 array
+                    stat_vals = [vec(get_stat_val(k)) for k in values(w.symbol_to_keys)]
+                    vcat(stat_vals...)
                 end
             else
                 throw(
@@ -633,20 +681,23 @@ Tables.columnnames(::Long) = [
     VALUE_COL_NAME,
 ]
 function Tables.getcolumn(s::Long, col::Symbol)
-    nkeys = length(s.original_keys)
+    nkeys = length(s.maybe_unwrapped_keys)
     return if col === FlexiChains.ITER_DIM_NAME
         repeat(iter_indices(s.chn); outer=FlexiChains.nchains(s.chn) * nkeys)
     elseif col === FlexiChains.CHAIN_DIM_NAME
         repeat(chain_indices(s.chn); inner=FlexiChains.niters(s.chn), outer=nkeys)
     elseif col === FlexiChains.PARAM_DIM_NAME
         repeat(
-            collect(s.original_keys);
+            collect(s.maybe_unwrapped_keys);
             inner=FlexiChains.niters(s.chn) * FlexiChains.nchains(s.chn),
         )
     elseif col === VALUE_COL_NAME
-        mapreduce(vcat, s.original_keys) do k
-            vec(s.chn[k])
+        # mapreduce(vcat, ...) is very slow (presumably quadratic behaviour?)
+        vs = map(s.maybe_unwrapped_keys) do k
+            wrapped_key = k isa ParameterOrExtra ? k : Parameter(k)
+            vec(s.chn._data[wrapped_key])
         end
+        vcat(vs...)
     else
         throw(ArgumentError("unknown column name: $col"))
     end

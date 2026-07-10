@@ -442,7 +442,7 @@ using FlexiChains: Tables
                 fs = mean(sc)
                 df = DataFrame(Wide(fs; parameters_only=false))
                 @test nrow(df) == 3
-                @test :lp in df.param
+                @test Extra(:lp) in df.param
             end
 
             @testset "VarName-keyed summary with array-valued param" begin
