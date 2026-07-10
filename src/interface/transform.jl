@@ -47,7 +47,9 @@ function transform_values(chn::FlexiChain{T}, args...) where {T}
             else
                 throw(
                     ArgumentError(
-                        "transform_values: invalid output key type $(typeof(new_k))",
+                        "transform_values: invalid output key type $(typeof(new_k))." *
+                        " The output key (i.e., the `rhs` in `lhs => func => rhs`) must" *
+                        " be `$T`, `FlexiChains.Parameter{<:$T}`, or `FlexiChains.Extra`.",
                     ),
                 )
             end
