@@ -85,14 +85,14 @@ You can pass as many transformations as you like.
 The syntax is designed to be similar to that of `DataFrames.transform`, but has some slight differences: notably, the function being applied acts on *individual draws* from `chain[@varname(x)]` rather than the matrix as a whole.
 
 You can also pass binary (or *n*-ary) functions to `transform_values` to combine multiple keys.
-Again, this is similar to `DataFrames.transform`, but the function combines individual draws from `chain[:x]` and `chain[:y]` rather than the matrices themselves.
+Again, this is similar to `DataFrames.transform`, but the function combines individual draws from `chain[@varname(x)]` and `chain[@varname(y)]` rather than the matrices themselves.
 
 ```@example modifications
 chain3 = transform_values(chain, [@varname(x), @varname(y)] => (+) => @varname(sum_xy))
 ```
 
 ```@example modifications
-chain3[:sum_xy] == chain[:x] .+ chain[:y]
+chain3[@varname(sum_xy)] == chain[@varname(x)] .+ chain[@varname(y)]
 ```
 
 ### Attaching labels to data
