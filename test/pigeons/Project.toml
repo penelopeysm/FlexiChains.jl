@@ -1,0 +1,10 @@
+[deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+DynamicPPL = "366bfd00-2699-11ea-058f-f148b4cae6d8"
+FlexiChains = "4a37a8b9-6e57-4b92-8664-298d46e639f7"
+Pigeons = "0eb8d820-af6a-4919-95ae-11206f830c31"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+FlexiChains = { path = "../../" }
+Pigeons = {url = "https://github.com/penelopeysm/Pigeons.jl", rev = "main"}
