@@ -99,7 +99,7 @@ $(FC.Plots._PLOTS_KWARGS_DOCSTRING)
     with_box=false,
     pool_chains=false,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     keys_to_plot = keys(chn)
     # When the user calls `plot(chn[, params])` without specifying a `seriestype`, we
     # default to showing a side-by-side traceplot and density/histogram for each parameter.
@@ -125,13 +125,20 @@ $(FC.Plots._PLOTS_KWARGS_DOCSTRING)
     bottom_margin --> DEFAULT_MARGIN
     # Do the individual plots!
     for (i, k) in enumerate(keys_to_plot)
+        # The 'pretty' plot names are only available in this function, so titles must be set
+        # here rather than in the per-struct recipes below. It turns out that we can do this
+        # because RecipesBase's behaviour is that the *first* `title --> {title}` is the one
+        # that is used. (In contrast, `title := {title}` would override the previous one.)
+        kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
         if seriestype === _TRACEPLOT_AND_DENSITY_SERIESTYPE
             @series begin
                 subplot := 2i - 1
+                title --> kstr
                 FC.PlotUtils.FlexiChainTrace(chn, k)
             end
             @series begin
                 subplot := 2i
+                title --> kstr
                 FC.PlotUtils.FlexiChainMixedDensity(chn, k, pool_chains)
             end
         elseif seriestype === _RANKPLOT_SERIESTYPE
@@ -139,12 +146,14 @@ $(FC.Plots._PLOTS_KWARGS_DOCSTRING)
             for (j, cidx) in enumerate(FC.chain_indices(chn))
                 @series begin
                     subplot := nplots_per_key * (i - 1) + j
+                    title --> "$kstr (chain $cidx)"
                     FC.PlotUtils.FlexiChainRank(chn, k, cidx, ranks)
                 end
             end
         else
             @series begin
                 subplot := i
+                title --> kstr
                 if seriestype === _TRACEPLOT_SERIESTYPE
                     return FC.PlotUtils.FlexiChainTrace(chn, k)
                 elseif seriestype === _MIXEDDENSITY_SERIESTYPE

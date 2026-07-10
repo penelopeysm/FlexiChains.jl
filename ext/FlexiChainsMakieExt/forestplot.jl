@@ -122,7 +122,7 @@ function FC.Makie.forestplot(
 )
     chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
-    kstrs = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in keys_to_plot]
+    kstrs = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in ks]
     return FC.Makie.forestplot!(
         Makie.Axis(grid; _default_forestplot_axis()..., axis...),
         FC.PlotUtils.FlexiChainForest(
@@ -152,7 +152,7 @@ function FC.Makie.forestplot!(
 )
     chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     ks = collect(keys(chn))
-    kstrs = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in keys_to_plot]
+    kstrs = [FC.PlotUtils.get_plot_param_name(k, plot_names) for k in ks]
     return FC.Makie.forestplot!(
         ax,
         FC.PlotUtils.FlexiChainForest(
