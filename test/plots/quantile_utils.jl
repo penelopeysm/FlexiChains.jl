@@ -96,7 +96,7 @@ end
     dicts = [OrderedDict(Parameter(:v) => randn(rng, 3)) for _ in 1:5, _ in 1:2]
     chn = FlexiChain{Symbol}(5, 2, dicts)
 
-    sub = PU.subset_and_split_chain(chn, :v)   # auto-expand single array variable
+    sub, _ = PU.subset_and_split_chain(chn, :v)   # auto-expand single array variable
     ks = collect(keys(sub))
     @test length(ks) == 3
     data = map(k -> PU._get_raw_data(sub, k), ks)

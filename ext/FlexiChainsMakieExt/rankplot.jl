@@ -1,8 +1,8 @@
-function _default_rankplot_axis(k::FC.ParameterOrExtra, chn_idx)
+function _default_rankplot_axis(kstr::String, chn_idx)
     title = if chn_idx === nothing
-        "$(FC.get_name(k))"
+        kstr
     else
-        "$(FC.get_name(k)) (chain $(chn_idx))"
+        "$(kstr) (chain $(chn_idx))"
     end
     return (xlabel="rank", title=title)
 end
@@ -35,7 +35,7 @@ function FC.Makie.rankplot(
     legend=(;),
     kwargs...,
 )
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param_or_params)
     nc = FC.nchains(chn)
     nc == 1 && @warn "Only one chain to plot, so the rank plot will be uninformative"
     keys_to_plot = collect(keys(chn))
@@ -50,6 +50,7 @@ function FC.Makie.rankplot(
     indices = Iterators.product(1:ncols, 1:nrows)
     for ((col, row), k) in zip(indices, repeat(keys_to_plot, inner=nplots_per_key))
         this_ranks = ranks[k]
+        kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
         chn_idx, plot_obj = if overlay
             (nothing, FC.PlotUtils.FlexiChainRankOverlay(chn, k, this_ranks))
         else
@@ -57,7 +58,7 @@ function FC.Makie.rankplot(
             (chn_idx, FC.PlotUtils.FlexiChainRank(chn, k, chn_idx, this_ranks))
         end
         a, p = FC.Makie.rankplot!(
-            Makie.Axis(figure[row, col]; _default_rankplot_axis(k, chn_idx)..., axis...),
+            Makie.Axis(figure[row, col]; _default_rankplot_axis(kstr, chn_idx)..., axis...),
             plot_obj;
             kwargs...,
         )
@@ -75,10 +76,11 @@ end
 ########################
 function FC.Makie.rankplot(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
     # TODO: Error if there is already something at the grid position?
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param)
+    chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
+    kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
     return FC.Makie.rankplot!(
-        Makie.Axis(grid; _default_rankplot_axis(k, nothing)..., axis...),
+        Makie.Axis(grid; _default_rankplot_axis(kstr, nothing)..., axis...),
         chn,
         param;
         kwargs...,
@@ -100,7 +102,7 @@ function FC.Makie.rankplot!(
         )
     end
     nc == 1 && @warn "Only one chain to plot, so the rank plot will be uninformative"
-    chn = FC.PlotUtils.subset_and_split_chain(chn, param)
+    chn, _ = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
     ranks = FC.PlotUtils.get_ranks(chn, k)
     plot_obj = if overlay
