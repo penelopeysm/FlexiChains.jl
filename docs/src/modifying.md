@@ -57,28 +57,38 @@ It is also possible to modify the *values* stored inside a `FlexiChain` (but not
 This is done with the `transform_values` function:
 
 ```@example modifications
-using FlexiChains: transform_values
+using FlexiChains: FlexiChain, VarName, @varname, Parameter, Extra, transform_values
+data = Dict(
+    Parameter(@varname(x)) => randn(10, 3),
+    Parameter(@varname(y)) => randn(10, 3),
+    Extra(:a) => randn(10, 3),
+)
+chain = FlexiChain{VarName}(10, 3, data)
 
-chain2 = transform_values(chain, :x => (i -> i + 1), :y => (i -> i * 2) => :new_y)
+chain2 = transform_values(
+    chain,
+    @varname(x) => (i -> i + 1),
+    @varname(y) => (i -> i * 2) => @varname(new_y),
+)
 ```
 
 The above example:
 
-  - adds 1 to each element of `chain[:x]`; and
-  - multiplies each element of `chain[:y]` by 2, and stores the result in a new key `:new_y`.
+  - adds 1 to each element of `chain[@varname(x)]`; and
+  - multiplies each element of `chain[@varname(y)]` by 2, and stores the result in a new key `@varname(new_y)`.
 
 ```@example modifications
-chain2[:x] .- chain[:x]   # Should be all 1.
+chain2[@varname(x)] .- chain[@varname(x)]   # Should be all 1.
 ```
 
 You can pass as many transformations as you like.
-The syntax is designed to be similar to that of `DataFrames.transform`, but has some slight differences: notably, the function being applied acts on *individual draws* from `chain[:x]` rather than the matrix as a whole.
+The syntax is designed to be similar to that of `DataFrames.transform`, but has some slight differences: notably, the function being applied acts on *individual draws* from `chain[@varname(x)]` rather than the matrix as a whole.
 
 You can also pass binary (or *n*-ary) functions to `transform_values` to combine multiple keys.
 Again, this is similar to `DataFrames.transform`, but the function combines individual draws from `chain[:x]` and `chain[:y]` rather than the matrices themselves.
 
 ```@example modifications
-chain3 = transform_values(chain, [:x, :y] => (+) => :sum_xy)
+chain3 = transform_values(chain, [@varname(x), @varname(y)] => (+) => @varname(sum_xy))
 ```
 
 ```@example modifications
