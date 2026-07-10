@@ -1,3 +1,7 @@
+# 0.6.25
+
+Improved the error message when `transform_values` is passed an invalid output key type.
+
 # 0.6.24
 
 Improved performance on a number of FlexiChains functions, including the Tables.jl interface.

@@ -226,6 +226,14 @@ For more low-level control, you can also convert a `FlexiChain` into a `PairPlot
 PairPlots.Series
 ```
 
+## ParallelMCMC.jl
+
+[Documentation for ParallelMCMC.jl](https://ryguy.io/ParallelMCMC.jl/stable/)
+
+ParallelMCMC.jl provides an implementation of the DEER algorithm for MCMC sampling that is parallelised along the sequence length itself.
+You can either define a log-density function yourself, or use a Turing model.
+The default output for ParallelMCMC.jl is a FlexiChain!
+
 ## PosteriorDB.jl
 
 [Documentation for PosteriorDB.jl](@extref PosteriorDB :doc:`index`)
