@@ -24,13 +24,17 @@ If `key_spec` is not provided, parameters in the `:parameters` section are store
 giving a `FlexiChain{Symbol}`.
 
 If `key_spec` is provided, it is passed directly to the `FlexiChain` from-array constructor.
-The key type of the resulting `FlexiChain` is inferred from `key_spec`.
+The key type of the resulting `FlexiChain` is inferred from `key_spec`. You can pass this
+argument if you want to override the parameter names stored in the `MCMCChains.Chains`
+object, or to group array-valued parameters together, for example.
 
 Please see [the `FlexiChain` constructor documentation](@ref
 FlexiChains.FlexiChain(::AbstractArray{T,3}, key_spec) where {T}) for details on what
 `key_spec` is allowed.
 
-Iteration indices, chain indices, and per-chain sampling times are preserved where possible.
+Iteration indices, chain indices, and per-chain sampling times are inherited from the
+`MCMCChains.Chains` object. If the `MCMCChains.Chains` object contains a `samplerstate`
+field in its `info` NamedTuple, this is also preserved in the resulting FlexiChain.
 """
 function FlexiChains.from_mcmcchains(
     chains::MCMCChains.Chains,
