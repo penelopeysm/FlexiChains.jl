@@ -26,6 +26,10 @@ giving a `FlexiChain{Symbol}`.
 If `key_spec` is provided, it is passed directly to the `FlexiChain` from-array constructor.
 The key type of the resulting `FlexiChain` is inferred from `key_spec`.
 
+Please see [the `FlexiChain` constructor documentation](@ref
+FlexiChains.FlexiChain(::AbstractArray{T,3}, key_spec) where {T}) for details on what
+`key_spec` is allowed.
+
 Iteration indices, chain indices, and per-chain sampling times are preserved where possible.
 """
 function FlexiChains.from_mcmcchains(
