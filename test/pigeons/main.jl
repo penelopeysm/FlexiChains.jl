@@ -25,6 +25,22 @@ using Test
         @test Extra(:loglikelihood) in keys(chn)
         @test Extra(:logjoint) in keys(chn)
     end
+
+    @testset "Discrete parameters" begin
+        @model function g()
+            x ~ Normal()
+            y ~ Poisson(1.0)
+            1.0 ~ Normal(x + y)
+        end
+        pt = pigeons(; target=TuringLogPotential(g()), record=[traces])
+
+        # Check that discrete variables are correctly handled (this essentially tests the
+        # `_faithful_sample_array` function). If we used `Pigeons.sample_array` then `y`
+        # would be converted to `Float64`.
+        chn = FlexiChains.from_pigeons(pt)
+        @test eltype(chn[@varname(x)]) == Float64
+        @test eltype(chn[@varname(y)]) == Int
+    end
 end
 
 end # module

@@ -60,6 +60,7 @@ include("plots/shims.jl")
 function from_pigeons end
 @public from_pigeons
 function _internal_from_pigeons end
+function _faithful_sample_array end
 
 # Convenience re-exports.
 export Wide, Long
