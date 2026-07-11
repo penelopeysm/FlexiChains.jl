@@ -234,7 +234,7 @@ ParallelMCMC.jl provides an implementation of the DEER algorithm for MCMC sampli
 You can either define a log-density function yourself, or use a Turing model.
 The default output for ParallelMCMC.jl is a FlexiChain!
 
-## Pigeons.jl
+## [Pigeons.jl](@id integrations-pigeons)
 
 [Documentation for Pigeons.jl](https://pigeons.run)
 

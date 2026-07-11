@@ -1,3 +1,8 @@
+# 0.6.27
+
+Added a function `FlexiChains.from_pigeons` to convert a Pigeons.jl sampling result into a `FlexiChain`.
+Please see [the docs](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-pigeons) for more info.
+
 # 0.6.26
 
 Improved the default parameter names used when plotting.
