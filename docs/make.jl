@@ -21,6 +21,7 @@ using AbstractMCMC: AbstractMCMC
 using DynamicPPL: DynamicPPL
 using MCMCChains: MCMCChains
 using PairPlots: PairPlots
+using Pigeons: Pigeons
 using Turing: Turing
 using PalmerPenguins: PalmerPenguins
 using DataFrames: DataFrames
