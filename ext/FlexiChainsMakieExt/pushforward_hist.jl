@@ -36,16 +36,19 @@ function _plot_pushforward_hist!(
             rep2(qs[nq+1-i, :]);
             alpha=_band_alpha(i, n_bands),
             color=color,
+            label="predicted",
             kwargs...,
         )
     end
 
-    p = Makie.lines!(ax, xs, rep2(qs[median_idx, :]); color=color, linewidth=2)
+    p = Makie.lines!(ax, xs, rep2(qs[median_idx, :]); color=color, label="predicted", linewidth=2)
 
     if observed !== nothing
         obs = FC.PlotUtils.histogram_counts(observed, edges)
-        p = Makie.lines!(ax, xs, rep2(Float64.(obs)); color=:black, linewidth=2)
+        p = Makie.lines!(ax, xs, rep2(Float64.(obs)); color=:black, label="observed", linewidth=2)
     end
+
+    axislegend(ax, merge=true, unique=true)
 
     return Makie.AxisPlot(ax, p)
 end
