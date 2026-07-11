@@ -1,3 +1,8 @@
+# 0.6.28
+
+Added a function `FlexiChains.from_mcmcchains` to convert from an `MCMCChains.Chains` object.
+This supersedes the previous `FlexiChain{Symbol}(::MCMCChains.Chains)` constructor, which is now deprecated.
+
 # 0.6.27
 
 Added a function `FlexiChains.from_pigeons` to convert a Pigeons.jl sampling result into a `FlexiChain`.

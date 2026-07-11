@@ -1,7 +1,7 @@
 # Integrations with other packages
 
-FlexiChains is most obviously tied to the Turing.jl ecosystem, as described on the previous pages.
-However, it also contains some useful links to other packages (listed here in alphabetical order).
+FlexiChains is most obviously tied to the Turing.jl ecosystem.
+However, it also contains a number of functions and extensions to work with other packages (listed here in alphabetical order).
 
 ## (Your custom sampler here...!)
 
@@ -168,6 +168,18 @@ If you try this and find that something doesn't work, please do feel free to ope
 
 `FlexiChain` and `FlexiSummary` objects can be serialised with JLD2.jl with no fuss.
 See [the Serialization section below](@ref integrations-serialization) for an example.
+
+## MCMCChains.jl
+
+You can convert to and from `MCMCChains.Chains` objects using the following functions:
+
+```@docs
+FlexiChains.from_mcmcchains
+MCMCChains.Chains(::FlexiChains.FlexiChain)
+```
+
+Note that the constructor `FlexiChain{Symbol}(c::MCMCChains.Chains)` is deprecated.
+In its place you can use `FlexiChains.from_mcmcchains(c)`, which has exactly the same behaviour.
 
 ## [PairPlots.jl](@id integrations-pairplots)
 

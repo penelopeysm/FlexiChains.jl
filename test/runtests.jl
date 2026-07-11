@@ -14,8 +14,7 @@ else
         include("flatten.jl")
         include("ext/advancedhmc.jl")
 
-        # TODO: reenable!
-        # include("ext/mcmcchains.jl")
+        include("ext/mcmcchains.jl")
         # include("ext/dimdist.jl")
 
         include("ext/dynamicppl.jl")
