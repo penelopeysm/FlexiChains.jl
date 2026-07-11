@@ -55,7 +55,7 @@ function FlexiChains._internal_from_pigeons(pt::Pigeons.PT, ::Any)
     # In such a case we can just lump them into a single vector parameter. This is a bit of
     # a hack because we are essentially reverse-engineering Pigeons's default, but there
     # isn't really any other way to do it.
-    ks = if param_names == [Symbol("param_$i") for i in 1:nparams]
+    ks = if all(i -> param_names[i] == Symbol("param_$i"), 1:nparams)
         (Parameter(:param) => (nparams,), Extra(:log_density))
     else
         (Parameter.(param_names)..., Extra(:log_density))
