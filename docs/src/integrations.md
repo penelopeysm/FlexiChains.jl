@@ -278,6 +278,31 @@ chn = FlexiChains.from_pigeons(pt)
     chn2 = FlexiChains.transform_values(chn, @varname(p) => collect)
     ```
 
+Sampling with other models also works, but will return a `SymChain` (i.e., `FlexiChain{Symbol}`) instead of `VNChain`.
+For example:
+
+```@example pigeons
+using Random
+
+struct MyLogPotential
+    n_trials::Int
+    n_successes::Int
+end
+function (log_potential::MyLogPotential)(x)
+    p1, p2 = x
+    ((0 < p1 < 1) && (0 < p2 < 1)) || return -Inf
+    logpdf(Binomial(log_potential.n_trials, p1 * p2), log_potential.n_successes)
+end
+Pigeons.initialization(::MyLogPotential, ::Random.AbstractRNG, ::Int) = [0.5, 0.5]
+pt = pigeons(;
+    target=MyLogPotential(100, 50),
+    reference=MyLogPotential(0, 0),
+    record=[traces],
+)
+
+chn = FlexiChains.from_pigeons(pt)
+```
+
 ## PosteriorDB.jl
 
 [Documentation for PosteriorDB.jl](@extref PosteriorDB :doc:`index`)
