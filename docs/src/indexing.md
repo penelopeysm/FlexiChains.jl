@@ -1,6 +1,6 @@
-# Indexing
+# [Indexing](@id indexing)
 
-A `FlexiChain` stores data in a  _rich_ format: that means that instead of just storing a raw matrix of data, it also includes information about the iteration numbers and chain numbers.
+A `FlexiChain` stores data in a  _rich_ format: instead of just storing a raw matrix of data, it also includes information about the iteration numbers and chain numbers.
 
 Additionally, `FlexiSummary` objects (which you get when performing any kind of summarisation on a chain, e.g. with [`summarystats`](@ref)) also sometimes store information about which summary functions were applied (especially when there are multiple of these).
 

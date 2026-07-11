@@ -2,6 +2,8 @@
 
 This page provides a fairly high-level overview of how to use FlexiChains with Turing.jl.
 
+If you have a previous workflow that uses MCMCChains.jl and want to find out how to update it, you might also be interested in [the MCMCChains migration guide](@ref migration).
+
 ## Sampling
 
 Since Turing.jl v0.45, FlexiChains is the default chain type returned by MCMC sampling.
@@ -81,7 +83,7 @@ chain[@varname(mu)]
 
     Indexing into a `FlexiChain` returns a [`DimensionalData.DimMatrix`](@extref DimensionalData DimArrays). This behaves exactly like a regular `Matrix`, but additionally carries extra information about its dimensions.
 
-    This allows you to keep track of what each dimension means, and also allows for more advanced indexing operations, which are described in [the 'indexing' page](./indexing.md).
+    This allows you to keep track of what each dimension means, and also allows for more advanced indexing operations, which are described in [the 'indexing' page](@ref indexing).
 
 For vector-valued parameters like `theta`, this works in exactly the same way, except that you get a `DimMatrix` of vectors.
 
@@ -127,7 +129,7 @@ You can also use selectors from DimensionalData.jl to specify which iterations o
 chain[@varname(mu), iter=Not(At(7)), chain=At(1)]
 ```
 
-The indexing behaviour of FlexiChains is described fully on [the Indexing page](./indexing.md).
+The indexing behaviour of FlexiChains is described fully on [the Indexing page](@ref indexing).
 
 ### Other keys
 

@@ -4,7 +4,7 @@ In general a `FlexiChain` contains data in matrices of size `(niters, nchains)`.
 Often it is useful to summarise this data along one or both dimensions.
 
 FlexiChains therefore allows you to calculate one or more statistics for each variable stored in a `FlexiChain`.
-The result is a `FlexiSummary` object, which can be indexed into in a very similar way to `FlexiChain`s: see [the Indexing page](./indexing.md) for full details, or the examples on this page.
+The result is a `FlexiSummary` object, which can be indexed into in a very similar way to `FlexiChain`s: see [the Indexing page](@ref indexing) for full details, or the examples on this page.
 
 ## Unsupported data types
 
@@ -57,7 +57,7 @@ st[@varname(v[1]), stat=At(:mean)]  # Mean of first element of vector v
 
     Notice to access the _mean_ you have to use `stat=At(:mean)` rather than just `stat=:mean`. This seems a bit verbose, but is actually perfectly consistent with DimensionalData.jl's behaviour: `stat=1` means the first statistic, and `stat=At(:f)` means the statistic with the named index `:f`.
 
-For more details on indexing, please see the [Indexing page](./indexing.md).
+For more details on indexing, please see the [Indexing page](@ref indexing).
 
 In the result above, the vector-valued `v` has been broken up into its individual elements `v[1]` and `v[2]`.
 This happens automatically for chains with `VarName` keys; you can disable this behaviour by passing `split_varnames=false`:

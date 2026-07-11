@@ -1,4 +1,4 @@
-# Migrating from MCMCChains
+# [Migrating from MCMCChains](@id migration)
 
 This page contains a few examples of how to adapt code written for MCMCChains to work with FlexiChains instead.
 These are collated from my experience updating Turing's docs and tests.
