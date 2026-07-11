@@ -3,6 +3,24 @@ module FlexiChainsPigeonsExt
 using Pigeons: Pigeons
 using FlexiChains: FlexiChains, FlexiChain, Parameter, Extra
 
+"""
+    FlexiChains.from_pigeons(pt::Pigeons.PT)
+
+Convert the result of a Pigeons.jl sampling run into a `FlexiChain`.
+
+The run must have been performed with `pigeons(; ... record = [traces, ...])` so that the
+samples can be obtained. If this was not included, then this function will error.
+
+The output type depends on the kind of model sampled from:
+
+- DynamicPPL models will produce `VNChain`, i.e., `FlexiChain{VarName}`.
+- Other models will produce `SymChain`, i.e., `FlexiChain{Symbol}`
+
+Note that for DynamicPPL models, calling `from_pigeons` will result in the model being
+reevaluated in order to recover the structure of the parameters. This is necessary because
+Pigeons stores a flattened version of the parameters. It should generally be the case that
+the time taken for this reevaluation is negligible compared to the actual sampling time.
+"""
 function FlexiChains.from_pigeons(pt::Pigeons.PT)
     return FlexiChains._internal_from_pigeons(pt, pt.inputs.target)
 end

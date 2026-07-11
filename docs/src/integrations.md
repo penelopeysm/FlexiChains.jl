@@ -239,6 +239,13 @@ The default output for ParallelMCMC.jl is a FlexiChain!
 [Documentation for Pigeons.jl](https://pigeons.run)
 
 Pigeons.jl is a package that provides algorithms such as parallel tempering for challenging posterior distributions.
+FlexiChains provides a function to convert a `Pigeons.PT` object into a `FlexiChain`:
+
+```@docs
+FlexiChains.from_pigeons
+```
+
+This works with any model that Pigeons supports, including DynamicPPL models and others.
 
 !!! note "Compatibility"
 
@@ -279,7 +286,7 @@ chn = FlexiChains.from_pigeons(pt)
     ```
 
 Sampling with other models also works, but will return a `SymChain` (i.e., `FlexiChain{Symbol}`) instead of `VNChain`.
-For example:
+Here is another example lifted from the [Pigeons docs](https://pigeons.run/stable/input-julia):
 
 ```@example pigeons
 using Random
