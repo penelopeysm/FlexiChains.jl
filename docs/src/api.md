@@ -99,7 +99,7 @@ Base.pairs(::FlexiChains.ChainOrSummary)
 
 ## Indexing by key
 
-For the public interface of `getindex`, please see [the Indexing page](@ref Indexing).
+For the public interface of `getindex`, please see [the Indexing page](@ref indexing).
 
 ## Accessing metadata
 

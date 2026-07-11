@@ -44,7 +44,7 @@ plotfunc(chn, param_or_params; pool_chains::Bool=false, kwargs...)
 **Positional arguments**
 
   - `chn` is a `FlexiChain` object.
-  - `param_or_params` is optional, and can be [anything that is used to index into a chain](@ref "Indexing"). If not provided, all parameters in the chain will be plotted.
+  - `param_or_params` is optional, and can be [anything that is used to index into a chain](@ref indexing). If not provided, all parameters in the chain will be plotted.
 
 **Keyword arguments**
 
