@@ -46,6 +46,10 @@ end
 function FlexiChains._internal_from_pigeons(pt::Pigeons.PT, ::Any)
     sarr = FlexiChains._faithful_sample_array(pt)
     param_names = Pigeons.sample_names(pt)[1:(end-1)] # Drop logdensity.
+    # Pigeons will generate String parameter names for Stan models, so we eagerly convert to
+    # Symbol here. (Also, annoyingly, it puts the String names in a Vector{Any}, which this
+    # fixes.)
+    param_names = map(Symbol, param_names)
     nparams = length(param_names)
     # For models that don't have names, Pigeons will generate `:param_1`, `:param_2`, etc.
     # In such a case we can just lump them into a single vector parameter. This is a bit of
