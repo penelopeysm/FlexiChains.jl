@@ -1,8 +1,8 @@
 <div align="center">
   <img src="docs/src/assets/logo.svg" alt="FlexiChains.jl logo" width="230">
   <h1>FlexiChains.jl</h1>
-  <a href="https://pysm.dev/FlexiChains.jl/stable"><img src="https://img.shields.io/badge/docs-stable-blue.svg" alt="Docs (stable release)" /></a>
   <p>Type- and structure-preserving Markov chains.</p>
+  <p><a href="https://pysm.dev/FlexiChains.jl/stable"><b>Documentation</b></a></p>
 </div>
 
 ## Installation
@@ -17,7 +17,7 @@ Pkg.add("FlexiChains")
 The README contains a quickstart guide below, and the [online documentation](https://pysm.dev/FlexiChains.jl/stable/) contains much more detail on how to use FlexiChains.
 Please do check it out!
 
-## Contributing
+## How you can help
 
 **Issues and requests for new functionality are more than welcome!**
 Please don't hesitate to [open an issue](https://github.com/penelopeysm/FlexiChains.jl/issues) if you have any questions or suggestions.
