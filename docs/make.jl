@@ -46,6 +46,7 @@ modules = [
     Base.get_extension(FlexiChains, :FlexiChainsInferenceObjectsExt),
     Base.get_extension(FlexiChains, :FlexiChainsMakieExt),
     Base.get_extension(FlexiChains, :FlexiChainsPairPlotsExt),
+    Base.get_extension(FlexiChains, :FlexiChainsPigeonsExt),
     Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsDynamicPPLExt),
     Base.get_extension(FlexiChains, :FlexiChainsRecipesBaseExt),
     Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt),
