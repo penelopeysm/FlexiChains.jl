@@ -61,9 +61,9 @@ chain = sample(model, MH(), MCMCThreads(), 1000, 3)
 
 You can also construct a FlexiChain from a variety of other sources, including
 [Pigeons.jl](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-pigeons),
-[Stan CSV files](https://pysm.dev/FlexiChains.jl/stable/integrations/#Stan),
-[PosteriorDB.jl](https://pysm.dev/FlexiChains.jl/stable/integrations/#PosteriorDB.jl),
-an `MCMCChains.Chains` object,
+[Stan CSV files](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-stan),
+[PosteriorDB.jl](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-posteriordb),
+an [`MCMCChains.Chains` object](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-mcmcchains),
 or [a matrix of `DynamicPPL.VarNamedTuple`s or `DynamicPPL.ParamsWithStats`](https://pysm.dev/FlexiChains.jl/stable/api/#AbstractMCMC.from_samples).
 
 ## A quick primer on the data structure

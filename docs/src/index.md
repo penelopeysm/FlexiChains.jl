@@ -29,9 +29,10 @@ With older versions of Turing, you can obtain a FlexiChain by calling `sample(mo
 
 You can also construct a FlexiChain from a variety of other sources, including
 [ParallelMCMC.jl](https://github.com/rsenne/ParallelMCMC.jl),
-[Pigeons.jl](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-pigeons),
-[Stan CSV files](https://pysm.dev/FlexiChains.jl/stable/integrations/#Stan), or
-[PosteriorDB.jl](https://pysm.dev/FlexiChains.jl/stable/integrations/#PosteriorDB.jl).
+[Pigeons.jl](@ref integrations-pigeons),
+[Stan CSV files](@ref integrations-stan),
+[MCMCChains.jl](@ref integrations-mcmcchains),
+or [PosteriorDB.jl](@ref integrations-posteriordb).
 
 ### Expressive indexing
 
