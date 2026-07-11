@@ -169,7 +169,7 @@ If you try this and find that something doesn't work, please do feel free to ope
 `FlexiChain` and `FlexiSummary` objects can be serialised with JLD2.jl with no fuss.
 See [the Serialization section below](@ref integrations-serialization) for an example.
 
-## MCMCChains.jl
+## [MCMCChains.jl](@id integrations-mcmcchains)
 
 You can convert to and from `MCMCChains.Chains` objects using the following functions:
 
@@ -322,7 +322,7 @@ pt = pigeons(;
 chn = FlexiChains.from_pigeons(pt)
 ```
 
-## PosteriorDB.jl
+## [PosteriorDB.jl](@id integrations-posteriordb)
 
 [Documentation for PosteriorDB.jl](@extref PosteriorDB :doc:`index`)
 
@@ -435,7 +435,7 @@ Note two things:
     Foo([1]) == Foo([1])
     ```
 
-## Stan
+## [Stan](@id integrations-stan)
 
 FlexiChains has a function to read in chains stored in Stan CSV format:
 
