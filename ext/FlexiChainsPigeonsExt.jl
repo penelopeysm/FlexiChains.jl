@@ -16,10 +16,16 @@ The output type depends on the kind of model sampled from:
 - DynamicPPL models will produce `VNChain`, i.e., `FlexiChain{VarName}`.
 - Other models will produce `SymChain`, i.e., `FlexiChain{Symbol}`
 
+## DynamicPPL models
+
 Note that for DynamicPPL models, calling `from_pigeons` will result in the model being
 reevaluated in order to recover the structure of the parameters. This is necessary because
 Pigeons stores a flattened version of the parameters. It should generally be the case that
 the time taken for this reevaluation is negligible compared to the actual sampling time.
+
+The reevaluation isn't without benefit, though: you will also obtain (for free) the
+breakdown of the log-density between prior and likelihood, plus any `x := expr` variables in
+the model, which Pigeons does not save.
 """
 function FlexiChains.from_pigeons(pt::Pigeons.PT)
     return FlexiChains._internal_from_pigeons(pt, pt.inputs.target)
