@@ -21,6 +21,7 @@ using AbstractMCMC: AbstractMCMC
 using DynamicPPL: DynamicPPL
 using MCMCChains: MCMCChains
 using PairPlots: PairPlots
+using Pigeons: Pigeons
 using Turing: Turing
 using PalmerPenguins: PalmerPenguins
 using DataFrames: DataFrames
@@ -46,6 +47,7 @@ modules = [
     Base.get_extension(FlexiChains, :FlexiChainsInferenceObjectsExt),
     Base.get_extension(FlexiChains, :FlexiChainsMakieExt),
     Base.get_extension(FlexiChains, :FlexiChainsPairPlotsExt),
+    Base.get_extension(FlexiChains, :FlexiChainsPigeonsExt),
     Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsDynamicPPLExt),
     Base.get_extension(FlexiChains, :FlexiChainsRecipesBaseExt),
     Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt),
