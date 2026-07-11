@@ -47,7 +47,7 @@ FlexiChains provides a number of [statistical analysis tools](@ref summarising),
 
   - simple statistics (mean, variance, quantiles, etc.)
   - MCMC diagnostics and statistics via [MCMCDiagnosticTools.jl](https://turinglang.org/MCMCDiagnosticTools.jl) and [PosteriorStats.jl](https://julia.arviz.org/PosteriorStats/stable/)
-  - Pareto-smoothed importance sampling (PSIS) via [PSIS.jl](https://arviz-devs.github.io/PSIS.jl/stable/)
+  - [LOO-CV](@ref integrations-posteriorstats) via PosteriorStats.jl and [PSIS.jl](https://arviz-devs.github.io/PSIS.jl/stable/)
 
 ```@example splash
 ss = summarystats(chain)
@@ -59,9 +59,9 @@ ss[@varname(x), stat=At(:mean)]
 
 For added versatility you can also [convert a FlexiChain into a `DimArray` or a `DataFrame`](@ref api-flatten).
 
-### Built-in plotting
+### Plotting
 
-[Visualisation with both Makie.jl and Plots.jl is supported](@ref plotting), along with a PairPlots.jl extension.
+[Many visualisation functions](@ref plotting) with both [Makie.jl](https://docs.makie.org/stable/) and [Plots.jl](https://docs.juliaplots.org/stable/tutorial/) backends are provided, along with [a PairPlots.jl extension](@ref integrations-pairplots).
 
 ```@example splash
 using PairPlots, CairoMakie
@@ -70,6 +70,3 @@ Makie.save("index-pairplot.png", ans); # hide
 ```
 
 ![Pair plot of the sampled chain](index-pairplot.png)
-
-```
-```
