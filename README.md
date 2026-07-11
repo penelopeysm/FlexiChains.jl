@@ -8,7 +8,7 @@
 ## Installation
 
 ```julia
-import Pkg;
+import Pkg
 Pkg.add("FlexiChains")
 ```
 
@@ -188,7 +188,7 @@ FM.meanplot(chain; layout=(2, 2)) # Running mean plot, with custom grid layout
 Pair plots can be generated with the [PairPlots.jl extension](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-pairplots):
 
 ```julia
-using PairPlots;
+using PairPlots
 pairplot(chain)
 ```
 
@@ -199,10 +199,12 @@ pairplot(chain)
 The interface to Plots.jl is similar:
 
 ```julia
-using StatsPlots;
+using StatsPlots
 plot(chain)
-import FlexiChains.Plots as FP;
+
+import FlexiChains.Plots as FP
 FP.meanplot(chain; layout=(2, 2))
+
 StatsPlots.corner(chain)
 ```
 
