@@ -12,7 +12,7 @@ end
 chain = sample(f(), MH(), MCMCThreads(), 1000, 3; progress=false)
 ```
 
-## Feature overview
+## Primary features
 
 ### Type and structure fidelity
 
