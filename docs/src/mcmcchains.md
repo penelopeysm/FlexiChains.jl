@@ -24,6 +24,8 @@ mc = AbstractMCMC.from_samples(MCMCChains.Chains, samples)
 The most naive conversion will create a `FlexiChain{Symbol}`, since that is the key type of MCMCChains:
 
 ```@example mcmcchains
+using FlexiChains
+
 FlexiChains.from_mcmcchains(mc)
 ```
 
