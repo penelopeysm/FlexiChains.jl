@@ -38,6 +38,8 @@ jobs:
       - name: Build and deploy docs
         working-directory: docs
         run: julia --color=yes --project=. -e 'include("make.jl")'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Post docs preview comment
         if: ${{ env.IS_PR_BUT_NOT_FORK == 'true' }}
