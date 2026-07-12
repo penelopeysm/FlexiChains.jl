@@ -1,4 +1,4 @@
-# [Plotting: Makie.jl](@id plotting-makie)
+# [Makie.jl](@id plotting-makie)
 
 FlexiChains provides a number of functions to visualise chains using the [Makie](https://makie.org) plotting library.
 

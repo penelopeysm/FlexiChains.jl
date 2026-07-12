@@ -1,4 +1,4 @@
-# Usage with Turing.jl
+# Turing.jl
 
 This page provides a fairly high-level overview of how to use FlexiChains with Turing.jl.
 

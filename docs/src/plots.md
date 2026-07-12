@@ -1,4 +1,4 @@
-# [Plotting: Plots.jl](@id plotting-plots)
+# [Plots.jl](@id plotting-plots)
 
 FlexiChains defines a collection of plot recipes which allows you to use [the Plots.jl ecosystem](@extref Plots :doc:`index`) to visualise chains.
 In particular, to access these you will want to load StatsPlots.jl:

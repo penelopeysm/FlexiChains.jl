@@ -1,4 +1,4 @@
-# [Plotting: AlgebraOfGraphics.jl](@id plotting-aog)
+# [AlgebraOfGraphics.jl](@id plotting-aog)
 
 [AlgebraOfGraphics.jl](https://aog.makie.org/stable/) (AoG) is a plotting package built on top of Makie, which provides a declarative interface for plotting, much like R's `ggplot2`.
 

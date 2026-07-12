@@ -1,4 +1,4 @@
-# Public API
+# API
 
 The types and functions documented on this page form part of FlexiChains's public API.
 
