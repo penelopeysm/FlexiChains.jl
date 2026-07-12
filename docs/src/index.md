@@ -62,7 +62,7 @@ For added versatility you can also [convert a FlexiChain into a `DimArray` or a 
 
 ### Plotting
 
-[Many visualisation functions](@ref plotting) with both [Makie.jl](https://docs.makie.org/stable/) and [Plots.jl](https://docs.juliaplots.org/stable/tutorial/) backends are provided, along with [a PairPlots.jl extension](@ref integrations-pairplots).
+[Many visualisation functions](@ref plotting) with both [Makie.jl](https://docs.makie.org/stable/) and [Plots.jl](https://docs.juliaplots.org/stable/) backends are provided, along with [a PairPlots.jl extension](@ref integrations-pairplots).
 
 ```@example splash
 using PairPlots, CairoMakie

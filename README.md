@@ -160,7 +160,7 @@ See the [full guide to summarising](https://pysm.dev/FlexiChains.jl/stable/summa
 
 ## Plotting
 
-FlexiChains contains extensive functionality for visualising chains with Makie.jl and Plots.jl.
+FlexiChains contains extensive functionality for visualising chains with [Makie.jl](https://docs.makie.org/stable/) and [Plots.jl](https://docs.juliaplots.org/stable/).
 Most of the effort has been focused on the Makie backend, and we recommend using this first.
 
 ```julia

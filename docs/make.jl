@@ -79,6 +79,7 @@ makedocs(;
         "plotting.md",
         "plots.md",
         "makie.md",
+        "aog.md",
         "integrations.md",
         "api.md",
         "contributing.md",
