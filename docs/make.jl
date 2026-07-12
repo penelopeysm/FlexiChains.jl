@@ -88,7 +88,6 @@ makedocs(;
             "advancedhmc.md",
             "arviz.md",
             "custom_sampler.md",
-            "dimensionaldistributions.md",
             "MCMCChains.jl" => ["mcmcchains.md", "migration.md"],
             "pairplots.md",
             "parallelmcmc.md",
