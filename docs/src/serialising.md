@@ -17,15 +17,16 @@ You can serialise and deserialise `FlexiChain` and `FlexiSummary` objects using 
 Here is an example with the standard library:
 
 ```@example serialization
-using FlexiChains, Turing, Serialization
+using FlexiChains, Serialization
 
-@model f() = x ~ Normal()
-chn = sample(f(), NUTS(), 10; chain_type=VNChain, progress=false)
-fname = "mychain"
-serialize(fname, chn)
+data = Dict(FlexiChains.Parameter(:x) => randn(100, 3))
+chn = FlexiChains.FlexiChain{Symbol}(100, 3, data)
 ```
 
 ```@example serialization
+fname = "mychain"
+serialize(fname, chn)
+
 chn2 = deserialize(fname)
 isequal(chn, chn2)
 ```

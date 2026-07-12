@@ -1,11 +1,9 @@
 # AbstractMCMC.jl samplers
 
-If you have written a sampler that conforms to the AbstractMCMC interface, then you can get 'free' support for bundling into a `FlexiChain{VarName}` and a `FlexiChain{Symbol}` respectively by overloading these functions:
+If you have written a sampler that uses the AbstractMCMC interface, then you can get 'free' support for bundling into a `FlexiChain{VarName}` and a `FlexiChain{Symbol}` respectively by overloading [`FlexiChains.to_vnt_and_stats`](@ref) and [`FlexiChains.to_nt_and_stats`](@ref) for your sampler's transition type.
 
-```@docs
-FlexiChains.to_vnt_and_stats
-FlexiChains.to_nt_and_stats
-```
+Specifically, your sampler must implement `AbstractMCMC.step`, which returns a tuple of `(transition, state)`.
+The first of these two objects is what is passed to the functions above.
 
 As a concrete example, let's use the following setup:
 
@@ -25,7 +23,7 @@ Here `T` represents what AbstractMCMC calls a 'transition': it is the first retu
 Of course, in practice, your transition will carry more information than this.
 
 Now suppose you want to sample with this and obtain a `FlexiChain{Symbol}`.
-As the docstrings above allude to, you will want to overload `to_nt_and_stats`:
+You should then overload `to_nt_and_stats` to return a tuple of two `NamedTuple`s, the first being the parameter values, and the second being any `Extra`s to include in the chain:
 
 ```@example sampler
 FlexiChains.to_nt_and_stats(::T) = ((; hello=1.0), (; world=2.0))
@@ -37,10 +35,18 @@ Then you can do
 sample(M(), S(), 10; chain_type=FlexiChain{Symbol})
 ```
 
-Likewise for `VarNamedTuple` (although in this case, you should think carefully about whether you *really* need `VarNamedTuple`: if your sampler transition does not carry enough information to justify the richer data type, then it would probably be more meaningful to stick to `NamedTuple` and `FlexiChain{Symbol}`).
+Likewise, you can overload `to_vnt_and_stats` to obtain a `FlexiChain{VarName}`.
+This must return a tuple of a `DynamicPPL.VarNamedTuple` and a `NamedTuple`:
 
 ```@example sampler
 using DynamicPPL: VarNamedTuple, VarName
 FlexiChains.to_vnt_and_stats(::T) = (VarNamedTuple(hello=1.0), (; world=2.0))
 sample(M(), S(), 10; chain_type=FlexiChain{VarName})
+```
+
+## Docstrings
+
+```@docs
+FlexiChains.to_vnt_and_stats
+FlexiChains.to_nt_and_stats
 ```

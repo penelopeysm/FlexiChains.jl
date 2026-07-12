@@ -73,7 +73,7 @@ makedocs(;
     ),
     modules=modules,
     pages=[
-        "Home" => "index.md",
+        "index.md",
         "Usage" => [
             "datastructure.md",
             "indexing.md",
