@@ -1,26 +1,6 @@
-````@raw html
----
-layout: home
+# Overview
 
-hero:
-  name: FlexiChains
-  text: 
-  tagline: Type- and structure-preserving Markov chains
-  image:
-    src: logo.svg
-    alt: FlexiChains
-  actions:
-    - theme: brand
-      text: Get started
-      link: datastructure
-    - theme: alt
-      text: Turing.jl integration
-      link: turing
-    - theme: alt
-      text: Source code on GitHub
-      link: https://github.com/penelopeysm/FlexiChains.jl
----
-````
+FlexiChains.jl provides a rich data structure for storing and analysing Markov chain Monte Carlo (MCMC) output.
 
 ```julia
 using Turing, FlexiChains
@@ -56,7 +36,6 @@ This is in contrast to many other representations which flatten all samples into
 ### Diverse input sources
 
 FlexiChains is the default chain type for [Turing.jl](@ref integrations-turing) since v0.45 of Turing.
-With older versions of Turing, you can obtain a FlexiChain by calling `sample(model, ...; chain_type=FlexiChains.VNChain)`.
 
 You can also construct a FlexiChain from a variety of other sources, including
 [ParallelMCMC.jl](@ref integrations-parallelmcmc),
