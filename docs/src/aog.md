@@ -1,6 +1,8 @@
 # [Plotting: AlgebraOfGraphics.jl](@id plotting-aog)
 
-FlexiChains does not provide any direct functionality to work with [AlgebraOfGraphics.jl](https://aog.makie.org/stable/).
+[AlgebraOfGraphics.jl](https://aog.makie.org/stable/) (AoG) is a plotting package built on top of Makie, which provides a declarative interface for plotting, much like R's `ggplot2`.
+
+FlexiChains does not provide any direct functionality to work with AoG.
 However, since FlexiChains [provides a Tables.jl interface](@ref integrations-tables), it can be fed into AoG for plotting.
 This page provides a handful of examples.
 
