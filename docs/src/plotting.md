@@ -1,6 +1,10 @@
 # [Plotting overview](@id plotting)
 
-FlexiChains contains a number of functions for visualising chains with Plots.jl and Makie.jl.
+FlexiChains contains a number of functions for visualising chains with [Makie.jl](@ref plotting-makie) and [Plots.jl](@ref plotting-plots).
+
+The Makie backend is more developed, and we recommend using that in the first instance.
+
+FlexiChains can also be used with [AlgebraOfGraphics.jl](@ref plotting-aog), by conversion to an intermediate `DataFrame`.
 
 ## Available functions
 
