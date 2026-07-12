@@ -2,14 +2,26 @@
 
 FlexiChains.jl provides a rich data structure for storing and analysing Markov chain Monte Carlo (MCMC) output.
 
-```@example splash
+```julia
 using Turing, FlexiChains
 @model function f()
     x ~ Normal()
     y ~ Poisson(3.0)
-    z ~ MvNormal(zeros(2), I)
+    z ~ MvNormal([x + y, x - y], I)
 end
-chain = sample(f(), MH(), MCMCThreads(), 1000, 3; progress=false)
+chain = sample(f(), Prior(), MCMCSerial(), 1000, 4)
+```
+
+```@example splash
+# Avoid actually sampling with Turing! # hide
+using DynamicPPL, Distributions, LinearAlgebra # hide
+using FlexiChains # hide
+@model function f() # hide
+    x ~ Normal() # hide
+    y ~ Poisson(3.0) # hide
+    z ~ MvNormal([x + y, x - y], I) # hide
+end # hide
+chain = FlexiChains._make_prior_chain(f(), 1000, 4) # hide
 ```
 
 ## Primary features
@@ -23,12 +35,10 @@ This is in contrast to many other representations which flatten all samples into
 
 ### Diverse input sources
 
-FlexiChains is the default chain type for [Turing.jl](https://turinglang.org) since v0.45 of Turing.
-
-With older versions of Turing, you can obtain a FlexiChain by calling `sample(model, ...; chain_type=FlexiChains.VNChain)`.
+FlexiChains is the default chain type for [Turing.jl](@ref integrations-turing) since v0.45 of Turing.
 
 You can also construct a FlexiChain from a variety of other sources, including
-[ParallelMCMC.jl](https://github.com/rsenne/ParallelMCMC.jl),
+[ParallelMCMC.jl](@ref integrations-parallelmcmc),
 [Pigeons.jl](@ref integrations-pigeons),
 [Stan CSV files](@ref integrations-stan),
 [MCMCChains.jl](@ref integrations-mcmcchains),
@@ -44,11 +54,11 @@ chain[@varname(x), iter=101:End, chain=2]
 
 ### Downstream analysis
 
-FlexiChains provides a number of [statistical analysis tools](@ref summarising), including:
+FlexiChains provides a number of tools for statistical analysis, including:
 
-  - simple statistics (mean, variance, quantiles, etc.)
-  - MCMC diagnostics and statistics via [MCMCDiagnosticTools.jl](https://turinglang.org/MCMCDiagnosticTools.jl) and [PosteriorStats.jl](https://julia.arviz.org/PosteriorStats/stable/)
-  - [LOO-CV](@ref integrations-posteriorstats) via PosteriorStats.jl and [PSIS.jl](https://arviz-devs.github.io/PSIS.jl/stable/)
+  - [simple statistics](@ref summarising) (mean, variance, quantiles, etc.)
+  - [MCMC diagnostics and statistics](@ref mcmc-diagnostics) via MCMCDiagnosticTools.jl and PosteriorStats.jl
+  - [LOO-CV](@ref integrations-posteriorstats) via PosteriorStats.jl and PSIS.jl
 
 ```@example splash
 ss = summarystats(chain)
@@ -62,7 +72,7 @@ For added versatility you can also [convert a FlexiChain into a `DimArray` or a 
 
 ### Plotting
 
-[Many visualisation functions](@ref plotting) with both [Makie.jl](https://docs.makie.org/stable/) and [Plots.jl](https://docs.juliaplots.org/stable/) backends are provided, along with [a PairPlots.jl extension](@ref integrations-pairplots).
+Many visualisation functions with both [Makie.jl](@ref plotting-makie) and [Plots.jl](@ref plotting-plots) backends are provided, along with [a PairPlots.jl extension](@ref integrations-pairplots).
 
 ```@example splash
 using PairPlots, CairoMakie

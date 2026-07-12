@@ -1,6 +1,8 @@
-# [Plotting: Makie.jl](@id plotting-makie)
+# [Makie.jl](@id plotting-makie)
 
-FlexiChains provides a number of functions to visualise chains using the [Makie](https://makie.org) plotting library.
+[Documentation for Makie.jl ↗](https://docs.makie.org/stable/)
+
+FlexiChains provides a number of functions to visualise chains using the Makie plotting library.
 
 Parts of the Makie integration in FlexiChains are heavily lifted from [the (unreleased) ChainsMakie.jl package](https://simonsteiger.github.io/ChainsMakie.jl/dev/), although there have also been further modifications made since then.
 This includes some custom code to generate (e.g.) shared legends, which leads to slightly nicer plots than for Plots.jl (on top of Makie generally yielding nicer plots out of the box).
