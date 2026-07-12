@@ -2,6 +2,9 @@ Manifest.toml
 Manifest-*.toml
 .swp
 .DS_Store
+
 docs/build
+docs/node_modules
+
 test/plots/images/*_rec.png
 test/plots/images/*_diff.png
