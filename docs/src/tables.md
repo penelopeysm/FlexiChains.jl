@@ -1,16 +1,18 @@
 # [Tables.jl](@id integrations-tables)
 
-[Documentation for Tables.jl](https://tables.juliadata.org/stable/)
+[Documentation for Tables.jl ↗](https://tables.juliadata.org/stable/)
 
 FlexiChains implements a Tables.jl interface which allows you to easily convert a `FlexiChain` or `FlexiSummary` into any type that consumes tabular data, e.g., a `DataFrame`.
 
-In fact, FlexiChains implements *two* different Tables.jl interfaces for chains: one for wide data and one for long data.
+## Chains
+
+In fact, FlexiChains implements *two* different Tables.jl interfaces for chains which produce wide-format and long-format tables respectively.
 
 This is best demonstrated with an example.
 First let's sample a chain as usual:
 
 ```@example tables
-using FlexiChains, Turing, DataFrames
+using FlexiChains, DynamicPPL, LinearAlgebra, Distributions
 
 @model function f()
     x ~ Normal(10.0)
@@ -18,29 +20,40 @@ using FlexiChains, Turing, DataFrames
     z ~ MvNormal(zeros(2), I)
 end
 
-chn = sample(f(), MH(), MCMCThreads(), 4, 2; chain_type=VNChain, progress=false)
+chn = FlexiChains._make_prior_chain(f(), 4, 2)
 ```
 
-Now we can convert this into a `DataFrame` in wide format (this is also the default for unwrapped `FlexiChain`s, so you technically don't have to wrap `chn` in `Wide` if you don't want to):
+### Wide format
+
+Now we can convert this into a wide-format `DataFrame` by wrapping the chain in [`Wide`](@ref):
 
 ```@example tables
+using DataFrames
+
 DataFrame(Wide(chn))
 ```
 
-or long format (although notice that this will promote `y` to `Float64`):
+Wide format is the default layout for `FlexiChain`s, so if you aren't specifying any additional keyword arguments to `Wide`, you technically don't have to wrap it at all:
+
+```@example tables
+DataFrame(chn) == DataFrame(Wide(chn))
+```
+
+### Long format
+
+To get a long-format `DataFrame`, you can wrap the chain in [`Long`](@ref):
 
 ```@example tables
 DataFrame(Long(chn))
 ```
 
-Both the [`Wide`](@ref) and [`Long`](@ref) wrapper structs accept keyword arguments which determine whether array-valued parameters (like `z`) are split up, and whether or not to include the `Extra` keys in the chain as well, like Turing log-probabilities.
+Notice, though, that this promotes `y` to `Float64`, because all parameter values are stored in a single column.
 
-```@docs
-Wide
-Long
-```
+Both the [`Wide`](@ref) and [`Long`](@ref) wrapper structs accept keyword arguments which determine whether array-valued parameters (like `z`) are split up, and whether or not to include the `Extra` keys in the chain as well.
 
-For `FlexiSummary`, the long format is not (yet?) supported: only the wide format is implemented.
+## Summaries
+
+For `FlexiSummary`, the long format is not supported: only the wide format is implemented.
 In contrast to `Wide(::FlexiChain)`, where each _parameter_ is given a different column, the wide format for `FlexiSummary` splits each _statistic_ into a separate column.
 
 ```@example tables
@@ -69,3 +82,10 @@ Like for `FlexiChain`, the `Wide` wrapper is the default Tables.jl implementatio
     w = Wide(mean(chn; split_varnames=false), split_varnames=false)
     DataFrame(w)
     ```
+
+## Docstrings
+
+```@docs
+Wide
+Long
+```

@@ -1,6 +1,6 @@
 # [PosteriorDB.jl](@id integrations-posteriordb)
 
-[Documentation for PosteriorDB.jl](@extref PosteriorDB :doc:`index`)
+[Documentation for PosteriorDB.jl ↗](@extref PosteriorDB :doc:`index`)
 
 If you have loaded a `PosteriorDB.ReferencePosterior`, you can transform it into a `FlexiChain` using [`FlexiChains.from_posteriordb_ref`](@ref):
 
@@ -19,6 +19,8 @@ You can then use all the functionality of FlexiChains on `chn`:
 ```@example posteriordb
 summarystats(chn)
 ```
+
+## Docstrings
 
 ```@docs
 FlexiChains.from_posteriordb_ref

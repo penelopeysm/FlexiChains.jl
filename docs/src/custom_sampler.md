@@ -1,4 +1,4 @@
-# Custom AbstractMCMC samplers
+# AbstractMCMC.jl samplers
 
 If you have written a sampler that conforms to the AbstractMCMC interface, then you can get 'free' support for bundling into a `FlexiChain{VarName}` and a `FlexiChain{Symbol}` respectively by overloading these functions:
 

@@ -1,6 +1,6 @@
 # DimensionalDistributions.jl
 
-[Documentation for DimensionalDistributions.jl](https://github.com/sethaxen/DimensionalDistributions.jl)
+[Documentation for DimensionalDistributions.jl ↗](https://github.com/sethaxen/DimensionalDistributions.jl)
 
 !!! note
 

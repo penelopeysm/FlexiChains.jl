@@ -115,7 +115,8 @@ StatsBase.harmmean(::FlexiChains.FlexiChain; kwargs...)
 StatsBase.iqr(::FlexiChains.FlexiChain; kwargs...)
 ```
 
-For highest density intervals and equal-tailed intervals, you will need to load `PosteriorStats` as these are defined in an extension.
+There are also similar overloads for `PosteriorStats.hdi` and `PosteriorStats.eti`, which calculate highest density intervals and equal-tailed intervals, respectively.
+Please see the [PosteriorStats integration section](@ref integrations-posteriorstats) for details.
 
 ## Custom statistics
 
@@ -180,7 +181,7 @@ Base.merge(::FlexiChains.FlexiSummary, ::FlexiChains.FlexiSummary)
 It is worth just noting briefly here that FlexiChains has a PosteriorStats extension which allows you to calculate highest density intervals and equal-tailed intervals.
 Please see the [PosteriorStats integration section](@ref integrations-posteriorstats) for details.
 
-## MCMC diagnostics
+## [MCMC diagnostics](@id mcmc-diagnostics)
 
 There are a number of functions in MCMCDiagnosticTools.jl which do not nicely fit the notion of 'collapse over one or more dimensions'.
 For example, quantities like the Gelman diagnostic are calculated over the entire dataset.

@@ -47,6 +47,15 @@ Note that, although the dictionaries themselves may have loose types, the key ty
 `FlexiSummary` objects should always be constructed by summarising a `FlexiChain`.
 If for some reason you need to construct one from scratch, please refer to the source code (and do let me know, so that I can make this part of the public API).
 
+## Parameters and Extras
+
+```@docs
+FlexiChains.Parameter
+FlexiChains.Extra
+FlexiChains.ParameterOrExtra
+FlexiChains.get_name
+```
+
 ## Equality
 
 ```@docs
@@ -78,10 +87,6 @@ FlexiChains.renumber_chains
 ## Key types
 
 ```@docs
-FlexiChains.Parameter
-FlexiChains.Extra
-FlexiChains.get_name
-FlexiChains.ParameterOrExtra
 FlexiChains.Prefixed
 ```
 

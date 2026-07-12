@@ -1,6 +1,6 @@
 # [AdvancedHMC.jl](@id integrations-advancedhmc)
 
-[Documentation for AdvancedHMC.jl](@extref AdvancedHMC :doc:`index`)
+[Documentation for AdvancedHMC.jl ↗](@extref AdvancedHMC :doc:`index`)
 
 [`FlexiChains.to_nt_and_stats`](@ref) is overloaded for `AdvancedHMC.Transition`, so you can sample with AdvancedHMC into a `FlexiChain{Symbol}`.
 This is a slightly simplified version of the example in the AdvancedHMC README (here we use an analytical gradient rather than automatic differentiation):

@@ -1,6 +1,6 @@
 # ArviZ.jl
 
-[Documentation for ArviZ.jl](https://julia.arviz.org/ArviZ/stable/)
+[Documentation for ArviZ.jl ↗](https://julia.arviz.org/ArviZ/stable/)
 
 FlexiChains contains an extension that allows you to convert a `FlexiChain` into an `InferenceObjects.InferenceData` (InferenceObjects.jl is one of the sublibraries of ArviZ.jl, and is re-exported by ArviZ).
 
