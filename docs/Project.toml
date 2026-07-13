@@ -34,6 +34,7 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [sources]
 Pigeons = {rev = "main", url = "https://github.com/penelopeysm/Pigeons.jl"}
+DocumenterVitepress = {rev = "main", url = "https://github.com/penelopeysm/DocumenterVitepress.jl"}
 
 [compat]
 AbstractMCMC = "5.14"

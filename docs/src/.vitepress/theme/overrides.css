@@ -1,0 +1,8 @@
+:root {
+  --vp-code-color: var(--vp-c-text-1);
+}
+
+.custom-block.tip code {
+  color: var(--vp-c-text-1);
+  background-color: var(--vp-code-bg);
+}
