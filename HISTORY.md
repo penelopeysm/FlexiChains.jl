@@ -1,8 +1,12 @@
+# 0.6.31
+
+Improved the resulting key type when attempting to construct `VNChain`s from `FlexiChains.from_mcmcchains`, `FlexiChains.map_keys`, or `FlexiChains.map_parameters`.
+
 # 0.6.30
 
 A legend is now automatically added to the axis when using `pushforward_hist`.
 
-We expect that the legend is an improvement to almost all use cases, but in case it is not desired, it is possible (but not elegant) to [modify](https://github.com/penelopeysm/FlexiChains.jl/pull/278#issuecomment-4948379988) or [delete](https://discourse.julialang.org/t/makie-how-to-remove-a-legend-from-an-axis/65876/8) the legend after having created the figure.
+The legend should be an improvement to almost all use cases, but in case it is not desired, it is possible (but not elegant) to [modify](https://github.com/penelopeysm/FlexiChains.jl/pull/278#issuecomment-4948379988) or [delete](https://discourse.julialang.org/t/makie-how-to-remove-a-legend-from-an-axis/65876/8) the legend after having created the figure.
 
 # 0.6.29
 
