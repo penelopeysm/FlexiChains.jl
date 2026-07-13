@@ -129,7 +129,11 @@ function _get_new_keytype(f, ks::Base.KeySet)
             push!(seen, new_key)
         end
         if new_key isa Parameter
-            TKey = typejoin(TKey, typeof(new_key).parameters[1])
+            # Heuristic to avoid constructing chains like `FlexiChain{VarName{sym,Iden} where
+            # {sym}}` which can cause issues.
+            Tnew = typeof(new_key).parameters[1]
+            Tnew = Tnew <: VarName ? VarName : Tnew
+            TKey = typejoin(TKey, Tnew)
         end
     end
     return TKey
@@ -173,7 +177,11 @@ function map_parameters(f, cs::ChainOrSummary)
         else
             push!(seen, newp)
         end
-        TKey = typejoin(TKey, typeof(newp))
+        # Heuristic to avoid constructing chains like `FlexiChain{VarName{sym,Iden} where
+        # {sym}}` which can cause issues.
+        Tnew = typeof(newp)
+        Tnew = Tnew <: VarName ? VarName : Tnew
+        TKey = typejoin(TKey, Tnew)
     end
     wrapper_f = k -> k isa Parameter ? Parameter(f(k.name)) : k
     N = cs isa FlexiChain ? 2 : 3

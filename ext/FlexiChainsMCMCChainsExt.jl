@@ -113,7 +113,13 @@ function _infer_key_type(key_spec::Tuple)
     for k in key_spec
         key = k isa Pair ? first(k) : k
         if key isa Parameter
-            T = typejoin(T, typeof(key).parameters[1])
+            # Special-case VarName parameters to avoid overly narrow key types like
+            # `VarName{sym,Iden} where {sym}`, which can happen if you have [@varname(x),
+            # @varname(y)]. This causes issues when parameters like e.g. @varname(x[1]) are
+            # used later on, e.g. in _split_varnames.
+            Tnew = typeof(key).parameters[1]
+            Tnew = Tnew <: VarName ? VarName : Tnew
+            T = typejoin(T, Tnew)
         end
     end
     return T
