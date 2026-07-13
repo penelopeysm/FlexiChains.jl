@@ -1,3 +1,9 @@
+# 0.6.29
+
+Fixed a bug where `FlexiChains.from_mcmcchains` would error if given Parameters with different `VarName`s (which made it very hard to convert an `MCMCChains.Chains` object to a `VNChain`, instead of the standard `SymChain`).
+
+Improved the behaviour of `map_keys` and `map_parameters` to give better key types in the output FlexiChain.
+
 # 0.6.28
 
 Added a function `FlexiChains.from_mcmcchains` to convert from an `MCMCChains.Chains` object.

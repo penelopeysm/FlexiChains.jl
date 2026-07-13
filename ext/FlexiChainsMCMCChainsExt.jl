@@ -109,13 +109,14 @@ function FlexiChains.from_mcmcchains(
 end
 
 function _infer_key_type(key_spec::Tuple)
+    T = Union{}
     for k in key_spec
         key = k isa Pair ? first(k) : k
         if key isa Parameter
-            return typeof(key).parameters[1]
+            T = typejoin(T, typeof(key).parameters[1])
         end
     end
-    return Symbol
+    return T
 end
 
 # I can't seem to get Base.@deprecate to work
