@@ -167,16 +167,19 @@ _make_sampler_state(n_chains) = [(; x="state_$i") for i in 1:n_chains]
             ks = (
                 Parameter(@varname(x)),
                 Parameter(@varname(y)) => (nparams - 2,),
-                Parameter(@varname(z[1])),
+                Parameter(@varname(z)),
             )
             fc = FlexiChains.from_mcmcchains(chn, ks)
             @test fc isa FlexiChain{VarName}
             @test size(fc) == (size(chn, 1), size(chn, 3))
             @test collect(FlexiChains.parameters(fc)) ==
-                  [@varname(x), @varname(y), @varname(z[1])]
+                  [@varname(x), @varname(y), @varname(z)]
             @test eltype(fc[@varname(x)]) == Float64
             @test eltype(fc[@varname(y)]) == Vector{Float64}
-            @test eltype(fc[@varname(z[1])]) == Float64
+            @test eltype(fc[@varname(z)]) == Float64
+            # This used to error prior to v0.6.31 because `fc` would be a
+            # `FlexiChain{VarName{sym,Iden} where sym}`.
+            @test FlexiChains._split_varnames(fc) isa Any
         end
 
         @testset "deprecated constructor still works" begin
