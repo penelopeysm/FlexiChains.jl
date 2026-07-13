@@ -1,6 +1,8 @@
-# Plotting: Plots.jl
+# [Plots.jl](@id plotting-plots)
 
-FlexiChains defines a collection of plot recipes which allows you to use [the Plots.jl ecosystem](@extref Plots :doc:`index`) to visualise chains.
+[Documentation for Plots.jl ↗](@extref Plots :doc:`index`)
+
+FlexiChains defines a collection of plot recipes which allows you to use the Plots.jl ecosystem to visualise chains.
 In particular, to access these you will want to load StatsPlots.jl:
 
 ```julia
@@ -44,7 +46,7 @@ plotfunc(chn, param_or_params; pool_chains::Bool=false, kwargs...)
 **Positional arguments**
 
   - `chn` is a `FlexiChain` object.
-  - `param_or_params` is optional, and can be [anything that is used to index into a chain](@ref "Indexing"). If not provided, all parameters in the chain will be plotted.
+  - `param_or_params` is optional, and can be [anything that is used to index into a chain](@ref indexing). If not provided, all parameters in the chain will be plotted.
 
 **Keyword arguments**
 

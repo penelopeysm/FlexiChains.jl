@@ -113,10 +113,9 @@ end
 Figure out the new key type for a FlexiChain or FlexiSummary after mapping keys with `f`.
 """
 function _get_new_keytype(f, ks::Base.KeySet)
-    # This is surprisingly hard!
-    all_keys = collect(ks)
     seen = Set()
-    for k in all_keys
+    TKey = Union{}
+    for k in ks
         new_key = f(k)
         if !(new_key isa ParameterOrExtra)
         end
@@ -129,14 +128,11 @@ function _get_new_keytype(f, ks::Base.KeySet)
         else
             push!(seen, new_key)
         end
+        if new_key isa Parameter
+            TKey = typejoin(TKey, typeof(new_key).parameters[1])
+        end
     end
-    new_params = filter(k -> k isa Parameter, collect(seen))
-    new_param_names = map(p -> p.name, new_params)
-    return if isempty(new_param_names)
-        Any
-    else
-        eltype(new_param_names)
-    end
+    return TKey
 end
 
 """
@@ -165,6 +161,7 @@ Change the parameters of a `FlexiChain` or `FlexiSummary` by applying the functi
 """
 function map_parameters(f, cs::ChainOrSummary)
     seen = Set()
+    TKey = Union{}
     for p in parameters(cs)
         newp = f(p)
         if newp in seen
@@ -176,12 +173,12 @@ function map_parameters(f, cs::ChainOrSummary)
         else
             push!(seen, newp)
         end
+        TKey = typejoin(TKey, typeof(newp))
     end
-    new_keytype = eltype(map(identity, collect(seen)))
     wrapper_f = k -> k isa Parameter ? Parameter(f(k.name)) : k
     N = cs isa FlexiChain ? 2 : 3
-    new_data = OrderedDict{ParameterOrExtra{<:new_keytype},Array{<:Any,N}}(
+    new_data = OrderedDict{ParameterOrExtra{<:TKey},Array{<:Any,N}}(
         wrapper_f(k) => v for (k, v) in pairs(cs._data)
     )
-    return _replace_data(cs, new_keytype, new_data)
+    return _replace_data(cs, TKey, new_data)
 end

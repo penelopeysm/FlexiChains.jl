@@ -1,10 +1,46 @@
 module FlexiChainsMCMCChainsExtTests
 
+using AbstractMCMC: AbstractMCMC
 using DimensionalData: DimArray, Dim
-using FlexiChains: FlexiChains, FlexiChain, VNChain, Parameter, Extra, ParameterOrExtra
-using AbstractMCMC
+using Distributions
+using DynamicPPL
+using FlexiChains:
+    FlexiChains, FlexiChain, VNChain, Parameter, Extra, ParameterOrExtra, _make_prior_chain
+using LinearAlgebra: I
+using MCMCChains: MCMCChains
 using Random: Xoshiro
 using Test
+
+"""
+Build an `MCMCChains.Chains` from a DynamicPPL model, mimicking what Turing's
+`bundle_samples` does but without depending on Turing.
+
+cf. https://github.com/TuringLang/DynamicPPL.jl/blob/d7e84ce28c004f17e05711ccfd90e6225b2169b8/ext/DynamicPPLMCMCChainsExt.jl#L173-L185
+"""
+function _make_mcmcchains(rng, model, n_iters, n_chains; discard_initial=0, thinning=1)
+    samples = _make_prior_chain(rng, model, n_iters, n_chains; make_chain=false)
+    bare_chain = AbstractMCMC.from_samples(MCMCChains.Chains, samples)
+    start_time = rand(rng, n_chains)
+    stop_time = start_time .+ rand(rng, n_chains)
+    info = merge(
+        bare_chain.info,
+        (
+            start_time=start_time,
+            stop_time=stop_time,
+            samplerstate=_make_sampler_state(n_chains),
+        ),
+    )
+    return MCMCChains.Chains(
+        bare_chain.value.data,
+        names(bare_chain),
+        bare_chain.name_map;
+        info=info,
+        start=discard_initial + 1,
+        thin=thinning,
+    )
+end
+
+_make_sampler_state(n_chains) = [(; x="state_$i") for i in 1:n_chains]
 
 @testset "FlexiChainsMCMCChainsExt" begin
     @testset "FlexiChain{VarName} -> MCMCChains" begin
@@ -13,58 +49,28 @@ using Test
             y ~ MvNormal(zeros(3), I)
             return z ~ LKJCholesky(3, 2.0)
         end
-        mcmcc = sample(
-            Xoshiro(468),
-            f(),
-            NUTS(),
-            20;
-            chain_type=MCMCChains.Chains,
-            verbose=false,
-        )
-        flexic = sample(Xoshiro(468), f(), NUTS(), 20; chain_type=VNChain, verbose=false)
+        flexic = _make_prior_chain(Xoshiro(468), f(), 20, 1)
         new_mcmcc = MCMCChains.Chains(flexic)
-
-        @testset "the data itself" begin
-            @test Set(keys(new_mcmcc)) == Set(keys(mcmcc))
-            for k in keys(new_mcmcc)
-                @test new_mcmcc[k] == mcmcc[k]
-            end
-        end
 
         @testset "iteration indices" begin
             @test FlexiChains.iter_indices(flexic) == range(new_mcmcc)
-            @test range(new_mcmcc) == range(mcmcc)
-        end
-
-        @testset "grouping of data into sections" begin
-            @test Set(keys(new_mcmcc.name_map)) == Set(keys(mcmcc.name_map))
-            for k in keys(new_mcmcc.name_map)
-                # each of these is a vector which may be in a different order
-                @test Set(new_mcmcc.name_map[k]) == Set(mcmcc.name_map[k])
-            end
         end
 
         @testset "sampling time is preserved" begin
-            @test hasproperty(new_mcmcc.info, :start_time)
-            @test hasproperty(new_mcmcc.info, :stop_time)
-            durations = new_mcmcc.info.stop_time .- new_mcmcc.info.start_time
-            @test durations ≈ FlexiChains.sampling_time(flexic)
+            flexic_with_time = VNChain(20, 1, flexic._data; sampling_time=[3.14])
+            mc = MCMCChains.Chains(flexic_with_time)
+            @test hasproperty(mc.info, :start_time)
+            @test hasproperty(mc.info, :stop_time)
+            durations = mc.info.stop_time .- mc.info.start_time
+            @test durations ≈ FlexiChains.sampling_time(flexic_with_time)
         end
 
-        @testset "sampler state is preserved with save_state=true" begin
-            flexic_with_state = sample(
-                Xoshiro(468),
-                f(),
-                NUTS(),
-                20;
-                chain_type=VNChain,
-                verbose=false,
-                save_state=true,
-            )
-            mc_with_state = MCMCChains.Chains(flexic_with_state)
-            @test hasproperty(mc_with_state.info, :samplerstate)
-            @test mc_with_state.info.samplerstate ==
-                  FlexiChains.last_sampler_state(flexic_with_state)
+        @testset "sampler state is preserved" begin
+            flexic_with_state =
+                VNChain(20, 1, flexic._data; last_sampler_state=["some_state"])
+            mc = MCMCChains.Chains(flexic_with_state)
+            @test hasproperty(mc.info, :samplerstate)
+            @test mc.info.samplerstate == FlexiChains.last_sampler_state(flexic_with_state)
         end
     end
 
@@ -91,25 +97,24 @@ using Test
         @test mc[:lp] == chn[:lp]
     end
 
-    @testset "MCMCChains -> FlexiChain{Symbol}" begin
+    @testset "MCMCChains -> FlexiChain (from_mcmcchains)" begin
         @model function g()
             m ~ Normal(0, 1.0)
             s ~ InverseGamma(2, 3)
             return 1.5 ~ Normal(m, sqrt(s))
         end
 
-        @testset "single chain" begin
-            chn = sample(g(), MH(), 100; verbose=false)
-            fc = FlexiChain{Symbol}(chn)
+        @testset "single chain (no key_spec)" begin
+            chn = _make_mcmcchains(Xoshiro(123), g(), 100, 1)
+            fc = FlexiChains.from_mcmcchains(chn)
 
             @test fc isa FlexiChain{Symbol}
             @test size(fc) == (size(chn, 1), size(chn, 3))
 
-            # Key names & grouping
-            @test Set(FlexiChains.parameters(fc)) == Set(names(chn, :parameters))
-            for name in names(chn, :internals)
-                @test Extra(name) in FlexiChains.extras(fc)
-            end
+            # Key names & grouping (order matters)
+            @test collect(FlexiChains.parameters(fc)) == collect(names(chn, :parameters))
+            @test collect(FlexiChains.extras(fc)) ==
+                  [Extra(n) for n in names(chn, :internals)]
             # Data
             for name in names(chn)
                 k = name in names(chn, :parameters) ? Parameter(name) : Extra(name)
@@ -118,31 +123,67 @@ using Test
             # Iteration indices
             @test collect(FlexiChains.iter_indices(fc)) == collect(range(chn))
             # Sampling time
-            @test !any(ismissing, FlexiChains.sampling_time(fc))
-            @test only(FlexiChains.sampling_time(fc)) > 0
+            expected_time = chn.info.stop_time .- chn.info.start_time
+            @test collect(FlexiChains.sampling_time(fc)) ≈ expected_time
+            # Sampler state
+            @test collect(FlexiChains.last_sampler_state(fc)) == _make_sampler_state(1)
         end
 
-        @testset "multiple chains" begin
+        @testset "multiple chains (no key_spec)" begin
             ni, nc = 100, 3
-            chn = sample(g(), MH(), MCMCSerial(), ni, nc; verbose=false)
-            fc = FlexiChain{Symbol}(chn)
+            chn = _make_mcmcchains(Xoshiro(456), g(), ni, nc)
+            fc = FlexiChains.from_mcmcchains(chn)
             @test size(fc) == (ni, nc)
             for name in names(chn, :parameters)
                 @test fc[Parameter(name)] == chn[:, name, :].data
             end
-            st = FlexiChains.sampling_time(fc)
-            @test length(st) == nc
-            # Sometimes the sampling time is exactly 0 -- unsure why, so test for >= rather
-            # than >.
-            @test all(t -> t >= 0, st)
+            expected_time = chn.info.stop_time .- chn.info.start_time
+            @test collect(FlexiChains.sampling_time(fc)) ≈ expected_time
+            # Sampler state
+            @test collect(FlexiChains.last_sampler_state(fc)) == _make_sampler_state(nc)
         end
 
-        @testset "sampler state is preserved" begin
-            chn = sample(g(), MH(), 50; verbose=false, save_state=true)
-            @test hasproperty(chn.info, :samplerstate)
-            fc = FlexiChain{Symbol}(chn)
-            lss = FlexiChains.last_sampler_state(fc)
-            @test !all(ismissing, lss)
+        @testset "iteration indices with discard and thinning" begin
+            chn =
+                _make_mcmcchains(Xoshiro(111), g(), 50, 1; discard_initial=100, thinning=3)
+            fc = FlexiChains.from_mcmcchains(chn)
+            ii = collect(FlexiChains.iter_indices(fc))
+            @test collect(ii) == collect(range(chn)) == 101:3:250
+        end
+
+        @testset "with custom key_spec" begin
+            chn = _make_mcmcchains(Xoshiro(321), g(), 100, 1)
+            nparams = length(names(chn))
+            ks = tuple((Parameter(Symbol("p$i")) for i in 1:nparams)...)
+            fc = FlexiChains.from_mcmcchains(chn, ks)
+            @test fc isa FlexiChain{Symbol}
+            @test size(fc) == (size(chn, 1), size(chn, 3))
+            @test collect(FlexiChains.parameters(fc)) == [Symbol("p$i") for i in 1:nparams]
+        end
+
+        @testset "with upconversion to VarName" begin
+            chn = _make_mcmcchains(Xoshiro(321), g(), 100, 1)
+            nparams = length(names(chn))
+            ks = (
+                Parameter(@varname(x)),
+                Parameter(@varname(y)) => (nparams - 2,),
+                Parameter(@varname(z[1])),
+            )
+            fc = FlexiChains.from_mcmcchains(chn, ks)
+            @test fc isa FlexiChain{VarName}
+            @test size(fc) == (size(chn, 1), size(chn, 3))
+            @test collect(FlexiChains.parameters(fc)) ==
+                  [@varname(x), @varname(y), @varname(z[1])]
+            @test eltype(fc[@varname(x)]) == Float64
+            @test eltype(fc[@varname(y)]) == Vector{Float64}
+            @test eltype(fc[@varname(z[1])]) == Float64
+        end
+
+        @testset "deprecated constructor still works" begin
+            chn = _make_mcmcchains(Xoshiro(654), g(), 50, 1)
+            fc = @test_deprecated FlexiChain{Symbol}(chn)
+            @test fc isa FlexiChain{Symbol}
+            @test size(fc) == (size(chn, 1), size(chn, 3))
         end
     end
 end

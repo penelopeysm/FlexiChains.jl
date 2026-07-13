@@ -1,4 +1,4 @@
-# Accept PalmerPenguins download on CI
+# Accept PalmerPenguins download
 ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
 
 using Pkg: Pkg
@@ -6,26 +6,28 @@ Pkg.develop(Pkg.PackageSpec(; path=dirname(@__DIR__)))
 
 using Documenter
 using DocumenterInterLinks
+using DocumenterVitepress
+
 using FlexiChains
-using DimensionalData: DimensionalData
+
+using AbstractMCMC: AbstractMCMC
 using CairoMakie: CairoMakie, Makie
+using DataFrames: DataFrames
+using DimensionalData: DimensionalData
+using DynamicPPL: DynamicPPL
 using InferenceObjects: InferenceObjects
-using Plots: Plots
-using StatsPlots: StatsPlots
-using Statistics: Statistics
-using StatsBase: StatsBase
+using MCMCChains: MCMCChains
 using MCMCDiagnosticTools: MCMCDiagnosticTools
+using PairPlots: PairPlots
+using PalmerPenguins: PalmerPenguins
+using Pigeons: Pigeons
+using Plots: Plots
 using PosteriorDB: PosteriorDB
 using PosteriorStats: PosteriorStats
-using AbstractMCMC: AbstractMCMC
-using DynamicPPL: DynamicPPL
-using MCMCChains: MCMCChains
-using PairPlots: PairPlots
-using Pigeons: Pigeons
+using Statistics: Statistics
+using StatsBase: StatsBase
+using StatsPlots: StatsPlots
 using Turing: Turing
-using PalmerPenguins: PalmerPenguins
-using DataFrames: DataFrames
-
 
 links = InterLinks(
     "AdvancedHMC" => "https://turinglang.org/AdvancedHMC.jl/stable/",
@@ -41,16 +43,16 @@ links = InterLinks(
 
 modules = [
     FlexiChains,
-    Base.get_extension(FlexiChains, :FlexiChainsPosteriorDBExt),
-    Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsExt),
     Base.get_extension(FlexiChains, :FlexiChainsDynamicPPLExt),
     Base.get_extension(FlexiChains, :FlexiChainsInferenceObjectsExt),
+    Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt),
     Base.get_extension(FlexiChains, :FlexiChainsMakieExt),
     Base.get_extension(FlexiChains, :FlexiChainsPairPlotsExt),
     Base.get_extension(FlexiChains, :FlexiChainsPigeonsExt),
+    Base.get_extension(FlexiChains, :FlexiChainsPosteriorDBExt),
     Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsDynamicPPLExt),
+    Base.get_extension(FlexiChains, :FlexiChainsPosteriorStatsExt),
     Base.get_extension(FlexiChains, :FlexiChainsRecipesBaseExt),
-    Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt),
     Base.get_extension(FlexiChains, :FlexiChainsStatsPlotsExt),
 ]
 
@@ -58,38 +60,59 @@ modules = [
 old_GKSwstype = get(ENV, "GKSwstype", nothing)
 ENV["GKSwstype"] = "100"
 
+GITHUB_REPO = "github.com/penelopeysm/FlexiChains.jl"
+PAGES_BRANCH = "gh-pages"
+DEV_BRANCH = "main"
+
 makedocs(;
     sitename="FlexiChains.jl",
-    format=Documenter.HTML(;
-        # Some pictures are larger than the default threshold of 8 KB
-        example_size_threshold=12 * 2^10, # 12 KB
-        # And some pages are larger than the default threshold of 100 KB
-        size_threshold_warn=200 * 2^10, # 200 KB
-        assets=["assets/custom.css"],
+    format=DocumenterVitepress.MarkdownVitepress(
+        repo=GITHUB_REPO,
+        devbranch=DEV_BRANCH,
+        devurl="dev",
     ),
     modules=modules,
     pages=[
         "index.md",
-        "turing.md",
-        "summarising.md",
-        "indexing.md",
-        "samples.md",
-        "arrays.md",
-        "modifying.md",
-        "plotting.md",
-        "plots.md",
-        "makie.md",
-        "integrations.md",
+        "Usage" => [
+            "datastructure.md",
+            "indexing.md",
+            "samples.md",
+            "summarising.md",
+            "arrays.md",
+            "modifying.md",
+            "serialising.md",
+            "Plotting" => ["plotting.md", "makie.md", "plots.md", "aog.md"],
+        ],
+        "Integrations" => [
+            "advancedhmc.md",
+            "arviz.md",
+            "custom_sampler.md",
+            "MCMCChains.jl" => ["mcmcchains.md", "migration.md"],
+            "pairplots.md",
+            "parallelmcmc.md",
+            "pigeons.md",
+            "posteriordb.md",
+            "posteriorstats.md",
+            "stan.md",
+            "tables.md",
+            "turing.md",
+        ],
+        "About" => ["contributing.md", "why.md", "whynot.md"],
         "api.md",
-        "contributing.md",
-        "why.md",
-        "whynot.md",
-        "migration.md",
     ],
     checkdocs=:exports,
     warnonly=false,
     doctest=false,
     plugins=[links],
+)
+
+DocumenterVitepress.deploydocs(;
+    repo=GITHUB_REPO,
+    target=joinpath(@__DIR__, "build"),
+    branch=PAGES_BRANCH,
+    devbranch=DEV_BRANCH,
+    push_preview=true,
 )
 
 # Restore original environment variable

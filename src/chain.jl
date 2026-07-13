@@ -1,5 +1,5 @@
 @public sampling_time, last_sampler_state
-@public get_name
+@public Parameter, Extra, ParameterOrExtra, get_name
 
 const ITER_DIM_NAME = :iter
 const CHAIN_DIM_NAME = :chain
@@ -79,16 +79,17 @@ end
 """
     Parameter{T}(name::T)
 
-A named parameter in a `FlexiChain`. The name can be of any type, but all
-parameters in a `FlexiChain` must have the same type for their names.
+A named parameter in a `FlexiChain`.
 
-Specifically, if you have a `FlexiChain{TKey}`, then all parameters must be of
-type `Parameter{TKey}`.
+If you have a `FlexiChain{TKey}`, then all parameters must be of type `Parameter{TKey}`.
+
+To obtain the name of a `Parameter`, use [`FlexiChains.get_name`](@ref).
 """
 struct Parameter{T}
     name::T
 end
 Base.show(io::IO, p::Parameter) = print(io, "Parameter(", repr(p.name), ")")
+
 """
     FlexiChains.get_name(p::Parameter{T})::T
     FlexiChains.get_name(e::Extra{T})::T
@@ -107,8 +108,15 @@ Base.Symbol(p::Parameter) = Symbol(get_name(p))
 """
     Extra{T}(name::T)
 
-A key in a `FlexiChain` that is not a parameter. The name of the key itself can be of any
-type and is not constrained by the type of the `FlexiChain`.
+A key in a `FlexiChain` that is not a parameter. This is used to store per-draw information,
+such as the log-density associated with the draw.
+
+Unlike `Parameter`, which must follow the key type of the `FlexiChain`, there is no
+constraint on the type of an `Extra`. That is to say, a `FlexiChain{TKey}` can have *any*
+`Extra` key, regardless of what type the `Extra` wraps. However, in practice, `Extra`s will
+typically wrap `Symbol`s.
+
+To obtain the name of a `Extra`, use [`FlexiChains.get_name`](@ref).
 """
 struct Extra{T}
     name::T

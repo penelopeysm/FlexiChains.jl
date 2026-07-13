@@ -1,4 +1,4 @@
-# Public API
+# API
 
 The types and functions documented on this page form part of FlexiChains's public API.
 
@@ -47,6 +47,15 @@ Note that, although the dictionaries themselves may have loose types, the key ty
 `FlexiSummary` objects should always be constructed by summarising a `FlexiChain`.
 If for some reason you need to construct one from scratch, please refer to the source code (and do let me know, so that I can make this part of the public API).
 
+## Parameters and Extras
+
+```@docs
+FlexiChains.Parameter
+FlexiChains.Extra
+FlexiChains.ParameterOrExtra
+FlexiChains.get_name
+```
+
 ## Equality
 
 ```@docs
@@ -78,10 +87,6 @@ FlexiChains.renumber_chains
 ## Key types
 
 ```@docs
-FlexiChains.Parameter
-FlexiChains.Extra
-FlexiChains.get_name
-FlexiChains.ParameterOrExtra
 FlexiChains.Prefixed
 ```
 
@@ -99,7 +104,7 @@ Base.pairs(::FlexiChains.ChainOrSummary)
 
 ## Indexing by key
 
-For the public interface of `getindex`, please see [the Indexing page](@ref Indexing).
+For the public interface of `getindex`, please see [the Indexing page](@ref indexing).
 
 ## Accessing metadata
 
@@ -147,7 +152,6 @@ DynamicPPL.pointwise_logdensities
 DynamicPPL.pointwise_loglikelihoods
 DynamicPPL.pointwise_prior_logdensities
 DynamicPPL.InitFromParams
-MCMCChains.Chains
 AbstractMCMC.from_samples
 AbstractMCMC.to_samples
 ```

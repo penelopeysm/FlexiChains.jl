@@ -1,6 +1,6 @@
 module FlexiChainsMCMCChainsExt
 
-using FlexiChains: FlexiChains, FlexiChain, VarName, AbstractPPL
+using FlexiChains: FlexiChains, FlexiChain, VarName, AbstractPPL, Parameter, Extra
 using MCMCChains: MCMCChains
 using OrderedCollections: OrderedDict, OrderedSet
 
@@ -15,43 +15,51 @@ const MCSamplerStateKey = :samplerstate
 ##############################
 
 """
-    FlexiChain{Symbol}(chains::MCMCChains.Chains)
+    FlexiChains.from_mcmcchains(chains::MCMCChains.Chains, key_spec=nothing)
 
-Convert an `MCMCChains.Chains` object to a `FlexiChain{Symbol}`.
+Convert an `MCMCChains.Chains` object to a `FlexiChain`.
 
-Parameters in the `:parameters` section of the `Chains` are stored as `Parameter{Symbol}`
-keys, while parameters in all other sections (e.g. `:internals`) are stored as `Extra` keys.
+If `key_spec` is not provided, parameters in the `:parameters` section are stored as
+`Parameter{Symbol}` keys and all other sections (e.g. `:internals`) as `Extra{Symbol}` keys,
+giving a `FlexiChain{Symbol}`.
 
-Iteration indices, chain indices, and per-chain sampling times are preserved where possible.
+If `key_spec` is provided, it is passed directly to the `FlexiChain` from-array constructor.
+The key type of the resulting `FlexiChain` is inferred from `key_spec`. You can pass this
+argument if you want to override the parameter names stored in the `MCMCChains.Chains`
+object, or to group array-valued parameters together, for example.
+
+Please see [the `FlexiChain` constructor documentation](@ref
+FlexiChains.FlexiChain(::AbstractArray{T,3}, key_spec) where {T}) for details on what
+`key_spec` is allowed.
+
+Iteration indices, chain indices, and per-chain sampling times are inherited from the
+`MCMCChains.Chains` object. If the `MCMCChains.Chains` object contains a `samplerstate`
+field in its `info` NamedTuple, this is also preserved in the resulting FlexiChain.
 """
-function FlexiChains.FlexiChain{Symbol}(chains::MCMCChains.Chains)
+function FlexiChains.from_mcmcchains(
+    chains::MCMCChains.Chains,
+    key_spec::Union{Nothing,Tuple}=nothing,
+)
     ni, _, nc = size(chains)
-    iter_indices = Base.range(chains)
-    chain_indices = MCMCChains.chains(chains) # bizarre function name, yeah
+    # MCMCChains stores data as (niters, nparams, nchains); the FlexiChain from-array
+    # constructor expects (niters, nchains, nparams).
+    arr = permutedims(chains.value.data, (1, 3, 2))
 
-    data = OrderedDict{FlexiChains.ParameterOrExtra{Symbol},Matrix}()
-
-    # Parameters section
-    param_names = if haskey(chains.name_map, :parameters)
-        chains.name_map[:parameters]
-    else
-        Symbol[]
-    end
-    for name in param_names
-        var_idx = findfirst(==(name), Base.names(chains))
-        var_idx === nothing && continue
-        data[FlexiChains.Parameter(name)] = chains.value.data[:, var_idx, :]
-    end
-
-    # All other sections become Extras.
-    for section in keys(chains.name_map)
-        section === :parameters && continue
-        for name in chains.name_map[section]
-            var_idx = findfirst(==(name), Base.names(chains))
-            var_idx === nothing && continue
-            data[FlexiChains.Extra(name)] = chains.value.data[:, var_idx, :]
+    # If no key_spec is provided, build one from the MCMCChains name_map. The :parameters
+    # section becomes Parameter keys, everything else becomes Extra keys.
+    if key_spec === nothing
+        param_names = get(chains.name_map, :parameters, Symbol[])
+        other_names = Iterators.flatmap(keys(chains.name_map)) do section
+            section === :parameters ? Symbol[] : chains.name_map[section]
         end
+        key_spec = tuple(
+            (Parameter(n) for n in param_names)...,
+            (Extra(n) for n in other_names)...,
+        )
     end
+
+    iter_indices = collect(Int, Base.range(chains))
+    chain_indices = collect(Int, MCMCChains.chains(chains))  # bizarre function name, yeah
 
     # Attempt to determine whether the chain was constructed with `sample(model, spl, N)` or
     # `sample(model, spl, MCMCThreads(), N, M)`. This affects whether the metadata is
@@ -89,15 +97,35 @@ function FlexiChains.FlexiChain{Symbol}(chains::MCMCChains.Chains)
         fill(missing, nc)
     end
 
-    return FlexiChains.FlexiChain{Symbol}(
-        ni,
-        nc,
-        data;
+    TKey = _infer_key_type(key_spec)
+    return FlexiChain{TKey}(
+        arr,
+        key_spec;
         iter_indices=iter_indices,
         chain_indices=chain_indices,
         sampling_time=sampling_time,
         last_sampler_state=last_sampler_state,
     )
+end
+
+function _infer_key_type(key_spec::Tuple)
+    T = Union{}
+    for k in key_spec
+        key = k isa Pair ? first(k) : k
+        if key isa Parameter
+            T = typejoin(T, typeof(key).parameters[1])
+        end
+    end
+    return T
+end
+
+# I can't seem to get Base.@deprecate to work
+function FlexiChains.FlexiChain{Symbol}(chains::MCMCChains.Chains)
+    Base.depwarn(
+        "`FlexiChain{Symbol}(chains::MCMCChains.Chains)` is deprecated, use `FlexiChains.from_mcmcchains(chains)` instead.",
+        :FlexiChain,
+    )
+    return FlexiChains.from_mcmcchains(chains)
 end
 
 ############################

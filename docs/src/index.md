@@ -1,25 +1,83 @@
-# FlexiChains.jl
-
-**Rich, type-preserving storage for Markov chains.**
+# Overview
 
 FlexiChains.jl provides a rich data structure for storing and analysing Markov chain Monte Carlo (MCMC) output.
-Unlike traditional approaches that flatten everything to numeric arrays, FlexiChains preserves the original shapes of your parameters: all Julia types, most notably arrays, are stored without modification.
 
-Key features:
+```julia
+using Turing, FlexiChains
+@model function f()
+    x ~ Normal()
+    y ~ Poisson(3.0)
+    z ~ MvNormal([x + y, x - y], I)
+end
+chain = sample(f(), Prior(), MCMCSerial(), 1000, 4)
+```
 
-  - **Stores any Julia type.**
-    Scalars work, but so do vectors, matrices, and everything else.
+```@example splash
+# Avoid actually sampling with Turing! # hide
+using DynamicPPL, Distributions, LinearAlgebra # hide
+using FlexiChains # hide
+@model function f() # hide
+    x ~ Normal() # hide
+    y ~ Poisson(3.0) # hide
+    z ~ MvNormal([x + y, x - y], I) # hide
+end # hide
+chain = FlexiChains._make_prior_chain(f(), 1000, 4) # hide
+```
 
-  - **First-class Turing.jl integration.**
-    Simply add `chain_type=VNChain` to your `sample` call. (*Update:* As of Turing v0.45, FlexiChains is the default!)
+## Primary features
 
-  - **Powerful and expressive indexing.**
-    You can access parameters in a variety of ways, using the full power of DimensionalData.jl selectors.
+### Type and structure fidelity
 
-  - **Built-in plotting.**
-    Both Plots.jl and Makie.jl backends are supported (work in progress!).
+FlexiChains preserves the original shapes of your samples: all Julia types are faithfully stored without modification.
+The example Turing.jl model above yields a `FlexiChain` where each `x` is a Float64, each `y` is an Int, and each `z` is a `Vector{Float64}`.
 
-  - **Extensive integrations with other Julia packages.**
-    FlexiChains has a growing collection of package extensions to ensure maximum interoperability with the wider Julia ecosystem.
+This is in contrast to many other representations which flatten all samples into a single `Array{Float64}`.
 
-Read on to find out more!
+### Diverse input sources
+
+FlexiChains is the default chain type for [Turing.jl](@ref integrations-turing) since v0.45 of Turing.
+
+You can also construct a FlexiChain from a variety of other sources, including
+[ParallelMCMC.jl](@ref integrations-parallelmcmc),
+[Pigeons.jl](@ref integrations-pigeons),
+[Stan CSV files](@ref integrations-stan),
+[MCMCChains.jl](@ref integrations-mcmcchains),
+or [PosteriorDB.jl](@ref integrations-posteriordb).
+
+### Expressive indexing
+
+You can [access data stored in chains](@ref indexing) in a variety of ways, using the full power of DimensionalData.jl selectors.
+
+```@example splash
+chain[@varname(x), iter=101:End, chain=2]
+```
+
+### Downstream analysis
+
+FlexiChains provides a number of tools for statistical analysis, including:
+
+  - [simple statistics](@ref summarising) (mean, variance, quantiles, etc.)
+  - [MCMC diagnostics and statistics](@ref mcmc-diagnostics) via MCMCDiagnosticTools.jl and PosteriorStats.jl
+  - [LOO-CV](@ref integrations-posteriorstats) via PosteriorStats.jl and PSIS.jl
+
+```@example splash
+ss = summarystats(chain)
+```
+
+```@example splash
+ss[@varname(x), stat=At(:mean)]
+```
+
+For added versatility you can also [convert a FlexiChain into a `DimArray` or a `DataFrame`](@ref api-flatten).
+
+### Plotting
+
+Many visualisation functions with both [Makie.jl](@ref plotting-makie) and [Plots.jl](@ref plotting-plots) backends are provided, along with [a PairPlots.jl extension](@ref integrations-pairplots).
+
+```@example splash
+using PairPlots, CairoMakie
+pairplot(chain)
+Makie.save("index-pairplot.png", ans); # hide
+```
+
+![Pair plot of the sampled chain](index-pairplot.png)

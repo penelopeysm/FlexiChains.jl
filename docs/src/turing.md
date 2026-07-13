@@ -1,6 +1,10 @@
-# Usage with Turing.jl
+# [Turing.jl](@id integrations-turing)
+
+[Documentation for Turing.jl ↗](https://turinglang.org/docs)
 
 This page provides a fairly high-level overview of how to use FlexiChains with Turing.jl.
+
+If you have a previous workflow that uses MCMCChains.jl and want to find out how to update it, you might also be interested in [the MCMCChains migration guide](@ref migration).
 
 ## Sampling
 
@@ -32,7 +36,7 @@ sigma = [15, 10, 16, 11, 9, 11, 10, 18]
     return (mu=mu, tau=tau)
 end
 model = eight_schools(y, sigma)
-chain = sample(model, NUTS(), 5; chain_type=VNChain)
+chain = sample(model, NUTS(), 5)
 ```
 
 !!! note
@@ -81,7 +85,7 @@ chain[@varname(mu)]
 
     Indexing into a `FlexiChain` returns a [`DimensionalData.DimMatrix`](@extref DimensionalData DimArrays). This behaves exactly like a regular `Matrix`, but additionally carries extra information about its dimensions.
 
-    This allows you to keep track of what each dimension means, and also allows for more advanced indexing operations, which are described in [the 'indexing' page](./indexing.md).
+    This allows you to keep track of what each dimension means, and also allows for more advanced indexing operations, which are described in [the 'indexing' page](@ref indexing).
 
 For vector-valued parameters like `theta`, this works in exactly the same way, except that you get a `DimMatrix` of vectors.
 
@@ -127,7 +131,7 @@ You can also use selectors from DimensionalData.jl to specify which iterations o
 chain[@varname(mu), iter=Not(At(7)), chain=At(1)]
 ```
 
-The indexing behaviour of FlexiChains is described fully on [the Indexing page](./indexing.md).
+The indexing behaviour of FlexiChains is described fully on [the Indexing page](@ref indexing).
 
 ### Other keys
 
@@ -186,7 +190,7 @@ using FlexiChains: Prefixed, VNChain
     return nothing
 end
 
-pfx_chain = sample(outer(), MH(), 5; chain_type=VNChain)
+pfx_chain = sample(outer(), MH(), 5)
 
 # Inside the chain, the actual key is `@varname(a.x)`;
 # this will pick out that key.
@@ -292,14 +296,8 @@ or `dims=:chain` (although that is probably less useful).
 If you want to sample a fewer number of iterations first and then resume it later, you can use the following:
 
 ```@example 1
-chn1 = sample(model, NUTS(), 10; chain_type=VNChain, save_state=true)
-chn2 = sample(
-    model,
-    NUTS(),
-    10;
-    chain_type=VNChain,
-    initial_state=only(FlexiChains.last_sampler_state(chn1)),
-)
+chn1 = sample(model, NUTS(), 10; save_state=true)
+chn2 = sample(model, NUTS(), 10; initial_state=only(FlexiChains.last_sampler_state(chn1)))
 ```
 
 The chains can be combined using `vcat`:
@@ -327,8 +325,7 @@ Note that this is different from _resuming sampling_ from a saved sampler state,
 For example, to start a new chain from the fifth iteration and first chain contained inside `chain`, you can do
 
 ```@example 1
-chn3 =
-    sample(model, MH(), 5; chain_type=VNChain, initial_params=InitFromParams(chain, 5, 1))
+chn3 = sample(model, MH(), 5; initial_params=InitFromParams(chain, 5, 1))
 ```
 
 Since this only uses the parameters which are already part of the chain, this does not require you to use `save_state=true` for the original chain.

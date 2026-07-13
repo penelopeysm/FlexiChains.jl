@@ -56,6 +56,10 @@ include("plots/plots.jl")
 include("plots/makie.jl")
 include("plots/shims.jl")
 
+# Extended in MCMCChains extension
+function from_mcmcchains end
+@public from_mcmcchains
+
 # Extended in Pigeons extension
 function from_pigeons end
 @public from_pigeons
