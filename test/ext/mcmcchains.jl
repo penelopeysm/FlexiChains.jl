@@ -161,6 +161,24 @@ _make_sampler_state(n_chains) = [(; x="state_$i") for i in 1:n_chains]
             @test collect(FlexiChains.parameters(fc)) == [Symbol("p$i") for i in 1:nparams]
         end
 
+        @testset "with upconversion to VarName" begin
+            chn = _make_mcmcchains(Xoshiro(321), g(), 100, 1)
+            nparams = length(names(chn))
+            ks = (
+                Parameter(@varname(x)),
+                Parameter(@varname(y)) => (nparams - 2,),
+                Parameter(@varname(z[1])),
+            )
+            fc = FlexiChains.from_mcmcchains(chn, ks)
+            @test fc isa FlexiChain{VarName}
+            @test size(fc) == (size(chn, 1), size(chn, 3))
+            @test collect(FlexiChains.parameters(fc)) ==
+                  [@varname(x), @varname(y), @varname(z[1])]
+            @test eltype(fc[@varname(x)]) == Float64
+            @test eltype(fc[@varname(y)]) == Vector{Float64}
+            @test eltype(fc[@varname(z[1])]) == Float64
+        end
+
         @testset "deprecated constructor still works" begin
             chn = _make_mcmcchains(Xoshiro(654), g(), 50, 1)
             fc = @test_deprecated FlexiChain{Symbol}(chn)

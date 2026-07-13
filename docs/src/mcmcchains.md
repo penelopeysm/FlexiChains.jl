@@ -37,11 +37,17 @@ using FlexiChains: Parameter, Extra
 
 fc = FlexiChains.from_mcmcchains(
     mc,
-    (Parameter(:x), Parameter(:y), Parameter(:z) => (2,), Extra(:logp)),
+    (
+        Parameter(@varname(x)),
+        Parameter(@varname(y)),
+        Parameter(@varname(z)) => (2,),
+        Extra(:logp),
+    ),
 )
 ```
 
-By specifying the shape of `z` as `(2,)`, we can recover the vector structure of that parameter.
+By passing `VarName` parameters instead of `Symbol`s, we can 'upconvert' this into a `VNChain` rather than a `SymChain` (which is harder to index into, for example, if you want to get `z[1]`).
+Furthermore, by specifying the shape of `z` as `(2,)`, we can recover the vector structure of that parameter.
 In general array-valued parameters can be 'recovered' in this way, but more complicated structs cannot be.
 
 !!! warning "Order of parameters"
@@ -52,7 +58,7 @@ In general array-valued parameters can be 'recovered' in this way, but more comp
 After that, you might also want to convert `y` back into a Boolean:
 
 ```@example mcmcchains
-fc = FlexiChains.transform_values(fc, :y => Bool)
+fc = FlexiChains.transform_values(fc, @varname(y) => Bool)
 ```
 
 ## FlexiChain to MCMCChains
