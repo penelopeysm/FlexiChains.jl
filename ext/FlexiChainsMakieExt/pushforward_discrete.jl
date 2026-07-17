@@ -123,13 +123,13 @@ function FC.Makie.pushforward_discrete!(
     end
     ticks = (1:length(ks), kstrs)
     if vertical
-        ax.xticks = ticks
-        ax.xlabel = "parameter"
-        ax.ylabel = "value"
+        ax.xticks = isempty(ax.xticks[]) ? ticks : ax.xticks[]
+        ax.xlabel = isempty(ax.xlabel[]) ? "parameter" : ax.xlabel[]
+        ax.ylabel = isempty(ax.ylabel[]) ? "value" : ax.ylabel[]
     else
-        ax.yticks = ticks
-        ax.xlabel = "value"
-        ax.ylabel = "parameter"
+        ax.yticks = isempty(ax.yticks[]) ? ticks : ax.yticks[]
+        ax.xlabel = isempty(ax.xlabel[]) ? "value" : ax.xlabel[]
+        ax.ylabel = isempty(ax.ylabel[]) ? "parameter" : ax.ylabel[]
     end
     return _plot_pushforward_discrete!(ax, data; vertical, kwargs...)
 end
