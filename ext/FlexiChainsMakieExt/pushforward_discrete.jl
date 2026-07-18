@@ -1,3 +1,11 @@
+function _default_pushforward_discrete_axis(vertical)
+    if vertical
+        (; xlabel="parameter", ylabel="value")
+    else
+        (; xlabel="value", ylabel="parameter")
+    end
+end
+
 function _pushforward_discrete_bands(data, quantiles, baseline, residual)
     isodd(length(quantiles)) || throw(ArgumentError("`quantiles` must have odd length"))
     n = length(data)
@@ -97,11 +105,12 @@ function FC.Makie.pushforward_discrete(
     param;
     figure=(;),
     axis=(;),
+    vertical::Bool=true,
     kwargs...,
 )
     fig = isempty(figure) ? Figure() : Figure(; figure...)
-    ax = Makie.Axis(fig[1, 1]; axis...)
-    _, p = FC.Makie.pushforward_discrete!(ax, chn, param; kwargs...)
+    ax = Makie.Axis(fig[1, 1]; _default_pushforward_discrete_axis(vertical), axis...)
+    _, p = FC.Makie.pushforward_discrete!(ax, chn, param; vertical, kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
 end
 
@@ -124,12 +133,8 @@ function FC.Makie.pushforward_discrete!(
     ticks = (1:length(ks), kstrs)
     if vertical
         ax.xticks = ax.xticks[] === Makie.automatic ? ticks : ax.xticks[]
-        ax.xlabel = isempty(ax.xlabel[]) ? "parameter" : ax.xlabel[]
-        ax.ylabel = isempty(ax.ylabel[]) ? "value" : ax.ylabel[]
     else
-        ax.yticks = ax.xticks[] === Makie.automatic ? ticks : ax.yticks[]
-        ax.xlabel = isempty(ax.xlabel[]) ? "value" : ax.xlabel[]
-        ax.ylabel = isempty(ax.ylabel[]) ? "parameter" : ax.ylabel[]
+        ax.yticks = ax.yticks[] === Makie.automatic ? ticks : ax.yticks[]
     end
     return _plot_pushforward_discrete!(ax, data; vertical, kwargs...)
 end
