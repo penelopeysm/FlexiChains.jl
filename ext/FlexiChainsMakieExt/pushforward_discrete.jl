@@ -123,11 +123,11 @@ function FC.Makie.pushforward_discrete!(
     end
     ticks = (1:length(ks), kstrs)
     if vertical
-        ax.xticks = isempty(ax.xticks[]) ? ticks : ax.xticks[]
+        ax.xticks = ax.xticks[] === Makie.automatic ? ticks : ax.xticks[]
         ax.xlabel = isempty(ax.xlabel[]) ? "parameter" : ax.xlabel[]
         ax.ylabel = isempty(ax.ylabel[]) ? "value" : ax.ylabel[]
     else
-        ax.yticks = isempty(ax.yticks[]) ? ticks : ax.yticks[]
+        ax.yticks = ax.xticks[] === Makie.automatic ? ticks : ax.yticks[]
         ax.xlabel = isempty(ax.xlabel[]) ? "value" : ax.xlabel[]
         ax.ylabel = isempty(ax.ylabel[]) ? "parameter" : ax.ylabel[]
     end
