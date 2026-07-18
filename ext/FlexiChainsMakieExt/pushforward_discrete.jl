@@ -109,7 +109,7 @@ function FC.Makie.pushforward_discrete(
     kwargs...,
 )
     fig = isempty(figure) ? Figure() : Figure(; figure...)
-    ax = Makie.Axis(fig[1, 1]; _default_pushforward_discrete_axis(vertical), axis...)
+    ax = Makie.Axis(fig[1, 1]; _default_pushforward_discrete_axis(vertical)..., axis...)
     _, p = FC.Makie.pushforward_discrete!(ax, chn, param; vertical, kwargs...)
     return Makie.FigureAxisPlot(fig, ax, p)
 end
