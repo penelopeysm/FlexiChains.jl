@@ -1,3 +1,7 @@
+# 0.6.32
+
+Fixed a bug where `pushforward_discrete` would override user-specified axis attributes for `xticks`, or `yticks` (depending on whether `vertical == true`), `xlabel`, and `ylabel`.
+
 # 0.6.31
 
 Improved the resulting key type when attempting to construct `VNChain`s from `FlexiChains.from_mcmcchains`, `FlexiChains.map_keys`, or `FlexiChains.map_parameters`.
