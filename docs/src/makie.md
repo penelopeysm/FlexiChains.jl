@@ -326,7 +326,8 @@ FM.pushforward_hist(
 We may also be interested in how predicted bill length changes with increasing body mass, and how this varies by species.
 For this, we can make use of [`pushforward_continuous`](@ref FlexiChains.Makie.pushforward_continuous) by feeding it a grid of body mass values.
 
-In the example below, we have set `sigma = 0` to drop the predictive uncertainty; we're interested only in the uncertainty of the means here.
+In the example below, we plot `mu` instead of the predicted values for `bill_length_mm`.
+This drops the predictive uncertainty; we're interested only in the uncertainty of the means here.
 
 ```@example pushforward
 # Set up the grid of body mass values and species indices
@@ -335,7 +336,7 @@ pred_species = repeat(1:3, inner=50)
 
 # For each draw of the parameters in the chain, compute the predicted
 # bill length for each combination of species and body mass.
-pred_model = fix(bill_model(pred_species, pred_body_mass), (; sigma=0))
+pred_model = bill_model(pred_species, pred_body_mass)
 pred = predict(pred_model, chain)
 
 # Unstandardise the predicted means
