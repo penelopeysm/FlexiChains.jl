@@ -281,7 +281,7 @@ species_names = sort(unique(penguins[!, [:species, :species_idx]]), :species_idx
     beta2 ~ Normal(0, 1)
     beta3 ~ filldist(Normal(0, 1), n_species)
     sigma ~ Exponential(1)
-    mu := @. beta1[species] + beta2 * body_mass + beta3[species] * body_mass
+    mu = @. beta1[species] + beta2 * body_mass + beta3[species] * body_mass
     bill_length_mm ~ MvNormal(mu, sigma)
 end
 nothing # hide
@@ -326,8 +326,7 @@ FM.pushforward_hist(
 We may also be interested in how predicted bill length changes with increasing body mass, and how this varies by species.
 For this, we can make use of [`pushforward_continuous`](@ref FlexiChains.Makie.pushforward_continuous) by feeding it a grid of body mass values.
 
-In the example below, we plot `mu` instead of the predicted values for `bill_length_mm`.
-This drops the predictive uncertainty; we're interested only in the uncertainty of the means here.
+In the example below, we have set `sigma = 0` to drop the predictive uncertainty; we're interested only in the uncertainty of the means here.
 
 ```@example pushforward
 # Set up the grid of body mass values and species indices
@@ -336,12 +335,12 @@ pred_species = repeat(1:3, inner=50)
 
 # For each draw of the parameters in the chain, compute the predicted
 # bill length for each combination of species and body mass.
-pred_model = bill_model(pred_species, pred_body_mass)
+pred_model = fix(bill_model(pred_species, pred_body_mass), (; sigma=0))
 pred = predict(pred_model, chain)
 
 # Unstandardise the predicted means
 using FlexiChains: transform_values
-pred = transform_values(pred, :mu => (v -> reconstruct(bill_zs, v)))
+pred = transform_values(pred, :bill_length_mm => (v -> reconstruct(bill_zs, v)))
 
 # Plot the predicted means with uncertainty bands, coloured by species.
 fig = Figure()
@@ -350,7 +349,7 @@ colors = Makie.wong_colors()[1:3]
 for (s, color) in enumerate(colors)
     ix = findall(==(s), pred_species)
     x_grid = reconstruct(mass_zs, pred_body_mass[ix])
-    FM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid=x_grid, color=color)
+    FM.pushforward_continuous!(ax, pred, @varname(bill_length_mm[ix]); x_grid=x_grid, color=color)
 end
 axislegend(ax, [PolyElement(; color=c) for c in colors], species_names; position=:lt)
 
