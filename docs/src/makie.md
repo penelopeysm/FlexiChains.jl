@@ -281,7 +281,7 @@ species_names = sort(unique(penguins[!, [:species, :species_idx]]), :species_idx
     beta2 ~ Normal(0, 1)
     beta3 ~ filldist(Normal(0, 1), n_species)
     sigma ~ Exponential(1)
-    mu := @. beta1[species] + beta2 * body_mass + beta3[species] * body_mass
+    mu = @. beta1[species] + beta2 * body_mass + beta3[species] * body_mass
     bill_length_mm ~ MvNormal(mu, sigma)
 end
 nothing # hide
@@ -340,7 +340,7 @@ pred = predict(pred_model, chain)
 
 # Unstandardise the predicted means
 using FlexiChains: transform_values
-pred = transform_values(pred, :mu => (v -> reconstruct(bill_zs, v)))
+pred = transform_values(pred, :bill_length_mm => (v -> reconstruct(bill_zs, v)))
 
 # Plot the predicted means with uncertainty bands, coloured by species.
 fig = Figure()
@@ -349,7 +349,13 @@ colors = Makie.wong_colors()[1:3]
 for (s, color) in enumerate(colors)
     ix = findall(==(s), pred_species)
     x_grid = reconstruct(mass_zs, pred_body_mass[ix])
-    FM.pushforward_continuous!(ax, pred, @varname(mu[ix]); x_grid=x_grid, color=color)
+    FM.pushforward_continuous!(
+        ax,
+        pred,
+        @varname(bill_length_mm[ix]);
+        x_grid=x_grid,
+        color=color,
+    )
 end
 axislegend(ax, [PolyElement(; color=c) for c in colors], species_names; position=:lt)
 
