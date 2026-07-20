@@ -349,7 +349,13 @@ colors = Makie.wong_colors()[1:3]
 for (s, color) in enumerate(colors)
     ix = findall(==(s), pred_species)
     x_grid = reconstruct(mass_zs, pred_body_mass[ix])
-    FM.pushforward_continuous!(ax, pred, @varname(bill_length_mm[ix]); x_grid=x_grid, color=color)
+    FM.pushforward_continuous!(
+        ax,
+        pred,
+        @varname(bill_length_mm[ix]);
+        x_grid=x_grid,
+        color=color,
+    )
 end
 axislegend(ax, [PolyElement(; color=c) for c in colors], species_names; position=:lt)
 
