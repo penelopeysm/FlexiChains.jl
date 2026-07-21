@@ -3,7 +3,7 @@ function _default_violin_axis()
 end
 
 const _DEFAULT_BOXPLOT_KWARGS =
-    (color=(:gray, 0.8), strokecolor=:black, strokewidth=1, mediancolor=:white, width=0.3)
+    (color=(:gray, 0.8), strokecolor=:black, strokewidth=1, mediancolor=:black, width=0.3)
 
 """
     Makie.violin(
