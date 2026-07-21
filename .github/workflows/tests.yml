@@ -50,7 +50,7 @@ jobs:
 
       - uses: julia-actions/cache@a45e8fa8be21c18a06b7177052533149e61e9b38 # 3.1.0
 
-      - uses: julia-actions/julia-runtest@fc07e51ec99db23b29943e95406b5762501e2897 # 1.11.5
+      - uses: julia-actions/julia-runtest@6e050c8013b833b1195105ff2fce9cd802f53271 # 1.12.0
         env:
           # Only run Aqua tests on latest version
           AQUA: ${{ matrix.runner.version == '1' && 'true' || 'false' }}
