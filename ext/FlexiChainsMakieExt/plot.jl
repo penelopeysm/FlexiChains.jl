@@ -38,7 +38,7 @@ function Makie.plot(
         k = keys_to_plot[key_index]
         kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
         if i % 2 == 1
-            a, p = FC.mtraceplot!(
+            a, p = FC.Makie.traceplot!(
                 Makie.Axis(
                     figure[row, col];
                     _default_traceplot_axis()...,

@@ -173,6 +173,8 @@ const REFTEST_SPECS = [
             levels=(0.5, 0.95),
         ),
     ),
+    RefTestSpec(MakieBE(), "mviolinplot", () -> Makie.violin(chn)),
+    RefTestSpec(MakieBE(), "mviolinplotwbox", () -> Makie.violin(chn; with_box=true)),
 
     # PlotsExt
     RefTestSpec(PlotsBE(), "traceplot", () -> FC.Plots.traceplot(chn)),

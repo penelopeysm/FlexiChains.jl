@@ -16,8 +16,7 @@ const MAKIE_KWARGS_DOCSTRING = """
 - `legend_position::Symbol`: Position of the legend. This can be either `:right`, `:bottom` or `:none` for no legend.
 - `layout`: either `nothing` (the default), or a tuple of `(nrows, ncols)` specifying the grid layout for the subplots.
 
-Extra keyword arguments are passed to Makie's plotting functions, which allow you to
-customise the appearance of the plot.
+All other keyword arguments are passed to the original Makie plotting function.
 """
 
 """
@@ -136,5 +135,6 @@ include("FlexiChainsMakieExt/autocorplot.jl")
 include("FlexiChainsMakieExt/rankplot.jl")
 include("FlexiChainsMakieExt/forestplot.jl")
 include("FlexiChainsMakieExt/ridgeline.jl")
+include("FlexiChainsMakieExt/violin.jl")
 
 end
