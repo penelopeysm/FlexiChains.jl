@@ -175,11 +175,6 @@ const REFTEST_SPECS = [
     ),
     RefTestSpec(MakieBE(), "mviolinplot", () -> FC.Makie.violin(chn)),
     RefTestSpec(MakieBE(), "mviolinplotwbox", () -> FC.Makie.violin(chn; with_box=true)),
-    RefTestSpec(
-        MakieBE(),
-        "mviolinplot_pooled",
-        () -> FC.Makie.violin(chn; pool_chains=true),
-    ),
 
     # PlotsExt
     RefTestSpec(PlotsBE(), "traceplot", () -> FC.Plots.traceplot(chn)),

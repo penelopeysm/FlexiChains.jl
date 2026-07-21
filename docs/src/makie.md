@@ -196,6 +196,19 @@ Makie.save("rankplot_makie.png", ans.figure); # hide
 
 ![Rank plots of the sampled chain](rankplot_makie.png)
 
+## Violin plots
+
+```@docs
+Makie.violin
+```
+
+```@example 1
+Makie.violin(chn; with_box=true)
+Makie.save("violin_makie.png", ans.figure); # hide
+```
+
+![Violin plots of the sampled chain](violin_makie.png)
+
 ## Forest plots
 
 !!! info "Half-eye plots"

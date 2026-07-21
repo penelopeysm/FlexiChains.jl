@@ -1,3 +1,7 @@
+# 0.6.33
+
+Implemented `Makie.violin` on FlexiChains.
+
 # 0.6.32
 
 Fixed a bug where `pushforward_discrete` would override user-specified axis attributes for `xticks`, or `yticks` (depending on whether `vertical == true`), `xlabel`, and `ylabel`.
