@@ -3,7 +3,7 @@ function _default_violin_axis()
 end
 
 """
-    FlexiChains.Makie.violin(
+    Makie.violin(
         chn::FC.FlexiChain[, param_or_params];
         pool_chains::Bool=false,
         with_box::Bool=false,
@@ -12,7 +12,7 @@ end
 
 Create violin plots for the specified parameters in the chain.
 
-$(FC.PlotUtils._PARAM_DOCSTRING("FlexiChains.Makie.violin"))
+$(FC.PlotUtils._PARAM_DOCSTRING("Makie.violin"))
 
 # Keyword arguments
 
@@ -21,7 +21,7 @@ $(FC.PlotUtils._PARAM_DOCSTRING("FlexiChains.Makie.violin"))
 
 $(MAKIE_KWARGS_DOCSTRING)
 """
-function FC.Makie.violin(
+function Makie.violin(
     chn::FC.FlexiChain,
     param_or_params=FC.Parameter.(FC.parameters(chn));
     pool_chains::Bool=false,
@@ -42,7 +42,7 @@ function FC.Makie.violin(
     indices = Iterators.product(1:ncols, 1:nrows)
     for ((col, row), k) in zip(indices, keys_to_plot)
         kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
-        a, p = FC.Makie.violin!(
+        a, p = Makie.violin!(
             Makie.Axis(fig[row, col]; _default_violin_axis()..., title=kstr, axis...),
             FC.PlotUtils.FlexiChainViolin(chn, k, pool_chains, with_box);
             kwargs...,
@@ -58,11 +58,11 @@ end
 ########################
 # Single axis plotting #
 ########################
-function FC.Makie.violin(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
+function Makie.violin(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), kwargs...)
     chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
     kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
-    return FC.Makie.violin!(
+    return Makie.violin!(
         Makie.Axis(grid; _default_violin_axis()..., title=kstr, axis...),
         chn,
         param;
@@ -70,7 +70,7 @@ function FC.Makie.violin(grid::MakieGrids, chn::FC.FlexiChain, param; axis=(;), 
     )
 end
 
-function FC.Makie.violin!(
+function Makie.violin!(
     ax::Makie.Axis,
     chn::FC.FlexiChain,
     param;
@@ -81,7 +81,7 @@ function FC.Makie.violin!(
     chn, plot_names = FC.PlotUtils.subset_and_split_chain(chn, param)
     k = only(keys(chn))
     kstr = FC.PlotUtils.get_plot_param_name(k, plot_names)
-    a, p = FC.Makie.violin!(
+    a, p = Makie.violin!(
         ax,
         FC.PlotUtils.FlexiChainViolin(chn, k, pool_chains, with_box);
         kwargs...,
@@ -89,14 +89,14 @@ function FC.Makie.violin!(
     return Makie.AxisPlot(a, p)
 end
 
-function FC.Makie.violin!(chn::FC.FlexiChain, param; kwargs...)
-    return FC.Makie.violin!(Makie.current_axis(), chn, param; kwargs...)
+function Makie.violin!(chn::FC.FlexiChain, param; kwargs...)
+    return Makie.violin!(Makie.current_axis(), chn, param; kwargs...)
 end
 
 """
 This is the actual function that does the violin plotting.
 """
-function FC.Makie.violin!(ax::Makie.Axis, v::FC.PlotUtils.FlexiChainViolin; kwargs...)
+function Makie.violin!(ax::Makie.Axis, v::FC.PlotUtils.FlexiChainViolin; kwargs...)
     y = FC._get_raw_data(v.chn, v.param)
     FC.PlotUtils.check_eltype_is_real(y)
     nchains = FC.nchains(v.chn)
