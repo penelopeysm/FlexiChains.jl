@@ -17,9 +17,8 @@ updates:
       all-julia-packages:
         patterns:
           - "*"
-
-ignore:
-  # requires DynamicPPL@0.42 which fails with PigeonsExt
-  # anyway Turing shouldn't be a dep in either docs or tests, it should be nuked
-  - dependency-name: "Turing"
-    versions: [ ">=0.46" ]
+    ignore:
+      # requires DynamicPPL@0.42 which fails with PigeonsExt
+      # anyway Turing shouldn't be a dep in either docs or tests, it should be nuked
+      - dependency-name: "Turing"
+        versions: [ ">=0.46" ]
