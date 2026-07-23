@@ -13,8 +13,6 @@ Pkg.add("FlexiChains")
 ```
 
 > [!TIP]
->
-> ## How you can help
 > 
 > **Issues and requests for new functionality are more than welcome!**
 > Please don't hesitate to [open an issue](https://github.com/penelopeysm/FlexiChains.jl/issues) if you have any questions or suggestions.
