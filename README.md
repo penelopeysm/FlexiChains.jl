@@ -5,28 +5,23 @@
   <p><a href="https://pysm.dev/FlexiChains.jl/stable"><b>Documentation</b></a></p>
 </div>
 
+> [!NOTE]
+> 
+> **Issues and requests for new functionality are more than welcome!**
+> Please don't hesitate to [open an issue](https://github.com/penelopeysm/FlexiChains.jl/issues) if you have any questions or suggestions.
+> 
+> In particular, I'm very interested in integrating FlexiChains with other packages, which can either be input sources (i.e., packages that generate MCMC samples) or output sinks (i.e., visualisation or analysis packages).
+> This allows improvements to be shared across the entire ecosystem.
+> If you know of a package that would benefit from FlexiChains integration, do get in touch!
+
+# Quickstart
+
 ## Installation
 
 ```julia
 import Pkg
 Pkg.add("FlexiChains")
 ```
-
-## Documentation
-
-The README contains a quickstart guide below, and the [online documentation](https://pysm.dev/FlexiChains.jl/stable/) contains much more detail on how to use FlexiChains.
-Please do check it out!
-
-## How you can help
-
-**Issues and requests for new functionality are more than welcome!**
-Please don't hesitate to [open an issue](https://github.com/penelopeysm/FlexiChains.jl/issues) if you have any questions or suggestions.
-
-In particular, I'm very interested in integrating FlexiChains with other packages, which can either be input sources (i.e., packages that generate MCMC samples) or output sinks (i.e., visualisation or analysis packages).
-This allows improvements to be shared across the entire ecosystem.
-If you know of a package that would benefit from FlexiChains integration, do get in touch!
-
-# Quickstart
 
 ## Obtaining a chain
 
@@ -171,7 +166,7 @@ plot(chain, [@varname(z)])     # z[1] and z[2] only
 ```
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/penelopeysm/FlexiChains.jl/refs/heads/img/readme-default-plot.png" width="500" alt="Trace/density plot of z in the FlexiChain sampled above"></img>
+<img src="https://raw.githubusercontent.com/penelopeysm/FlexiChains.jl/refs/heads/readme-images/readme-default-plot.png" width="500" alt="Trace/density plot of z in the FlexiChain sampled above"></img>
 </div>
 
 Specialised MCMC plots are namespaced under the `FlexiChains.Makie` module:
@@ -182,7 +177,7 @@ FM.meanplot(chain; layout=(2, 2)) # Running mean plot, with custom grid layout
 ```
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/penelopeysm/FlexiChains.jl/refs/heads/img/readme-meanplot.png" width="500" alt="Running mean plot of the FlexiChain sampled above"></img>
+<img src="https://raw.githubusercontent.com/penelopeysm/FlexiChains.jl/refs/heads/readme-images/readme-meanplot.png" width="500" alt="Running mean plot of the FlexiChain sampled above"></img>
 </div>
 
 Pair plots can be generated with the [PairPlots.jl extension](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-pairplots):
@@ -193,7 +188,7 @@ pairplot(chain)
 ```
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/penelopeysm/FlexiChains.jl/refs/heads/img/readme-pairplot.png" width="500" alt="Pair plot of the FlexiChain sampled above"></img>
+<img src="https://raw.githubusercontent.com/penelopeysm/FlexiChains.jl/refs/heads/readme-images/readme-pairplot.png" width="500" alt="Pair plot of the FlexiChain sampled above"></img>
 </div>
 
 The interface to Plots.jl is similar:
