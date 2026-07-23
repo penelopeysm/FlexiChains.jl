@@ -5,7 +5,7 @@
   <p><a href="https://pysm.dev/FlexiChains.jl/stable"><b>Documentation</b></a></p>
 </div>
 
-> [!TIP]
+> [!NOTE]
 > 
 > **Issues and requests for new functionality are more than welcome!**
 > Please don't hesitate to [open an issue](https://github.com/penelopeysm/FlexiChains.jl/issues) if you have any questions or suggestions.
