@@ -5,13 +5,6 @@
   <p><a href="https://pysm.dev/FlexiChains.jl/stable"><b>Documentation</b></a></p>
 </div>
 
-## Installation
-
-```julia
-import Pkg
-Pkg.add("FlexiChains")
-```
-
 > [!TIP]
 > 
 > **Issues and requests for new functionality are more than welcome!**
@@ -22,6 +15,13 @@ Pkg.add("FlexiChains")
 > If you know of a package that would benefit from FlexiChains integration, do get in touch!
 
 # Quickstart
+
+## Installation
+
+```julia
+import Pkg
+Pkg.add("FlexiChains")
+```
 
 ## Obtaining a chain
 
