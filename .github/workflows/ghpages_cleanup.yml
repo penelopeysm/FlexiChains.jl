@@ -1,0 +1,65 @@
+name: Clean up gh-pages
+
+on:
+  schedule:
+    - cron: '51 3 * * 1'  # weekly at a time when I'm hopefully sleeping
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+        with:
+          ref: gh-pages
+
+      - name: Remove previews for closed PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -d "previews" ]; then
+            echo "No previews directory found"
+            exit 0
+          fi
+
+          # Fetch open PR numbers (the result has numbers separated by newlines)
+          open_prs=$(gh pr list --state open --json number --jq '.[].number')
+
+          to_remove=()
+          for dir in previews/PR*/; do
+            [ -d "$dir" ] || continue
+            pr_num=$(basename "$dir" | sed 's/^PR//')
+
+            # grep -x forces output to match the whole line
+            if ! echo "$open_prs" | grep -qx "$pr_num"; then
+              to_remove+=("$dir")
+            fi
+          done
+
+          if [ ${#to_remove[@]} -eq 0 ]; then
+            echo "No stale previews found"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for dir in "${to_remove[@]}"; do
+            echo "Removing $dir"
+            git rm -rf "$dir"
+          done
+          git commit -m "Remove stale docs previews"
+
+      - name: Squash git history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan fresh-gh-pages
+          git add -A
+          git commit -m "gh-pages (squashed)"
+          git branch -D gh-pages
+          git branch -m gh-pages
+          git push origin gh-pages --force
