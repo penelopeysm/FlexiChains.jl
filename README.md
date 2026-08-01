@@ -6,10 +6,10 @@
 </div>
 
 > [!NOTE]
-> 
+>
 > **Issues and requests for new functionality are more than welcome!**
 > Please don't hesitate to [open an issue](https://github.com/penelopeysm/FlexiChains.jl/issues) if you have any questions or suggestions.
-> 
+>
 > In particular, I'm very interested in integrating FlexiChains with other packages, which can either be input sources (i.e., packages that generate MCMC samples) or output sinks (i.e., visualisation or analysis packages).
 > This allows improvements to be shared across the entire ecosystem.
 > If you know of a package that would benefit from FlexiChains integration, do get in touch!

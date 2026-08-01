@@ -326,8 +326,8 @@ using Chairmarks: @be
 
 function benchmark(N)
     model = (longvec(N) | (y=rand(Xoshiro(468), Normal(2.0), N),))
-    mchain = sample(Xoshiro(468), model, NUTS(), 500; chain_type=MCMCChains.Chains);
-    fchain = sample(Xoshiro(468), model, NUTS(), 500; chain_type=FlexiChains.VNChain);
+    mchain = sample(Xoshiro(468), model, NUTS(), 500; chain_type=MCMCChains.Chains)
+    fchain = sample(Xoshiro(468), model, NUTS(), 500; chain_type=FlexiChains.VNChain)
     mt = @be predict(longvec(N), mchain)
     ft = @be predict(longvec(N), fchain)
     return (N=N, mcmcchains=median(mt).time, flexichains=median(ft).time)
