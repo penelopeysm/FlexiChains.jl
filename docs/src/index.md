@@ -65,7 +65,7 @@ ss = summarystats(chain)
 ```
 
 ```@example splash
-ss[@varname(x), stat=At(:mean)]
+ss[@varname(x), stat=:mean]
 ```
 
 For added versatility you can also [convert a FlexiChain into a `DimArray` or a `DataFrame`](@ref api-flatten).

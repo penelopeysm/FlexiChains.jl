@@ -229,12 +229,8 @@ ss[@varname(mu)]
 or to access an individual statistic
 
 ```@example 1
-ss[@varname(mu), stat=At(:mean)]
+ss[@varname(mu), stat=:mean]
 ```
-
-!!! note
-
-    Note that the `At` selector from DimensionalData.jl is needed here to specify the name of the statistic we're interested in.
 
 Alternatively, you can directly convert the `FlexiSummary` into an array and manipulate it as you would any other array.
 (Note that `Array(ss)` also works, but you lose the dimension information in that case.)

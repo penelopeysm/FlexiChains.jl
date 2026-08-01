@@ -140,7 +140,7 @@ This produces a `FlexiSummary` object with mean, standard deviation, Monte Carlo
 You can index into this much like a `FlexiChain`:
 
 ```julia
-ss[@varname(x), stat=At(:mean)]  # mean of `x`
+ss[@varname(x), stat=:mean]  # mean of `x`
 ```
 
 Or you can compute statistics directly with individual functions:
