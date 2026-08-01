@@ -1,3 +1,8 @@
+# 0.6.34
+
+Added a shorthand for `getindex` on `FlexiSummary`: `s[key, stat=:mystat]` is now equivalent to `s[key, stat=At(:mystat)]`.
+(The latter still works as usual.)
+
 # 0.6.33
 
 Implemented `Makie.violin` on FlexiChains.
