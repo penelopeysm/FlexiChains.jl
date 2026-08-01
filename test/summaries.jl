@@ -596,7 +596,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 Colon(),
                 FlexiChains._UNSPECIFIED_KWARG,
             ) == (chain=Colon(), stat=Colon())
-            # check that we can use DD lookups for the stat dimension
+            # check that we can use DD lookups and Symbol shorthand for the stat dimension
             @test fs[Parameter(@varname(x)), stat=DD.At(:mean)] isa Any
             @test fs[Parameter(@varname(x)), stat=:mean] ==
                   fs[Parameter(@varname(x)), stat=DD.At(:mean)]
