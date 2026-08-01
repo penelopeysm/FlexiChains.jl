@@ -29,7 +29,7 @@ const PU = FC.PlotUtils
     @testset "ensemble differs from pooled when chains differ" begin
         # Distinct per-chain distributions + an asymmetric level so the ensemble
         # estimate provably differs from a naive pooled quantile.
-        c1 = collect(1.0:100.0);
+        c1 = collect(1.0:100.0)
         c2 = collect(101.0:200.0)
         data = hcat(c1, c2)
         ensemble = PU.compute_quantile_bands(data, [0.25])
