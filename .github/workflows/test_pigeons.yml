@@ -35,7 +35,7 @@ jobs:
         with:
           version: ${{ matrix.version }}
 
-      - uses: julia-actions/cache@a45e8fa8be21c18a06b7177052533149e61e9b38 # 3.1.0
+      - uses: julia-actions/cache@b7788abd52452d5bc033d69796e110d9906af4ab # 3.2.0
 
       - run: |
           julia --project=. -e 'using Pkg; Pkg.instantiate()'
