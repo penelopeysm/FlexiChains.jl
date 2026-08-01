@@ -50,12 +50,14 @@ Notice that the string-valued parameter `s` has been dropped from the result, si
 You can index with a variable name (or names!) and the `stat` dimension:
 
 ```@example stats
-st[@varname(v[1]), stat=At(:mean)]  # Mean of first element of vector v
+st[@varname(v[1]), stat=:mean]  # Mean of first element of vector v
 ```
 
-!!! note "At()"
+!!! note "Named statistic shorthand"
 
-    Notice to access the _mean_ you have to use `stat=At(:mean)` rather than just `stat=:mean`. This seems a bit verbose, but is actually perfectly consistent with DimensionalData.jl's behaviour: `stat=1` means the first statistic, and `stat=At(:f)` means the statistic with the named index `:f`.
+    Passing a `Symbol` to `stat` is shorthand for a named lookup: `stat=:mean` is
+    equivalent to `stat=At(:mean)`. Other selectors follow DimensionalData.jl's usual
+    behaviour; for example, `stat=1` selects the first statistic by position.
 
 For more details on indexing, please see the [Indexing page](@ref indexing).
 
@@ -83,7 +85,7 @@ That means that if you want to access the mean of a variable `@varname(a)` you d
 
 ```@example stats
 mn = mean(chain)
-# Not needed: mean_f = m[@varname(f), stat=At(:mean)]
+# Not needed: mean_f = m[@varname(f), stat=:mean]
 # Just do:
 mean_f = mn[@varname(f)]
 ```

@@ -25,7 +25,8 @@ iterations, chains, or statistics from the data corresponding to the given `key`
 that these keyword arguments can only be used if the corresponding dimension exists (for
 example, if the summary statistic has been calculated over all iterations, then the
 `iter` dimension will not exist and using the `iter` keyword argument will throw an
-error).
+error). A statistic name passed as a `Symbol` is treated as a named lookup, so
+`stat=:mean` is shorthand for `stat=At(:mean)`.
 
 $(STACK_KWARG_DOC)
 """
@@ -53,14 +54,7 @@ function _check_summary_kwargs(fs::FlexiSummary, iter, chain, stat)
         stat === _UNSPECIFIED_KWARG || throw(ArgumentError(err_msg(:stat)))
     else
         new_stat = stat === _UNSPECIFIED_KWARG ? Colon() : stat
-        # common error: indexing with `stat=:mean` instead of `stat=At(:mean)`. Ordinarily,
-        # we should like to catch this with an error hint. Unfortunately, this throws an
-        # ArgumentError and that doesn't call Base.Experimental.show_error_hints, so
-        # although it's possible to define error hints, they never get displayed to the
-        # user. So we have to catch it here.
-        if new_stat isa Symbol
-            @warn "indexing with `stat=:$stat` will (most likely) error; you probably want to use `stat=At(:$stat)` instead."
-        end
+        new_stat = new_stat isa Symbol ? DD.At(new_stat) : new_stat
         kwargs = merge(kwargs, (stat=new_stat,))
     end
     return kwargs
