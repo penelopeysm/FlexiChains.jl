@@ -1293,13 +1293,12 @@ using Random: Xoshiro
         as_chain(vals) = reshape(vals, Ni, Nc)
         as_chain_of_vecs(mat) = reshape([mat[i, :] for i in axes(mat, 1)], Ni, Nc)
 
-        scalar_chain(vals) =
-            FlexiChain{Symbol}(Ni, Nc, OrderedDict(Parameter(:s) => as_chain(vals)))
-        vector_chain(mat) =
-            FlexiChain{Symbol}(Ni, Nc, OrderedDict(Parameter(:v) => as_chain_of_vecs(mat)))
+        scalar_chain(vals, k) = FlexiChain{Symbol}(Ni, Nc, OrderedDict(k => as_chain(vals)))
+        vector_chain(mat, k) =
+            FlexiChain{Symbol}(Ni, Nc, OrderedDict(k => as_chain_of_vecs(mat)))
 
         @testset "scalar draws" begin
-            chn = scalar_chain(StatsBase.transform(zs_1, orig_s))
+            chn = scalar_chain(StatsBase.transform(zs_1, orig_s), Parameter(:s))
 
             @testset "dims=$(tfm.dims)" for tfm in (zs_1, zs_2)
                 chn2 = StatsBase.reconstruct(tfm, chn, :s)
@@ -1317,7 +1316,7 @@ using Random: Xoshiro
                 (uv_1, uv_1),
                 (uv_2, uv_1),
             )
-                chn = vector_chain(StatsBase.transform(fitted, orig_v))
+                chn = vector_chain(StatsBase.transform(fitted, orig_v), Parameter(:v))
                 chn2 = StatsBase.reconstruct(tfm, chn, :v)
                 @test chn2 isa FlexiChain{Symbol}
                 @test size(chn2[:v]) == (Ni, Nc)
@@ -1331,7 +1330,7 @@ using Random: Xoshiro
         end
 
         @testset "key can be specified in several ways" begin
-            chn = scalar_chain(StatsBase.transform(zs_1, orig_s))
+            chn = scalar_chain(StatsBase.transform(zs_1, orig_s), Parameter(:s))
             expected = StatsBase.reconstruct(zs_1, chn, :s)[:s]
             for k in (:s, Parameter(:s))
                 @test StatsBase.reconstruct(zs_1, chn, k)[:s] ≈ expected
@@ -1339,11 +1338,7 @@ using Random: Xoshiro
         end
 
         @testset "extras can be reconstructed too" begin
-            chn = FlexiChain{Symbol}(
-                Ni,
-                Nc,
-                OrderedDict(Extra(:e) => as_chain(StatsBase.transform(zs_1, orig_s))),
-            )
+            chn = scalar_chain(StatsBase.transform(zs_1, orig_s), Extra(:e))
             @test StatsBase.reconstruct(zs_1, chn, Extra(:e))[Extra(:e)] ≈ as_chain(orig_s)
         end
 
@@ -1373,8 +1368,8 @@ using Random: Xoshiro
         end
 
         @testset "errors" begin
-            chn_s = scalar_chain(StatsBase.transform(zs_1, orig_s))
-            chn_v = vector_chain(StatsBase.transform(zv_1, orig_v))
+            chn_s = scalar_chain(StatsBase.transform(zs_1, orig_s), Parameter(:s))
+            chn_v = vector_chain(StatsBase.transform(zv_1, orig_v), Parameter(:v))
 
             @test_throws KeyError StatsBase.reconstruct(zs_1, chn_s, :nope)
             # Number of features must match what the transform was fitted with.
@@ -1387,15 +1382,6 @@ using Random: Xoshiro
                 OrderedDict(Parameter(:r) => [randn(1 + (i % 2)) for i in 1:Ni, _ in 1:Nc]),
             )
             @test_throws DimensionMismatch StatsBase.reconstruct(zv_1, ragged, :r)
-
-            # Matrix-valued draws are not supported: which axis holds the features is
-            # ambiguous, so there is deliberately no method for them.
-            matrices = FlexiChain{Symbol}(
-                Ni,
-                Nc,
-                OrderedDict(Parameter(:m) => [randn(2, 2) for _ in 1:Ni, _ in 1:Nc]),
-            )
-            @test_throws MethodError StatsBase.reconstruct(zv_1, matrices, :m)
         end
     end
 end

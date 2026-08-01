@@ -16,27 +16,23 @@ end
 # Scalar draws (Nx1, 1xN)
 function _batch_reconstruct(
     tfm::StatsBase.AbstractDataTransform,
-    vals::AbstractArray{<:Real},
+    draws::AbstractArray{<:Real},
 )
-    vec_as_matcol = reshape(vec(vals), :, 1)
+    vec_as_matcol = reshape(draws, :, 1)
     new_vals = _reconstruct_obsmat(tfm, vec_as_matcol)
-    return reshape(vec(new_vals), size(vals))
+    return reshape(new_vals, size(draws))
 end
 
-# Vector draws (M vecs with N samples each)
+# Vector draws
+# `draws` is length N (iter, chain), each containing length M param
 function _batch_reconstruct(
     tfm::StatsBase.AbstractDataTransform,
-    # `vec_of_vals` is a chain with vector-valued params
-    vec_of_vals::AbstractArray{<:AbstractVector{<:Real}},
+    draws::Matrix{<:AbstractVector},
 )
-    m = length(first(vec_of_vals))
-    if any(vals -> length(vals) != m, vec_of_vals)
-        throw(DimensionMismatch("all draws must have equal length"))
-    end
-
-    X = reduce(hcat, vec_of_vals)' # NxM
-    out = _reconstruct_obsmat(tfm, X)
-    return reshape(collect.(eachrow(out)), size(vec_of_vals))
+    m = length(first(draws))
+    X = reshape(stack(draws), m, :)' # N * M, where M = niters*nchains
+    new_vals = _reconstruct_obsmat(tfm, X)
+    return reshape(collect.(eachrow(new_vals)), size(draws))
 end
 
 """
@@ -54,6 +50,6 @@ function StatsBase.reconstruct(
 ) where {T}
     k = _resolve_getindex_key(T, keys(chn), param)
     data = copy(chn._data)
-    data[k] = _batch_reconstruct(tfm, chn[k])
+    data[k] = _batch_reconstruct(tfm, data[k])
     return _replace_data(chn, T, data)
 end
