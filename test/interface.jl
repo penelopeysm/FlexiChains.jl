@@ -14,6 +14,7 @@ using FlexiChains:
 using DimensionalData: DimensionalData as DD, At, Not
 using OrderedCollections: OrderedDict
 using AbstractMCMC: AbstractMCMC
+using StatsBase: StatsBase, fit, ZScoreTransform, UnitRangeTransform
 using Test
 using Random: Xoshiro
 
@@ -1266,6 +1267,135 @@ using Random: Xoshiro
             chn2 = transform_values(chn, :x => f)
             @test chn2[:x, stack=true] isa DD.DimArray{Float64,3}
             @test DD.name.(DD.dims(chn2[:x, stack=true])) == (:iter, :chain, :whatever)
+        end
+    end
+
+    @testset "StatsBase.reconstruct" begin
+        Ni, Nc = 10, 3
+        Nd = Ni * Nc
+
+        # Data on the original scale. `fit(...; dims=1)` treats columns as features and rows
+        # as observations; `dims=2` is the transpose of that. Both orientations are fitted
+        # from the same numbers, so they have identical means/scales and can be checked
+        # against the same expected output.
+        orig_s = randn(Xoshiro(468), Nd)
+        orig_v = randn(Xoshiro(469), Nd, 3)
+
+        zs_1 = fit(ZScoreTransform, orig_s; dims=1)
+        zs_2 = fit(ZScoreTransform, permutedims(orig_s); dims=2)
+        zv_1 = fit(ZScoreTransform, orig_v; dims=1)
+        zv_2 = fit(ZScoreTransform, permutedims(orig_v); dims=2)
+        uv_1 = fit(UnitRangeTransform, orig_v; dims=1)
+        uv_2 = fit(UnitRangeTransform, permutedims(orig_v); dims=2)
+
+        # Draws are laid out over the chain in column-major order, matching the order in
+        # which `reconstruct` flattens them.
+        as_chain(vals) = reshape(vals, Ni, Nc)
+        as_chain_of_vecs(mat) = reshape([mat[i, :] for i in axes(mat, 1)], Ni, Nc)
+
+        scalar_chain(vals) =
+            FlexiChain{Symbol}(Ni, Nc, OrderedDict(Parameter(:s) => as_chain(vals)))
+        vector_chain(mat) =
+            FlexiChain{Symbol}(Ni, Nc, OrderedDict(Parameter(:v) => as_chain_of_vecs(mat)))
+
+        @testset "scalar draws" begin
+            chn = scalar_chain(StatsBase.transform(zs_1, orig_s))
+
+            @testset "dims=$(tfm.dims)" for tfm in (zs_1, zs_2)
+                chn2 = StatsBase.reconstruct(tfm, chn, :s)
+                @test chn2 isa FlexiChain{Symbol}
+                @test chn2[:s] ≈ as_chain(orig_s)
+                # Elementwise, i.e. `x * scale + mean`.
+                @test chn2[:s] ≈ chn[:s] .* tfm.scale[1] .+ tfm.mean[1]
+            end
+        end
+
+        @testset "vector draws" begin
+            @testset "$(nameof(typeof(tfm))), dims=$(tfm.dims)" for (tfm, fitted) in (
+                (zv_1, zv_1),
+                (zv_2, zv_1),
+                (uv_1, uv_1),
+                (uv_2, uv_1),
+            )
+                chn = vector_chain(StatsBase.transform(fitted, orig_v))
+                chn2 = StatsBase.reconstruct(tfm, chn, :v)
+                @test chn2 isa FlexiChain{Symbol}
+                @test size(chn2[:v]) == (Ni, Nc)
+                @test all(length.(chn2[:v]) .== 3)
+                # Each draw must come back as the row of `orig_v` it was made from, i.e. the
+                # per-draw feature order and the draw order over the chain are both kept.
+                @test all(
+                    chn2[:v][i] ≈ orig_v[i, :] for i in eachindex(IndexLinear(), chn2[:v])
+                )
+            end
+        end
+
+        @testset "key can be specified in several ways" begin
+            chn = scalar_chain(StatsBase.transform(zs_1, orig_s))
+            expected = StatsBase.reconstruct(zs_1, chn, :s)[:s]
+            for k in (:s, Parameter(:s))
+                @test StatsBase.reconstruct(zs_1, chn, k)[:s] ≈ expected
+            end
+        end
+
+        @testset "extras can be reconstructed too" begin
+            chn = FlexiChain{Symbol}(
+                Ni,
+                Nc,
+                OrderedDict(Extra(:e) => as_chain(StatsBase.transform(zs_1, orig_s))),
+            )
+            @test StatsBase.reconstruct(zs_1, chn, Extra(:e))[Extra(:e)] ≈ as_chain(orig_s)
+        end
+
+        @testset "other keys and metadata are preserved" begin
+            other = randn(Ni, Nc)
+            chn = FlexiChain{Symbol}(
+                Ni,
+                Nc,
+                OrderedDict(
+                    Parameter(:s) => as_chain(StatsBase.transform(zs_1, orig_s)),
+                    Parameter(:other) => other,
+                );
+                iter_indices=11:(10+Ni),
+                chain_indices=[7, 8, 9],
+                sampling_time=[1.0, 2.0, 3.0],
+            )
+            before = copy(chn[:s])
+            chn2 = StatsBase.reconstruct(zs_1, chn, :s)
+
+            @test collect(keys(chn2)) == collect(keys(chn))
+            @test chn2[:other] == other
+            @test collect(FlexiChains.iter_indices(chn2)) == collect(11:(10+Ni))
+            @test collect(FlexiChains.chain_indices(chn2)) == [7, 8, 9]
+            @test FlexiChains.sampling_time(chn2) == [1.0, 2.0, 3.0]
+            # The original chain is not mutated.
+            @test chn[:s] == before
+        end
+
+        @testset "errors" begin
+            chn_s = scalar_chain(StatsBase.transform(zs_1, orig_s))
+            chn_v = vector_chain(StatsBase.transform(zv_1, orig_v))
+
+            @test_throws KeyError StatsBase.reconstruct(zs_1, chn_s, :nope)
+            # Number of features must match what the transform was fitted with.
+            @test_throws DimensionMismatch StatsBase.reconstruct(zv_1, chn_s, :s)
+            @test_throws DimensionMismatch StatsBase.reconstruct(zs_1, chn_v, :v)
+
+            ragged = FlexiChain{Symbol}(
+                Ni,
+                Nc,
+                OrderedDict(Parameter(:r) => [randn(1 + (i % 2)) for i in 1:Ni, _ in 1:Nc]),
+            )
+            @test_throws DimensionMismatch StatsBase.reconstruct(zv_1, ragged, :r)
+
+            # Matrix-valued draws are not supported: which axis holds the features is
+            # ambiguous, so there is deliberately no method for them.
+            matrices = FlexiChain{Symbol}(
+                Ni,
+                Nc,
+                OrderedDict(Parameter(:m) => [randn(2, 2) for _ in 1:Ni, _ in 1:Nc]),
+            )
+            @test_throws MethodError StatsBase.reconstruct(zv_1, matrices, :m)
         end
     end
 end
