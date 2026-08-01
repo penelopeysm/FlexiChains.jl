@@ -596,8 +596,13 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 Colon(),
                 FlexiChains._UNSPECIFIED_KWARG,
             ) == (chain=Colon(), stat=Colon())
-            # check that we can use DD lookups for the stat dimension
+            # check that we can use DD lookups and Symbol shorthand for the stat dimension
             @test fs[Parameter(@varname(x)), stat=DD.At(:mean)] isa Any
+            @test fs[Parameter(@varname(x)), stat=:mean] ==
+                  fs[Parameter(@varname(x)), stat=DD.At(:mean)]
+            @test fs[@varname(x[1]), stat=:mean] == fs[@varname(x[1]), stat=DD.At(:mean)]
+            @test fs[:x, stat=:mean] == fs[:x, stat=DD.At(:mean)]
+            @test fs[stat=:mean] == fs[stat=DD.At(:mean)]
             @test FlexiChains._check_summary_kwargs(
                 fs,
                 FlexiChains._UNSPECIFIED_KWARG,
@@ -608,7 +613,7 @@ const WORKS_ON_STRING = [minimum, maximum, prod]
                 fs,
                 FlexiChains._UNSPECIFIED_KWARG,
                 Colon(),
-                DD.At(:mean),
+                :mean,
             ) == (chain=Colon(), stat=DD.At(:mean))
             # check sub-varname too
             @test isapprox(

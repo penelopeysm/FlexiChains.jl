@@ -100,14 +100,16 @@ Notice two things:
 Indexing is very similar as for chains, but there is an additional `stat` dimension which lets you specify which summary statistic you want to access.
 
 ```@example 1
-sm[@varname(x[1]), stat=At(:mean)]
+sm[@varname(x[1]), stat=:mean]
 ```
 
-!!! note "At()"
+!!! note "Named statistic shorthand"
 
-    Notice that we need `stat=At(:mean)` rather than just `stat=:mean`. This seems a bit verbose, but is actually perfectly consistent with DimensionalData.jl's behaviour: `stat=1` means the first statistic, and `stat=At(:f)` means the statistic with the named index `:f`.
+    Passing a `Symbol` to `stat` is shorthand for a named lookup: `stat=:mean` is
+    equivalent to `stat=At(:mean)`. Other selectors follow DimensionalData.jl's usual
+    behaviour; for example, `stat=1` selects the first statistic by position.
 
-If only a single summary function was applied, e.g. via `mean(chn)`, then the `stat` dimension will be automatically collapsed for you; you won't need to again specify `At(:mean)` when indexing.
+If only a single summary function was applied, e.g. via `mean(chn)`, then the `stat` dimension will be automatically collapsed for you; you won't need to again specify `stat` when indexing.
 
 ```@example 1
 sm_mean = mean(chn)
@@ -255,6 +257,7 @@ Thus, for example, if you have a summary that contains the `mean` and `std` of t
 |:---------------- |:------------------------------------ |
 | `1`              | the first statistic, i.e. `:mean`    |
 | `At(:mean)`      | the `:mean` statistic                |
+| `:mean`          | shorthand for `At(:mean)`            |
 | `Not(At(:mean))` | everything but the `:mean` statistic |
 
 ### `stack`
