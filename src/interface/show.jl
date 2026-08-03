@@ -358,16 +358,18 @@ function _print_summary_table(
     MAX_COL_WIDTH = 12
     inner_width = width - 4
     colpadding = 2
-    # No column can occupy fewer than one character plus its padding. Avoid formatting
-    # columns which could not possibly be displayed, regardless of their contents.
+
+    # For things like `mean(chain, dims=:chain)`, there could be a huge number of columns,
+    # very few of which will actually be displayed. To avoid performing unnecessary
+    # formatting work we cap the number of columns to be formatted.
     max_formatted_columns = max(div(inner_width, colpadding + 1), 1)
+    columns_were_skipped =
+        !isnothing(column_indices) && length(column_indices) > max_formatted_columns
 
     header_col =
         ["param", map(p -> _truncate(_pretty_value(p), MAX_COL_WIDTH), param_names)...]
     param_values = map(pn -> summary[pn], param_names)
 
-    columns_were_skipped =
-        !isnothing(column_indices) && length(column_indices) > max_formatted_columns
     value_cols = if isnothing(column_indices)
         [["", [_truncate(_pretty_value(value), MAX_COL_WIDTH) for value in param_values]...],]
     else
