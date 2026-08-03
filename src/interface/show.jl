@@ -346,7 +346,8 @@ function _print_summary_table(
     io::IO,
     summary::FlexiSummary,
     param_names::Vector,
-    si,
+    column_indices,
+    first_column_prefix::String,
     width::Int,
 )
     _box_empty(io, width)
@@ -358,32 +359,45 @@ function _print_summary_table(
     inner_width = width - 4
     colpadding = 2
 
+    # For things like `mean(chain, dims=:chain)`, there could be a huge number of columns,
+    # very few of which will actually be displayed. To avoid performing unnecessary
+    # formatting work we cap the number of columns to be formatted.
+    max_formatted_columns = max(div(inner_width, colpadding + 1), 1)
+    columns_were_skipped =
+        !isnothing(column_indices) && length(column_indices) > max_formatted_columns
+
     header_col =
         ["param", map(p -> _truncate(_pretty_value(p), MAX_COL_WIDTH), param_names)...]
+    param_values = map(pn -> summary[pn], param_names)
 
-    stat_cols = if isnothing(si)
-        [["", [_truncate(_pretty_value(summary[pn]), MAX_COL_WIDTH) for pn in param_names]...],]
+    value_cols = if isnothing(column_indices)
+        [["", [_truncate(_pretty_value(value), MAX_COL_WIDTH) for value in param_values]...],]
     else
-        map(enumerate(parent(si))) do (stat_i, stat_name)
+        column_names = Iterators.take(parent(column_indices), max_formatted_columns)
+        map(enumerate(column_names)) do (column_i, column_name)
+            column_header = _pretty_value(column_name)
+            if column_i == 1
+                column_header = first_column_prefix * column_header
+            end
             [
-                String(stat_name)
+                _truncate(column_header, MAX_COL_WIDTH)
                 [
-                    _truncate(_pretty_value(summary[pn][stat_i]), MAX_COL_WIDTH) for
-                    pn in param_names
+                    _truncate(_pretty_value(value[column_i]), MAX_COL_WIDTH) for
+                    value in param_values
                 ]...
             ]
         end
     end
 
-    rows = hcat(header_col, stat_cols...)
+    rows = hcat(header_col, value_cols...)
     colwidths = map(maximum, eachcol(map(length, rows)))
 
     total = sum(cw + colpadding for cw in colwidths)
-    if total <= inner_width
+    truncated = columns_were_skipped || total > inner_width
+    available = inner_width - (truncated ? 3 : 0)
+    if total <= available
         max_cols = length(colwidths)
-        truncated = false
     else
-        available = inner_width - 3
         cumwidth = colwidths[1] + colpadding
         max_cols = 1
         for j in 2:length(colwidths)
@@ -395,7 +409,6 @@ function _print_summary_table(
                 break
             end
         end
-        truncated = true
     end
 
     for (i, row) in enumerate(eachrow(rows))
@@ -469,8 +482,24 @@ function Base.show(io::IO, ::MIME"text/plain", summary::FlexiSummary{TKey}) wher
         _eltype_groups(summary, false),
     )
 
-    if isnothing(ii) && isnothing(ci) && !isempty(param_names)
-        _print_summary_table(io, summary, param_names, si, width)
+    uncollapsed_indices = filter(!isnothing, (ii, ci, si))
+    if length(uncollapsed_indices) <= 1 && !isempty(param_names)
+        column_indices = isempty(uncollapsed_indices) ? nothing : only(uncollapsed_indices)
+        first_column_prefix = if !isnothing(column_indices) && column_indices === ii
+            "iter "
+        elseif !isnothing(column_indices) && column_indices === ci
+            "chain "
+        else
+            ""
+        end
+        _print_summary_table(
+            io,
+            summary,
+            param_names,
+            column_indices,
+            first_column_prefix,
+            width,
+        )
     end
 
     _box_bottom(io, width)
