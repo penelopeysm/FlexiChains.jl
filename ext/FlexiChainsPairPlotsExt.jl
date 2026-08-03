@@ -105,7 +105,7 @@ function PairPlots.pairplot(
                 split_varnames=false,
                 _plot_names=plot_names,
                 label="chain $ci",
-            ) for (i, ci) in enumerate(FC.chain_indices(chn))
+            ) for ci in FC.chain_indices(chn)
         )
     end
     # Identify divergent samples
