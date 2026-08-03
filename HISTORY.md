@@ -1,3 +1,9 @@
+# 0.6.35
+
+`FlexiSummary` now pretty-prints a table as long as there is at most one non-collapsed dimension.
+
+In particular, this means that things like `mean(chn; dims=:iter)` and `mean(chn; dims=:chain)` will now pretty-print a table of means, instead of forcing the user to index into it to see the results.
+
 # 0.6.34
 
 Added a shorthand for `getindex` on `FlexiSummary`: `s[key, stat=:mystat]` is now equivalent to `s[key, stat=At(:mystat)]`.
