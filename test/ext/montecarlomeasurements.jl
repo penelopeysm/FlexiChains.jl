@@ -5,6 +5,7 @@ using LinearAlgebra: Diagonal
 using OrderedCollections: OrderedDict
 using MonteCarloMeasurements: Particles, pmean
 using Statistics: mean
+using Test
 
 @testset verbose = true "MonteCarloMeasurements extension" begin
     @info "Testing MonteCarloMeasurements extension"
