@@ -3,7 +3,7 @@
 [Documentation for MonteCarloMeasurements.jl ↗](https://baggepinnen.github.io/MonteCarloMeasurements.jl/stable/)
 
 MonteCarloMeasurements.jl is a package that lets you treat probability distributions as first-class numbers.
-FlexiChains contains an extension which allows you to directly convert a `FlexiChain` into a collection of `MonteCarloMeasurements.Particles` object, in essence creating a `Particles` from the distribution which the chain represents.
+FlexiChains contains an extension which allows you to directly convert a `FlexiChain` into a collection of `MonteCarloMeasurements.Particles` objects, in essence creating `Particles` from the distribution which the chain represents.
 
 ```@example montecarlomeasurements
 using FlexiChains, DynamicPPL, Distributions, LinearAlgebra
@@ -44,6 +44,16 @@ pnt = Particles(chn, NamedTuple)
 ```
 
 This can be easier to use sometimes but note that since NamedTuple keys are plain `Symbol`s this conversion might be lossy depending on your chain's parameter type.
+
+## Unhandled parameter types
+
+Not every parameter can be meaningfully converted into a `Particles` object.
+For example, Cholesky factors (`x ~ LKJCholesky(...)`) are not supported and will error.
+If you want to convert a chain that contains such a variable into a `Particles` object, subset the chain first to only include the parameters you want to convert, e.g.
+
+```julia
+Particles(chn[[param1, param2, param3]])
+```
 
 ## Docstrings
 
