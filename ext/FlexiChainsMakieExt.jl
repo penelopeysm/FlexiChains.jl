@@ -136,5 +136,6 @@ include("FlexiChainsMakieExt/rankplot.jl")
 include("FlexiChainsMakieExt/forestplot.jl")
 include("FlexiChainsMakieExt/ridgeline.jl")
 include("FlexiChainsMakieExt/violin.jl")
+include("FlexiChainsMakieExt/trankplot.jl")
 
 end

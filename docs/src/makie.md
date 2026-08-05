@@ -113,6 +113,20 @@ Makie.save("traceplot_makie.png", ans.figure); # hide
 
 ![Trace plots of the sampled chain](traceplot_makie.png)
 
+## Trank plots
+
+```@docs
+FlexiChains.Makie.trankplot
+FlexiChains.Makie.trankplot!
+```
+
+```@example 1
+FM.trankplot(chn)
+Makie.save("trankplot_makie.png", ans.figure); # hide
+```
+
+![Trank plots of the sampled chain](trankplot_makie.png)
+
 ## Density plots
 
 ```@docs

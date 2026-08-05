@@ -315,4 +315,39 @@ struct FlexiChainRidgeline{TKey}
     pool_chains::Bool
 end
 
+# Utils for trankplot (inspired by ChainsMakie.jl)
+
+function trank_bins(x::AbstractMatrix; bins=20)
+    ranks = StatsBase.denserank(x)
+    lo, hi = extrema(ranks)
+    rank_range = range(lo, hi; length=bins)
+
+    counts_per_bin = map(eachcol(ranks)) do col
+        # For that col, count the samples falling in each bin
+        counts = map(rank_range[begin:(end-1)], rank_range[2:end]) do lb, ub
+            # Half-open to avoid double-counting
+            count(val -> lb <= val < ub, col)
+        end
+        counts[end] += count(==(hi), col)
+        return counts
+    end
+
+    return stack(counts_per_bin)
+end
+
+# Find the midpoints between steps in a range
+centers(x) = [Statistics.mean(steps) for steps in zip(x, Iterators.drop(x, 1))]
+
+# Pad the x axis to make `stairs!` look nice
+pad_x(r, xs) = vcat(minimum(r), xs, maximum(r))
+
+# Pad each column of a (iter, chains) matrix
+pad_y(ys::AbstractMatrix) = vcat(ys[begin, :]', ys, ys[end, :]')
+
+struct FlexiChainTrank{TKey,Tp<:ParameterOrExtra{<:TKey}}
+    chn::FlexiChain{TKey}
+    param::Tp
+    bins::Int
+end
+
 end # module PlotUtils

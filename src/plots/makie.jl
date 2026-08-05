@@ -23,7 +23,9 @@ export traceplot,
     ridgeline,
     ridgeline!,
     forestplot,
-    forestplot!
+    forestplot!,
+    trankplot,
+    trankplot!
 
 # The non-mutating versions have docstrings in the extension.
 
@@ -110,5 +112,15 @@ Mutating version of [`FlexiChains.Makie.forestplot`](@ref), for use with existin
 `Makie.Axis` objects.
 """
 function forestplot! end
+
+function trankplot end
+
+"""
+    FlexiChains.Makie.trankplot!
+
+    Mutating version of [`FlexiChains.Makie.trankplot`](@ref), for use with existing
+`Makie.Axis` objects.
+"""
+function trankplot! end
 
 end # module
