@@ -271,11 +271,7 @@ const REFTEST_SPECS = [
             observed=HIST_OBSERVED,
         ),
     ),
-    RefTestSpec(
-        MakieBE(),
-        "trankplot",
-        () -> FC.Makie.trankplot(chn),
-    ),
+    RefTestSpec(MakieBE(), "trankplot", () -> FC.Makie.trankplot(chn)),
 ]
 
 @testset verbose = true "Reference tests" begin
