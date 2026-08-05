@@ -1,3 +1,7 @@
+# 0.6.36
+
+Added an extension for MonteCarloMeasurements.jl which allows you to convert a `FlexiChain` into a `Particles`.
+
 # 0.6.35
 
 `FlexiSummary` now pretty-prints a table as long as there is at most one non-collapsed dimension.

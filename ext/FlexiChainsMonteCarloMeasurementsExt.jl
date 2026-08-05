@@ -41,34 +41,7 @@ function MCM.Particles(
     for param in FC.parameters(chain)
         # use `_get_raw_data` to avoid unnecessary wrapping in DimArray
         val_matrix = FC._get_raw_data(chain, FC.Parameter(param))
-        et = eltype(val_matrix)
-
-        if et <: Number
-            output[param] = MCM.Particles(vec(val_matrix))
-        elseif et <: AbstractArray
-            sz = size(first(val_matrix))
-            if !all(x -> size(x) == sz, val_matrix)
-                throw(
-                    DimensionMismatch(
-                        "cannot convert parameter $param to `MonteCarloMeasurements.Particles` because the arrays have different sizes. Please open an issue if you think this should be supported!",
-                    ),
-                )
-            end
-            # Let's say each element has size `(d1, d2, ..., dn)`, and also define `S =
-            # niters * nchains`. Then `stack(vec(x))` has size `(d1, d2, ..., dn, S)`.
-            # However, the `Particles` constructor expects the first dimension to be the one
-            # containing the samples, so we need to call `permutedim`.
-            stacked = stack(vec(val_matrix))
-            N = ndims(stacked)
-            permuted = permutedims(stacked, (N, 1:(N-1)...))
-            output[param] = MCM.Particles(permuted)
-        else
-            throw(
-                ArgumentError(
-                    "cannot convert parameter $(param) to `MonteCarloMeasurements.Particles` because the values have type $(et) and are not scalars or arrays. Please feel free to open an issue if you think this should be supported!",
-                ),
-            )
-        end
+        output[param] = _to_particles(vec(val_matrix), param)
     end
 
     return if Tout == NamedTuple
@@ -76,6 +49,41 @@ function MCM.Particles(
     else
         output
     end
+end
+
+_to_particles(values::AbstractVector{<:Number}, _) = MCM.Particles(values)
+
+function _to_particles(values::AbstractVector{<:AbstractArray}, param)
+    sz = size(first(values))
+    if !all(x -> size(x) == sz, values)
+        throw(
+            DimensionMismatch(
+                "cannot convert parameter $param to `MonteCarloMeasurements.Particles` because the arrays have different sizes. Please open an issue if you think this should be supported!",
+            ),
+        )
+    end
+    # Let's say each element has size `(d1, d2, ..., dn)`, and also define `S =
+    # niters * nchains`. Then `stack(vec(x))` has size `(d1, d2, ..., dn, S)`.
+    # However, the `Particles` constructor expects the first dimension to be the one
+    # containing the samples, so we need to call `permutedims`.
+    stacked = stack(values)
+    N = ndims(stacked)
+    permuted = permutedims(stacked, (N, 1:(N-1)...))
+    return MCM.Particles(permuted)
+end
+
+function _to_particles(values::AbstractVector{<:NamedTuple}, param)
+    ks = keys(first(values))
+    return NamedTuple(k => _to_particles([v[k] for v in values], param) for k in ks)
+end
+
+function _to_particles(values::AbstractVector, param)
+    et = eltype(values)
+    throw(
+        ArgumentError(
+            "cannot convert parameter $(param) to `MonteCarloMeasurements.Particles` because the values have type $(et) and are not scalars or arrays/NamedTuples thereof. Please feel free to open an issue if you think this should be supported!",
+        ),
+    )
 end
 
 end # module
