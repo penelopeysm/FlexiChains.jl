@@ -1,6 +1,6 @@
 # 0.6.36
 
-Added `FlexiChains.Makie.trankplot` creating trankplots with a Makie backend. 
+Added `FlexiChains.Makie.trankplot` creating trankplots with a Makie backend.
 Trankplots are still useful when a lot of samples were drawn, which is a scenario that trace plots handle poorly.
 
 # 0.6.35
