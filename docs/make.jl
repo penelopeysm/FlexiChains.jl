@@ -18,6 +18,7 @@ using DynamicPPL: DynamicPPL
 using InferenceObjects: InferenceObjects
 using MCMCChains: MCMCChains
 using MCMCDiagnosticTools: MCMCDiagnosticTools
+using MonteCarloMeasurements: MonteCarloMeasurements
 using PairPlots: PairPlots
 using PalmerPenguins: PalmerPenguins
 using Pigeons: Pigeons
@@ -47,6 +48,7 @@ modules = [
     Base.get_extension(FlexiChains, :FlexiChainsInferenceObjectsExt),
     Base.get_extension(FlexiChains, :FlexiChainsMCMCChainsExt),
     Base.get_extension(FlexiChains, :FlexiChainsMakieExt),
+    Base.get_extension(FlexiChains, :FlexiChainsMonteCarloMeasurementsExt),
     Base.get_extension(FlexiChains, :FlexiChainsPairPlotsExt),
     Base.get_extension(FlexiChains, :FlexiChainsPigeonsExt),
     Base.get_extension(FlexiChains, :FlexiChainsPosteriorDBExt),
@@ -89,6 +91,7 @@ makedocs(;
             "arviz.md",
             "custom_sampler.md",
             "MCMCChains.jl" => ["mcmcchains.md", "migration.md"],
+            "montecarlomeasurements.md",
             "pairplots.md",
             "parallelmcmc.md",
             "pigeons.md",

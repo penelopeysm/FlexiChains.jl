@@ -17,6 +17,7 @@ else
         include("ext/dynamicppl.jl")
         include("serialise.jl")
         include("stancsv.jl")
+        include("ext/montecarlomeasurements.jl")
         include("ext/posteriordb.jl")
         include("ext/posteriorstats.jl")
         include("ext/inferenceobjects.jl")

@@ -102,7 +102,7 @@ for f in (:values_at, :parameters_at)
             Base.depwarn(
                 "Positional `iter` and `chain` arguments to `" *
                 $(string(f)) *
-                "` are deprecated and will be removed in v0.5. " *
+                "` are deprecated and will be removed in a future version. " *
                 "Please use keyword arguments instead: `" *
                 $(string(f)) *
                 "(chn[, Tout]; iter=..., chain=...)`.",
