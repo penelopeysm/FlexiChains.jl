@@ -101,7 +101,7 @@ function PairPlots.pairplot(
     else
         Tuple(
             PairPlots.Series(
-                chn[chain=ci];
+                chn[chain=FC.At(ci)];
                 split_varnames=false,
                 _plot_names=plot_names,
                 label="chain $ci",

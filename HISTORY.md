@@ -1,3 +1,7 @@
+# 0.6.37
+
+Fixed a bug where `pairplot(chn)` would fail if `chn` had chains that were not 1-indexed.
+
 # 0.6.36
 
 Added an extension for MonteCarloMeasurements.jl which allows you to convert a `FlexiChain` into a `Particles`.
