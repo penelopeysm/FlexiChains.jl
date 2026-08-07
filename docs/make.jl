@@ -62,7 +62,7 @@ modules = [
 old_GKSwstype = get(ENV, "GKSwstype", nothing)
 ENV["GKSwstype"] = "100"
 
-GITHUB_REPO = "github.com/penelopeysm/FlexiChains.jl"
+GITHUB_REPO = "github.com/JuliaBayes/FlexiChains.jl"
 PAGES_BRANCH = "gh-pages"
 DEV_BRANCH = "main"
 
