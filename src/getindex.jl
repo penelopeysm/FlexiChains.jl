@@ -443,7 +443,7 @@ the indices, and an object to select a subset of those indices, return:
   or `At(i)`)
 
 Right now, `getindex` doesn't make use of the last return value. See
-https://github.com/penelopeysm/FlexiChains.jl/issues/51. However, `values_at` and
+https://github.com/JuliaBayes/FlexiChains.jl/issues/51. However, `values_at` and
 `parameters_at` do make use of it.
 """
 function _get_indices_and_lookup(

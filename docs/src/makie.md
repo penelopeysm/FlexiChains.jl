@@ -214,7 +214,7 @@ Makie.save("violin_makie.png", ans.figure); # hide
 !!! info "Half-eye plots"
 
     To get a 'half-eye' look similar to R's `ggdist` package, you can compose `forestplot!` and `ridgeline!`.
-    See e.g. the example [here](https://github.com/penelopeysm/FlexiChains.jl/pull/230).
+    See e.g. the example [here](https://github.com/JuliaBayes/FlexiChains.jl/pull/230).
 
 ```@docs
 FlexiChains.Makie.forestplot
@@ -233,7 +233,7 @@ Makie.save("forestplot_makie.png", ans.figure); # hide
 !!! info "Half-eye plots"
 
     To get a 'half-eye' look similar to R's `ggdist` package, you can compose `forestplot!` and `ridgeline!`.
-    See e.g. the example [here](https://github.com/penelopeysm/FlexiChains.jl/pull/230).
+    See e.g. the example [here](https://github.com/JuliaBayes/FlexiChains.jl/pull/230).
 
 ```@docs
 FlexiChains.Makie.ridgeline

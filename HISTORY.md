@@ -33,7 +33,7 @@ Improved the resulting key type when attempting to construct `VNChain`s from `Fl
 
 A legend is now automatically added to the axis when using `pushforward_hist`.
 
-The legend should be an improvement to almost all use cases, but in case it is not desired, it is possible (but not elegant) to [modify](https://github.com/penelopeysm/FlexiChains.jl/pull/278#issuecomment-4948379988) or [delete](https://discourse.julialang.org/t/makie-how-to-remove-a-legend-from-an-axis/65876/8) the legend after having created the figure.
+The legend should be an improvement to almost all use cases, but in case it is not desired, it is possible (but not elegant) to [modify](https://github.com/JuliaBayes/FlexiChains.jl/pull/278#issuecomment-4948379988) or [delete](https://discourse.julialang.org/t/makie-how-to-remove-a-legend-from-an-axis/65876/8) the legend after having created the figure.
 
 # 0.6.29
 
@@ -49,7 +49,7 @@ This supersedes the previous `FlexiChain{Symbol}(::MCMCChains.Chains)` construct
 # 0.6.27
 
 Added a function `FlexiChains.from_pigeons` to convert a Pigeons.jl sampling result into a `FlexiChain`.
-Please see [the docs](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-pigeons) for more info.
+Please see [the docs](https://juliabayes.org/FlexiChains.jl/stable/integrations/#integrations-pigeons) for more info.
 
 # 0.6.26
 
@@ -77,13 +77,13 @@ When pretty-printing a FlexiChain, the size of array-valued parameters is now sh
 # 0.6.21
 
 Added `FlexiChains.transform_values` which maps a function over the values stored in a `FlexiChain`, returning a new `FlexiChain` with the transformed values.
-Please see [the docs](https://pysm.dev/FlexiChains.jl/stable/modifying) for more information and example usecases.
+Please see [the docs](https://juliabayes.org/FlexiChains.jl/stable/modifying) for more information and example usecases.
 
 # 0.6.20
 
 Added Makie implementations of pushforward plots, following the examples in [Michael Betancourt's visualisation tools](https://github.com/betanalpha/mcmc_visualization_tools/).
 These allow you to visualise the way in which posterior uncertainty is propagated through a function.
-Full worked examples of these are given in [the docs](https://pysm.dev/FlexiChains.jl/stable/makie/#Pushforward-plots).
+Full worked examples of these are given in [the docs](https://juliabayes.org/FlexiChains.jl/stable/makie/#Pushforward-plots).
 
 # 0.6.19
 
@@ -282,7 +282,7 @@ Adds a new function, `FlexiChains.to_nt_and_stats`, which samplers can overload 
 
 Also implements the above for AdvancedHMC.jl, meaning that you can define a model that satisfies the LogDensityProblems interface, sample from it with AdvancedHMC, and collect the results in a `FlexiChain{Symbol}`.
 
-See the [integration docs page](https://pysm.dev/FlexiChains.jl/stable/integrations) for more info.
+See the [integration docs page](https://juliabayes.org/FlexiChains.jl/stable/integrations) for more info.
 
 # 0.4.5
 
@@ -445,7 +445,7 @@ In return for no longer working on split VarName chains, these functions have be
 # 0.1.6
 
 Implemented `InitFromParams(chain::VNChain, i, j)` to allow you to initialise sampling etc. from the `i`-th iteration of the `j`-th chain of a `VNChain`.
-Please see [the documentation](https://pysm.dev/FlexiChains.jl/stable/turing) for an example.
+Please see [the documentation](https://juliabayes.org/FlexiChains.jl/stable/turing) for an example.
 `i` and `j` can either be integers, or `At(...)` selectors.
 
 # 0.1.5
@@ -456,7 +456,7 @@ Please see the DynamicPPL documentation for more info about this.
 # 0.1.4
 
 Added some plotting methods with Makie.jl!
-Please see [the docs](https://pysm.dev/FlexiChains.jl/stable/plotting) for more information on what's available and how to use it.
+Please see [the docs](https://juliabayes.org/FlexiChains.jl/stable/plotting) for more information on what's available and how to use it.
 
 # 0.1.3
 
@@ -476,7 +476,7 @@ FlexiChains now has what I consider to be a reasonably stable core set of functi
 
 ## Summaries
 
-  - There is now [a dedicated page in the documentation for summaries](https://pysm.dev/FlexiChains.jl/stable/summarising).
+  - There is now [a dedicated page in the documentation for summaries](https://juliabayes.org/FlexiChains.jl/stable/summarising).
   - `StatsBase.mad`, `Statistics.quantile`, `StatsBase.geomean`, `StatsBase.harmmean`, and `StatsBase.iqr` have been implemented.
   - `PosteriorStats.hdi` and `PosteriorStats.eti` have been implemented in an extension.
   - The signature of functions passed to `FlexiChains.collapse` has been simplified. It used to be that the signature would differ depending on whether you were collapsing over iterations, chains, or both. Now all the function needs to do is to collapse a vector to a single value (regardless of which dimensions are being collapsed over).
@@ -487,7 +487,7 @@ FlexiChains now has what I consider to be a reasonably stable core set of functi
 
 (Some) plotting functionality has been added to FlexiChains!
 
-Please see [the plotting docs](https://pysm.dev/FlexiChains.jl/stable/plotting) for information.
+Please see [the plotting docs](https://juliabayes.org/FlexiChains.jl/stable/plotting) for information.
 
 ## PosteriorDB.jl integration
 
@@ -634,4 +634,4 @@ This means that, for example, vector-valued parameters are stored 'as is' withou
 
 This not only makes it much less clunky to work with large arrays; it also leads to performance gains (sometimes), improved compatibility with DynamicPPL.jl, and a more accurate representation of the parameters you have sampled.
 
-Do consult [the documentation](http://pysm.dev/FlexiChains.jl/) for more information, and please feel free to get in touch with issues or suggestions!
+Do consult [the documentation](http://juliabayes.org/FlexiChains.jl/) for more information, and please feel free to get in touch with issues or suggestions!

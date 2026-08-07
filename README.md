@@ -2,13 +2,13 @@
   <img src="docs/src/assets/logo.svg" alt="FlexiChains.jl logo" width="230">
   <h1>FlexiChains.jl</h1>
   <p>Type- and structure-preserving Markov chains.</p>
-  <p><a href="https://pysm.dev/FlexiChains.jl/stable"><b>Documentation</b></a></p>
+  <p><a href="https://juliabayes.org/FlexiChains.jl/stable"><b>Documentation</b></a></p>
 </div>
 
 > [!NOTE]
 >
 > **Issues and requests for new functionality are more than welcome!**
-> Please don't hesitate to [open an issue](https://github.com/penelopeysm/FlexiChains.jl/issues) if you have any questions or suggestions.
+> Please don't hesitate to [open an issue](https://github.com/JuliaBayes/FlexiChains.jl/issues) if you have any questions or suggestions.
 >
 > In particular, I'm very interested in integrating FlexiChains with other packages, which can either be input sources (i.e., packages that generate MCMC samples) or output sinks (i.e., visualisation or analysis packages).
 > This allows improvements to be shared across the entire ecosystem.
@@ -55,11 +55,11 @@ chain = sample(model, MH(), MCMCThreads(), 1000, 3)
 ```
 
 You can also construct a FlexiChain from a variety of other sources, including
-[Pigeons.jl](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-pigeons),
-[Stan CSV files](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-stan),
-[PosteriorDB.jl](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-posteriordb),
-an [`MCMCChains.Chains` object](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-mcmcchains),
-or [a matrix of `DynamicPPL.VarNamedTuple`s or `DynamicPPL.ParamsWithStats`](https://pysm.dev/FlexiChains.jl/stable/api/#AbstractMCMC.from_samples).
+[Pigeons.jl](https://juliabayes.org/FlexiChains.jl/stable/integrations/#integrations-pigeons),
+[Stan CSV files](https://juliabayes.org/FlexiChains.jl/stable/integrations/#integrations-stan),
+[PosteriorDB.jl](https://juliabayes.org/FlexiChains.jl/stable/integrations/#integrations-posteriordb),
+an [`MCMCChains.Chains` object](https://juliabayes.org/FlexiChains.jl/stable/integrations/#integrations-mcmcchains),
+or [a matrix of `DynamicPPL.VarNamedTuple`s or `DynamicPPL.ParamsWithStats`](https://juliabayes.org/FlexiChains.jl/stable/api/#AbstractMCMC.from_samples).
 
 ## A quick primer on the data structure
 
@@ -104,7 +104,7 @@ chain[@varname(x), iter=101:End, chain=2]
 
 (note that with keyword arguments you have to use `End` instead of `end`).
 
-See the [full guide to indexing](https://pysm.dev/FlexiChains.jl/stable/indexing) for more.
+See the [full guide to indexing](https://juliabayes.org/FlexiChains.jl/stable/indexing) for more.
 
 ## Statistics
 
@@ -151,7 +151,7 @@ mean(chain)[@varname(x)] # -> Float64
 mean(chain; dims=:iter)  # take the mean over iterations only
 ```
 
-See the [full guide to summarising](https://pysm.dev/FlexiChains.jl/stable/summarising) for more.
+See the [full guide to summarising](https://juliabayes.org/FlexiChains.jl/stable/summarising) for more.
 
 ## Plotting
 
@@ -166,7 +166,7 @@ plot(chain, [@varname(z)])     # z[1] and z[2] only
 ```
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/penelopeysm/FlexiChains.jl/refs/heads/readme-images/readme-default-plot.png" width="500" alt="Trace/density plot of z in the FlexiChain sampled above"></img>
+<img src="https://raw.githubusercontent.com/JuliaBayes/FlexiChains.jl/refs/heads/readme-images/readme-default-plot.png" width="500" alt="Trace/density plot of z in the FlexiChain sampled above"></img>
 </div>
 
 Specialised MCMC plots are namespaced under the `FlexiChains.Makie` module:
@@ -177,10 +177,10 @@ FM.meanplot(chain; layout=(2, 2)) # Running mean plot, with custom grid layout
 ```
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/penelopeysm/FlexiChains.jl/refs/heads/readme-images/readme-meanplot.png" width="500" alt="Running mean plot of the FlexiChain sampled above"></img>
+<img src="https://raw.githubusercontent.com/JuliaBayes/FlexiChains.jl/refs/heads/readme-images/readme-meanplot.png" width="500" alt="Running mean plot of the FlexiChain sampled above"></img>
 </div>
 
-Pair plots can be generated with the [PairPlots.jl extension](https://pysm.dev/FlexiChains.jl/stable/integrations/#integrations-pairplots):
+Pair plots can be generated with the [PairPlots.jl extension](https://juliabayes.org/FlexiChains.jl/stable/integrations/#integrations-pairplots):
 
 ```julia
 using PairPlots
@@ -188,7 +188,7 @@ pairplot(chain)
 ```
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/penelopeysm/FlexiChains.jl/refs/heads/readme-images/readme-pairplot.png" width="500" alt="Pair plot of the FlexiChain sampled above"></img>
+<img src="https://raw.githubusercontent.com/JuliaBayes/FlexiChains.jl/refs/heads/readme-images/readme-pairplot.png" width="500" alt="Pair plot of the FlexiChain sampled above"></img>
 </div>
 
 The interface to Plots.jl is similar:
@@ -203,4 +203,4 @@ FP.meanplot(chain; layout=(2, 2))
 StatsPlots.corner(chain)
 ```
 
-See the [full guide to plotting](https://pysm.dev/FlexiChains.jl/stable/plotting) for more.
+See the [full guide to plotting](https://juliabayes.org/FlexiChains.jl/stable/plotting) for more.
